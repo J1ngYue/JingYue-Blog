@@ -722,6 +722,11 @@ html[data-wallpaper-mode="fullscreen"] .absolute.w-full.z-30.no-banner-layout {
     transition: none !important;
 }
 
+/* 封面壁纸与透明壁纸共用同一组不透明度和模糊度设置 */
+#wallpaper-wrapper.wallpaper-fullscreen #banner-images-container {
+    opacity: var(--overlay-opacity, 0.82);
+}
+
 /* Fullscreen 模式下非 sticky 导航栏：隐藏 top-row 占位，避免顶部空白 */
 html[data-wallpaper-mode="fullscreen"] body:not(.sticky-navbar) #top-row {
     height: 0 !important;
@@ -729,14 +734,15 @@ html[data-wallpaper-mode="fullscreen"] body:not(.sticky-navbar) #top-row {
     transition: none !important;
 }
 
-/* Fullscreen 模式下图片全屏覆盖，无模糊 */
+/* Fullscreen 模式下图片全屏覆盖 */
 #wallpaper-wrapper.wallpaper-fullscreen img,
 #wallpaper-wrapper.wallpaper-fullscreen img[class*="object-cover"] {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     object-position: center !important;
-    filter: none !important;
+    filter: blur(var(--overlay-blur, 0px)) !important;
+    transform: scale(1.05);
     opacity: 1 !important;
 }
 

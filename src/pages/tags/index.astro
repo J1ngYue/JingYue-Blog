@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import ArticleHubHeader from "@/components/controls/ArticleHubHeader.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
@@ -13,16 +14,9 @@ const topTags = [...tags].sort((a, b) => b.count - a.count).slice(0, 10);
 const topMaxCount = topTags.length > 0 ? topTags[0].count : 1;
 ---
 
-<MainGridLayout title={i18n(I18nKey.tags)} description={i18n(I18nKey.allTags)}>
-    <!-- 页面标题 -->
-    <div class="card-base px-8 py-6 mb-4">
-        <div class="text-2xl font-bold text-(--primary) mb-2">
-            {i18n(I18nKey.tags)}
-        </div>
-        <p class="text-30 text-sm">
-            {i18n(I18nKey.allTags)} · {tags.length} {i18n(I18nKey.tagsCount)}
-        </p>
-    </div>
+<MainGridLayout title={i18n(I18nKey.tags)} bannerTitle="文章" description={i18n(I18nKey.allTags)} articleHub>
+	<ArticleHubHeader active="tags" />
+    <p class="sr-only">{i18n(I18nKey.allTags)} · {tags.length} {i18n(I18nKey.tagsCount)}</p>
 
     <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
         <div class="card-base z-10 px-9 py-6 relative w-full">

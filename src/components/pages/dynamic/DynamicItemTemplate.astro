@@ -34,9 +34,15 @@ const profileLabel = i18n(I18nKey.dynamicProfile).replace(
 						<time data-dynamic-time></time>
 					</a>
 				</div>
-				<span class="dynamic-entry-decoration" aria-hidden="true">
-					<Icon is:inline name="material-symbols:format-quote-rounded" />
-				</span>
+				<a
+					class="dynamic-permalink btn-plain"
+					data-dynamic-permalink
+					data-dynamic-copy-link
+					aria-label={i18n(I18nKey.dynamicPermalink)}
+					title="复制动态链接"
+				>
+					<Icon is:inline name="material-symbols:link-rounded" />
+				</a>
 			</header>
 
 			<div class="dynamic-content custom-md" data-dynamic-content></div>

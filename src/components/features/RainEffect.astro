@@ -1,0 +1,377 @@
+---
+import { rainConfig } from "@/config";
+
+const config = rainConfig;
+---
+
+<script is:inline define:vars={{ rainEffectConfig: config }}>
+	(function initializeRainEffect() {
+		if (window.rainEffectInitialized) return;
+
+		class RainEffectManager {
+			constructor(config) {
+				this.config = config;
+				this.canvas = null;
+				this.context = null;
+				this.drops = [];
+				this.splashes = [];
+				this.animationId = null;
+				this.resizeFrame = null;
+				this.lastFrameTime = 0;
+				this.state = "off";
+				this.boundResize = this.handleResize.bind(this);
+				this.boundVisibility = this.handleVisibility.bind(this);
+			}
+
+			random(min, max) {
+				return min + Math.random() * (max - min);
+			}
+
+			getLayers() {
+				const mobile = window.innerWidth < 768;
+				const configuredCount = mobile
+					? this.config.dropCount.mobile
+					: this.config.dropCount.desktop;
+				const reduced = window.matchMedia(
+					"(prefers-reduced-motion: reduce)",
+				).matches;
+				const count = Math.max(
+					18,
+					Math.round(configuredCount * (reduced ? 0.55 : 1)),
+				);
+				const speedMin = this.config.speed.min;
+				const speedMax = this.config.speed.max;
+				const lengthMin = this.config.length.min;
+				const lengthMax = this.config.length.max;
+				const opacityMin = this.config.opacity.min;
+				const opacityMax = this.config.opacity.max;
+
+				return [
+					{
+						count: Math.max(8, Math.round(count * 0.42)),
+						length: [Math.max(5, lengthMin * 0.45), Math.max(10, lengthMin * 0.8)],
+						speed: [Math.max(2, speedMin * 0.4), Math.max(3, speedMin * 0.7)],
+						opacity: [opacityMin * 0.35, opacityMin * 0.7],
+						width: [0.35, 0.7],
+					},
+					{
+						count: Math.max(8, Math.round(count * 0.38)),
+						length: [lengthMin * 0.75, lengthMax * 0.9],
+						speed: [Math.max(4, speedMin * 0.8), Math.max(6, speedMax * 0.95)],
+						opacity: [opacityMin * 0.65, opacityMax * 0.8],
+						width: [0.55, 1],
+					},
+					{
+						count: Math.max(5, Math.round(count * 0.2)),
+						length: [lengthMax * 0.8, lengthMax * 1.45],
+						speed: [Math.max(7, speedMax * 0.9), Math.max(10, speedMax * 1.4)],
+						opacity: [opacityMin * 0.85, opacityMax],
+						width: [0.8, 1.5],
+					},
+				];
+			}
+
+			createDrop(layer, randomY, canSplash) {
+				return {
+					x: Math.random() * (window.innerWidth + 100) - 50,
+					y: randomY
+						? Math.random() * window.innerHeight
+						: -this.random(8, window.innerHeight * 0.3),
+					speed: this.random(layer.speed[0], layer.speed[1]),
+					length: this.random(layer.length[0], layer.length[1]),
+					opacity: this.random(layer.opacity[0], layer.opacity[1]),
+					width: this.random(layer.width[0], layer.width[1]),
+					layer,
+					canSplash,
+				};
+			}
+
+			createDrops() {
+				this.drops = [];
+				for (const [index, layer] of this.getLayers().entries()) {
+					for (let i = 0; i < layer.count; i += 1) {
+						this.drops.push(this.createDrop(layer, true, index > 0));
+					}
+				}
+				this.splashes = [];
+			}
+
+			createCanvas() {
+				document.getElementById("canvas_rain")?.remove();
+				this.canvas = document.createElement("canvas");
+				this.canvas.id = "canvas_rain";
+				this.canvas.setAttribute("aria-hidden", "true");
+				this.canvas.style.cssText = [
+					"position:fixed",
+					"inset:0",
+					"width:100vw",
+					"height:100vh",
+					"pointer-events:none",
+					`z-index:${this.config.zIndex}`,
+					"contain:strict",
+				].join(";");
+				document.documentElement.appendChild(this.canvas);
+				this.context = this.canvas.getContext("2d", { alpha: true });
+				this.resizeCanvas();
+			}
+
+			resizeCanvas() {
+				if (!this.canvas) return;
+				this.canvas.width = Math.max(1, window.innerWidth);
+				this.canvas.height = Math.max(1, window.innerHeight);
+			}
+
+			handleResize() {
+				if (this.resizeFrame !== null) {
+					cancelAnimationFrame(this.resizeFrame);
+				}
+				this.resizeFrame = requestAnimationFrame(() => {
+					this.resizeCanvas();
+					if (this.state === "active") this.createDrops();
+					this.resizeFrame = null;
+				});
+			}
+
+			handleVisibility() {
+				if (this.state === "off") return;
+				if (document.hidden) {
+					if (this.animationId !== null) {
+						cancelAnimationFrame(this.animationId);
+						this.animationId = null;
+					}
+					return;
+				}
+				this.lastFrameTime = performance.now();
+				if (this.animationId === null) {
+					this.animationId = requestAnimationFrame((time) =>
+						this.drawFrame(time),
+					);
+				}
+			}
+
+			resetDrop(drop) {
+				Object.assign(
+					drop,
+					this.createDrop(drop.layer, false, drop.canSplash),
+				);
+			}
+
+			spawnSplash(x, y) {
+				if (this.splashes.length >= 24) return;
+				this.splashes.push({
+					x,
+					y,
+					radius: 0.5,
+					maxRadius: this.random(3, 8),
+					opacity: this.random(0.14, 0.28),
+					fadeSpeed: this.random(0.004, 0.01),
+					expandSpeed: this.random(0.15, 0.4),
+				});
+			}
+
+			drawFrame(time) {
+				if (this.state === "off" || !this.canvas || !this.context) {
+					this.animationId = null;
+					return;
+				}
+
+				const delta = Math.min(
+					2.2,
+					Math.max(0.5, (time - this.lastFrameTime) / 16.667),
+				);
+				this.lastFrameTime = time;
+				const width = this.canvas.width;
+				const height = this.canvas.height;
+				const context = this.context;
+				const windAngle = 0.14 * (this.config.wind < 0 ? -1 : 1);
+				const windX = Math.sin(windAngle);
+				const windY = Math.cos(windAngle);
+				let visibleCount = 0;
+
+				context.clearRect(0, 0, width, height);
+				context.lineCap = "round";
+				context.strokeStyle = "rgb(198 204 209)";
+
+				for (const drop of this.drops) {
+					const previousY = drop.y;
+					drop.x += drop.speed * windX * delta;
+					drop.y += drop.speed * windY * delta;
+
+					if (drop.y > height + drop.length) {
+						if (this.state === "draining") {
+							if (
+								previousY <= height + drop.length &&
+								drop.canSplash &&
+								Math.random() < 0.35
+							) {
+								this.spawnSplash(drop.x, height - 1);
+							}
+							continue;
+						}
+						if (drop.canSplash && Math.random() < 0.35) {
+							this.spawnSplash(drop.x, height - 1);
+						}
+						this.resetDrop(drop);
+					}
+
+					if (drop.x > width + 50 || drop.x < -50) {
+						if (this.state === "draining") continue;
+						drop.x = drop.x > width ? -50 : width + 50;
+					}
+
+					visibleCount += 1;
+					context.globalAlpha = drop.opacity;
+					context.lineWidth = drop.width;
+					context.beginPath();
+					context.moveTo(drop.x, drop.y);
+					context.lineTo(
+						drop.x + drop.length * windX,
+						drop.y + drop.length * windY,
+					);
+					context.stroke();
+				}
+
+				context.lineWidth = 0.6;
+				for (let i = this.splashes.length - 1; i >= 0; i -= 1) {
+					const splash = this.splashes[i];
+					splash.radius += splash.expandSpeed * delta;
+					splash.opacity -= splash.fadeSpeed * delta;
+					if (
+						splash.opacity <= 0 ||
+						splash.radius >= splash.maxRadius
+					) {
+						this.splashes.splice(i, 1);
+						continue;
+					}
+					context.globalAlpha = splash.opacity;
+					context.beginPath();
+					context.ellipse(
+						splash.x,
+						splash.y,
+						splash.radius,
+						splash.radius * 0.35,
+						0,
+						0,
+						Math.PI * 2,
+					);
+					context.stroke();
+				}
+
+				context.globalAlpha = 1;
+				if (
+					this.state === "draining" &&
+					visibleCount === 0 &&
+					this.splashes.length === 0
+				) {
+					this.finishDrain();
+					return;
+				}
+				this.animationId = requestAnimationFrame((nextTime) =>
+					this.drawFrame(nextTime),
+				);
+			}
+
+			start() {
+				if (this.state === "active" && this.canvas?.isConnected) return;
+				if (this.state === "draining" && this.canvas?.isConnected) {
+					this.state = "active";
+					return;
+				}
+				if (this.state !== "off") this.finishDrain();
+				this.createCanvas();
+				if (!this.context) {
+					this.finishDrain();
+					return;
+				}
+				this.createDrops();
+				this.state = "active";
+				this.lastFrameTime = performance.now();
+				window.addEventListener("resize", this.boundResize, {
+					passive: true,
+				});
+				document.addEventListener(
+					"visibilitychange",
+					this.boundVisibility,
+				);
+				if (!document.hidden) {
+					this.animationId = requestAnimationFrame((time) =>
+						this.drawFrame(time),
+					);
+				}
+			}
+
+			stop() {
+				if (this.state !== "active") return;
+				this.state = "draining";
+			}
+
+			finishDrain() {
+				this.state = "off";
+				if (this.animationId !== null) {
+					cancelAnimationFrame(this.animationId);
+					this.animationId = null;
+				}
+				if (this.resizeFrame !== null) {
+					cancelAnimationFrame(this.resizeFrame);
+					this.resizeFrame = null;
+				}
+				window.removeEventListener("resize", this.boundResize);
+				document.removeEventListener(
+					"visibilitychange",
+					this.boundVisibility,
+				);
+				this.canvas?.remove();
+				this.canvas = null;
+				this.context = null;
+				this.drops = [];
+				this.splashes = [];
+			}
+
+			stopImmediate() {
+				if (this.state === "off") return;
+				this.finishDrain();
+			}
+		}
+
+		const storedEnabled = localStorage.getItem("rainEnabled");
+		const enabled =
+			storedEnabled === null
+				? rainEffectConfig.enable
+				: storedEnabled === "true";
+		const manager = new RainEffectManager(rainEffectConfig);
+		window.rainEffectManager = manager;
+		window.rainEffectInitialized = true;
+		document.documentElement.setAttribute(
+			"data-rain-enabled",
+			String(enabled),
+		);
+
+		if (enabled) manager.start();
+
+		window.addEventListener("rainToggle", (event) => {
+			const nextEnabled = Boolean(event.detail?.enabled);
+			document.documentElement.setAttribute(
+				"data-rain-enabled",
+				String(nextEnabled),
+			);
+			if (nextEnabled) manager.start();
+			else manager.stop();
+		});
+
+		const syncRainEffect = () => {
+			const stored = localStorage.getItem("rainEnabled");
+			const shouldEnable =
+				stored === null ? rainEffectConfig.enable : stored === "true";
+			document.documentElement.setAttribute(
+				"data-rain-enabled",
+				String(shouldEnable),
+			);
+			if (shouldEnable) manager.start();
+			else manager.stop();
+		};
+
+		document.addEventListener("astro:page-load", syncRainEffect);
+		document.addEventListener("swup:contentReplaced", syncRainEffect);
+		window.addEventListener("beforeunload", () => manager.stopImmediate());
+	})();
+</script>

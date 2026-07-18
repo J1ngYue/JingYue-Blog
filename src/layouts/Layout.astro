@@ -6,7 +6,10 @@ import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontSetup from "@components/features/FontSetup.astro";
 import MusicManager from "@components/features/MusicManager.astro";
+import MusicLibraryDialog from "@components/features/MusicLibraryDialog.astro";
+import RainEffect from "@components/features/RainEffect.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
+import SnowEffect from "@components/features/SnowEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
 
 import {
@@ -39,9 +42,21 @@ interface Props {
 	lang?: string;
 	setOGTypeArticle?: boolean;
 	postSlug?: string;
+	homeLanding?: boolean;
+	articleHub?: boolean;
+	contentOnly?: boolean;
 }
 
-let { title, description, lang, setOGTypeArticle, postSlug } = Astro.props;
+let {
+	title,
+	description,
+	lang,
+	setOGTypeArticle,
+	postSlug,
+	homeLanding = false,
+	articleHub = false,
+	contentOnly = false,
+} = Astro.props;
 
 // apply a class to the body element to decide the height of the banner, only used for initial page load
 // Swup can update the body for each page visit, but it's after the page transition, causing a delay for banner height change
@@ -248,6 +263,7 @@ const siteLang = lang.replace("_", "-");
         lightTheme: expressiveCodeConfig.lightTheme,
         baseUrl: import.meta.env.BASE_URL,
         cardTransparentOpacity: backgroundWallpaper.overlay?.cardOpacity ?? 0.6,
+        homeLanding,
       }}
     >
       // 主题初始化 - 与setting-utils.ts保持一致
@@ -342,9 +358,13 @@ const siteLang = lang.replace("_", "-");
       const WALLPAPER_FULLSCREEN = "fullscreen";
       const WALLPAPER_OVERLAY = "overlay";
       const WALLPAPER_NONE = "none";
-      const wallpaperMode = isWallpaperSwitchable
+      let wallpaperMode = isWallpaperSwitchable
         ? localStorage.getItem("wallpaperMode") || defaultWallpaperMode
         : defaultWallpaperMode;
+      if (wallpaperMode === WALLPAPER_BANNER) {
+        wallpaperMode = WALLPAPER_FULLSCREEN;
+        localStorage.setItem("wallpaperMode", wallpaperMode);
+      }
 
       // 设置data-wallpaper-mode属性
       document.documentElement.setAttribute(
@@ -393,8 +413,20 @@ const siteLang = lang.replace("_", "-");
             window.location.pathname === baseUrl ||
             (baseUrl !== '/' && window.location.pathname === baseUrl.replace(/\/$/, '')) ||
             window.location.pathname === "/";
+          const isImmersiveHomeLanding =
+            homeLanding ||
+            document.body?.classList.contains("home-landing-active");
+          const isContentOnlyLayout =
+            document.getElementById("content-only-layout-carrier")
+              ?.getAttribute("data-content-only") === "true";
 
-          if (wallpaperMode === WALLPAPER_OVERLAY) {
+          if (isImmersiveHomeLanding) {
+            if (wallpaperWrapper) {
+              wallpaperWrapper.style.setProperty("display", "none", "important");
+              wallpaperWrapper.classList.add("hidden", "opacity-0");
+              wallpaperWrapper.classList.remove("opacity-100");
+            }
+          } else if (wallpaperMode === WALLPAPER_OVERLAY) {
             // 全屏壁纸透明模式：切换为 overlay 显示
             if (wallpaperWrapper) {
               wallpaperWrapper.classList.add("wallpaper-overlay");
@@ -460,7 +492,27 @@ const siteLang = lang.replace("_", "-");
             }
             // 全屏壁纸模式：用 relative 定位让内容紧跟壁纸（移动端非首页除外，壁纸已隐藏）
             const isMobileNonHome = window.innerWidth < 1024 && !isHomePage;
-            if (wallpaperMode === WALLPAPER_FULLSCREEN && !isMobileNonHome) {
+            if (isImmersiveHomeLanding) {
+              mainContentWrapper.classList.remove("mobile-main-no-banner");
+              mainContentWrapper.classList.add("no-banner-layout");
+              mainContentWrapper.style.position = "relative";
+              mainContentWrapper.style.setProperty("top", "0", "important");
+              mainContentWrapper.style.zIndex = "30";
+              mainContentWrapper.style.setProperty("margin-top", "0", "important");
+            } else if (isContentOnlyLayout && !isMobile) {
+              mainContentWrapper.classList.remove("mobile-main-no-banner");
+              mainContentWrapper.classList.add("no-banner-layout");
+              mainContentWrapper.style.position = "";
+              mainContentWrapper.style.zIndex = "";
+              mainContentWrapper.style.setProperty(
+                "top",
+                wallpaperMode === WALLPAPER_BANNER || wallpaperMode === WALLPAPER_FULLSCREEN
+                  ? "calc(100dvh - 3.5rem)"
+                  : "0",
+                "important",
+              );
+              mainContentWrapper.style.setProperty("margin-top", "0", "important");
+            } else if (wallpaperMode === WALLPAPER_FULLSCREEN && !isMobileNonHome) {
               mainContentWrapper.style.position = "relative";
               mainContentWrapper.style.top = "0";
               mainContentWrapper.style.zIndex = "30";
@@ -500,7 +552,11 @@ const siteLang = lang.replace("_", "-");
               window.location.pathname === baseUrl || 
               (baseUrl !== '/' && window.location.pathname === baseUrl.replace(/\/$/, '')) ||
               window.location.pathname === "/";
-            if ((wallpaperMode === WALLPAPER_BANNER || wallpaperMode === WALLPAPER_FULLSCREEN) && isHomePage) {
+            if (
+              !isImmersiveHomeLanding &&
+              (wallpaperMode === WALLPAPER_BANNER || wallpaperMode === WALLPAPER_FULLSCREEN) &&
+              isHomePage
+            ) {
               bannerTextOverlay.classList.remove("hidden");
             } else {
               bannerTextOverlay.classList.add("hidden");
@@ -559,6 +615,9 @@ const siteLang = lang.replace("_", "-");
       {
         "is-home": isHomePageCheck,
         "lg:is-home": isHomePageCheck,
+        "home-landing-active": homeLanding,
+		"article-hub-active": articleHub,
+		"content-only-active": contentOnly,
         "enable-banner": enableBanner,
         "sticky-navbar": siteConfig.navbar.stickyNavbar ?? false,
         "enable-card-border": siteConfig.card?.border,
@@ -573,12 +632,15 @@ const siteLang = lang.replace("_", "-");
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
     <MusicManager />
+    <MusicLibraryDialog />
     <slot />
 
 
 
     <!-- Sakura Effect -->
     <SakuraEffect />
+    <RainEffect />
+    <SnowEffect />
 
     <!-- Fancybox Manager -->
     <FancyboxManager />
@@ -802,11 +864,6 @@ function disableAnimation() {
     "nav-menu-panel",
     "nav-menu-switch",
   ]);
-  setClickOutsideToClose("search-panel", [
-    "search-panel",
-    "search-bar",
-    "search-switch",
-  ]);
   setClickOutsideToClose("wallpaper-mode-panel", [
     "wallpaper-mode-panel",
     "wallpaper-mode-switch",
@@ -814,6 +871,11 @@ function disableAnimation() {
   setClickOutsideToClose("theme-mode-panel", [
     "theme-mode-panel",
     "scheme-switch",
+  ]);
+  setClickOutsideToClose("search-panel", [
+    "search-panel",
+    "search-bar",
+    "search-switch",
   ]);
 
   function initCustomScrollbar() {
@@ -900,15 +962,8 @@ function disableAnimation() {
   const setup = () => {
     // 全屏壁纸模式：替换 swup 默认的回顶行为
     // 首页回顶部，其他页滚动到 #main-grid（与 ScrollDownIndicator 行为一致）
-    window.swup.hooks.replace("scroll:top", (visit: { to: { url: string } }, args: { options: ScrollIntoViewOptions }) => {
-      const wallpaperMode = document.documentElement.getAttribute("data-wallpaper-mode");
-      if (wallpaperMode === "fullscreen" && !pathsEqual(visit.to.url, url("/"))) {
-        const mainGrid = document.getElementById("main-grid");
-        if (mainGrid) {
-          mainGrid.scrollIntoView({ behavior: args.options?.behavior || "auto" });
-          return true;
-        }
-      }
+    window.swup.hooks.replace("scroll:top", (_visit: { to: { url: string } }, args: { options: ScrollIntoViewOptions }) => {
+      // 内部页面保留封面首屏，交给统一的滚轮切换脚本进入正文。
       window.scrollTo({ top: 0, left: 0, ...args.options });
       return true;
     });
@@ -958,10 +1013,13 @@ function disableAnimation() {
       }
     });
     window.swup.hooks.on("content:replace", () => {
+      syncHomeLandingLayout();
+      requestAnimationFrame(syncHomeLandingLayout);
       const isHome = pathsEqual(window.location.pathname, url("/"));
       const currentMode = document.documentElement.getAttribute("data-wallpaper-mode");
       const isMobileForBanner = window.innerWidth < 1024;
       const mainEl = document.querySelector(".w-full.z-30.pointer-events-none") as HTMLElement | null;
+      const isImmersiveHomeLanding = document.body.classList.contains("home-landing-active");
 
       // 移动端 banner/全屏模式非首页：隐藏壁纸并调整内容位置（首页由 visit:start 和 page:view 处理）
       if (isMobileForBanner && (currentMode === "banner" || currentMode === "fullscreen") && !isHome) {
@@ -980,7 +1038,9 @@ function disableAnimation() {
       }
 
       // 桌面端全屏壁纸模式：壁纸始终可见，内容用 relative 定位紧跟壁纸
-      if (!isMobileForBanner && currentMode === "fullscreen" && mainEl) {
+      const isContentOnly = document.body.classList.contains("content-only-active");
+
+      if (!isImmersiveHomeLanding && !isContentOnly && !isMobileForBanner && currentMode === "fullscreen" && mainEl) {
         mainEl.style.position = "relative";
         mainEl.style.zIndex = "30";
         mainEl.style.setProperty("top", "0", "important");
@@ -988,11 +1048,15 @@ function disableAnimation() {
       }
 
       // 桌面端横幅模式：统一用banner高度定位，不改变grid transform
-      if (!isMobileForBanner && currentMode === "banner" && mainEl) {
+      if (!isImmersiveHomeLanding && !isContentOnly && !isMobileForBanner && currentMode === "banner" && mainEl) {
         mainEl.style.setProperty("top", "calc(var(--banner-height) - 3.5rem)", "important");
         mainEl.style.position = "";
         mainEl.style.zIndex = "";
         mainEl.style.setProperty("margin-top", "0", "important");
+      }
+
+      if (!isImmersiveHomeLanding && isContentOnly && mainEl) {
+        applyContentOnlyMainLayout();
       }
 
       // 更新侧边栏组件的可见性（根据新页面的 URL）
@@ -1122,35 +1186,17 @@ function disableAnimation() {
           // 使用 setProperty + important 确保覆盖 CSS !important 规则
           mainContentWrapper.style.setProperty("transition", "none", "important");
 
-          // 移除隐藏类让壁纸出现（display:none 由 CSS 类控制，需先移除类）
-          wallpaperWrapper.classList.remove("mobile-hide-banner");
-          wallpaperWrapper.style.display = "";
+          // 沉浸式首页只使用 HomeLanding 的封面，旧壁纸容器始终隐藏
+          wallpaperWrapper.classList.add("mobile-hide-banner", "hidden", "opacity-0");
+          wallpaperWrapper.classList.remove("opacity-100");
+          wallpaperWrapper.style.setProperty("display", "none", "important");
           setTimeout(() => {
             mainContentWrapper.classList.remove("mobile-main-no-banner");
-            // 恢复与 SSR 一致的内联 top，而非 removeProperty（否则 CSS 的 70vh 会生效导致内容下移）
-            const visitCurrentMode = document.documentElement.getAttribute("data-wallpaper-mode");
-            if (visitCurrentMode === "fullscreen") {
-              mainContentWrapper.style.position = "relative";
-              mainContentWrapper.style.zIndex = "30";
-              mainContentWrapper.style.setProperty("top", "0", "important");
-              mainContentWrapper.style.setProperty("margin-top", "1rem", "important");
-            } else if (visitCurrentMode === "overlay" || visitCurrentMode === "none") {
-              mainContentWrapper.style.setProperty("top", "5.5rem", "important");
-              mainContentWrapper.style.position = "";
-              mainContentWrapper.style.zIndex = "";
-              mainContentWrapper.style.setProperty("margin-top", "0", "important");
-            } else if (isMobile) {
-              // 移动端横幅模式首页：清除 inline top，让 CSS 响应式规则生效
-              mainContentWrapper.style.removeProperty("top");
-              mainContentWrapper.style.position = "";
-              mainContentWrapper.style.zIndex = "";
-              mainContentWrapper.style.setProperty("margin-top", "0", "important");
-            } else {
-              mainContentWrapper.style.setProperty("top", "calc(var(--banner-height) - 3.5rem)", "important");
-              mainContentWrapper.style.position = "";
-              mainContentWrapper.style.zIndex = "";
-              mainContentWrapper.style.setProperty("margin-top", "0", "important");
-            }
+            mainContentWrapper.classList.add("no-banner-layout");
+            mainContentWrapper.style.position = "relative";
+            mainContentWrapper.style.zIndex = "30";
+            mainContentWrapper.style.setProperty("top", "0", "important");
+            mainContentWrapper.style.setProperty("margin-top", "0", "important");
             // 不在此处恢复过渡动画，由 page:view 统一管理，避免与后续钩子冲突
           }, 150);
         } else {
@@ -1163,25 +1209,37 @@ function disableAnimation() {
           mainContentWrapper.style.setProperty("margin-top", "0", "important");
         }
       } else if (!isMobile && wallpaperWrapper) {
-        // 桌面端：确保banner正常显示
-        wallpaperWrapper.style.display = "";
-        wallpaperWrapper.classList.remove("mobile-hide-banner");
-        if (mainContentWrapper) {
-          mainContentWrapper.classList.remove("mobile-main-no-banner");
-          // 桌面端全屏壁纸模式：壁纸始终可见，内容用 relative 定位紧跟壁纸
-          const visitDesktopMode = document.documentElement.getAttribute("data-wallpaper-mode");
-          if (visitDesktopMode === "fullscreen") {
+        if (isHomePage) {
+          wallpaperWrapper.classList.add("hidden", "opacity-0");
+          wallpaperWrapper.classList.remove("opacity-100");
+          wallpaperWrapper.style.setProperty("display", "none", "important");
+          if (mainContentWrapper) {
+            mainContentWrapper.classList.remove("mobile-main-no-banner");
+            mainContentWrapper.classList.add("no-banner-layout");
             mainContentWrapper.style.position = "relative";
             mainContentWrapper.style.zIndex = "30";
             mainContentWrapper.style.setProperty("top", "0", "important");
-            mainContentWrapper.style.setProperty("margin-top", "1rem", "important");
-          }
-          // 桌面端横幅模式：统一用banner高度定位，不改变grid transform
-          if (visitDesktopMode === "banner") {
-            mainContentWrapper.style.setProperty("top", "calc(var(--banner-height) - 3.5rem)", "important");
-            mainContentWrapper.style.position = "";
-            mainContentWrapper.style.zIndex = "";
             mainContentWrapper.style.setProperty("margin-top", "0", "important");
+          }
+        } else {
+          // 桌面端内页：恢复旧壁纸布局
+          wallpaperWrapper.style.removeProperty("display");
+          wallpaperWrapper.classList.remove("mobile-hide-banner");
+          if (mainContentWrapper) {
+            mainContentWrapper.classList.remove("mobile-main-no-banner");
+            const visitDesktopMode = document.documentElement.getAttribute("data-wallpaper-mode");
+            if (!document.body.classList.contains("content-only-active") && visitDesktopMode === "fullscreen") {
+              mainContentWrapper.style.position = "relative";
+              mainContentWrapper.style.zIndex = "30";
+              mainContentWrapper.style.setProperty("top", "0", "important");
+              mainContentWrapper.style.setProperty("margin-top", "1rem", "important");
+            }
+            if (!document.body.classList.contains("content-only-active") && visitDesktopMode === "banner") {
+              mainContentWrapper.style.setProperty("top", "calc(var(--banner-height) - 3.5rem)", "important");
+              mainContentWrapper.style.position = "";
+              mainContentWrapper.style.zIndex = "";
+              mainContentWrapper.style.setProperty("margin-top", "0", "important");
+            }
           }
         }
       }
@@ -1210,6 +1268,9 @@ function disableAnimation() {
       }
     });
     window.swup.hooks.on("page:view", () => {
+      syncHomeLandingLayout();
+      requestAnimationFrame(syncHomeLandingLayout);
+      requestAnimationFrame(applyContentOnlyMainLayout);
       // 恢复 #main-grid 的过渡动画（visit:start 中禁用了）
       const mainGrid = document.getElementById("main-grid");
       if (mainGrid) {
@@ -1232,7 +1293,24 @@ function disableAnimation() {
       const isMobileForBanner = window.innerWidth < 1024;
       const wrapper = document.getElementById("wallpaper-wrapper") as HTMLElement | null;
       const mainEl = document.querySelector(".w-full.z-30.pointer-events-none") as HTMLElement | null;
-      if (isMobileForBanner && (currentMode === "banner" || currentMode === "fullscreen")) {
+      const isImmersiveHomeLanding = document.body.classList.contains("home-landing-active");
+      const isContentOnly = document.body.classList.contains("content-only-active");
+      if (isImmersiveHomeLanding) {
+        if (wrapper) {
+          wrapper.style.setProperty("display", "none", "important");
+          wrapper.classList.add("hidden", "opacity-0");
+          wrapper.classList.remove("opacity-100");
+        }
+        if (mainEl) {
+          mainEl.classList.remove("mobile-main-no-banner");
+          mainEl.classList.add("no-banner-layout");
+          mainEl.style.position = "relative";
+          mainEl.style.zIndex = "30";
+          mainEl.style.setProperty("top", "0", "important");
+          mainEl.style.setProperty("margin-top", "0", "important");
+          mainEl.style.removeProperty("transition");
+        }
+      } else if (isMobileForBanner && (currentMode === "banner" || currentMode === "fullscreen")) {
           if (!isHome) {
             if (wrapper) {
               wrapper.style.display = "none";
@@ -1261,7 +1339,7 @@ function disableAnimation() {
       }
 
       // 桌面端全屏壁纸模式：壁纸始终可见，内容用 relative 定位紧跟壁纸
-      if (!isMobileForBanner && currentMode === "fullscreen" && mainEl) {
+      if (!isImmersiveHomeLanding && !isContentOnly && !isMobileForBanner && currentMode === "fullscreen" && mainEl) {
         mainEl.style.position = "relative";
         mainEl.style.zIndex = "30";
         mainEl.style.setProperty("top", "0", "important");
@@ -1269,11 +1347,16 @@ function disableAnimation() {
       }
 
       // 桌面端横幅模式：统一用banner高度定位，不改变grid transform
-      if (!isMobileForBanner && currentMode === "banner" && mainEl) {
+      if (!isImmersiveHomeLanding && !isContentOnly && !isMobileForBanner && currentMode === "banner" && mainEl) {
         mainEl.style.setProperty("top", "calc(var(--banner-height) - 3.5rem)", "important");
         mainEl.style.position = "";
         mainEl.style.zIndex = "";
         mainEl.style.setProperty("margin-top", "0", "important");
+      }
+
+      if (!isImmersiveHomeLanding && isContentOnly && !isMobileForBanner && mainEl &&
+          (currentMode === "banner" || currentMode === "fullscreen")) {
+        applyContentOnlyMainLayout();
       }
 
       // 在移动端恢复文章列表容器的过渡动画（在主内容区位置动画完成后）
@@ -1392,8 +1475,10 @@ function disableAnimation() {
     const bannerHeight = window.innerHeight * (BANNER_HEIGHT / 100);
     const navbarElement = document.getElementById("navbar");
 
-    // 根据滚动位置动态更新侧边栏 sticky 间距
-    updateSidebarStickySpacing();
+    // 沉浸式首页没有侧边栏，切屏时跳过昂贵的布局读取。
+    if (!document.body.classList.contains("home-landing-active")) {
+      updateSidebarStickySpacing();
+    }
 
     // 使用批量DOM操作优化性能
     const operations: (() => void)[] = [];
@@ -1468,6 +1553,7 @@ function disableAnimation() {
   // 初始化滚动状态（例如从历史位置恢复时）
   scrollFunction();
 
+  let resizeLayoutFrame: number | null = null;
   window.onresize = () => {
     // calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
     let offset = Math.floor(window.innerHeight * (BANNER_HEIGHT_EXTEND / 100));
@@ -1476,6 +1562,17 @@ function disableAnimation() {
       "--banner-height-extend",
       `${offset}px`
     );
+
+    if (resizeLayoutFrame !== null) {
+      cancelAnimationFrame(resizeLayoutFrame);
+    }
+    resizeLayoutFrame = requestAnimationFrame(() => {
+      updateMainGridCols();
+      syncHomeLandingLayout();
+      initWallpaperMode();
+      syncHomeLandingLayout();
+      resizeLayoutFrame = null;
+    });
   };
 
   // 页面加载完成后初始化banner和内容溢出容器
@@ -1526,10 +1623,96 @@ function disableAnimation() {
   }
 
   // 更新主网格的网格列数
+  function applyContentOnlyMainLayout() {
+    const carrier = document.getElementById("content-only-layout-carrier");
+    const mainContent = document.getElementById("main-content-wrapper") as HTMLElement | null;
+    if (!mainContent || carrier?.getAttribute("data-content-only") !== "true") return;
+
+    const mode = document.documentElement.getAttribute("data-wallpaper-mode");
+    const isMobile = window.innerWidth < 1024;
+    const hasCover = mode === "banner" || mode === "fullscreen";
+
+    mainContent.classList.remove("mobile-main-no-banner");
+    mainContent.classList.add("no-banner-layout");
+    mainContent.style.position = "";
+    mainContent.style.zIndex = "";
+    mainContent.style.marginTop = "0";
+    mainContent.style.setProperty(
+      "top",
+      isMobile ? "5.5rem" : hasCover ? "calc(100dvh - 3.5rem)" : "5.5rem",
+      "important",
+    );
+    mainContent.style.visibility = "visible";
+  }
+
+  function syncHomeLandingLayout() {
+    const carrier = document.getElementById("home-layout-carrier");
+    const isHomeLanding = carrier?.getAttribute("data-home-landing") === "true";
+    document.body.classList.toggle("home-landing-active", isHomeLanding);
+	const articleHubCarrier = document.getElementById("article-hub-layout-carrier");
+	document.body.classList.toggle(
+	  "article-hub-active",
+	  articleHubCarrier?.getAttribute("data-article-hub") === "true",
+	);
+	const contentOnlyCarrier = document.getElementById("content-only-layout-carrier");
+	document.body.classList.toggle(
+	  "content-only-active",
+	  contentOnlyCarrier?.getAttribute("data-content-only") === "true",
+	);
+
+    const wallpaper = document.getElementById("wallpaper-wrapper") as HTMLElement | null;
+    const mainContent = document.getElementById("main-content-wrapper") as HTMLElement | null;
+
+    if (isHomeLanding) {
+      if (wallpaper) {
+        wallpaper.style.setProperty("display", "none", "important");
+        wallpaper.classList.add("hidden", "opacity-0");
+        wallpaper.classList.remove("opacity-100");
+      }
+      if (mainContent) {
+        mainContent.classList.remove("mobile-main-no-banner");
+        mainContent.classList.add("no-banner-layout");
+        mainContent.style.position = "relative";
+        mainContent.style.zIndex = "30";
+        mainContent.style.setProperty("top", "0", "important");
+        mainContent.style.setProperty("margin-top", "0", "important");
+        mainContent.style.visibility = "visible";
+      }
+      wallpaper?.setAttribute("data-home-layout-overridden", "true");
+      mainContent?.setAttribute("data-home-layout-overridden", "true");
+      return;
+    }
+
+    if (wallpaper?.getAttribute("data-home-layout-overridden") === "true") {
+      const currentMode = document.documentElement.getAttribute("data-wallpaper-mode");
+      wallpaper.style.removeProperty("display");
+      if (currentMode === "none") {
+        wallpaper.classList.add("hidden", "opacity-0");
+        wallpaper.classList.remove("opacity-100");
+      } else {
+        wallpaper.classList.remove("hidden", "opacity-0");
+        wallpaper.classList.add("opacity-100");
+      }
+      wallpaper.removeAttribute("data-home-layout-overridden");
+    }
+
+    if (mainContent?.getAttribute("data-home-layout-overridden") === "true") {
+      mainContent.style.removeProperty("top");
+      mainContent.style.removeProperty("margin-top");
+      mainContent.style.removeProperty("position");
+      mainContent.style.removeProperty("z-index");
+      mainContent.removeAttribute("data-home-layout-overridden");
+    }
+
+    applyContentOnlyMainLayout();
+  }
+
   function updateMainGridCols() {
     const mainGrid = document.getElementById("main-grid");
     if (!mainGrid) return;
 
+    const isHomeLanding = document.body.classList.contains("home-landing-active");
+    const isContentOnly = document.body.classList.contains("content-only-active");
     const sidebarEnabled = mainGrid.getAttribute("data-sidebar-enable") !== "false";
     const sidebarHideOnPost = mainGrid.getAttribute("data-grid-hide-sidebar-on-post") === "true";
     const isPostPage = isCurrentPagePost();
@@ -1538,7 +1721,7 @@ function disableAnimation() {
     const showBothSidebarsOnPostPage = mainGrid.getAttribute("data-show-both-sidebars-on-post") === "true";
 
     // 侧边栏禁用 或 文章详情页隐藏侧边栏时，保持单列布局
-    if (!sidebarEnabled || (isPostPage && sidebarHideOnPost)) {
+    if (isHomeLanding || isContentOnly || !sidebarEnabled || (isPostPage && sidebarHideOnPost)) {
       applySingleColLayout(mainGrid);
       return;
     }
@@ -1657,16 +1840,20 @@ function disableAnimation() {
   import { initIconLoader } from "@/utils/icon-loader";
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
+      syncHomeLandingLayout();
       updateMainGridCols();
       updateSidebarComponentsVisibility();
       initWallpaperMode();
+      syncHomeLandingLayout();
       initThemeListener();
       initIconLoader();
     });
   } else {
+    syncHomeLandingLayout();
     updateMainGridCols();
     updateSidebarComponentsVisibility();
     initWallpaperMode();
+    syncHomeLandingLayout();
     initThemeListener();
     initIconLoader();
   }

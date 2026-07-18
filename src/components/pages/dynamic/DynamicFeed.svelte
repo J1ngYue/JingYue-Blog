@@ -52,6 +52,10 @@ let template: HTMLTemplateElement | null = null;
 let searchInput: HTMLInputElement | null = null;
 let yearSelect: HTMLSelectElement | null = null;
 let restoreAnchorAfterRender = false;
+let activeQuery = $state("");
+let activeYear = $state("all");
+let notice = $state("");
+let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 const pageEntries = $derived(
 	filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
@@ -68,6 +72,10 @@ function updateUrl(clearHash = false) {
 	const current = new URL(window.location.href);
 	if (currentPage > 1) current.searchParams.set("page", String(currentPage));
 	else current.searchParams.delete("page");
+	if (activeQuery) current.searchParams.set("q", activeQuery);
+	else current.searchParams.delete("q");
+	if (activeYear !== "all") current.searchParams.set("year", activeYear);
+	else current.searchParams.delete("year");
 	if (clearHash) current.hash = "";
 	history.replaceState(history.state, "", current);
 }
@@ -75,6 +83,8 @@ function updateUrl(clearHash = false) {
 function applyFilters(resetPage = true) {
 	const query = searchInput?.value.toLocaleLowerCase().trim() || "";
 	const year = yearSelect?.value || "all";
+	activeQuery = query;
+	activeYear = year;
 	filtered = entries.filter(
 		(entry) =>
 			(year === "all" ||
@@ -85,6 +95,21 @@ function applyFilters(resetPage = true) {
 	const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
 	currentPage = Math.min(currentPage, totalPages);
 	updateUrl(resetPage);
+}
+
+function resetFilters() {
+	if (searchInput) searchInput.value = "";
+	if (yearSelect) yearSelect.value = "all";
+	applyFilters();
+	searchInput?.focus();
+}
+
+function showNotice(message: string) {
+	notice = message;
+	if (noticeTimer) clearTimeout(noticeTimer);
+	noticeTimer = setTimeout(() => {
+		notice = "";
+	}, 2200);
 }
 
 function populateYears() {
@@ -129,7 +154,7 @@ function createItem(entry: DynamicData) {
 		.forEach((link) => {
 			link.href = permalink;
 			link.dataset.noSwup = "";
-			link.addEventListener("click", (event) => {
+			link.addEventListener("click", async (event) => {
 				if (
 					event.button !== 0 ||
 					event.metaKey ||
@@ -140,6 +165,18 @@ function createItem(entry: DynamicData) {
 					return;
 				event.preventDefault();
 				event.stopPropagation();
+				if (link.hasAttribute("data-dynamic-copy-link")) {
+					try {
+						await navigator.clipboard.writeText(
+							new URL(permalink, window.location.href).href,
+						);
+						showNotice("动态链接已复制");
+					} catch {
+						history.replaceState(history.state, "", permalink);
+						showNotice("已定位到这条动态");
+					}
+					return;
+				}
 				history.replaceState(history.state, "", permalink);
 			});
 		});
@@ -243,6 +280,15 @@ onMount(() => {
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 			entries = (await response.json()) as DynamicData[];
 			populateYears();
+			const currentUrl = new URL(window.location.href);
+			if (searchInput) searchInput.value = currentUrl.searchParams.get("q") || "";
+			if (yearSelect) {
+				const requestedYear = currentUrl.searchParams.get("year") || "all";
+				const exists = Array.from(yearSelect.options).some(
+					(option) => option.value === requestedYear,
+				);
+				yearSelect.value = exists ? requestedYear : "all";
+			}
 			currentPage = pageFromUrl();
 			applyFilters(false);
 			const anchorId = decodeURIComponent(window.location.hash.slice(1));
@@ -267,6 +313,7 @@ onMount(() => {
 	void load();
 
 	return () => {
+		if (noticeTimer) clearTimeout(noticeTimer);
 		searchInput?.removeEventListener("input", filter);
 		yearSelect?.removeEventListener("change", filter);
 	};
@@ -285,6 +332,17 @@ onMount(() => {
 {:else if filtered.length === 0}
 	<div class="dynamic-no-results card-base">
 		<p>{noResultsText}</p>
+	</div>
+{/if}
+
+{#if !loading && !failed && entries.length > 0}
+	<div class="dynamic-filter-status" aria-live="polite">
+		<span>显示 {filtered.length} / {entries.length} 条动态</span>
+		{#if notice}
+			<strong>{notice}</strong>
+		{:else if activeQuery || activeYear !== "all"}
+			<button type="button" onclick={resetFilters}>清除筛选</button>
+		{/if}
 	</div>
 {/if}
 

@@ -1,5 +1,6 @@
 ---
 import Comment from "@components/comment/index.astro";
+import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
 import { Icon } from "astro-icon/components";
 import { commentConfig, siteConfig, sponsorConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -32,7 +33,8 @@ function getQrLqipProps(qrCode: string) {
 }
 ---
 
-<MainGridLayout title={title} description={description}>
+<MainGridLayout title={title} bannerTitle="关于" description={description}>
+  <FeatureHubHeader section="about" active="sponsor" />
   <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
     <div class="card-base z-10 px-9 py-6 relative w-full">
       <!-- 页面标题和描述 -->
@@ -213,4 +215,3 @@ function getQrLqipProps(qrCode: string) {
     gap: 0.75rem;
   }
 </style>
-

@@ -1,5 +1,7 @@
 import type { ProfileConfig } from "../types/profileConfig";
 
+export const githubUsername = "J1ngYue";
+
 export const profileConfig: ProfileConfig = {
 	// 头像
 	// 图片路径支持三种格式：
@@ -9,10 +11,10 @@ export const profileConfig: ProfileConfig = {
 	avatar: "assets/images/avatar.avif",
 
 	// 名字
-	name: "Firefly",
+	name: "JingYue",
 
 	// 个人签名
-	bio: "Hello, I'm Firefly.",
+	bio: "你好，我是 JingYue。",
 
 	// 链接配置
 	// 已经预装的图标集：fa7-brands，fa7-regular，fa7-solid，material-symbols，simple-icons
@@ -30,7 +32,7 @@ export const profileConfig: ProfileConfig = {
 		{
 			name: "GitHub",
 			icon: "fa7-brands:github",
-			url: "https://github.com/CuteLeaf",
+			url: `https://github.com/${githubUsername}`,
 			showName: false,
 		},
 		{

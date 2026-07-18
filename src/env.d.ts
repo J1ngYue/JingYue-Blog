@@ -2,8 +2,10 @@
 /// <reference path="../.astro/types.d.ts" />
 
 declare global {
-	interface ImportMetaEnv {
+interface ImportMetaEnv {
+	readonly PUBLIC_NETEASE_API_BASE_URL?: string;
 		readonly MEILI_MASTER_KEY: string;
+		readonly GITHUB_TOKEN?: string;
 	}
 
 	interface ITOCManager {

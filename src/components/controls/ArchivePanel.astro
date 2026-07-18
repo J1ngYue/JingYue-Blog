@@ -49,6 +49,7 @@ const i18nStrings = {
 };
 const tagsBaseUrl = url("/tags/");
 const categoriesBaseUrl = url("/categories/");
+const searchBaseUrl = url("/search/");
 const foldOnFilter = collapseAllButFirst;
 ---
 
@@ -56,6 +57,46 @@ const foldOnFilter = collapseAllButFirst;
   class="card-base px-8 py-6"
   data-fold={foldOnFilter ? "true" : "false"}
 >
+  <div class="archive-toolbar mb-5 grid gap-2 md:grid-cols-[minmax(0,1fr)_9rem_auto]">
+    <label class="archive-search flex min-w-0 items-center gap-2 rounded-lg border border-(--line-divider) bg-transparent px-3 text-50 transition-colors">
+      <svg class="h-4 w-4 shrink-0" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" stroke-linecap="round" />
+      </svg>
+      <input
+        type="search"
+        data-archive-search
+        aria-label="搜索文章标题、分类或标签"
+        class="h-10 min-w-0 flex-1 border-0 bg-transparent text-sm text-75 outline-none"
+        placeholder="搜索文章标题、分类或标签"
+        autocomplete="off"
+      />
+    </label>
+    <label class="archive-year-filter relative flex items-center rounded-lg bg-(--btn-regular-bg) text-50">
+      <span class="sr-only">按年份筛选</span>
+      <select data-archive-year class="h-10 w-full appearance-none border-0 bg-transparent px-3 pr-8 text-sm text-75 outline-none">
+        <option value="all">全部年份</option>
+        {groups.map((group) => <option value={group.year}>{group.year} 年</option>)}
+      </select>
+      <svg class="pointer-events-none absolute right-2 h-4 w-4" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="m7 10 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </label>
+    <button
+      type="button"
+      data-archive-reset
+      class="btn-regular h-10 rounded-lg px-4 text-sm font-medium"
+      hidden
+    >
+      清除搜索
+    </button>
+  </div>
+
+  <div class="archive-result-summary mb-4 flex items-center justify-between gap-3 text-xs text-50" aria-live="polite">
+    <span data-archive-result-count>共 {posts.length} 篇文章</span>
+    <span>可按标题、分类、标签或年份查找</span>
+  </div>
+
   {/* 筛选头部：默认隐藏，客户端在有筛选时填充并显示 */}
   <div id="archive-filter-header" class="mb-5 hidden">
     <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
@@ -69,6 +110,10 @@ const foldOnFilter = collapseAllButFirst;
         <span id="archive-filter-count"></span> <span id="archive-filter-count-label"></span>
       </div>
     </div>
+  </div>
+
+  <div data-archive-empty class="archive-empty my-8 rounded-xl border border-dashed border-(--line-divider) px-5 py-10 text-center text-50" hidden>
+    没有找到匹配的文章，换一个关键词或年份试试。
   </div>
 
   {groups.map((group, groupIndex) => {
@@ -109,6 +154,7 @@ const foldOnFilter = collapseAllButFirst;
               class="archive-post group btn-plain block! h-10 w-full rounded-lg hover:text-[initial]"
               data-tags={JSON.stringify(post.data.tags || [])}
               data-category={post.data.category || ""}
+              data-search={`${post.data.title} ${post.data.category || ""} ${(post.data.tags || []).join(" ")} ${post.data.description || ""}`.toLocaleLowerCase()}
             >
               <div class="flex flex-row justify-start items-center h-full">
                 {/* date */}
@@ -157,13 +203,59 @@ const foldOnFilter = collapseAllButFirst;
 <style>
   archive-panel {
     display: block;
+    border: 1px solid color-mix(in oklch, var(--primary) 14%, var(--line-divider));
+    background:
+      linear-gradient(135deg, color-mix(in oklch, var(--primary) 4%, transparent), transparent 34%),
+      var(--card-bg);
+    box-shadow: 0 1rem 2.5rem color-mix(in oklch, var(--deep-text) 7%, transparent);
+  }
+  .archive-toolbar {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid color-mix(in oklch, var(--line-divider) 72%, transparent);
+  }
+  .archive-year-block {
+    border-top: 1px solid color-mix(in oklch, var(--line-divider) 58%, transparent);
+    padding-top: 0.5rem;
+  }
+  .archive-year-toggle {
+    min-height: 3.75rem;
+  }
+  .archive-post {
+    height: 3.5rem !important;
+    border-radius: 0.8rem !important;
+  }
+  .archive-post:hover {
+    background: color-mix(in oklch, var(--primary) 7%, transparent);
   }
   .archive-arrow {
     display: inline-flex;
   }
+  archive-panel [hidden] {
+    display: none !important;
+  }
+  .archive-search input::placeholder {
+    color: var(--content-meta);
+  }
+  .archive-search:focus-within,
+  .archive-year-filter:focus-within {
+    background: var(--btn-regular-bg-hover);
+  }
+  .archive-search:focus-within {
+    background: transparent;
+    border-color: color-mix(in oklch, var(--primary) 44%, var(--line-divider));
+    box-shadow: 0 0 0 0.18rem color-mix(in oklch, var(--primary) 10%, transparent);
+  }
+  @media (max-width: 767px) {
+    archive-panel {
+      padding-inline: 1rem !important;
+    }
+    .archive-result-summary > span:last-child {
+      display: none;
+    }
+  }
 </style>
 
-<script is:inline define:vars={{ i18nStrings, tagsBaseUrl, categoriesBaseUrl }}>
+<script is:inline define:vars={{ i18nStrings, tagsBaseUrl, categoriesBaseUrl, searchBaseUrl }}>
   class ArchivePanel extends HTMLElement {
     constructor() {
       super();
@@ -178,16 +270,119 @@ const foldOnFilter = collapseAllButFirst;
       const tags = params.has("tag") ? params.getAll("tag") : [];
       const categories = params.has("category") ? params.getAll("category") : [];
       const uncategorized = params.get("uncategorized");
+	  this.tags = tags;
+	  this.categories = categories;
+	  this.uncategorized = !!uncategorized;
 
       const hasFilter = tags.length > 0 || categories.length > 0 || !!uncategorized;
+	  this.bindArchiveTools(params);
 
-      if (hasFilter) {
-        this.applyFilter(tags, categories, !!uncategorized);
+      this.applyFilter(tags, categories, !!uncategorized);
+
+	  if (hasFilter) {
         this.updateBannerTitle(tags, categories, !!uncategorized);
       }
 
       this.bindYearToggles();
     }
+
+	bindArchiveTools(params) {
+	  this.searchInput = this.querySelector("[data-archive-search]");
+	  this.yearSelect = this.querySelector("[data-archive-year]");
+	  this.resetButton = this.querySelector("[data-archive-reset]");
+	  if (this.searchInput) this.searchInput.value = params.get("q") || "";
+	  if (this.yearSelect) {
+		const requestedYear = params.get("year") || "all";
+		const exists = Array.from(this.yearSelect.options).some((option) => option.value === requestedYear);
+		this.yearSelect.value = exists ? requestedYear : "all";
+	  }
+
+	  const refresh = () => {
+		this.applyFilter(this.tags, this.categories, this.uncategorized);
+		this.updateToolUrl();
+	  };
+	  this.searchInput?.addEventListener("input", refresh);
+	  this.searchInput?.addEventListener("keydown", (event) => {
+		if (event.key !== "Enter") return;
+		const query = this.searchInput?.value.trim() || "";
+		if (!query) return;
+		event.preventDefault();
+		const target = new URL(searchBaseUrl, window.location.origin);
+		target.searchParams.set("q", query);
+		if (window.swup?.navigate) window.swup.navigate(target.href);
+		else window.location.assign(target.href);
+	  });
+	  this.yearSelect?.addEventListener("change", refresh);
+	  this.resetButton?.addEventListener("click", () => {
+		if (this.searchInput) this.searchInput.value = "";
+		if (this.yearSelect) this.yearSelect.value = "all";
+		refresh();
+		this.searchInput?.focus();
+	  });
+	}
+
+	updateToolUrl() {
+	  const current = new URL(window.location.href);
+	  const query = this.searchInput?.value.trim() || "";
+	  const year = this.yearSelect?.value || "all";
+	  if (query) current.searchParams.set("q", query);
+	  else current.searchParams.delete("q");
+	  if (year !== "all") current.searchParams.set("year", year);
+	  else current.searchParams.delete("year");
+	  history.replaceState(history.state, "", current);
+	}
+
+	normalizeSearchValue(value) {
+	  return String(value || "")
+		.normalize("NFKD")
+		.replace(/\p{Diacritic}/gu, "")
+		.toLocaleLowerCase()
+		.replace(/\s+/g, " ")
+		.trim();
+	}
+
+	editDistanceWithin(left, right, limit) {
+	  if (Math.abs(left.length - right.length) > limit) return false;
+	  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+	  for (let row = 1; row <= left.length; row++) {
+		const current = [row];
+		let rowMinimum = current[0];
+		for (let column = 1; column <= right.length; column++) {
+		  const substitution =
+			previous[column - 1] +
+			(left[row - 1] === right[column - 1] ? 0 : 1);
+		  current[column] = Math.min(
+			previous[column] + 1,
+			current[column - 1] + 1,
+			substitution,
+		  );
+		  rowMinimum = Math.min(rowMinimum, current[column]);
+		}
+		if (rowMinimum > limit) return false;
+		previous = current;
+	  }
+	  return previous[right.length] <= limit;
+	}
+
+	matchesArchiveQuery(searchValue, rawQuery) {
+	  const query = this.normalizeSearchValue(rawQuery);
+	  if (!query) return true;
+	  const haystack = this.normalizeSearchValue(searchValue);
+	  if (haystack.includes(query)) return true;
+
+	  const words = haystack.split(" ").filter(Boolean);
+	  return query.split(" ").filter(Boolean).every((token) => {
+		if (haystack.includes(token)) return true;
+		const limit =
+		  token.length >= 4
+			? Math.max(1, Math.floor(token.length * 0.35))
+			: 0;
+		return (
+		  limit > 0 &&
+		  words.some((word) => this.editDistanceWithin(token, word, limit))
+		);
+	  });
+	}
 
     // 按筛选条件隐藏不匹配的文章行，重算每年计数，隐藏空年份，重新折叠
     applyFilter(tags, categories, uncategorized) {
@@ -195,6 +390,8 @@ const foldOnFilter = collapseAllButFirst;
       const blocks = Array.from(this.querySelectorAll(".archive-year-block"));
       let totalVisible = 0;
       const visibleBlocks = [];
+	  const query = this.searchInput?.value.toLocaleLowerCase().trim() || "";
+	  const selectedYear = this.yearSelect?.value || "all";
 
       for (const block of blocks) {
         const rows = Array.from(block.querySelectorAll(".archive-post"));
@@ -219,6 +416,14 @@ const foldOnFilter = collapseAllButFirst;
           if (uncategorized) {
             match = match && !rowCategory;
           }
+		  if (selectedYear !== "all") {
+			match = match && block.dataset.year === selectedYear;
+		  }
+		  if (query) {
+			match =
+			  match &&
+			  this.matchesArchiveQuery(row.dataset.search || "", query);
+		  }
 
           row.hidden = !match;
           if (match) visibleCount++;
@@ -241,14 +446,23 @@ const foldOnFilter = collapseAllButFirst;
         }
       }
 
-      // 重新应用折叠：首个可见年份展开，其余折叠
+      // 搜索时保持匹配年份展开，避免每次输入都折叠/展开整块内容造成布局抖动。
+      // 清除搜索后再恢复原本的“首个年份展开、其余折叠”布局。
+      const shouldAutoCollapse = foldOnFilter && !query;
       visibleBlocks.forEach((block, index) => {
-        const shouldCollapse = foldOnFilter && index > 0;
+        const shouldCollapse = shouldAutoCollapse && index > 0;
         this.setBlockCollapsed(block, shouldCollapse);
       });
 
       // 填充并显示筛选头部
       this.renderFilterHeader(tags, categories, uncategorized, totalVisible);
+	  const resultCount = this.querySelector("[data-archive-result-count]");
+	  if (resultCount) resultCount.textContent = `共 ${totalVisible} 篇文章`;
+	  const empty = this.querySelector("[data-archive-empty]");
+	  if (empty) empty.hidden = totalVisible > 0;
+	  if (this.resetButton) {
+		this.resetButton.hidden = !query && selectedYear === "all";
+	  }
     }
 
     setBlockCollapsed(block, collapsed) {

@@ -29,7 +29,7 @@ try {
 	const pkg = JSON.parse(
 		readFileSync(new URL("../../../package.json", import.meta.url), "utf-8"),
 	);
-	blogVersion = pkg.version || "Firefly unknown";
+	blogVersion = pkg.version || "unknown";
 } catch {}
 
 // Astro 版本（从已安装的 astro 包读取）
@@ -101,7 +101,7 @@ const mainItems = [
 	{
 		icon: "mdi:clover",
 		label: i18n(I18nKey.siteInfoBlogVersion),
-		value: `Firefly v${blogVersion}`,
+		value: `主题 v${blogVersion}`,
 		href: "https://github.com/CuteLeaf/Firefly",
 	},
 	{
@@ -127,7 +127,7 @@ const detailItems: {
 	},
 	{
 		icon: "mdi:clover",
-		label: "Firefly",
+		label: "主题版本",
 		value: `v${blogVersion}`,
 	},
 	{

@@ -31,6 +31,7 @@ const localPlaylist =
 const managerConfigStr = JSON.stringify({
 	mode: config.mode,
 	meting: config.meting,
+	neteaseSync: config.neteaseSync,
 	localPlaylist: localPlaylist,
 	volume: config.volume ?? 0.7,
 	playMode: config.playMode ?? "list",
@@ -129,8 +130,8 @@ const managerConfigStr = JSON.stringify({
     }
 
     // ── Meting fetch ─────────────────────────────────────────
-    async function fetchMetingData() {
-        if (!config.meting) return;
+    async function fetchMetingResource(resourceType, resourceId) {
+        if (!config.meting) return [];
         var m = config.meting;
         var apis = [m.api].concat(m.fallbackApis || []);
 
@@ -140,8 +141,8 @@ const managerConfigStr = JSON.stringify({
             try {
                 var fetchUrl = baseApi
                     .replace(':server', m.server)
-                    .replace(':type', m.type)
-                    .replace(':id', m.id)
+                    .replace(':type', resourceType || m.type)
+                    .replace(':id', encodeURIComponent(resourceId || m.id))
                     .replace(':r', Math.random());
                 if (m.auth) fetchUrl += '&auth=' + m.auth;
 
@@ -150,7 +151,7 @@ const managerConfigStr = JSON.stringify({
                 var data = await res.json();
 
                 if (Array.isArray(data) && data.length > 0) {
-                    state.playlist = data.map(function (item) {
+                    return data.map(function (item) {
                         return {
                             name: item.title || item.name || 'Unknown',
                             artist: item.author || item.artist || 'Unknown',
@@ -159,13 +160,98 @@ const managerConfigStr = JSON.stringify({
                             lrc: item.lrc
                         };
                     });
-                    return;
                 }
             } catch (e) {
                 console.warn('Meting API failed for ' + baseApi, e);
             }
         }
         throw new Error('All Meting APIs failed');
+    }
+
+    async function fetchMetingData(playlistId) {
+        state.playlist = await fetchMetingResource(
+            config.meting && config.meting.type,
+            playlistId || (config.meting && config.meting.id)
+        );
+    }
+
+    async function searchMetingTracks(keyword) {
+        var normalizedKeyword = String(keyword || '').trim();
+        if (!normalizedKeyword) throw new Error('请输入歌曲或歌手名称');
+        return fetchMetingResource('search', normalizedKeyword);
+    }
+
+    function replacePlaylist(tracks, startIndex, autoPlay) {
+        var normalizedTracks = Array.isArray(tracks)
+            ? tracks.filter(function (track) {
+                return track && track.name && track.url;
+            }).map(function (track) {
+                return {
+                    name: String(track.name),
+                    artist: String(track.artist || '未知歌手'),
+                    url: String(track.url),
+                    pic: track.pic ? String(track.pic) : '',
+                    lrc: track.lrc ? String(track.lrc) : ''
+                };
+            })
+            : [];
+        if (normalizedTracks.length === 0) throw new Error('没有可播放的歌曲');
+
+        audio.pause();
+        state.playlist = normalizedTracks;
+        state.currentIndex = Math.max(
+            0,
+            Math.min(Number(startIndex) || 0, normalizedTracks.length - 1)
+        );
+        state.isPlaying = false;
+        state.error = null;
+        state.initialized = true;
+        emit('fm:init', {
+            playlist: state.playlist,
+            playMode: state.playMode,
+            volume: state.volume,
+            isMuted: state.isMuted
+        });
+        loadTrack(state.currentIndex, autoPlay === true);
+        return { count: state.playlist.length };
+    }
+
+    async function syncMetingPlaylist(playlistId) {
+        var normalizedId = String(playlistId || '').trim();
+        if (!normalizedId || !/^\d+$/.test(normalizedId)) {
+            throw new Error('请输入正确的网易云歌单 ID');
+        }
+        if (config.mode !== 'meting' || !config.meting) {
+            throw new Error('当前播放器未启用 Meting 歌单模式');
+        }
+
+        emit('fm:sync-state', { status: 'loading', playlistId: normalizedId });
+        try {
+            audio.pause();
+            state.isPlaying = false;
+            state.error = null;
+            await fetchMetingData(normalizedId);
+            if (state.playlist.length === 0) throw new Error('歌单中没有可播放歌曲');
+
+            state.currentIndex = 0;
+            emit('fm:init', {
+                playlist: state.playlist,
+                playMode: state.playMode,
+                volume: state.volume,
+                isMuted: state.isMuted
+            });
+            loadTrack(0, false);
+            emit('fm:sync-state', {
+                status: 'success',
+                playlistId: normalizedId,
+                count: state.playlist.length
+            });
+            return { count: state.playlist.length };
+        } catch (error) {
+            var message = error instanceof Error ? error.message : config.i18n.error;
+            emit('fm:sync-state', { status: 'error', message: message });
+            throw error;
+        }
     }
 
     // ── Lyrics ───────────────────────────────────────────────
@@ -304,7 +390,7 @@ const managerConfigStr = JSON.stringify({
     }
 
     function playTrackByIndex(index) {
-        if (index === state.currentIndex && !audio.paused) {
+        if (index === state.currentIndex) {
             togglePlay();
         } else {
             loadTrack(index, true);
@@ -439,7 +525,10 @@ const managerConfigStr = JSON.stringify({
         seek: seek,
         seekToTime: seekToTime,
         playTrackByIndex: playTrackByIndex,
-        loadTrack: loadTrack
+        loadTrack: loadTrack,
+        syncMetingPlaylist: syncMetingPlaylist,
+        searchMetingTracks: searchMetingTracks,
+        replacePlaylist: replacePlaylist
     };
 })();
 </script>

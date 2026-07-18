@@ -62,6 +62,27 @@ declare global {
 			seekToTime: (time: number) => void;
 			playTrackByIndex: (index: number) => void;
 			loadTrack: (index: number, autoPlay: boolean) => void;
+			syncMetingPlaylist: (playlistId: string) => Promise<{ count: number }>;
+			searchMetingTracks: (keyword: string) => Promise<
+				Array<{
+					name: string;
+					artist: string;
+					url: string;
+					pic: string;
+					lrc?: string;
+				}>
+			>;
+			replacePlaylist: (
+				tracks: Array<{
+					name: string;
+					artist: string;
+					url: string;
+					pic?: string;
+					lrc?: string;
+				}>,
+				startIndex?: number,
+				autoPlay?: boolean,
+			) => { count: number };
 		};
 	}
 

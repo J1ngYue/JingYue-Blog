@@ -1,6 +1,7 @@
 ---
 import { getEntry, render } from "astro:content";
 import Comment from "@components/comment/index.astro";
+import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
 import Markdown from "@components/common/Markdown.astro";
 import { Icon } from "astro-icon/components";
 import {
@@ -42,7 +43,8 @@ const description =
 	friendsPageConfig.description || i18n(I18nKey.friendsDescription);
 ---
 
-<MainGridLayout title={title} description={description}>
+<MainGridLayout title={title} bannerTitle="社交" description={description}>
+  <FeatureHubHeader section="social" active="friends" />
   <div
     class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32"
   >

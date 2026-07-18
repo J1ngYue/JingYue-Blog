@@ -1,9 +1,5 @@
 <script lang="ts">
-import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
 import { onMount } from "svelte";
-import DropdownItem from "@/components/common/DropdownItem.svelte";
-import DropdownPanel from "@/components/common/DropdownPanel.svelte";
 import Icon from "@/components/common/Icon.svelte";
 import { DARK_MODE, LIGHT_MODE, SYSTEM_MODE } from "@/constants/constants";
 import type { LIGHT_DARK_MODE } from "@/types/config.ts";
@@ -64,13 +60,11 @@ onMount(() => {
 	}
 
 	// 如果是system模式，监听系统主题变化
-	if (storedTheme === SYSTEM_MODE) {
-		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-		const handleSystemChange = () => {
-			updateDisplayedMode();
-		};
-		mediaQuery.addEventListener("change", handleSystemChange);
-	}
+	const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+	const handleSystemChange = () => {
+		if (mode === SYSTEM_MODE) updateDisplayedMode();
+	};
+	mediaQuery.addEventListener("change", handleSystemChange);
 
 	// 添加Swup监听
 	const handleContentReplace = () => {
@@ -110,49 +104,97 @@ onMount(() => {
 
 	// 清理函数
 	return () => {
+		mediaQuery.removeEventListener("change", handleSystemChange);
 		window.removeEventListener("theme-change", handleThemeChange);
 	};
 });
 </script>
 
-<div class="relative z-50">
-    <button aria-label="Light/Dark Mode" aria-haspopup="menu" class="relative btn-plain scale-animation rounded-lg h-9 w-9 md:h-11 md:w-11 active:scale-90" id="scheme-switch">
-        <div class="absolute inset-0 flex items-center justify-center" class:opacity-0={displayedMode !== LIGHT_MODE}>
-            <Icon icon="material-symbols:wb-sunny-outline-rounded" class="text-[1.25rem]"></Icon>
-        </div>
-        <div class="absolute inset-0 flex items-center justify-center" class:opacity-0={displayedMode !== DARK_MODE}>
-            <Icon icon="material-symbols:dark-mode-outline-rounded" class="text-[1.25rem]"></Icon>
-        </div>
-    </button>
-    <div id="theme-mode-panel" class="absolute transition float-panel-closed top-11 -right-2 pt-5 z-50" role="menu" aria-labelledby="scheme-switch">
-        <DropdownPanel>
-            <DropdownItem
-                role="menuitem"
-                isActive={mode === LIGHT_MODE}
-                isLast={false}
-                onclick={() => switchScheme(LIGHT_MODE)}
-            >
-                <Icon icon="material-symbols:wb-sunny-outline-rounded" class="text-[1.25rem] mr-3"></Icon>
-                {i18n(I18nKey.lightMode)}
-            </DropdownItem>
-            <DropdownItem
-                role="menuitem"
-                isActive={mode === DARK_MODE}
-                isLast={false}
-                onclick={() => switchScheme(DARK_MODE)}
-            >
-                <Icon icon="material-symbols:dark-mode-outline-rounded" class="text-[1.25rem] mr-3"></Icon>
-                {i18n(I18nKey.darkMode)}
-            </DropdownItem>
-            <DropdownItem
-                role="menuitem"
-                isActive={mode === SYSTEM_MODE}
-                isLast={true}
-                onclick={() => switchScheme(SYSTEM_MODE)}
-            >
-                <Icon icon="material-symbols:brightness-auto-outline-rounded" class="text-[1.25rem] mr-3"></Icon>
-                {i18n(I18nKey.systemMode)}
-            </DropdownItem>
-        </DropdownPanel>
-    </div>
+<div
+	id="scheme-switch"
+	class="theme-segmented"
+	role="group"
+	aria-label="颜色模式"
+>
+	<button
+		type="button"
+		class:active={displayedMode === LIGHT_MODE}
+		aria-label="切换为浅色模式"
+		aria-pressed={displayedMode === LIGHT_MODE}
+		title="浅色模式"
+		onclick={() => switchScheme(LIGHT_MODE)}
+	>
+		<Icon icon="material-symbols:wb-sunny-outline-rounded" class="text-[1.2rem]"></Icon>
+	</button>
+	<button
+		type="button"
+		class:active={displayedMode === DARK_MODE}
+		aria-label="切换为深色模式"
+		aria-pressed={displayedMode === DARK_MODE}
+		title="深色模式"
+		onclick={() => switchScheme(DARK_MODE)}
+	>
+		<Icon icon="material-symbols:dark-mode-outline-rounded" class="text-[1.2rem]"></Icon>
+	</button>
 </div>
+
+<style>
+	.theme-segmented {
+		display: inline-flex;
+		align-self: center;
+		align-items: center;
+		gap: 0.125rem;
+		margin-inline: 0.125rem;
+		padding: 0.18rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 18%, transparent);
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--card-bg) 72%, transparent);
+		box-shadow: inset 0 1px 0 rgb(255 255 255 / 32%);
+		backdrop-filter: blur(0.65rem);
+	}
+
+	.theme-segmented button {
+		display: grid;
+		width: 2rem;
+		height: 2rem;
+		place-items: center;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: var(--btn-content);
+		cursor: pointer;
+		opacity: 0.58;
+		transition: background-color 180ms ease, color 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+	}
+
+	.theme-segmented button:hover,
+	.theme-segmented button:focus-visible {
+		opacity: 1;
+		outline: none;
+		background: color-mix(in oklch, var(--primary) 10%, transparent);
+	}
+
+	.theme-segmented button:focus-visible {
+		box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 42%, transparent);
+	}
+
+	.theme-segmented button.active {
+		background: var(--primary);
+		color: white;
+		opacity: 1;
+		box-shadow: 0 0.25rem 0.75rem color-mix(in oklch, var(--primary) 28%, transparent);
+	}
+
+	@media (max-width: 767px) {
+		.theme-segmented button {
+			width: 1.8rem;
+			height: 1.8rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.theme-segmented button {
+			transition: none;
+		}
+	}
+</style>

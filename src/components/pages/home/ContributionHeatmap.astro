@@ -1,0 +1,690 @@
+---
+import { Icon } from "astro-icon/components";
+import type { ActivityCalendar, ActivityDay } from "@/utils/home-activity";
+
+interface Props {
+	blog: ActivityCalendar;
+	github: ActivityCalendar;
+	githubUsername: string;
+}
+
+interface MonthMarker {
+	column: number;
+	label: string;
+	span: number;
+}
+
+const { blog, github, githubUsername } = Astro.props;
+
+const datasets = [
+	{
+		id: "blog",
+		label: "博客活动",
+		noun: "次创作",
+		calendar: blog,
+	},
+	{
+		id: "github",
+		label: "GitHub",
+		noun: "次贡献",
+		calendar: github,
+	},
+];
+
+function chunkWeeks(days: ActivityDay[]): ActivityDay[][] {
+	return Array.from({ length: 53 }, (_, index) =>
+		days.slice(index * 7, index * 7 + 7),
+	);
+}
+
+function getMonthMarkers(days: ActivityDay[]): MonthMarker[] {
+	const weeks = chunkWeeks(days);
+	const starts = weeks
+		.map((week, index) => {
+			const date = new Date(`${week[0]?.date}T00:00:00Z`);
+			return {
+				column: index + 1,
+				month: date.getUTCMonth(),
+				label: `${date.getUTCMonth() + 1}月`,
+			};
+		})
+		.filter((marker, index, markers) =>
+			index === 0 ? true : marker.month !== markers[index - 1]?.month,
+		);
+
+	return starts.map((marker, index) => ({
+		column: marker.column,
+		label: marker.label,
+		span: (starts[index + 1]?.column ?? 54) - marker.column,
+	}));
+}
+
+function formatCellLabel(day: ActivityDay, noun: string): string {
+	const date = new Date(`${day.date}T00:00:00Z`);
+	const dateText = new Intl.DateTimeFormat("zh-CN", {
+		timeZone: "UTC",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	}).format(date);
+	return `${dateText}，${day.count} ${noun}`;
+}
+---
+
+<section class="activity-shell" aria-labelledby="activity-title" data-activity-heatmap>
+	<div class="activity-heading">
+		<div>
+			<p class="activity-eyebrow">ACTIVITY</p>
+			<h2 id="activity-title">创作足迹</h2>
+			<p class="activity-copy">把文字、动态与代码留下的痕迹，收进同一片微光里。</p>
+		</div>
+		<a
+			class="activity-github-link"
+			href={`https://github.com/${githubUsername}`}
+			target="_blank"
+			rel="noopener noreferrer"
+		>
+			<Icon is:inline name="fa7-brands:github" />
+			<span>@{githubUsername}</span>
+		</a>
+	</div>
+
+	<div class="activity-tabs" role="tablist" aria-label="活动数据来源">
+		{datasets.map((dataset, index) => (
+			<button
+				type="button"
+				id={`activity-tab-${dataset.id}`}
+				class="activity-tab"
+				class:list={[index === 0 && "is-active"]}
+				role="tab"
+				aria-selected={index === 0 ? "true" : "false"}
+				aria-controls={`activity-panel-${dataset.id}`}
+				tabindex={index === 0 ? 0 : -1}
+				data-activity-tab={dataset.id}
+			>
+				{dataset.label}
+			</button>
+		))}
+	</div>
+
+	{datasets.map((dataset, datasetIndex) => {
+		const weeks = chunkWeeks(dataset.calendar.days);
+		const monthMarkers = getMonthMarkers(dataset.calendar.days);
+		return (
+			<div
+				id={`activity-panel-${dataset.id}`}
+				class="activity-panel"
+				role="tabpanel"
+				aria-labelledby={`activity-tab-${dataset.id}`}
+				data-activity-panel={dataset.id}
+				hidden={datasetIndex !== 0}
+			>
+				{dataset.calendar.available ? (
+					<>
+						<p class="activity-summary">
+							过去一年共 <strong>{dataset.calendar.total}</strong> {dataset.noun}
+						</p>
+
+						<div
+							class="activity-scroll"
+							role="region"
+							aria-label={`${dataset.label}年度热力图，可横向滚动`}
+							tabindex="0"
+						>
+							<div class="activity-chart">
+								<div class="activity-month-spacer" aria-hidden="true"></div>
+								<div class="activity-months" aria-hidden="true">
+									{monthMarkers.map((marker) => (
+										<span
+											style={`grid-column: ${marker.column} / span ${marker.span}`}
+										>
+											{marker.label}
+										</span>
+									))}
+								</div>
+
+								<div class="activity-weekdays" aria-hidden="true">
+									<span style="grid-row: 2">周一</span>
+									<span style="grid-row: 4">周三</span>
+									<span style="grid-row: 6">周五</span>
+								</div>
+
+								<div
+									class="activity-weeks"
+									role="grid"
+									aria-label={`${dataset.label}过去一年每日记录`}
+									data-activity-grid
+								>
+									{weeks.map((week, weekIndex) => (
+										<div class="activity-week" role="row">
+											{week.map((day, dayIndex) => {
+												const label = formatCellLabel(day, dataset.noun);
+												const cellIndex = weekIndex * 7 + dayIndex;
+												return (
+													<button
+														type="button"
+														class={`activity-cell level-${day.level}`}
+														class:list={[day.isOutsideRange && "is-outside"]}
+														role="gridcell"
+														aria-label={label}
+														title={label}
+														tabindex={cellIndex === 0 ? 0 : -1}
+														data-cell-index={cellIndex}
+														data-tooltip={label}
+														disabled={day.isOutsideRange}
+													></button>
+												);
+											})}
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+
+						<div class="activity-legend" aria-label="活跃程度图例">
+							<span>更少</span>
+							{[0, 1, 2, 3, 4].map((level) => (
+								<i class={`activity-cell level-${level}`} aria-hidden="true"></i>
+							))}
+							<span>更多</span>
+						</div>
+					</>
+				) : (
+					<div class="activity-empty">
+						<Icon is:inline name="fa7-brands:github" />
+						<div>
+							<h3>GitHub 活跃记录暂未载入</h3>
+							<p>配置构建环境变量 GITHUB_TOKEN 后，这里会自动显示公开贡献。</p>
+						</div>
+						<a
+							href={`https://github.com/${githubUsername}`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							前往 GitHub
+						</a>
+					</div>
+				)}
+			</div>
+		);
+	})}
+
+	<div class="activity-tooltip" role="tooltip" hidden></div>
+</section>
+
+<script is:inline data-swup-ignore-script>
+	function initActivityHeatmaps() {
+		document
+			.querySelectorAll("[data-activity-heatmap]:not([data-activity-ready])")
+			.forEach((root) => {
+				root.setAttribute("data-activity-ready", "true");
+				const tabs = Array.from(root.querySelectorAll("[data-activity-tab]"));
+				const panels = Array.from(root.querySelectorAll("[data-activity-panel]"));
+				const tooltip = root.querySelector(".activity-tooltip");
+
+				const hideTooltip = () => {
+					if (tooltip) tooltip.hidden = true;
+				};
+
+				const showTooltip = (cell) => {
+					if (!tooltip || !cell?.dataset.tooltip) return;
+					tooltip.textContent = cell.dataset.tooltip;
+					tooltip.hidden = false;
+					const cellRect = cell.getBoundingClientRect();
+					const tooltipRect = tooltip.getBoundingClientRect();
+					const left = Math.min(
+						window.innerWidth - tooltipRect.width - 10,
+						Math.max(10, cellRect.left + cellRect.width / 2 - tooltipRect.width / 2),
+					);
+					const top = Math.max(10, cellRect.top - tooltipRect.height - 8);
+					tooltip.style.left = `${left}px`;
+					tooltip.style.top = `${top}px`;
+				};
+
+				const activateTab = (id, focus = false) => {
+					hideTooltip();
+					tabs.forEach((tab) => {
+						const active = tab.dataset.activityTab === id;
+						tab.classList.toggle("is-active", active);
+						tab.setAttribute("aria-selected", active ? "true" : "false");
+						tab.tabIndex = active ? 0 : -1;
+						if (active && focus) tab.focus();
+					});
+					panels.forEach((panel) => {
+						panel.hidden = panel.dataset.activityPanel !== id;
+					});
+				};
+
+				tabs.forEach((tab, index) => {
+					tab.addEventListener("click", () => activateTab(tab.dataset.activityTab));
+					tab.addEventListener("keydown", (event) => {
+						if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+						event.preventDefault();
+						const offset = event.key === "ArrowRight" ? 1 : -1;
+						const nextIndex = (index + offset + tabs.length) % tabs.length;
+						activateTab(tabs[nextIndex].dataset.activityTab, true);
+					});
+				});
+
+				root.querySelectorAll("[data-activity-grid]").forEach((grid) => {
+					const cells = Array.from(grid.querySelectorAll(".activity-cell:not(:disabled)"));
+					const byIndex = new Map(
+						cells.map((cell) => [Number(cell.dataset.cellIndex), cell]),
+					);
+					if (cells[0]) cells[0].tabIndex = 0;
+
+					cells.forEach((cell) => {
+						cell.addEventListener("mouseenter", () => showTooltip(cell));
+						cell.addEventListener("mouseleave", hideTooltip);
+						cell.addEventListener("focus", () => showTooltip(cell));
+						cell.addEventListener("blur", hideTooltip);
+						cell.addEventListener("keydown", (event) => {
+							const currentIndex = Number(cell.dataset.cellIndex);
+							const offsets = {
+								ArrowUp: -1,
+								ArrowDown: 1,
+								ArrowLeft: -7,
+								ArrowRight: 7,
+							};
+							let target;
+							if (event.key === "Home") target = cells[0];
+							if (event.key === "End") target = cells[cells.length - 1];
+							if (offsets[event.key]) target = byIndex.get(currentIndex + offsets[event.key]);
+							if (!target) return;
+							event.preventDefault();
+							cells.forEach((item) => (item.tabIndex = -1));
+							target.tabIndex = 0;
+							target.focus();
+						});
+					});
+				});
+			});
+	}
+
+	initActivityHeatmaps();
+	if (!window.__fireflyActivityHeatmapBound) {
+		window.__fireflyActivityHeatmapBound = true;
+		document.addEventListener("swup:contentReplaced", initActivityHeatmaps);
+		document.addEventListener("astro:page-load", initActivityHeatmaps);
+	}
+
+	function bindActivityHeatmapSwup() {
+		if (window.__fireflyActivityHeatmapSwupBound || !window.swup?.hooks) return;
+		window.__fireflyActivityHeatmapSwupBound = true;
+		window.swup.hooks.on("content:replace", initActivityHeatmaps);
+	}
+
+	if (window.swup?.hooks) {
+		bindActivityHeatmapSwup();
+	} else {
+		document.addEventListener("swup:enable", bindActivityHeatmapSwup, {
+			once: true,
+		});
+	}
+</script>
+
+<style>
+	.activity-shell {
+		--activity-cell-size: 0.82rem;
+		--activity-gap: 0.2rem;
+		--activity-empty: color-mix(in oklch, var(--deep-text) 8%, transparent);
+		position: relative;
+		overflow: hidden;
+		border: 1px solid color-mix(in oklch, var(--deep-text) 12%, transparent);
+		border-radius: 1.75rem;
+		background: color-mix(in oklch, var(--card-bg) 90%, transparent);
+		box-shadow: 0 1.4rem 4rem color-mix(in oklch, var(--deep-text) 10%, transparent);
+		padding: clamp(1.15rem, 3vw, 2.4rem);
+		backdrop-filter: blur(1.1rem);
+	}
+
+	.activity-shell::before {
+		content: "";
+		position: absolute;
+		inset: 0 0 auto;
+		height: 0.2rem;
+		background: linear-gradient(90deg, transparent, var(--primary), transparent);
+		opacity: 0.7;
+	}
+
+	.activity-heading {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1.5rem;
+	}
+
+	.activity-eyebrow {
+		margin: 0 0 0.45rem;
+		color: var(--primary);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.24em;
+	}
+
+	h2 {
+		margin: 0;
+		color: var(--deep-text);
+		font-size: clamp(1.8rem, 4vw, 2.8rem);
+		line-height: 1.1;
+	}
+
+	.activity-copy {
+		margin: 0.75rem 0 0;
+		color: color-mix(in oklch, var(--deep-text) 72%, transparent);
+		line-height: 1.7;
+	}
+
+	.activity-github-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		border: 1px solid color-mix(in oklch, var(--deep-text) 14%, transparent);
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--page-bg) 72%, transparent);
+		padding: 0.65rem 0.9rem;
+		color: var(--deep-text);
+		font-size: 0.82rem;
+		font-weight: 700;
+		text-decoration: none;
+		transition: border-color 180ms ease, color 180ms ease, background-color 180ms ease;
+	}
+
+	.activity-github-link:hover,
+	.activity-github-link:focus-visible {
+		border-color: var(--primary);
+		background: color-mix(in oklch, var(--primary) 10%, var(--card-bg));
+		color: var(--primary);
+		outline: none;
+	}
+
+	.activity-github-link :global(svg) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.activity-tabs {
+		display: inline-flex;
+		gap: 0.25rem;
+		margin-top: 1.8rem;
+		border-radius: 0.9rem;
+		background: color-mix(in oklch, var(--deep-text) 6%, transparent);
+		padding: 0.25rem;
+	}
+
+	.activity-tab {
+		cursor: pointer;
+		border: 0;
+		border-radius: 0.7rem;
+		background: transparent;
+		padding: 0.58rem 0.9rem;
+		color: color-mix(in oklch, var(--deep-text) 70%, transparent);
+		font: inherit;
+		font-size: 0.84rem;
+		font-weight: 700;
+		transition: color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+	}
+
+	.activity-tab.is-active {
+		background: var(--card-bg);
+		box-shadow: 0 0.3rem 1rem color-mix(in oklch, var(--deep-text) 8%, transparent);
+		color: var(--primary);
+	}
+
+	.activity-tab:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: 2px;
+	}
+
+	.activity-panel[hidden] {
+		display: none !important;
+	}
+
+	.activity-summary {
+		margin: 1.35rem 0 0.85rem;
+		color: color-mix(in oklch, var(--deep-text) 72%, transparent);
+		font-size: 0.82rem;
+	}
+
+	.activity-summary strong {
+		color: var(--deep-text);
+	}
+
+	.activity-scroll {
+		max-width: 100%;
+		overflow-x: auto;
+		overflow-y: hidden;
+		border-radius: 0.75rem;
+		padding: 0.35rem 0 0.6rem;
+		scrollbar-color: color-mix(in oklch, var(--primary) 50%, transparent) transparent;
+		scrollbar-width: thin;
+	}
+
+	.activity-scroll:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: 4px;
+	}
+
+	.activity-chart {
+		display: grid;
+		grid-template-columns: 2.65rem max-content;
+		grid-template-rows: 1.35rem max-content;
+		width: max-content;
+		min-width: 100%;
+	}
+
+	.activity-months {
+		display: grid;
+		grid-template-columns: repeat(53, var(--activity-cell-size));
+		column-gap: var(--activity-gap);
+		color: color-mix(in oklch, var(--deep-text) 62%, transparent);
+		font-size: 0.68rem;
+		line-height: 1;
+	}
+
+	.activity-months span {
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.activity-weekdays {
+		display: grid;
+		grid-template-rows: repeat(7, var(--activity-cell-size));
+		row-gap: var(--activity-gap);
+		padding-right: 0.55rem;
+		color: color-mix(in oklch, var(--deep-text) 62%, transparent);
+		font-size: 0.66rem;
+		line-height: var(--activity-cell-size);
+		text-align: right;
+	}
+
+	.activity-weeks {
+		display: grid;
+		grid-template-columns: repeat(53, var(--activity-cell-size));
+		column-gap: var(--activity-gap);
+	}
+
+	.activity-week {
+		display: grid;
+		grid-template-rows: repeat(7, var(--activity-cell-size));
+		row-gap: var(--activity-gap);
+	}
+
+	.activity-cell {
+		box-sizing: border-box;
+		width: var(--activity-cell-size);
+		height: var(--activity-cell-size);
+		border: 1px solid color-mix(in oklch, var(--deep-text) 6%, transparent);
+		border-radius: 0.2rem;
+		background: var(--activity-empty);
+		padding: 0;
+	}
+
+	button.activity-cell:not(:disabled) {
+		cursor: help;
+		transition: border-color 150ms ease, filter 150ms ease;
+	}
+
+	button.activity-cell:not(:disabled):hover,
+	button.activity-cell:not(:disabled):focus-visible {
+		border-color: color-mix(in oklch, var(--deep-text) 55%, transparent);
+		filter: brightness(1.08);
+		outline: 2px solid var(--card-bg);
+		outline-offset: -3px;
+	}
+
+	.activity-cell.level-1 {
+		background: color-mix(in oklch, var(--primary) 34%, var(--activity-empty));
+	}
+
+	.activity-cell.level-2 {
+		background: color-mix(in oklch, var(--primary) 56%, var(--activity-empty));
+	}
+
+	.activity-cell.level-3 {
+		background: color-mix(in oklch, var(--primary) 78%, var(--activity-empty));
+	}
+
+	.activity-cell.level-4 {
+		background: var(--primary);
+		box-shadow: 0 0 0.45rem color-mix(in oklch, var(--primary) 34%, transparent);
+	}
+
+	.activity-cell.is-outside {
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+	}
+
+	.activity-legend {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.32rem;
+		margin-top: 0.8rem;
+		color: color-mix(in oklch, var(--deep-text) 62%, transparent);
+		font-size: 0.7rem;
+	}
+
+	.activity-legend .activity-cell {
+		display: inline-block;
+		width: 0.72rem;
+		height: 0.72rem;
+	}
+
+	.activity-empty {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: 1rem;
+		margin-top: 1.35rem;
+		border: 1px dashed color-mix(in oklch, var(--deep-text) 18%, transparent);
+		border-radius: 1rem;
+		background: color-mix(in oklch, var(--page-bg) 60%, transparent);
+		padding: 1.15rem;
+	}
+
+	.activity-empty > :global(svg) {
+		width: 1.8rem;
+		height: 1.8rem;
+		color: var(--primary);
+	}
+
+	.activity-empty h3,
+	.activity-empty p {
+		margin: 0;
+	}
+
+	.activity-empty h3 {
+		color: var(--deep-text);
+		font-size: 0.95rem;
+	}
+
+	.activity-empty p {
+		margin-top: 0.25rem;
+		color: color-mix(in oklch, var(--deep-text) 68%, transparent);
+		font-size: 0.78rem;
+		line-height: 1.5;
+	}
+
+	.activity-empty a {
+		border-radius: 999px;
+		background: var(--primary);
+		padding: 0.6rem 0.8rem;
+		color: white;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.activity-empty a:focus-visible {
+		outline: 2px solid var(--deep-text);
+		outline-offset: 3px;
+	}
+
+	.activity-tooltip {
+		position: fixed;
+		z-index: 9999;
+		max-width: min(18rem, calc(100vw - 1.25rem));
+		border: 1px solid color-mix(in oklch, white 12%, transparent);
+		border-radius: 0.55rem;
+		background: color-mix(in oklch, var(--deep-text) 92%, black);
+		box-shadow: 0 0.6rem 1.6rem rgba(0, 0, 0, 0.2);
+		padding: 0.42rem 0.6rem;
+		color: white;
+		font-size: 0.72rem;
+		line-height: 1.35;
+		pointer-events: none;
+	}
+
+	.activity-tooltip[hidden] {
+		display: none;
+	}
+
+	@media (max-width: 640px) {
+		.activity-shell {
+			--activity-cell-size: 0.68rem;
+			--activity-gap: 0.18rem;
+			border-radius: 1.25rem;
+		}
+
+		.activity-heading {
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.activity-copy {
+			font-size: 0.86rem;
+		}
+
+		.activity-tabs {
+			display: flex;
+			width: 100%;
+		}
+
+		.activity-tab {
+			flex: 1;
+		}
+
+		.activity-chart {
+			grid-template-columns: 2.35rem max-content;
+		}
+
+		.activity-empty {
+			grid-template-columns: auto 1fr;
+		}
+
+		.activity-empty a {
+			grid-column: 1 / -1;
+			justify-self: start;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.activity-github-link,
+		.activity-tab,
+		button.activity-cell {
+			transition: none;
+		}
+	}
+</style>

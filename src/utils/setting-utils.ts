@@ -13,10 +13,16 @@ import type { LIGHT_DARK_MODE, WALLPAPER_MODE } from "@/types/config";
 import {
 	backgroundWallpaper,
 	expressiveCodeConfig,
+	rainConfig,
 	sakuraConfig,
+	snowConfig,
 	siteConfig,
 } from "../config";
 import { isHomePage as checkIsHomePage } from "./layout-utils";
+import {
+	getLocalWallpaperBlur,
+	getLocalWallpaperOpacity,
+} from "./local-wallpaper";
 
 // Declare global functions
 declare global {
@@ -393,10 +399,50 @@ function ensureWallpaperState(mode: WALLPAPER_MODE) {
 	updateNavbarTransparency(mode);
 }
 
+function preserveImmersiveHomeLayout(): boolean {
+	if (typeof document === "undefined") return false;
+
+	const isHomeLanding =
+		document.body?.classList.contains("home-landing-active") ||
+		document
+			.getElementById("home-layout-carrier")
+			?.getAttribute("data-home-landing") === "true";
+
+	if (!isHomeLanding) return false;
+
+	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
+	if (wallpaperWrapper) {
+		wallpaperWrapper.style.setProperty("display", "none", "important");
+		wallpaperWrapper.classList.add("hidden", "opacity-0");
+		wallpaperWrapper.classList.remove("opacity-100");
+	}
+
+	const bannerTextOverlay = document.querySelector(
+		".banner-home-text-overlay",
+	) as HTMLElement | null;
+	bannerTextOverlay?.classList.add("hidden");
+
+	const mainContent = document.querySelector(
+		".w-full.z-30.pointer-events-none",
+	) as HTMLElement | null;
+	if (mainContent) {
+		mainContent.classList.remove("mobile-main-no-banner");
+		mainContent.classList.add("no-banner-layout");
+		mainContent.style.position = "relative";
+		mainContent.style.zIndex = "30";
+		mainContent.style.setProperty("top", "0", "important");
+		mainContent.style.setProperty("margin-top", "0", "important");
+		mainContent.style.visibility = "visible";
+	}
+
+	return true;
+}
+
 function showBannerMode(animate = false) {
 	// 显示 wallpaper-wrapper 并切换为 banner 模式
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
-	if (wallpaperWrapper) {
+	const immersiveHomeLanding = preserveImmersiveHomeLayout();
+	if (wallpaperWrapper && !immersiveHomeLanding) {
 		// 移除 overlay 和全屏壁纸模式类
 		wallpaperWrapper.classList.remove("wallpaper-overlay");
 		wallpaperWrapper.classList.remove("wallpaper-fullscreen");
@@ -437,7 +483,7 @@ function showBannerMode(animate = false) {
 		const isHomePage = checkIsHomePage(window.location.pathname);
 
 		// 只有在启用且在首页时才显示
-		if (homeTextEnabled && isHomePage) {
+		if (homeTextEnabled && isHomePage && !immersiveHomeLanding) {
 			bannerTextOverlay.classList.remove("hidden");
 		} else {
 			bannerTextOverlay.classList.add("hidden");
@@ -491,7 +537,8 @@ function showFullscreenMode(animate = false) {
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
 	const isMobile = window.innerWidth < 1024;
 	const isHomePage = checkIsHomePage(window.location.pathname);
-	if (wallpaperWrapper) {
+	const immersiveHomeLanding = preserveImmersiveHomeLayout();
+	if (wallpaperWrapper && !immersiveHomeLanding) {
 		// 移除 overlay 模式类
 		wallpaperWrapper.classList.remove("wallpaper-overlay");
 		// 添加全屏壁纸模式类
@@ -521,7 +568,7 @@ function showFullscreenMode(animate = false) {
 	) as HTMLElement | null;
 	if (bannerTextOverlay) {
 		const homeTextEnabled = backgroundWallpaper.common?.homeText?.enable;
-		if (homeTextEnabled && isHomePage) {
+		if (homeTextEnabled && isHomePage && !immersiveHomeLanding) {
 			bannerTextOverlay.classList.remove("hidden");
 			if (animate) {
 				// 横幅文字跟随下移：wrapper已瞬间变为100vh，文字flex居中在50vh
@@ -564,7 +611,8 @@ function showFullscreenMode(animate = false) {
 function showOverlayMode() {
 	// 切换 wallpaper-wrapper 为 overlay 模式
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
-	if (wallpaperWrapper) {
+	const immersiveHomeLanding = preserveImmersiveHomeLayout();
+	if (wallpaperWrapper && !immersiveHomeLanding) {
 		// 添加 overlay 模式类，移除全屏壁纸模式类
 		wallpaperWrapper.classList.remove("wallpaper-fullscreen");
 		wallpaperWrapper.classList.add("wallpaper-overlay");
@@ -695,6 +743,11 @@ function adjustMainContentPosition(
 	if (fullscreenAnimationTimeout) {
 		clearTimeout(fullscreenAnimationTimeout);
 		fullscreenAnimationTimeout = null;
+	}
+
+	if (preserveImmersiveHomeLayout()) {
+		document.body.classList.add("wallpaper-initialized");
+		return;
 	}
 
 	// 移除现有的位置类
@@ -880,10 +933,12 @@ export function getStoredWallpaperMode(): WALLPAPER_MODE {
 		return backgroundWallpaper.mode;
 	}
 
-	return (
-		(localStorage.getItem("wallpaperMode") as WALLPAPER_MODE) ||
-		backgroundWallpaper.mode
-	);
+	const storedMode = localStorage.getItem("wallpaperMode") as WALLPAPER_MODE | null;
+	if (storedMode === WALLPAPER_BANNER) {
+		localStorage.setItem("wallpaperMode", WALLPAPER_FULLSCREEN);
+		return WALLPAPER_FULLSCREEN;
+	}
+	return storedMode || backgroundWallpaper.mode;
 }
 
 // Overlay settings functions
@@ -1027,8 +1082,8 @@ export function setOverlayCardOpacity(cardOpacity: number): void {
 }
 
 export function applyStoredOverlaySettingsToDocument(): void {
-	applyOverlayOpacityToDocument(getStoredOverlayOpacity());
-	applyOverlayBlurToDocument(getStoredOverlayBlur());
+	applyOverlayOpacityToDocument(getLocalWallpaperOpacity());
+	applyOverlayBlurToDocument(getLocalWallpaperBlur());
 	applyOverlayCardOpacityToDocument(getStoredOverlayCardOpacity());
 }
 
@@ -1176,6 +1231,66 @@ export function setSakuraEnabled(enabled: boolean): void {
 	// 实时切换樱花特效
 	window.dispatchEvent(
 		new CustomEvent("sakuraToggle", { detail: { enabled } }),
+	);
+}
+
+// Rain effect functions
+export function getDefaultRainEnabled(): boolean {
+	return rainConfig?.enable ?? false;
+}
+
+export function getStoredRainEnabled(): boolean {
+	if (typeof localStorage === "undefined") {
+		return getDefaultRainEnabled();
+	}
+	const stored = localStorage.getItem("rainEnabled");
+	if (stored === null) {
+		return getDefaultRainEnabled();
+	}
+	return stored === "true";
+}
+
+export function setRainEnabled(enabled: boolean): void {
+	if (
+		typeof localStorage === "undefined" ||
+		typeof localStorage.setItem !== "function"
+	) {
+		return;
+	}
+	localStorage.setItem("rainEnabled", String(enabled));
+	document.documentElement.setAttribute("data-rain-enabled", String(enabled));
+	window.dispatchEvent(
+		new CustomEvent("rainToggle", { detail: { enabled } }),
+	);
+}
+
+// Snow effect functions
+export function getDefaultSnowEnabled(): boolean {
+	return snowConfig?.enable ?? false;
+}
+
+export function getStoredSnowEnabled(): boolean {
+	if (typeof localStorage === "undefined") {
+		return getDefaultSnowEnabled();
+	}
+	const stored = localStorage.getItem("snowEnabled");
+	if (stored === null) {
+		return getDefaultSnowEnabled();
+	}
+	return stored === "true";
+}
+
+export function setSnowEnabled(enabled: boolean): void {
+	if (
+		typeof localStorage === "undefined" ||
+		typeof localStorage.setItem !== "function"
+	) {
+		return;
+	}
+	localStorage.setItem("snowEnabled", String(enabled));
+	document.documentElement.setAttribute("data-snow-enabled", String(enabled));
+	window.dispatchEvent(
+		new CustomEvent("snowToggle", { detail: { enabled } }),
 	);
 }
 

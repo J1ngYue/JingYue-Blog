@@ -3,6 +3,7 @@
 	min-width: 0;
 	width: 100%;
 	max-width: 100%;
+	margin-inline: auto;
 }
 
 .dynamic-page-header {
@@ -11,6 +12,11 @@
 	gap: 1rem;
 	margin-bottom: 1rem;
 	padding: 1.5rem 2rem;
+	border: 1px solid color-mix(in oklch, var(--primary) 16%, var(--line-divider));
+	background:
+		radial-gradient(circle at 0% 0%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 38%),
+		var(--card-bg);
+	box-shadow: 0 1rem 2.5rem color-mix(in oklch, var(--deep-text) 7%, transparent);
 }
 
 .dynamic-page-heading {
@@ -73,6 +79,41 @@
 
 dynamic-feed {
 	display: block;
+}
+
+.dynamic-filter-status {
+	display: flex;
+	min-height: 2.25rem;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin: 0 0 0.75rem;
+	padding: 0 0.25rem;
+	color: var(--content-meta);
+	font-size: 0.78rem;
+}
+
+.dynamic-filter-status strong {
+	color: var(--primary);
+	font-weight: 600;
+}
+
+.dynamic-filter-status button {
+	border: 0;
+	border-radius: 999px;
+	background: color-mix(in oklch, var(--primary) 10%, transparent);
+	color: var(--primary);
+	padding: 0.42rem 0.75rem;
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 180ms ease;
+}
+
+.dynamic-filter-status button:hover,
+.dynamic-filter-status button:focus-visible {
+	background: color-mix(in oklch, var(--primary) 18%, transparent);
+	outline: none;
 }
 
 .dynamic-filter {
@@ -164,8 +205,26 @@ dynamic-feed {
 }
 
 .dynamic-feed {
+	position: relative;
 	display: grid;
 	gap: 0.875rem;
+}
+
+.dynamic-feed::before {
+	position: absolute;
+	top: 1.8rem;
+	bottom: 1.8rem;
+	left: 2.55rem;
+	width: 1px;
+	background: linear-gradient(
+		to bottom,
+		transparent,
+		color-mix(in oklch, var(--primary) 26%, transparent) 8%,
+		color-mix(in oklch, var(--primary) 26%, transparent) 92%,
+		transparent
+	);
+	content: "";
+	pointer-events: none;
 }
 
 .dynamic-entry {
@@ -176,6 +235,16 @@ dynamic-feed {
 	overflow: visible;
 	padding: 1.125rem;
 	scroll-margin-top: 5.5rem;
+	border: 1px solid color-mix(in oklch, var(--primary) 12%, var(--line-divider));
+	background: color-mix(in oklch, var(--card-bg) 94%, var(--primary));
+	box-shadow: 0 0.8rem 2rem color-mix(in oklch, var(--deep-text) 6%, transparent);
+	transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.dynamic-entry:hover {
+	border-color: color-mix(in oklch, var(--primary) 35%, var(--line-divider));
+	box-shadow: 0 1rem 2.5rem color-mix(in oklch, var(--deep-text) 10%, transparent);
+	transform: translateY(-2px);
 }
 
 .dynamic-entry[hidden] {
@@ -200,6 +269,8 @@ dynamic-feed {
 	flex: 0 0 3rem;
 	overflow: hidden;
 	border-radius: 50%;
+	border: 2px solid color-mix(in oklch, var(--primary) 24%, var(--card-bg));
+	box-shadow: 0 0 0 0.25rem color-mix(in oklch, var(--primary) 8%, transparent);
 }
 
 .dynamic-avatar img {
@@ -227,6 +298,10 @@ dynamic-feed {
 
 .dynamic-time {
 	width: fit-content;
+	margin-top: 0.15rem;
+	padding: 0.12rem 0.45rem;
+	border-radius: 999px;
+	background: color-mix(in oklch, var(--primary) 8%, transparent);
 	color: var(--content-meta);
 	font-size: 0.78rem;
 	line-height: 1.5;
@@ -655,6 +730,10 @@ dynamic-feed {
 }
 
 @media (max-width: 768px) {
+	.dynamic-feed::before {
+		display: none;
+	}
+
 	.dynamic-content,
 	.dynamic-gallery,
 	.dynamic-inline-comments {
@@ -691,6 +770,10 @@ dynamic-feed {
 		padding: 1rem;
 	}
 
+	.dynamic-page-header {
+		padding: 1.25rem;
+	}
+
 	.dynamic-gallery-grid[data-layout="single"] img {
 		max-height: min(28rem, 65vh);
 	}
@@ -715,6 +798,12 @@ dynamic-feed {
 
 	.dynamic-content {
 		font-size: 0.95rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dynamic-entry {
+		transition: none;
 	}
 }
 

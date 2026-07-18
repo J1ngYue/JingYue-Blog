@@ -1,10 +1,12 @@
 ---
 import ArchivePanel from "@components/controls/ArchivePanel.astro";
+import ArticleHubHeader from "@components/controls/ArticleHubHeader.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 ---
 
-<MainGridLayout title={i18n(I18nKey.archive)}>
+<MainGridLayout title={i18n(I18nKey.archive)} bannerTitle="文章" articleHub>
+  <ArticleHubHeader active="archive" />
   <ArchivePanel />
 </MainGridLayout>

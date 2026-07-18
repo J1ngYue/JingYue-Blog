@@ -1,0 +1,345 @@
+---
+import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
+import { url } from "@/utils/url-utils";
+
+type Section = "social" | "personal" | "about" | "links";
+
+interface Props {
+	section: Section;
+	active?: string;
+}
+
+interface HubTab {
+	key: string;
+	label: string;
+	description: string;
+	href: string;
+	icon: string;
+	external?: boolean;
+	pageKey?: keyof typeof siteConfig.pages;
+}
+
+interface HubSection {
+	kicker: string;
+	title: string;
+	description: string;
+	ariaLabel: string;
+	tabs: HubTab[];
+}
+
+const sections: Record<Section, HubSection> = {
+	social: {
+		kicker: "JINGYUE · SOCIAL SPACE",
+		title: "社交空间",
+		description: "友链与留言都收在这里，从一种方式开始交流。",
+		ariaLabel: "社交功能",
+		tabs: [
+			{
+				key: "friends",
+				label: "友情链接",
+				description: "拜访朋友们的小世界",
+				href: "/friends/",
+				icon: "material-symbols:group-rounded",
+				pageKey: "friends",
+			},
+			{
+				key: "guestbook",
+				label: "留言板",
+				description: "留下问候与想说的话",
+				href: "/guestbook/",
+				icon: "material-symbols:chat-rounded",
+				pageKey: "guestbook",
+			},
+		],
+	},
+	personal: {
+		kicker: "JINGYUE · COLLECTION SPACE",
+		title: "我的收藏",
+		description: "相册、追番与番组计划集中在这里，选择一种收藏继续浏览。",
+		ariaLabel: "个人收藏功能",
+		tabs: [
+			{
+				key: "gallery",
+				label: "相册",
+				description: "收藏值得记住的光影",
+				href: "/gallery/",
+				icon: "material-symbols:photo-library-rounded",
+				pageKey: "gallery",
+			},
+			{
+				key: "anime",
+				label: "追番",
+				description: "查看我的动画收藏",
+				href: "/anime/",
+				icon: "material-symbols:live-tv-rounded",
+				pageKey: "anime",
+			},
+			{
+				key: "bangumi",
+				label: "番组计划",
+				description: "浏览完整的观看记录",
+				href: "/bangumi/",
+				icon: "material-symbols:movie-rounded",
+				pageKey: "bangumi",
+			},
+		],
+	},
+	about: {
+		kicker: "JINGYUE · ABOUT SPACE",
+		title: "关于本站",
+		description: "在这里认识我，也可以为喜欢的内容送上一点支持。",
+		ariaLabel: "关于本站功能",
+		tabs: [
+			{
+				key: "about",
+				label: "关于我",
+				description: "认识站点与屏幕后的我",
+				href: "/about/",
+				icon: "material-symbols:person-rounded",
+			},
+			{
+				key: "sponsor",
+				label: "支持本站",
+				description: "为持续创作提供一点帮助",
+				href: "/sponsor/",
+				icon: "material-symbols:favorite-rounded",
+				pageKey: "sponsor",
+			},
+		],
+	},
+	links: {
+		kicker: "JINGYUE · LINK SPACE",
+		title: "站点链接",
+		description: "主题相关的源码、镜像、交流群与使用文档都集中在这里。",
+		ariaLabel: "站点外部链接",
+		tabs: [
+			{
+				key: "github",
+				label: "主题源码",
+				description: "前往 GitHub 仓库",
+				href: "https://github.com/CuteLeaf/Firefly",
+				icon: "fa7-brands:github",
+				external: true,
+			},
+			{
+				key: "gitee",
+				label: "主题镜像",
+				description: "前往 Gitee 镜像",
+				href: "https://gitee.com/CuteLeaf/Firefly",
+				icon: "fa7-brands:gitee",
+				external: true,
+			},
+			{
+				key: "qq",
+				label: "主题交流群",
+				description: "加入 QQ 交流群",
+				href: "https://qm.qq.com/q/ZGsFa8qX2G",
+				icon: "fa7-brands:qq",
+				external: true,
+			},
+			{
+				key: "docs",
+				label: "主题文档",
+				description: "阅读安装与使用说明",
+				href: "https://docs-firefly.cuteleaf.cn",
+				icon: "material-symbols:docs",
+				external: true,
+			},
+		],
+	},
+};
+
+const { section, active } = Astro.props;
+const current = sections[section];
+const tabs = current.tabs.filter(
+	(tab) => !tab.pageKey || siteConfig.pages[tab.pageKey] !== false,
+);
+const getHref = (tab: HubTab) =>
+	tab.external ? tab.href : url(`${tab.href}#main-content-wrapper`);
+---
+
+<header class="feature-hub-header card-base onload-animation mb-4" aria-labelledby={`feature-hub-${section}`}>
+	<div class="feature-hub-copy">
+		<p class="feature-hub-kicker">{current.kicker}</p>
+		<h1 id={`feature-hub-${section}`}>{current.title}</h1>
+		<p>{current.description}</p>
+	</div>
+
+	<nav
+		class:list={["feature-hub-tabs", `feature-hub-tabs-${tabs.length}`]}
+		aria-label={current.ariaLabel}
+	>
+		{tabs.map((tab) => (
+			<a
+				href={getHref(tab)}
+				target={tab.external ? "_blank" : undefined}
+				rel={tab.external ? "noopener noreferrer" : undefined}
+				class:list={["feature-hub-tab", { "is-active": active === tab.key }]}
+				aria-current={active === tab.key ? "page" : undefined}
+			>
+				<span class="feature-hub-tab-icon" aria-hidden="true">
+					<Icon is:inline name={tab.icon} />
+				</span>
+				<span>
+					<strong>{tab.label}</strong>
+					<small>{tab.description}</small>
+				</span>
+				{tab.external && (
+					<Icon
+						is:inline
+						name="fa7-solid:arrow-up-right-from-square"
+						class="feature-hub-external"
+					/>
+				)}
+			</a>
+		))}
+	</nav>
+</header>
+
+<style>
+	.feature-hub-header {
+		display: grid;
+		grid-template-columns: minmax(13rem, 0.72fr) minmax(0, 1.28fr);
+		gap: clamp(1rem, 3vw, 2.5rem);
+		padding: clamp(1.25rem, 3vw, 2.25rem);
+		border: 1px solid color-mix(in oklch, var(--primary) 22%, var(--line-divider));
+		background:
+			radial-gradient(circle at 8% 10%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 32%),
+			var(--card-bg);
+	}
+
+	.feature-hub-copy {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		justify-content: center;
+	}
+
+	.feature-hub-kicker {
+		margin: 0 0 0.5rem;
+		color: var(--primary);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.2em;
+	}
+
+	.feature-hub-copy h1 {
+		margin: 0;
+		color: var(--text-90);
+		font-size: clamp(1.65rem, 3vw, 2.6rem);
+		line-height: 1.05;
+	}
+
+	.feature-hub-copy > p:last-child {
+		margin: 0.75rem 0 0;
+		color: var(--text-50);
+		font-size: 0.92rem;
+		line-height: 1.7;
+	}
+
+	.feature-hub-tabs {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.75rem;
+		align-items: stretch;
+	}
+
+	.feature-hub-tabs-2,
+	.feature-hub-tabs-4 {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.feature-hub-tab {
+		display: flex;
+		min-width: 0;
+		align-items: center;
+		gap: 0.7rem;
+		padding: 1rem 0.9rem;
+		border: 1px solid color-mix(in oklch, var(--line-divider) 78%, transparent);
+		border-radius: 1rem;
+		background: color-mix(in oklch, var(--card-bg) 78%, transparent);
+		color: var(--text-75);
+		transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+	}
+
+	.feature-hub-tab:hover,
+	.feature-hub-tab:focus-visible {
+		transform: translateY(-2px);
+		border-color: color-mix(in oklch, var(--primary) 45%, var(--line-divider));
+		outline: none;
+	}
+
+	.feature-hub-tab.is-active {
+		border-color: color-mix(in oklch, var(--primary) 50%, transparent);
+		background: color-mix(in oklch, var(--primary) 13%, var(--card-bg));
+		color: var(--primary);
+		box-shadow: 0 0.8rem 2rem color-mix(in oklch, var(--primary) 10%, transparent);
+	}
+
+	.feature-hub-tab-icon {
+		display: grid;
+		width: 2.5rem;
+		height: 2.5rem;
+		flex: 0 0 auto;
+		place-items: center;
+		border-radius: 0.8rem;
+		background: color-mix(in oklch, var(--primary) 10%, var(--btn-regular-bg));
+		color: var(--primary);
+	}
+
+	.feature-hub-tab-icon :global(svg) {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	.feature-hub-tab strong,
+	.feature-hub-tab small {
+		display: block;
+	}
+
+	.feature-hub-tab strong {
+		font-size: 0.9rem;
+	}
+
+	.feature-hub-tab small {
+		margin-top: 0.25rem;
+		overflow: hidden;
+		color: var(--text-30);
+		font-size: 0.7rem;
+		line-height: 1.35;
+		text-overflow: ellipsis;
+	}
+
+	.feature-hub-external {
+		width: 0.72rem;
+		height: 0.72rem;
+		flex: 0 0 auto;
+		margin-left: auto;
+		color: var(--text-30);
+	}
+
+	@media (max-width: 900px) {
+		.feature-hub-header {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	@media (max-width: 600px) {
+		.feature-hub-tabs,
+		.feature-hub-tabs-2,
+		.feature-hub-tabs-4 {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.feature-hub-tab {
+			padding: 0.78rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.feature-hub-tab {
+			transition: none;
+		}
+	}
+</style>

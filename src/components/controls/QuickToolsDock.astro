@@ -1,0 +1,645 @@
+---
+import { Icon } from "astro-icon/components";
+import { musicPlayerConfig } from "@/config/musicConfig";
+import { url } from "@/utils/url-utils";
+
+const quickLinks = [
+	{ key: "archive", label: "文章", description: "浏览归档", href: url("/archive/#main-content-wrapper") },
+	{ key: "dynamic", label: "动态", description: "查看近况", href: url("/dynamic/#main-content-wrapper") },
+	{ key: "gallery", label: "相册", description: "收藏光影", href: url("/gallery/#main-content-wrapper") },
+	{ key: "friends", label: "友链", description: "拜访朋友", href: url("/friends/#main-content-wrapper") },
+	{ key: "guestbook", label: "留言", description: "留下问候", href: url("/guestbook/#main-content-wrapper") },
+	{ key: "about", label: "关于", description: "认识这里", href: url("/about/#main-content-wrapper") },
+];
+---
+
+<div id="quick-tools-dock" class="quick-tools-dock">
+	{musicPlayerConfig.showInNavbar && (
+		<button
+			type="button"
+			class="quick-tools-music-edge"
+			data-quick-tools-music
+			aria-label="打开音乐播放器"
+			aria-controls="music-nav-panel"
+			aria-expanded="false"
+			data-tooltip="音乐播放器"
+		>
+			<Icon is:inline name="material-symbols:music-note-rounded" />
+			<span>MUSIC</span>
+		</button>
+	)}
+
+	<div
+		id="quick-tools-menu"
+		class="quick-tools-menu"
+		role="dialog"
+		aria-hidden="true"
+		aria-labelledby="quick-tools-menu-title"
+		inert
+	>
+		<div class="quick-tools-menu__header">
+			<div>
+				<p id="quick-tools-menu-title">快捷导航</p>
+				<span>选择一个方向继续探索</span>
+			</div>
+			<button id="quick-tools-menu-close" type="button" aria-label="关闭快捷导航">
+				<span aria-hidden="true">×</span>
+			</button>
+		</div>
+
+		<nav class="quick-tools-links" aria-label="站点快捷入口">
+			{
+				quickLinks.map((item) => (
+					<a href={item.href}>
+						{item.key === "archive" && <Icon is:inline name="material-symbols:article-outline-rounded" />}
+						{item.key === "dynamic" && <Icon is:inline name="material-symbols:forum-outline-rounded" />}
+						{item.key === "gallery" && <Icon is:inline name="material-symbols:photo-library-outline-rounded" />}
+						{item.key === "friends" && <Icon is:inline name="material-symbols:group-outline-rounded" />}
+						{item.key === "guestbook" && <Icon is:inline name="material-symbols:chat-bubble-outline-rounded" />}
+						{item.key === "about" && <Icon is:inline name="material-symbols:person-outline-rounded" />}
+						<span>
+							<strong>{item.label}</strong>
+							<small>{item.description}</small>
+						</span>
+					</a>
+				))
+			}
+		</nav>
+	</div>
+
+	<nav class="quick-tools-rail" aria-label="全局快捷工具栏">
+		<span class="quick-tools-label">TOOLS</span>
+		<a class="quick-tools-button" href={url("/")} data-tooltip="首页" aria-label="返回首页">
+			<Icon is:inline name="material-symbols:home-rounded" />
+		</a>
+		<button
+			id="quick-tools-navigation"
+			class="quick-tools-button"
+			type="button"
+			data-tooltip="快捷导航"
+			aria-label="打开快捷导航"
+			aria-controls="quick-tools-menu"
+			aria-expanded="false"
+			aria-haspopup="dialog"
+		>
+			<Icon is:inline name="material-symbols:ads-click-rounded" />
+		</button>
+		<button
+			id="quick-tools-search"
+			class="quick-tools-button"
+			type="button"
+			data-tooltip="站内搜索"
+			aria-label="打开站内搜索"
+		>
+			<Icon is:inline name="material-symbols:manage-search-rounded" />
+		</button>
+		<button
+			id="quick-tools-settings"
+			class="quick-tools-button"
+			type="button"
+			data-tooltip="显示设置"
+			aria-label="打开显示设置"
+		>
+			<Icon is:inline name="material-symbols:settings-rounded" />
+		</button>
+		<button
+			id="quick-tools-wallpaper"
+			class="quick-tools-button"
+			type="button"
+			data-tooltip="切换壁纸"
+			aria-label="切换壁纸"
+		>
+			<Icon is:inline name="material-symbols:wallpaper" />
+		</button>
+		<i class="quick-tools-divider" aria-hidden="true"></i>
+		<a class="quick-tools-button" href={url("/archive/#main-content-wrapper")} data-tooltip="文章" aria-label="查看文章">
+			<Icon is:inline name="material-symbols:article-outline-rounded" />
+		</a>
+		<a class="quick-tools-button" href={url("/gallery/#main-content-wrapper")} data-tooltip="相册" aria-label="查看相册">
+			<Icon is:inline name="material-symbols:photo-library-outline-rounded" />
+		</a>
+		<a class="quick-tools-button" href={url("/dynamic/#main-content-wrapper")} data-tooltip="动态" aria-label="查看动态">
+			<Icon is:inline name="material-symbols:forum-outline-rounded" />
+		</a>
+	</nav>
+</div>
+
+<script>
+	function initQuickToolsDock() {
+		const dock = document.getElementById("quick-tools-dock");
+		if (!dock || dock.dataset.bound === "true") return;
+		dock.dataset.bound = "true";
+
+		const menu = document.getElementById("quick-tools-menu");
+		const navigationButton = document.getElementById("quick-tools-navigation");
+		const closeButton = document.getElementById("quick-tools-menu-close");
+		const searchButton = document.getElementById("quick-tools-search");
+		const settingsButton = document.getElementById("quick-tools-settings");
+		const wallpaperButton = document.getElementById("quick-tools-wallpaper");
+		const musicButton = dock.querySelector<HTMLElement>("[data-quick-tools-music]");
+		const musicPanel = document.getElementById("music-nav-panel");
+		let musicCloseTimer = 0;
+
+		const setMenuOpen = (open: boolean, focusMenu = false, restoreFocus = false) => {
+			dock.dataset.open = open ? "true" : "false";
+			navigationButton?.setAttribute("aria-expanded", String(open));
+			menu?.setAttribute("aria-hidden", String(!open));
+			menu?.toggleAttribute("inert", !open);
+			if (open && focusMenu) {
+				requestAnimationFrame(() => menu?.querySelector<HTMLAnchorElement>("a")?.focus());
+			} else if (restoreFocus) {
+				requestAnimationFrame(() => navigationButton?.focus());
+			}
+		};
+
+		const setMusicOpen = (open: boolean) => {
+			if (!musicPanel) return;
+			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
+			musicPanel.classList.toggle("float-panel-closed", !open);
+			musicButton?.setAttribute("aria-expanded", String(open));
+		};
+		const openMusic = () => setMusicOpen(true);
+		const scheduleMusicClose = () => {
+			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
+			musicCloseTimer = window.setTimeout(() => {
+				musicCloseTimer = 0;
+				if (
+					musicPanel?.matches(":hover, :focus-within") ||
+					musicButton?.matches(":hover, :focus-visible")
+				) {
+					return;
+				}
+				setMusicOpen(false);
+			}, 220);
+		};
+
+		navigationButton?.addEventListener("click", (event) => {
+			const open = dock.dataset.open !== "true";
+			setMenuOpen(open, open && event.detail === 0, !open);
+		});
+		closeButton?.addEventListener("click", () => setMenuOpen(false, false, true));
+		menu?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenuOpen(false)));
+
+		searchButton?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			setMenuOpen(false);
+			const desktopSearchInput = document.querySelector<HTMLInputElement>(
+				"#search-bar input",
+			);
+			if (desktopSearchInput && window.matchMedia("(min-width: 1024px)").matches) {
+				desktopSearchInput.focus();
+				return;
+			}
+			(document.getElementById("search-switch") as HTMLButtonElement | null)?.click();
+		});
+
+		settingsButton?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			setMenuOpen(false);
+			(document.getElementById("display-settings-switch") as HTMLButtonElement | null)?.click();
+		});
+
+		wallpaperButton?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			setMenuOpen(false);
+			const homeSwitcher = document.querySelector<HTMLButtonElement>(
+				"[data-home-cover-switcher-trigger]",
+			);
+			if (homeSwitcher) {
+				homeSwitcher.click();
+				return;
+			}
+
+			const target = new URL("/", window.location.origin);
+			target.searchParams.set("wallpaper", "1");
+			if (window.swup?.navigate) window.swup.navigate(target.href);
+			else window.location.assign(target.href);
+		});
+
+		musicButton?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			setMusicOpen(musicPanel?.classList.contains("float-panel-closed") ?? true);
+		});
+		musicButton?.addEventListener("pointerenter", openMusic);
+		musicButton?.addEventListener("pointerleave", scheduleMusicClose);
+		musicButton?.addEventListener("focus", openMusic);
+		musicButton?.addEventListener("blur", scheduleMusicClose);
+		musicPanel?.addEventListener("pointerenter", openMusic);
+		musicPanel?.addEventListener("pointerleave", scheduleMusicClose);
+		musicPanel?.addEventListener("focusin", openMusic);
+		musicPanel?.addEventListener("focusout", scheduleMusicClose);
+
+		document.addEventListener("click", (event) => {
+			if (
+				dock.dataset.open === "true" &&
+				event.target instanceof Node &&
+				!dock.contains(event.target)
+			) {
+				setMenuOpen(false);
+			}
+		});
+		document.addEventListener("keydown", (event) => {
+			if (event.key !== "Escape") return;
+			if (dock.dataset.open === "true") setMenuOpen(false, false, true);
+			if (musicPanel && !musicPanel.classList.contains("float-panel-closed")) {
+				setMusicOpen(false);
+			}
+		});
+
+		const syncCurrentLink = () => {
+			const normalizePath = (path: string) =>
+				path === "/" ? path : `${path.replace(/\/+$/, "")}/`;
+			const currentPath = normalizePath(window.location.pathname);
+			menu?.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
+				const linkPath = normalizePath(new URL(link.href).pathname);
+				if (linkPath === currentPath) link.setAttribute("aria-current", "page");
+				else link.removeAttribute("aria-current");
+			});
+		};
+
+		const bindSwup = () => {
+			if (dock.dataset.swupBound === "true" || !window.swup?.hooks) return;
+			dock.dataset.swupBound = "true";
+			window.swup.hooks.on("visit:start", () => {
+				setMenuOpen(false);
+				setMusicOpen(false);
+			});
+			window.swup.hooks.on("page:view", syncCurrentLink);
+		};
+		syncCurrentLink();
+		if (window.swup?.hooks) bindSwup();
+		else document.addEventListener("swup:enable", bindSwup, { once: true });
+	}
+
+	initQuickToolsDock();
+</script>
+
+<style>
+	.quick-tools-dock {
+		position: fixed;
+		inset: 0;
+		z-index: 1050;
+		pointer-events: none;
+	}
+
+	.quick-tools-music-edge,
+	.quick-tools-rail {
+		position: fixed;
+		left: 0;
+		z-index: 1;
+		pointer-events: auto;
+		border: 1px solid rgba(102, 119, 136, 0.16);
+		border-left: 0;
+		border-radius: 0 0.9rem 0.9rem 0;
+		background: rgba(255, 255, 255, 0.72);
+		box-shadow: 0 0.8rem 2rem rgba(43, 58, 73, 0.14);
+		color: #526175;
+		backdrop-filter: blur(0.9rem) saturate(1.1);
+		transition:
+			border-color 180ms ease,
+			background-color 180ms ease,
+			color 180ms ease,
+			opacity 180ms ease,
+			transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.quick-tools-music-edge::before,
+	.quick-tools-rail::before {
+		position: absolute;
+		top: 0;
+		left: 100%;
+		width: 1rem;
+		height: 100%;
+		content: "";
+		pointer-events: auto;
+	}
+
+	.quick-tools-music-edge {
+		top: clamp(5.5rem, 14vh, 8.5rem);
+		display: flex;
+		align-items: center;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 3.2rem;
+		padding: 0.85rem 0.7rem;
+		cursor: pointer;
+		opacity: 0;
+		transform: translateX(calc(-100% - 0.2rem));
+	}
+
+	.quick-tools-music-edge:hover,
+	.quick-tools-music-edge:focus-visible,
+	.quick-tools-music-edge[aria-expanded="true"] {
+		border-color: color-mix(in oklch, var(--primary) 42%, transparent);
+		background: rgba(255, 255, 255, 0.94);
+		color: color-mix(in oklch, var(--primary) 70%, #526175);
+		opacity: 1;
+		transform: translateX(0);
+		outline: none;
+	}
+
+	.quick-tools-music-edge :global(svg) {
+		width: 1.3rem;
+		height: 1.3rem;
+	}
+
+	.quick-tools-music-edge span,
+	.quick-tools-label {
+		font-size: 0.58rem;
+		font-weight: 850;
+		letter-spacing: 0.2em;
+		writing-mode: vertical-rl;
+	}
+
+	.quick-tools-rail {
+		top: clamp(22rem, 61vh, 32rem);
+		display: flex;
+		align-items: center;
+		flex-direction: column;
+		gap: 0.58rem;
+		padding: 0.85rem 0.55rem;
+		opacity: 0;
+		transform: translate(calc(-100% - 0.2rem), -50%);
+	}
+
+	.quick-tools-rail:hover,
+	.quick-tools-rail:focus-within,
+	.quick-tools-dock[data-open="true"] .quick-tools-rail {
+		opacity: 1;
+		transform: translate(0, -50%);
+	}
+
+	.quick-tools-label {
+		margin-bottom: 0.12rem;
+		color: #627084;
+	}
+
+	.quick-tools-divider {
+		width: 1.35rem;
+		height: 1px;
+		margin: 0.08rem 0;
+		background: rgba(98, 112, 132, 0.24);
+	}
+
+	.quick-tools-button {
+		position: relative;
+		display: grid;
+		width: 2.15rem;
+		height: 2.15rem;
+		color: #657489;
+		cursor: pointer;
+		background: transparent;
+		border: 0;
+		border-radius: 0.7rem;
+		place-items: center;
+		transition: background-color 160ms ease, color 160ms ease;
+	}
+
+	.quick-tools-button :global(svg) {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.quick-tools-button:hover,
+	.quick-tools-button:focus-visible,
+	.quick-tools-dock[data-open="true"] #quick-tools-navigation {
+		background: color-mix(in oklch, var(--primary) 14%, white);
+		color: color-mix(in oklch, var(--primary) 76%, #34445d);
+		outline: none;
+	}
+
+	.quick-tools-button::after {
+		position: absolute;
+		top: 50%;
+		left: calc(100% + 0.7rem);
+		z-index: 3;
+		padding: 0.42rem 0.62rem;
+		border: 1px solid rgba(105, 124, 143, 0.14);
+		border-radius: 0.6rem;
+		background: rgba(255, 255, 255, 0.94);
+		box-shadow: 0 0.65rem 1.5rem rgba(55, 70, 84, 0.16);
+		color: #4b5c72;
+		content: attr(data-tooltip);
+		font-size: 0.68rem;
+		font-weight: 750;
+		line-height: 1;
+		opacity: 0;
+		pointer-events: none;
+		transform: translate(-0.28rem, -50%);
+		transition: opacity 140ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+		visibility: hidden;
+		white-space: nowrap;
+	}
+
+	.quick-tools-button:hover::after,
+	.quick-tools-button:focus-visible::after {
+		opacity: 1;
+		transform: translate(0, -50%);
+		visibility: visible;
+	}
+
+	.quick-tools-menu {
+		position: fixed;
+		top: clamp(22rem, 61vh, 32rem);
+		left: 3.8rem;
+		width: min(23rem, calc(100vw - 5rem));
+		max-height: calc(100dvh - 4rem);
+		padding: 0.85rem;
+		overflow-y: auto;
+		pointer-events: none;
+		background: rgb(18 24 36 / 92%);
+		border: 1px solid rgb(255 255 255 / 14%);
+		border-radius: 1.25rem;
+		box-shadow: 0 20px 56px rgb(4 8 16 / 34%);
+		opacity: 0;
+		transform: translate(-0.65rem, -50%) scale(0.97);
+		transform-origin: left center;
+		backdrop-filter: blur(22px) saturate(145%);
+		transition: opacity 180ms ease, transform 180ms ease;
+	}
+
+	.quick-tools-dock[data-open="true"] .quick-tools-menu {
+		pointer-events: auto;
+		opacity: 1;
+		transform: translate(0, -50%) scale(1);
+	}
+
+	.quick-tools-menu__header {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.15rem 0.2rem 0.75rem;
+	}
+
+	.quick-tools-menu__header p {
+		margin: 0;
+		color: #fff;
+		font-size: 0.9rem;
+		font-weight: 800;
+	}
+
+	.quick-tools-menu__header span {
+		display: block;
+		margin-top: 0.15rem;
+		color: rgb(255 255 255 / 52%);
+		font-size: 0.7rem;
+	}
+
+	.quick-tools-menu__header button {
+		display: grid;
+		flex: 0 0 auto;
+		width: 2rem;
+		height: 2rem;
+		color: rgb(255 255 255 / 66%);
+		cursor: pointer;
+		background: rgb(255 255 255 / 7%);
+		border: 0;
+		border-radius: 999px;
+		place-items: center;
+	}
+
+	.quick-tools-menu__header button span {
+		font-size: 1.35rem;
+		font-weight: 400;
+		line-height: 1;
+		transform: translateY(-0.04rem);
+	}
+
+	.quick-tools-menu__header button:hover,
+	.quick-tools-menu__header button:focus-visible {
+		color: #fff;
+		background: color-mix(in srgb, var(--primary) 30%, transparent);
+		outline: none;
+	}
+
+	.quick-tools-links {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.45rem;
+	}
+
+	.quick-tools-links a {
+		display: flex;
+		gap: 0.65rem;
+		align-items: center;
+		min-width: 0;
+		padding: 0.7rem;
+		color: rgb(255 255 255 / 76%);
+		border: 1px solid transparent;
+		border-radius: 0.8rem;
+		background: rgb(255 255 255 / 5%);
+		transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+	}
+
+	.quick-tools-links a:hover,
+	.quick-tools-links a:focus-visible,
+	.quick-tools-links a[aria-current="page"] {
+		color: #fff;
+		background: color-mix(in srgb, var(--primary) 20%, rgb(255 255 255 / 5%));
+		border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+		outline: none;
+	}
+
+	.quick-tools-links a :global(svg) {
+		flex: 0 0 auto;
+		width: 1.3rem;
+		height: 1.3rem;
+		color: var(--primary);
+	}
+
+	.quick-tools-links span {
+		display: grid;
+		min-width: 0;
+	}
+
+	.quick-tools-links strong {
+		font-size: 0.78rem;
+	}
+
+	.quick-tools-links small {
+		margin-top: 0.08rem;
+		color: rgb(255 255 255 / 46%);
+		font-size: 0.65rem;
+	}
+
+	:global(#music-player-switch) {
+		display: none !important;
+	}
+
+	:global(#music-nav-panel) {
+		position: fixed !important;
+		top: clamp(5.5rem, 14vh, 8.5rem) !important;
+		left: -0.75rem !important;
+		right: auto !important;
+		z-index: 1049 !important;
+		width: min(24rem, calc(100vw - 5rem)) !important;
+		transform: translate3d(0, 0, 0);
+		transform-origin: left top;
+	}
+
+	:global(#music-nav-panel.float-panel-closed) {
+		transform: translate3d(-0.75rem, 0, 0);
+	}
+
+	:global(body.home-landing-active #music-nav-panel) {
+		left: -0.75rem !important;
+		top: clamp(5.5rem, 14vh, 8.5rem) !important;
+		width: min(24rem, calc(100vw - 5rem)) !important;
+	}
+
+	:global(body.home-landing-active #music-nav-panel.float-panel-closed) {
+		transform: translate3d(-0.75rem, 0, 0);
+	}
+
+	@media (max-width: 640px) {
+		.quick-tools-music-edge {
+			top: 5.25rem;
+			min-width: 2.8rem;
+			padding: 0.7rem 0.55rem;
+		}
+
+		.quick-tools-rail {
+			top: 60vh;
+			padding: 0.65rem 0.4rem;
+		}
+
+		.quick-tools-button {
+			width: 2rem;
+			height: 2rem;
+		}
+
+		.quick-tools-menu {
+			top: 60vh;
+			left: 3.2rem;
+			width: min(19rem, calc(100vw - 4rem));
+		}
+
+		:global(#music-nav-panel) {
+			left: 3.2rem !important;
+			width: calc(100vw - 4rem) !important;
+		}
+
+		:global(body.home-landing-active #music-nav-panel) {
+			left: 3.2rem !important;
+			top: 5.25rem !important;
+			width: calc(100vw - 4rem) !important;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.quick-tools-music-edge,
+		.quick-tools-rail,
+		.quick-tools-button,
+		.quick-tools-button::after,
+		.quick-tools-menu {
+			transition: none;
+		}
+	}
+
+	@media print {
+		.quick-tools-dock {
+			display: none;
+		}
+	}
+</style>

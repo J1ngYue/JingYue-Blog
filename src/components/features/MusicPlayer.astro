@@ -15,6 +15,13 @@ const config = musicPlayerConfig;
 
 const viewConfigStr = JSON.stringify({
 	showLyrics: config.showLyrics ?? true,
+	neteaseSync: {
+		enable: config.neteaseSync?.enable ?? false,
+		apiBaseUrl: config.neteaseSync?.apiBaseUrl ?? "",
+		defaultPlaylistId:
+			config.neteaseSync?.defaultPlaylistId ?? config.meting?.id ?? "",
+		playlistLimit: config.neteaseSync?.playlistLimit ?? 50,
+	},
 	i18n: {
 		noPlaying: i18n(I18nKey.musicNoPlaying),
 		lyrics: i18n(I18nKey.musicLyrics),
@@ -59,6 +66,12 @@ const widgetId =
                 <Icon is:inline name="material-symbols:subtitles-off-outline-rounded" class="icon-lrc-off text-xl" aria-hidden="true" />
                 <Icon is:inline name="material-symbols:subtitles-outline-rounded" class="icon-lrc-on text-xl hidden" aria-hidden="true" />
             </button>
+			<button class:list={["btn-netease-sync hover:text-(--primary) transition-all duration-300 p-0.5 pr-1 transform active:scale-95 text-neutral-400 shrink-0", { hidden: !config.neteaseSync?.enable }]} title="同步网易云歌单" aria-label="同步网易云歌单" aria-expanded="false">
+				<Icon is:inline name="simple-icons:neteasecloudmusic" class="text-lg" aria-hidden="true" />
+			</button>
+			<button class="btn-music-library hover:text-(--primary) transition-all duration-300 p-0.5 transform active:scale-95 text-neutral-400 shrink-0" title="打开音乐库" aria-label="打开音乐库">
+				<Icon is:inline name="material-symbols:library-music-rounded" class="text-xl" aria-hidden="true" />
+			</button>
         </div>
 
         <div class="min-w-0 overflow-hidden">
@@ -129,6 +142,53 @@ const widgetId =
     <button class="btn-drawer-toggle text-neutral-400 hover:text-(--primary) transition-all duration-300 p-2 transform active:scale-95" title={i18n(I18nKey.musicPlaylist)} aria-label={i18n(I18nKey.musicPlaylist)}>
         <Icon is:inline name="mdi:playlist-music" class="text-xl" aria-hidden="true" />
     </button>
+</div>
+
+<!-- Netease playlist sync drawer -->
+<div class="netease-sync-drawer grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] grid-rows-[0fr] opacity-0">
+	<div class="overflow-hidden min-h-0">
+		<div class="netease-sync-panel mt-2 pt-3 border-t border-neutral-100 dark:border-white/5 mx-1">
+			<div class="flex items-start justify-between gap-3 mb-3">
+				<div>
+					<strong class="block text-sm text-neutral-800 dark:text-neutral-100">网易云歌单</strong>
+					<span class="text-[11px] text-neutral-400">输入歌单 ID，或使用自建接口扫码读取个人歌单</span>
+				</div>
+				<Icon is:inline name="simple-icons:neteasecloudmusic" class="text-xl text-[#e60026] shrink-0" aria-hidden="true" />
+			</div>
+
+			<form class="netease-playlist-form flex items-center gap-2">
+				<label class="sr-only" for={`${widgetId}-netease-playlist-id`}>网易云歌单 ID</label>
+				<input
+					id={`${widgetId}-netease-playlist-id`}
+					class="netease-playlist-input min-w-0 flex-1 rounded-lg border border-neutral-200/80 bg-white/70 px-3 py-2 text-xs text-neutral-700 outline-none transition focus:border-(--primary) dark:border-white/10 dark:bg-white/5 dark:text-neutral-200"
+					type="text"
+					inputmode="numeric"
+					pattern="[0-9]+"
+					placeholder="输入歌单 ID"
+					value={config.neteaseSync?.defaultPlaylistId ?? config.meting?.id ?? ""}
+					autocomplete="off"
+				/>
+				<button type="submit" class="btn-regular shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-(--primary)">同步</button>
+			</form>
+
+			<div class="netease-account-row mt-2 flex items-center gap-2">
+				<button type="button" class:list={["btn-netease-login btn-plain flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs", { hidden: !config.neteaseSync?.apiBaseUrl }]}>
+					<Icon is:inline name="material-symbols:qr-code-2-rounded" class="text-base" aria-hidden="true" />
+					扫码登录
+				</button>
+				<select class="netease-playlist-select hidden min-w-0 flex-1 rounded-lg border border-neutral-200/80 bg-white/70 px-2 py-2 text-xs dark:border-white/10 dark:bg-[#253244]" aria-label="选择网易云歌单"></select>
+				<button type="button" class="btn-netease-apply hidden btn-regular shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-(--primary)">载入</button>
+			</div>
+
+			<div class="netease-qr-wrap hidden mt-3 items-center gap-3 rounded-xl bg-neutral-50/80 p-3 dark:bg-white/5">
+				<img class="netease-qr size-24 rounded-lg bg-white object-contain p-1" alt="网易云登录二维码" />
+				<p class="m-0 text-xs leading-5 text-neutral-500 dark:text-neutral-300">请使用网易云音乐 App 扫码。登录信息只保存在本次浏览器会话中。</p>
+			</div>
+			<p class="netease-sync-status mt-2 min-h-4 text-[11px] text-neutral-400" aria-live="polite">
+				{config.neteaseSync?.apiBaseUrl ? "可输入歌单 ID，或扫码读取账号歌单。" : "当前可同步公开歌单；配置接口后可使用扫码登录。"}
+			</p>
+		</div>
+	</div>
 </div>
 
 <!-- Lyrics Drawer -->
@@ -218,6 +278,17 @@ const widgetId =
         volContainer: widget.querySelector('.vol-container'),
         volBar: widget.querySelector('.vol-bar'),
         btnLrc: widget.querySelector('.btn-lrc-toggle'),
+		btnNetease: widget.querySelector('.btn-netease-sync'),
+		btnLibrary: widget.querySelector('.btn-music-library'),
+		neteaseDrawer: widget.querySelector('.netease-sync-drawer'),
+		neteaseForm: widget.querySelector('.netease-playlist-form'),
+		neteaseInput: widget.querySelector('.netease-playlist-input'),
+		neteaseLogin: widget.querySelector('.btn-netease-login'),
+		neteaseSelect: widget.querySelector('.netease-playlist-select'),
+		neteaseApply: widget.querySelector('.btn-netease-apply'),
+		neteaseQrWrap: widget.querySelector('.netease-qr-wrap'),
+		neteaseQr: widget.querySelector('.netease-qr'),
+		neteaseStatus: widget.querySelector('.netease-sync-status'),
         iconLrcOn: widget.querySelector('.icon-lrc-on'),
         iconLrcOff: widget.querySelector('.icon-lrc-off'),
         lrcDrawer: widget.querySelector('.lrc-drawer'),
@@ -250,7 +321,8 @@ const widgetId =
             renderedEls: {},
             scrollRaf: 0,
             drawerOpen: false
-        }
+		},
+		qrPollTimer: 0
     };
 
     // ── UI update functions ──────────────────────────────────
@@ -686,12 +758,172 @@ const widgetId =
         ui.title.innerText = e.detail.message || cfg.i18n.error;
     });
 
+	on('fm:sync-state', function (e) {
+		var detail = e.detail || {};
+		setLoading(detail.status === 'loading');
+		if (detail.status === 'success') {
+			setNeteaseStatus('已同步 ' + detail.count + ' 首歌曲', 'success');
+		} else if (detail.status === 'error') {
+			setNeteaseStatus(detail.message || '同步失败，请稍后重试', 'error');
+		}
+	});
+
+	function setNeteaseStatus(message, tone) {
+		if (!ui.neteaseStatus) return;
+		ui.neteaseStatus.textContent = message;
+		ui.neteaseStatus.dataset.tone = tone || '';
+	}
+
+	function closeOtherDrawers() {
+		ui.lrcDrawer.style.gridTemplateRows = '0fr';
+		ui.lrcDrawer.classList.remove('opacity-100');
+		ui.lrcDrawer.classList.add('opacity-0');
+		ui.playlistDrawer.style.gridTemplateRows = '0fr';
+		ui.playlistDrawer.classList.remove('opacity-100');
+		ui.playlistDrawer.classList.add('opacity-0');
+		local.vs.drawerOpen = false;
+	}
+
+	function setNeteaseDrawerOpen(open) {
+		if (!ui.neteaseDrawer || !ui.btnNetease) return;
+		if (open) closeOtherDrawers();
+		ui.neteaseDrawer.style.gridTemplateRows = open ? '1fr' : '0fr';
+		ui.neteaseDrawer.classList.toggle('opacity-100', open);
+		ui.neteaseDrawer.classList.toggle('opacity-0', !open);
+		ui.btnNetease.classList.toggle('text-(--primary)', open);
+		ui.btnNetease.classList.toggle('text-neutral-400', !open);
+		ui.btnNetease.setAttribute('aria-expanded', String(open));
+	}
+
+	async function syncNeteasePlaylist(playlistId) {
+		var id = String(playlistId || '').trim();
+		if (!/^\d+$/.test(id)) {
+			setNeteaseStatus('请输入正确的数字歌单 ID', 'error');
+			return;
+		}
+		setNeteaseStatus('正在读取歌单…');
+		setLoading(true);
+		try {
+			await mgr.syncMetingPlaylist(id);
+			localStorage.setItem('jingyue-netease-playlist-id', id);
+		} catch (error) {
+			setLoading(false);
+			setNeteaseStatus(error instanceof Error ? error.message : '同步失败，请稍后重试', 'error');
+		}
+	}
+
+	async function neteaseApi(path, params) {
+		var base = String(cfg.neteaseSync.apiBaseUrl || '').replace(/\/$/, '');
+		if (!base) return Promise.reject(new Error('尚未配置网易云登录接口'));
+		var requestUrl = new URL(base + path);
+		Object.keys(params || {}).forEach(function (key) {
+			if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+				requestUrl.searchParams.set(key, String(params[key]));
+			}
+		});
+		requestUrl.searchParams.set('timestamp', String(Date.now()));
+		return fetch(requestUrl.toString()).then(function (response) {
+			if (!response.ok) throw new Error('接口请求失败（' + response.status + '）');
+			return response.json();
+		});
+	}
+
+	function renderNeteasePlaylists(playlists) {
+		ui.neteaseSelect.innerHTML = '';
+		playlists.forEach(function (playlist) {
+			var option = document.createElement('option');
+			option.value = String(playlist.id);
+			option.textContent = playlist.name + ' · ' + (playlist.trackCount || 0) + ' 首';
+			ui.neteaseSelect.appendChild(option);
+		});
+		ui.neteaseSelect.classList.remove('hidden');
+		ui.neteaseApply.classList.remove('hidden');
+		ui.neteaseLogin.classList.add('hidden');
+		setNeteaseStatus('已读取 ' + playlists.length + ' 个歌单，请选择后载入。', 'success');
+	}
+
+	async function loadNeteaseAccount(cookie) {
+		var loginStatus = await neteaseApi('/login/status', { cookie: cookie });
+		var profile = loginStatus.data?.profile || loginStatus.profile;
+		var userId = profile?.userId || loginStatus.data?.account?.id || loginStatus.account?.id;
+		if (!userId) throw new Error('登录成功，但未读取到用户信息');
+		var result = await neteaseApi('/user/playlist', {
+			uid: userId,
+			limit: cfg.neteaseSync.playlistLimit || 50,
+			cookie: cookie
+		});
+		var playlists = Array.isArray(result.playlist) ? result.playlist : [];
+		if (playlists.length === 0) throw new Error('账号中没有可读取的歌单');
+		renderNeteasePlaylists(playlists);
+	}
+
+	function pollNeteaseQr(key) {
+		if (local.qrPollTimer) window.clearTimeout(local.qrPollTimer);
+		local.qrPollTimer = window.setTimeout(async function checkQr() {
+			try {
+				var result = await neteaseApi('/login/qr/check', { key: key });
+				if (result.code === 800) {
+					setNeteaseStatus('二维码已过期，请重新生成', 'error');
+					return;
+				}
+				if (result.code === 802) setNeteaseStatus('已扫码，请在手机上确认登录…');
+				if (result.code === 803 && result.cookie) {
+					sessionStorage.setItem('jingyue-netease-cookie', result.cookie);
+					setNeteaseStatus('登录成功，正在读取歌单…', 'success');
+					await loadNeteaseAccount(result.cookie);
+					ui.neteaseQrWrap.classList.add('hidden');
+					ui.neteaseQrWrap.classList.remove('flex');
+					return;
+				}
+				pollNeteaseQr(key);
+			} catch (error) {
+				setNeteaseStatus(error instanceof Error ? error.message : '二维码状态读取失败', 'error');
+			}
+		}, 1800);
+	}
+
+	async function startNeteaseLogin() {
+		setNeteaseStatus('正在生成登录二维码…');
+		try {
+			var keyResult = await neteaseApi('/login/qr/key');
+			var key = keyResult.data?.unikey || keyResult.unikey;
+			if (!key) throw new Error('未能生成登录二维码');
+			var qrResult = await neteaseApi('/login/qr/create', { key: key, qrimg: true });
+			var qrImage = qrResult.data?.qrimg || qrResult.qrimg;
+			if (!qrImage) throw new Error('接口没有返回二维码图片');
+			ui.neteaseQr.src = qrImage;
+			ui.neteaseQrWrap.classList.remove('hidden');
+			ui.neteaseQrWrap.classList.add('flex');
+			setNeteaseStatus('请使用网易云音乐 App 扫码登录');
+			pollNeteaseQr(key);
+		} catch (error) {
+			setNeteaseStatus(error instanceof Error ? error.message : '二维码生成失败', 'error');
+		}
+	}
+
     // ── Button click delegates ───────────────────────────────
     ui.btnPlay.addEventListener('click', function () { mgr.togglePlay(); });
     ui.btnNext.addEventListener('click', function () { mgr.playNext(); });
     ui.btnPrev.addEventListener('click', function () { mgr.playPrev(); });
     ui.btnRepeat.addEventListener('click', function () { mgr.cyclePlayMode(); });
     ui.btnMute.addEventListener('click', function () { mgr.toggleMute(); });
+	ui.btnNetease?.addEventListener('click', function () {
+		var isOpen = ui.neteaseDrawer.style.gridTemplateRows === '1fr';
+		setNeteaseDrawerOpen(!isOpen);
+	});
+	ui.btnLibrary?.addEventListener('click', function () {
+		window.dispatchEvent(new CustomEvent('jingyue:open-music-library', {
+			detail: { tab: 'queue' }
+		}));
+	});
+	ui.neteaseForm?.addEventListener('submit', function (event) {
+		event.preventDefault();
+		syncNeteasePlaylist(ui.neteaseInput.value);
+	});
+	ui.neteaseLogin?.addEventListener('click', startNeteaseLogin);
+	ui.neteaseApply?.addEventListener('click', function () {
+		syncNeteasePlaylist(ui.neteaseSelect.value);
+	});
 
     ui.volContainer.addEventListener('click', function (e) {
         var rect = ui.volContainer.getBoundingClientRect();
@@ -826,6 +1058,7 @@ const widgetId =
                     });
                     observer.disconnect();
                     clearTimeout(local.scrollTimeout);
+					if (local.qrPollTimer) window.clearTimeout(local.qrPollTimer);
                     return;
                 }
             }
@@ -837,6 +1070,8 @@ const widgetId =
 
     // ── Init: either sync existing state or trigger init ─────
     var currentState = mgr.getState();
+	var savedPlaylistId = localStorage.getItem('jingyue-netease-playlist-id');
+	if (savedPlaylistId && ui.neteaseInput) ui.neteaseInput.value = savedPlaylistId;
     if (currentState.initialized) {
         // Manager already initialized (late mount) – sync all UI
         syncAll();
@@ -869,4 +1104,30 @@ const widgetId =
         0%, 100% { height: 4px; }
         50%      { height: 14px; }
     }
+
+	.netease-sync-status[data-tone="success"] {
+		color: var(--primary);
+	}
+
+	.netease-sync-status[data-tone="error"] {
+		color: #e5484d;
+	}
+
+	.netease-playlist-input:focus {
+		box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 12%, transparent);
+	}
+
+	@media (max-width: 420px) {
+		.netease-playlist-form,
+		.netease-account-row {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.netease-qr-wrap {
+			align-items: center;
+			flex-direction: column;
+			text-align: center;
+		}
+	}
 </style>

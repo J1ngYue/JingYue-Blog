@@ -1,0 +1,317 @@
+---
+import { snowConfig } from "@/config";
+
+const config = snowConfig;
+---
+
+<script is:inline define:vars={{ snowEffectConfig: config }}>
+	(function initializeSnowEffect() {
+		if (window.snowEffectInitialized) return;
+
+		class SnowEffectManager {
+			constructor(config) {
+				this.config = config;
+				this.canvas = null;
+				this.context = null;
+				this.flakes = [];
+				this.animationId = null;
+				this.resizeFrame = null;
+				this.lastFrameTime = 0;
+				this.state = "off";
+				this.boundResize = this.handleResize.bind(this);
+				this.boundVisibility = this.handleVisibility.bind(this);
+			}
+
+			random(min, max) {
+				return min + Math.random() * (max - min);
+			}
+
+			getLayers() {
+				const mobile = window.innerWidth < 768;
+				const configuredCount = mobile
+					? this.config.flakeCount.mobile
+					: this.config.flakeCount.desktop;
+				const reduced = window.matchMedia(
+					"(prefers-reduced-motion: reduce)",
+				).matches;
+				const count = Math.max(
+					18,
+					Math.round(configuredCount * (reduced ? 0.55 : 1)),
+				);
+				const speedMin = this.config.speed.min;
+				const speedMax = this.config.speed.max;
+				const sizeMin = this.config.size.min;
+				const sizeMax = this.config.size.max;
+				const opacityMin = this.config.opacity.min;
+				const opacityMax = this.config.opacity.max;
+				const dustCount = Math.max(8, Math.round(count * 0.42));
+				const midCount = Math.max(7, Math.round(count * 0.34));
+
+				return [
+					{
+						count: dustCount,
+						size: [Math.max(0.15, sizeMin * 0.18), Math.max(0.45, sizeMin * 0.42)],
+						speed: [Math.max(0.15, speedMin * 0.25), Math.max(0.35, speedMin * 0.55)],
+						opacity: [opacityMin * 0.45, opacityMin * 0.9],
+						drift: [0.05, 0.2],
+					},
+					{
+						count: midCount,
+						size: [Math.max(0.45, sizeMin * 0.45), Math.max(0.9, sizeMax * 0.55)],
+						speed: [Math.max(0.35, speedMin * 0.55), Math.max(0.75, speedMax * 0.75)],
+						opacity: [opacityMin * 0.75, opacityMax * 0.8],
+						drift: [0.15, 0.45],
+					},
+					{
+						count: Math.max(4, count - dustCount - midCount),
+						size: [Math.max(1, sizeMax * 0.55), Math.max(1.8, sizeMax)],
+						speed: [Math.max(0.7, speedMax * 0.65), Math.max(1.2, speedMax * 1.05)],
+						opacity: [opacityMax * 0.7, Math.min(1, opacityMax)],
+						drift: [0.25, 0.6],
+					},
+				];
+			}
+
+			createFlake(layer, randomY) {
+				return {
+					x: Math.random() * window.innerWidth,
+					y: randomY
+						? Math.random() * window.innerHeight
+						: -this.random(4, window.innerHeight * 0.25),
+					size: this.random(layer.size[0], layer.size[1]),
+					speed: this.random(layer.speed[0], layer.speed[1]),
+					opacity: this.random(layer.opacity[0], layer.opacity[1]),
+					phase: Math.random() * Math.PI * 2,
+					drift: this.random(layer.drift[0], layer.drift[1]),
+					driftFreq: this.random(0.0003, 0.0012),
+					layer,
+				};
+			}
+
+			createFlakes() {
+				this.flakes = [];
+				for (const layer of this.getLayers()) {
+					for (let i = 0; i < layer.count; i += 1) {
+						this.flakes.push(this.createFlake(layer, true));
+					}
+				}
+				this.flakes.sort((a, b) => a.opacity - b.opacity);
+			}
+
+			createCanvas() {
+				document.getElementById("canvas_snow")?.remove();
+				this.canvas = document.createElement("canvas");
+				this.canvas.id = "canvas_snow";
+				this.canvas.setAttribute("aria-hidden", "true");
+				this.canvas.style.cssText = [
+					"position:fixed",
+					"inset:0",
+					"width:100vw",
+					"height:100vh",
+					"pointer-events:none",
+					`z-index:${this.config.zIndex}`,
+					"contain:strict",
+				].join(";");
+				document.documentElement.appendChild(this.canvas);
+				this.context = this.canvas.getContext("2d", { alpha: true });
+				this.resizeCanvas();
+			}
+
+			resizeCanvas() {
+				if (!this.canvas) return;
+				this.canvas.width = Math.max(1, window.innerWidth);
+				this.canvas.height = Math.max(1, window.innerHeight);
+			}
+
+			handleResize() {
+				if (this.resizeFrame !== null) {
+					cancelAnimationFrame(this.resizeFrame);
+				}
+				this.resizeFrame = requestAnimationFrame(() => {
+					this.resizeCanvas();
+					if (this.state === "active") this.createFlakes();
+					this.resizeFrame = null;
+				});
+			}
+
+			handleVisibility() {
+				if (this.state === "off") return;
+				if (document.hidden) {
+					if (this.animationId !== null) {
+						cancelAnimationFrame(this.animationId);
+						this.animationId = null;
+					}
+					return;
+				}
+				this.lastFrameTime = performance.now();
+				if (this.animationId === null) {
+					this.animationId = requestAnimationFrame((time) =>
+						this.drawFrame(time),
+					);
+				}
+			}
+
+			resetFlake(flake) {
+				Object.assign(flake, this.createFlake(flake.layer, false));
+			}
+
+			drawFrame(time) {
+				if (this.state === "off" || !this.canvas || !this.context) {
+					this.animationId = null;
+					return;
+				}
+
+				const delta = Math.min(
+					2.2,
+					Math.max(0.5, (time - this.lastFrameTime) / 16.667),
+				);
+				this.lastFrameTime = time;
+				const width = this.canvas.width;
+				const height = this.canvas.height;
+				const context = this.context;
+				let visibleCount = 0;
+				let currentOpacity = -1;
+
+				context.clearRect(0, 0, width, height);
+				context.fillStyle = "rgb(255 255 255)";
+
+				for (const flake of this.flakes) {
+					flake.x +=
+						(this.config.wind * 0.35 +
+							Math.sin(flake.phase + time * flake.driftFreq) *
+								flake.drift) *
+						delta;
+					flake.y += flake.speed * delta;
+
+					if (flake.y > height + flake.size) {
+						if (this.state === "draining") continue;
+						this.resetFlake(flake);
+					}
+
+					if (flake.x > width + flake.size) flake.x = -flake.size;
+					if (flake.x < -flake.size) flake.x = width + flake.size;
+
+					visibleCount += 1;
+					const quantized = Math.round(flake.opacity * 50) / 50;
+					if (quantized !== currentOpacity) {
+						currentOpacity = quantized;
+						context.globalAlpha = currentOpacity;
+					}
+					context.beginPath();
+					context.arc(flake.x, flake.y, flake.size, 0, Math.PI * 2);
+					context.fill();
+				}
+
+				context.globalAlpha = 1;
+				if (this.state === "draining" && visibleCount === 0) {
+					this.finishDrain();
+					return;
+				}
+				this.animationId = requestAnimationFrame((nextTime) =>
+					this.drawFrame(nextTime),
+				);
+			}
+
+			start() {
+				if (this.state === "active" && this.canvas?.isConnected) return;
+				if (this.state === "draining" && this.canvas?.isConnected) {
+					this.state = "active";
+					return;
+				}
+				if (this.state !== "off") this.finishDrain();
+				this.createCanvas();
+				if (!this.context) {
+					this.finishDrain();
+					return;
+				}
+				this.createFlakes();
+				this.state = "active";
+				this.lastFrameTime = performance.now();
+				window.addEventListener("resize", this.boundResize, {
+					passive: true,
+				});
+				document.addEventListener(
+					"visibilitychange",
+					this.boundVisibility,
+				);
+				if (!document.hidden) {
+					this.animationId = requestAnimationFrame((time) =>
+						this.drawFrame(time),
+					);
+				}
+			}
+
+			stop() {
+				if (this.state !== "active") return;
+				this.state = "draining";
+			}
+
+			finishDrain() {
+				this.state = "off";
+				if (this.animationId !== null) {
+					cancelAnimationFrame(this.animationId);
+					this.animationId = null;
+				}
+				if (this.resizeFrame !== null) {
+					cancelAnimationFrame(this.resizeFrame);
+					this.resizeFrame = null;
+				}
+				window.removeEventListener("resize", this.boundResize);
+				document.removeEventListener(
+					"visibilitychange",
+					this.boundVisibility,
+				);
+				this.canvas?.remove();
+				this.canvas = null;
+				this.context = null;
+				this.flakes = [];
+			}
+
+			stopImmediate() {
+				if (this.state === "off") return;
+				this.finishDrain();
+			}
+		}
+
+		const storedEnabled = localStorage.getItem("snowEnabled");
+		const enabled =
+			storedEnabled === null
+				? snowEffectConfig.enable
+				: storedEnabled === "true";
+		const manager = new SnowEffectManager(snowEffectConfig);
+		window.snowEffectManager = manager;
+		window.snowEffectInitialized = true;
+		document.documentElement.setAttribute(
+			"data-snow-enabled",
+			String(enabled),
+		);
+
+		if (enabled) manager.start();
+
+		window.addEventListener("snowToggle", (event) => {
+			const nextEnabled = Boolean(event.detail?.enabled);
+			document.documentElement.setAttribute(
+				"data-snow-enabled",
+				String(nextEnabled),
+			);
+			if (nextEnabled) manager.start();
+			else manager.stop();
+		});
+
+		const syncSnowEffect = () => {
+			const stored = localStorage.getItem("snowEnabled");
+			const shouldEnable =
+				stored === null ? snowEffectConfig.enable : stored === "true";
+			document.documentElement.setAttribute(
+				"data-snow-enabled",
+				String(shouldEnable),
+			);
+			if (shouldEnable) manager.start();
+			else manager.stop();
+		};
+
+		document.addEventListener("astro:page-load", syncSnowEffect);
+		document.addEventListener("swup:contentReplaced", syncSnowEffect);
+		window.addEventListener("beforeunload", () => manager.stopImmediate());
+	})();
+</script>

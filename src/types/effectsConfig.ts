@@ -25,3 +25,49 @@ export type SakuraConfig = {
 	};
 	zIndex: number; // 层级，确保樱花在合适的层级显示
 };
+
+export type SnowConfig = {
+	enable: boolean;
+	switchable?: boolean;
+	flakeCount: {
+		desktop: number;
+		mobile: number;
+	};
+	speed: {
+		min: number;
+		max: number;
+	};
+	size: {
+		min: number;
+		max: number;
+	};
+	opacity: {
+		min: number;
+		max: number;
+	};
+	wind: number;
+	zIndex: number;
+};
+
+export type RainConfig = {
+	enable: boolean; // 是否启用雨滴特效
+	switchable?: boolean; // 是否允许用户在设置中切换雨滴特效
+	dropCount: {
+		desktop: number;
+		mobile: number;
+	};
+	speed: {
+		min: number;
+		max: number;
+	};
+	length: {
+		min: number;
+		max: number;
+	};
+	opacity: {
+		min: number;
+		max: number;
+	};
+	wind: number; // 水平方向偏移速度
+	zIndex: number;
+};

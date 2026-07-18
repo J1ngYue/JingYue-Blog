@@ -1,4 +1,4 @@
-import type { SakuraConfig } from "../types/effectsConfig";
+import type { RainConfig, SakuraConfig, SnowConfig } from "../types/effectsConfig";
 
 // 特效配置 - 集中管理所有动画特效
 
@@ -55,4 +55,50 @@ export const sakuraConfig: SakuraConfig = {
 
 	// 层级，确保樱花在合适的层级显示
 	zIndex: 100,
+};
+
+export const rainConfig: RainConfig = {
+	enable: false,
+	switchable: true,
+	dropCount: {
+		desktop: 96,
+		mobile: 56,
+	},
+	speed: {
+		min: 8,
+		max: 14,
+	},
+	length: {
+		min: 18,
+		max: 34,
+	},
+	opacity: {
+		min: 0.38,
+		max: 0.78,
+	},
+	wind: -2.5,
+	zIndex: 99,
+};
+
+export const snowConfig: SnowConfig = {
+	enable: false,
+	switchable: true,
+	flakeCount: {
+		desktop: 64,
+		mobile: 36,
+	},
+	speed: {
+		min: 0.7,
+		max: 1.8,
+	},
+	size: {
+		min: 1.2,
+		max: 3.8,
+	},
+	opacity: {
+		min: 0.35,
+		max: 0.9,
+	},
+	wind: 0.45,
+	zIndex: 98,
 };

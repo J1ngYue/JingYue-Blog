@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
 import AlbumCard from "@/components/pages/gallery/AlbumCard.astro";
 import { galleryConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -26,7 +27,8 @@ const albums = galleryConfig.albums.map((album) => {
 const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort();
 ---
 
-<MainGridLayout title={title} description={description}>
+<MainGridLayout title={title} bannerTitle="我的" description={description}>
+  <FeatureHubHeader section="personal" active="gallery" />
   <div
     class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32"
   >

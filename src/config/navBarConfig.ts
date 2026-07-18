@@ -10,109 +10,54 @@ import {
 // NavBar Configuration - Dynamically generate navigation bar links based on order
 // ============================================================================
 const getDynamicNavBarConfig = (): NavBarConfig => {
+	const contentPath = (path: string) => `${path}#main-content-wrapper`;
+
 	// 基础导航栏链接
 	const links: NavBarLink[] = [
 		// 主页
 		LinkPresets.Home,
 	];
 
-	// 文章及其子菜单
+	// 文章中心：归档、分类与标签在页面内部切换，不再使用下拉菜单
 	links.push({
+		...LinkPresets.Archive,
 		name: "文章",
-		url: "#",
 		icon: "material-symbols:article",
-		children: [
-			// 归档
-			LinkPresets.Archive,
-
-			// 分类
-			LinkPresets.Categories,
-
-			// 标签
-			LinkPresets.Tags,
-		],
+		url: contentPath(LinkPresets.Archive.url),
 	});
 
 	// 动态
-	links.push(LinkPresets.Dynamic);
+	links.push({
+		...LinkPresets.Dynamic,
+		url: contentPath(LinkPresets.Dynamic.url),
+	});
 
-	//社交及其子菜单
+	// 社交：友链与留言在社交页面内部切换
 	links.push({
 		name: "社交",
-		url: "#",
+		url: "/social/#main-content-wrapper",
 		icon: "material-symbols:group",
-		children: [
-			// 相册
-			LinkPresets.Friends,
-
-			// 追番
-			LinkPresets.Guestbook,
-		],
 	});
 
-	// 我的及其子菜单
+	// 我的：相册、追番与番组计划在页面内部切换
 	links.push({
 		name: "我的",
-		url: "#",
+		url: "/mine/#main-content-wrapper",
 		icon: "material-symbols:person",
-		children: [
-			// 相册
-			LinkPresets.Gallery,
-
-			// 追番
-			LinkPresets.Anime,
-
-			// 番组计划
-			LinkPresets.Bangumi,
-		],
 	});
 
-	// 关于及其子菜单
+	// 关于：个人介绍与支持本站在页面内部切换
 	links.push({
 		name: "关于",
-		url: "#",
+		url: "/about/#main-content-wrapper",
 		icon: "material-symbols:info",
-		children: [
-			// 打赏
-			LinkPresets.Sponsor,
-
-			// 关于页面
-			LinkPresets.About,
-		],
 	});
 
-	// 自定义导航栏链接
+	// 链接：外部资源在链接页面内部选择
 	links.push({
 		name: "链接",
-		url: "#",
+		url: "/links/#main-content-wrapper",
 		icon: "material-symbols:link",
-		// 子菜单
-		children: [
-			{
-				name: "GitHub",
-				url: "https://github.com/CuteLeaf/Firefly",
-				external: true,
-				icon: "fa7-brands:github",
-			},
-			{
-				name: "Gitee",
-				url: "https://gitee.com/CuteLeaf/Firefly",
-				external: true,
-				icon: "fa7-brands:gitee",
-			},
-			{
-				name: "QQ交流群",
-				url: "https://qm.qq.com/q/ZGsFa8qX2G",
-				external: true,
-				icon: "fa7-brands:qq",
-			},
-			{
-				name: "Firefly文档",
-				url: "https://docs-firefly.cuteleaf.cn",
-				external: true,
-				icon: "material-symbols:docs",
-			},
-		],
 	});
 
 	// 文档链接

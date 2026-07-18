@@ -1,6 +1,5 @@
 <script lang="ts">
 import {
-	WALLPAPER_BANNER,
 	WALLPAPER_FULLSCREEN,
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
@@ -12,19 +11,19 @@ import {
 	getDefaultBannerTitleEnabled,
 	getDefaultGradientEnabled,
 	getDefaultHue,
-	getDefaultOverlayBlur,
 	getDefaultOverlayCardOpacity,
-	getDefaultOverlayOpacity,
+	getDefaultRainEnabled,
 	getDefaultSakuraEnabled,
+	getDefaultSnowEnabled,
 	getDefaultWavesEnabled,
 	getHue,
 	getStoredBannerCarouselEnabled,
 	getStoredBannerTitleEnabled,
 	getStoredGradientEnabled,
-	getStoredOverlayBlur,
 	getStoredOverlayCardOpacity,
-	getStoredOverlayOpacity,
+	getStoredRainEnabled,
 	getStoredSakuraEnabled,
+	getStoredSnowEnabled,
 	getStoredWallpaperMode,
 	getStoredWavesEnabled,
 	setBannerCarouselEnabled,
@@ -34,32 +33,33 @@ import {
 	setOverlayBlur,
 	setOverlayCardOpacity,
 	setOverlayOpacity,
+	setRainEnabled,
 	setSakuraEnabled,
+	setSnowEnabled,
 	setWallpaperMode,
 	setWavesEnabled,
 } from "@utils/setting-utils";
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
-import { backgroundWallpaper, sakuraConfig, siteConfig } from "@/config";
+import {
+	backgroundWallpaper,
+	rainConfig,
+	sakuraConfig,
+	snowConfig,
+	siteConfig,
+} from "@/config";
 import type { WALLPAPER_MODE } from "@/types/config";
-
-type OverlaySliderItem = {
-	key: "opacity" | "blur" | "cardOpacity";
-	enabled: boolean;
-	label: string;
-	displayValue: string;
-	ariaLabel: string;
-	min: number;
-	max: number;
-	step: number;
-	value: number;
-	onValueChange: (value: number) => void;
-};
+import {
+	getDefaultLocalWallpaperBlur,
+	getDefaultLocalWallpaperOpacity,
+	getLocalWallpaperBlur,
+	getLocalWallpaperOpacity,
+	setLocalWallpaperBlur,
+	setLocalWallpaperOpacity,
+} from "@/utils/local-wallpaper";
 
 let hue = $state(getHue());
-const defaultHue = getDefaultHue();
 let wallpaperMode: WALLPAPER_MODE = $state(backgroundWallpaper.mode);
-const defaultWallpaperMode = backgroundWallpaper.mode;
 let currentLayout: "list" | "grid" = $state("list");
 const defaultLayout = siteConfig.postListLayout.defaultMode;
 const mobileDefaultLayout =
@@ -82,12 +82,27 @@ let bannerCarouselEnabled = $state(true);
 const defaultBannerCarouselEnabled = getDefaultBannerCarouselEnabled();
 let sakuraEnabled = $state(true);
 const defaultSakuraEnabled = getDefaultSakuraEnabled();
-let overlayOpacity = $state(getDefaultOverlayOpacity());
-const defaultOverlayOpacity = getDefaultOverlayOpacity();
-let overlayBlur = $state(getDefaultOverlayBlur());
-const defaultOverlayBlur = getDefaultOverlayBlur();
+let rainEnabled = $state(false);
+const defaultRainEnabled = getDefaultRainEnabled();
+let snowEnabled = $state(false);
+const defaultSnowEnabled = getDefaultSnowEnabled();
 let overlayCardOpacity = $state(getDefaultOverlayCardOpacity());
 const defaultOverlayCardOpacity = getDefaultOverlayCardOpacity();
+let localWallpaperOpacity = $state(getLocalWallpaperOpacity());
+let localWallpaperBlur = $state(getLocalWallpaperBlur());
+const defaultLocalWallpaperOpacity = getDefaultLocalWallpaperOpacity();
+const defaultLocalWallpaperBlur = getDefaultLocalWallpaperBlur();
+
+function transparencyPercent(opacity: number) {
+	return Math.round((1 - Math.min(1, Math.max(0, opacity))) * 100);
+}
+
+function opacityFromTransparencyPercent(transparency: number) {
+	const safeTransparency = Number.isFinite(transparency)
+		? Math.min(100, Math.max(0, transparency))
+		: 0;
+	return 1 - safeTransparency / 100;
+}
 
 const isWallpaperSwitchable = backgroundWallpaper.switchable ?? true;
 const allowLayoutSwitch = siteConfig.postListLayout.allowSwitch;
@@ -113,6 +128,10 @@ const isBannerCarouselSwitchable =
 	backgroundWallpaper.common?.carousel?.switchable ?? false;
 // 是否允许用户切换樱花特效
 const isSakuraSwitchable = sakuraConfig?.switchable ?? false;
+// 雨滴与樱花使用独立开关，可以同时启用
+const isRainSwitchable = rainConfig?.switchable ?? false;
+// 飘雪与其他特效使用独立开关，可以同时启用
+const isSnowSwitchable = snowConfig?.switchable ?? false;
 // 是否有任何横幅设置可显示（后续添加新设置时在此处添加条件）
 const hasBannerSettings =
 	isWavesSwitchable ||
@@ -121,101 +140,39 @@ const hasBannerSettings =
 	isBannerCarouselSwitchable;
 const overlaySwitchableConfig =
 	backgroundWallpaper.overlay?.switchable ?? false;
-const isOverlaySettingsSwitchable =
-	typeof overlaySwitchableConfig === "boolean" ? overlaySwitchableConfig : true;
-const isOverlayOpacitySwitchable =
-	typeof overlaySwitchableConfig === "boolean"
-		? overlaySwitchableConfig
-		: (overlaySwitchableConfig.opacity ?? false);
-const isOverlayBlurSwitchable =
-	typeof overlaySwitchableConfig === "boolean"
-		? overlaySwitchableConfig
-		: (overlaySwitchableConfig.blur ?? false);
 const isOverlayCardOpacitySwitchable =
 	typeof overlaySwitchableConfig === "boolean"
 		? overlaySwitchableConfig
 		: (overlaySwitchableConfig.cardOpacity ?? false);
-const hasOverlaySettings =
-	isOverlaySettingsSwitchable &&
-	(isOverlayOpacitySwitchable ||
-		isOverlayBlurSwitchable ||
-		isOverlayCardOpacitySwitchable);
-let overlaySettingsIsDefault = $derived(
-	(!isOverlayOpacitySwitchable || overlayOpacity === defaultOverlayOpacity) &&
-		(!isOverlayBlurSwitchable || overlayBlur === defaultOverlayBlur) &&
-		(!isOverlayCardOpacitySwitchable ||
-			overlayCardOpacity === defaultOverlayCardOpacity),
-);
-// 横幅设置是否全部为默认值（用于控制恢复默认按钮的显隐）
-let bannerSettingsIsDefault = $derived(
-	(!isBannerTitleSwitchable ||
-		bannerTitleEnabled === defaultBannerTitleEnabled) &&
-		(!isWavesSwitchable || wavesEnabled === defaultWavesEnabled) &&
-		(!isGradientSwitchable || gradientEnabled === defaultGradientEnabled) &&
-		(!isBannerCarouselSwitchable ||
-			bannerCarouselEnabled === defaultBannerCarouselEnabled),
-);
-const hasAnyContent =
-	showThemeColor ||
-	isWallpaperSwitchable ||
-	allowLayoutSwitch ||
-	hasBannerSettings ||
-	hasOverlaySettings ||
-	isSakuraSwitchable;
-
-let overlaySliderItems = $derived<OverlaySliderItem[]>([
-	{
-		key: "opacity",
-		enabled: isOverlayOpacitySwitchable,
-		label: i18n(I18nKey.overlayOpacity),
-		displayValue: `${Math.round(overlayOpacity * 100)}%`,
-		ariaLabel: i18n(I18nKey.overlayOpacity),
-		min: 20,
-		max: 100,
-		step: 1,
-		value: Math.round(overlayOpacity * 100),
-		onValueChange: (value) => {
-			overlayOpacity = value / 100;
-		},
-	},
-	{
-		key: "blur",
-		enabled: isOverlayBlurSwitchable,
-		label: i18n(I18nKey.overlayBlur),
-		displayValue: `${overlayBlur.toFixed(1)}px`,
-		ariaLabel: i18n(I18nKey.overlayBlur),
-		min: 0,
-		max: 20,
-		step: 0.5,
-		value: overlayBlur,
-		onValueChange: (value) => {
-			overlayBlur = value;
-		},
-	},
-	{
-		key: "cardOpacity",
-		enabled: isOverlayCardOpacitySwitchable,
-		label: i18n(I18nKey.overlayCardOpacity),
-		displayValue: `${Math.round(overlayCardOpacity * 100)}%`,
-		ariaLabel: i18n(I18nKey.overlayCardOpacity),
-		min: 20,
-		max: 100,
-		step: 1,
-		value: Math.round(overlayCardOpacity * 100),
-		onValueChange: (value) => {
-			overlayCardOpacity = value / 100;
-		},
-	},
-]);
+const hasAnyContent = true;
 
 function resetHue() {
 	hue = getDefaultHue();
 	requestAnimationFrame(refreshAllRangeProgress);
 }
 
-function resetWallpaperMode() {
-	wallpaperMode = defaultWallpaperMode;
-	setWallpaperMode(defaultWallpaperMode);
+function updateHue(value: number) {
+	if (!Number.isFinite(value)) return;
+	hue = Math.round(Math.min(360, Math.max(0, value)));
+	requestAnimationFrame(refreshAllRangeProgress);
+}
+
+function resetBackgroundSettings() {
+	localWallpaperOpacity = defaultLocalWallpaperOpacity;
+	localWallpaperBlur = defaultLocalWallpaperBlur;
+	setLocalWallpaperOpacity(defaultLocalWallpaperOpacity);
+	setLocalWallpaperBlur(defaultLocalWallpaperBlur);
+	setOverlayOpacity(defaultLocalWallpaperOpacity);
+	setOverlayBlur(defaultLocalWallpaperBlur);
+	if (
+		isOverlayCardOpacitySwitchable &&
+		overlayCardOpacity !== defaultOverlayCardOpacity
+	) {
+		overlayCardOpacity = defaultOverlayCardOpacity;
+		setOverlayCardOpacity(defaultOverlayCardOpacity);
+	}
+
+	requestAnimationFrame(refreshAllRangeProgress);
 }
 
 function resetLayout() {
@@ -264,23 +221,26 @@ function resetBannerSettings() {
 	}
 }
 
-function resetOverlaySettings() {
-	if (isOverlayOpacitySwitchable && overlayOpacity !== defaultOverlayOpacity) {
-		overlayOpacity = defaultOverlayOpacity;
-		setOverlayOpacity(defaultOverlayOpacity);
-	}
-	if (isOverlayBlurSwitchable && overlayBlur !== defaultOverlayBlur) {
-		overlayBlur = defaultOverlayBlur;
-		setOverlayBlur(defaultOverlayBlur);
-	}
-	if (
-		isOverlayCardOpacitySwitchable &&
-		overlayCardOpacity !== defaultOverlayCardOpacity
-	) {
-		overlayCardOpacity = defaultOverlayCardOpacity;
-		setOverlayCardOpacity(defaultOverlayCardOpacity);
-	}
+function updateLocalWallpaperOpacity(value: number) {
+	if (!Number.isFinite(value)) return;
+	localWallpaperOpacity = opacityFromTransparencyPercent(value);
+	setLocalWallpaperOpacity(localWallpaperOpacity);
+	setOverlayOpacity(localWallpaperOpacity);
+	requestAnimationFrame(refreshAllRangeProgress);
+}
 
+function updateLocalWallpaperBlur(value: number) {
+	if (!Number.isFinite(value)) return;
+	localWallpaperBlur = Math.min(20, Math.max(0, value));
+	setLocalWallpaperBlur(localWallpaperBlur);
+	setOverlayBlur(localWallpaperBlur);
+	requestAnimationFrame(refreshAllRangeProgress);
+}
+
+function updateOverlayCardOpacity(value: number) {
+	if (!Number.isFinite(value)) return;
+	overlayCardOpacity = opacityFromTransparencyPercent(value);
+	setOverlayCardOpacity(overlayCardOpacity);
 	requestAnimationFrame(refreshAllRangeProgress);
 }
 
@@ -307,6 +267,31 @@ function toggleBannerCarouselEnabled() {
 function toggleSakuraEnabled() {
 	sakuraEnabled = !sakuraEnabled;
 	setSakuraEnabled(sakuraEnabled);
+}
+
+function toggleRainEnabled() {
+	rainEnabled = !rainEnabled;
+	setRainEnabled(rainEnabled);
+}
+
+function toggleSnowEnabled() {
+	snowEnabled = !snowEnabled;
+	setSnowEnabled(snowEnabled);
+}
+
+function resetEffectsSettings() {
+	if (isSakuraSwitchable && sakuraEnabled !== defaultSakuraEnabled) {
+		sakuraEnabled = defaultSakuraEnabled;
+		setSakuraEnabled(defaultSakuraEnabled);
+	}
+	if (isRainSwitchable && rainEnabled !== defaultRainEnabled) {
+		rainEnabled = defaultRainEnabled;
+		setRainEnabled(defaultRainEnabled);
+	}
+	if (isSnowSwitchable && snowEnabled !== defaultSnowEnabled) {
+		snowEnabled = defaultSnowEnabled;
+		setSnowEnabled(defaultSnowEnabled);
+	}
 }
 
 function switchWallpaperMode(newMode: WALLPAPER_MODE) {
@@ -397,9 +382,15 @@ onMount(() => {
 	// 从localStorage读取樱花特效状态
 	sakuraEnabled = getStoredSakuraEnabled();
 
-	// 从localStorage读取全屏透明设置状态
-	overlayOpacity = getStoredOverlayOpacity();
-	overlayBlur = getStoredOverlayBlur();
+	// 雨滴和樱花独立保存，可同时启用
+	rainEnabled = getStoredRainEnabled();
+	snowEnabled = getStoredSnowEnabled();
+
+	// 封面与全屏透明模式共享同一组透明度和模糊度
+	localWallpaperOpacity = getLocalWallpaperOpacity();
+	localWallpaperBlur = getLocalWallpaperBlur();
+	setOverlayOpacity(localWallpaperOpacity);
+	setOverlayBlur(localWallpaperBlur);
 	overlayCardOpacity = getStoredOverlayCardOpacity();
 
 	// 从localStorage读取用户偏好布局
@@ -474,23 +465,10 @@ $effect(() => {
 	}
 });
 
-$effect(() => {
-	if (wallpaperMode === WALLPAPER_OVERLAY) {
-		if (isOverlayOpacitySwitchable) {
-			setOverlayOpacity(overlayOpacity);
-		}
-		if (isOverlayBlurSwitchable) {
-			setOverlayBlur(overlayBlur);
-		}
-		if (isOverlayCardOpacitySwitchable) {
-			setOverlayCardOpacity(overlayCardOpacity);
-		}
-	}
-});
 </script>
 
 {#if hasAnyContent}
-<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 right-4 px-4 py-2">
+<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 max-w-[calc(100vw-2rem)] right-4 px-4 py-2">
     <!-- Theme Color Section -->
     {#if showThemeColor}
     <div class="mt-2 mb-2">
@@ -500,18 +478,24 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.themeColor)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
-                        class:opacity-0={hue === defaultHue} class:pointer-events-none={hue === defaultHue} onclick={resetHue}>
+                <button aria-label="恢复默认" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetHue}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
                     </div>
                 </button>
             </div>
             <div class="flex gap-1">
-                <div id="hueValue" class="transition bg-(--btn-regular-bg) w-10 h-7 rounded-md flex justify-center
-                font-bold text-sm items-center text-(--btn-content)">
-                    {hue}
-                </div>
+                <input
+                    id="hueValue"
+                    type="number"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={hue}
+                    aria-label="主题色相数值"
+                    oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                    class="transition bg-(--btn-regular-bg) w-14 h-8 rounded-lg px-1 text-center font-bold text-sm text-(--btn-content) outline-none focus:ring-1 focus:ring-(--primary)"
+                />
             </div>
         </div>
         <div class="w-full h-6 px-1 bg-[oklch(0.80_0.10_0)] dark:bg-[oklch(0.70_0.10_0)] rounded-sm select-none">
@@ -521,120 +505,174 @@ $effect(() => {
     </div>
     {/if}
 
-    <!-- Wallpaper Mode Section -->
-    {#if isWallpaperSwitchable}
-        <div class="mt-2 mb-2">
-            <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
-                before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
-                before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
-            >
-                {i18n(I18nKey.wallpaperMode)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
-                        class:opacity-0={wallpaperMode === defaultWallpaperMode} class:pointer-events-none={wallpaperMode === defaultWallpaperMode} onclick={resetWallpaperMode}>
-                    <div class="text-(--btn-content)">
-                        <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
-                    </div>
-                </button>
-            </div>
-            <div class="flex gap-2">
-                <button
-                    class="flex-1 btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
-                    class:opacity-60={wallpaperMode !== WALLPAPER_BANNER}
-                    class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_BANNER}
-                    onclick={() => switchWallpaperMode(WALLPAPER_BANNER)}
-                >
-                    <Icon icon="material-symbols:image-outline" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-xs font-medium">{i18n(I18nKey.wallpaperBannerMode)}</span>
-                </button>
-                <button
-                    class="flex-1 btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
-                    class:opacity-60={wallpaperMode !== WALLPAPER_FULLSCREEN}
-                    class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_FULLSCREEN}
-                    onclick={() => switchWallpaperMode(WALLPAPER_FULLSCREEN)}
-                >
-                    <Icon icon="material-symbols:wallpaper" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-xs font-medium">{i18n(I18nKey.wallpaperFullscreenMode)}</span>
-                </button>
-            </div>
-            <div class="flex gap-2 mt-2">
-                <button
-                    class="flex-1 btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
-                    class:opacity-60={wallpaperMode !== WALLPAPER_OVERLAY}
-                    class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_OVERLAY}
-                    onclick={() => switchWallpaperMode(WALLPAPER_OVERLAY)}
-                >
-                    <Icon icon="material-symbols:full-coverage-outline-rounded" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-xs font-medium">{i18n(I18nKey.wallpaperOverlayMode)}</span>
-                </button>
-                <button
-                    class="flex-1 btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
-                    class:opacity-60={wallpaperMode !== WALLPAPER_NONE}
-                    class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_NONE}
-                    onclick={() => switchWallpaperMode(WALLPAPER_NONE)}
-                >
-                    <Icon icon="material-symbols:hide-image-outline" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-xs font-medium">{i18n(I18nKey.wallpaperNoneMode)}</span>
-                </button>
-            </div>
+    <!-- Unified Cover / Fullscreen Wallpaper Section -->
+    <div class="mt-3 mb-3">
+        <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
+            before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
+            before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
+        >
+            封面 / 全屏背景
+            <button aria-label="重置透明度和模糊度" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetBackgroundSettings}>
+                <div class="text-(--btn-content)">
+                    <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
+                </div>
+            </button>
         </div>
-    {/if}
+        <div class="wallpaper-settings-shell rounded-xl p-3 space-y-2.5">
+            {#if isWallpaperSwitchable}
+                <div class="wallpaper-mode-grid grid grid-cols-3 gap-1.5">
+                    <button
+                        type="button"
+                        class="wallpaper-mode-button btn-regular rounded-lg py-2.5 px-1.5 flex flex-col items-center justify-center gap-1 transition-all"
+                        class:opacity-60={wallpaperMode !== WALLPAPER_FULLSCREEN}
+                        class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_FULLSCREEN}
+                        class:wallpaper-mode-active={wallpaperMode === WALLPAPER_FULLSCREEN}
+                        onclick={() => switchWallpaperMode(WALLPAPER_FULLSCREEN)}
+                    >
+                        <Icon icon="material-symbols:wallpaper" class="text-[1.2rem]"></Icon>
+                        <span class="text-[0.68rem] font-medium">封面壁纸</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="wallpaper-mode-button btn-regular rounded-lg py-2.5 px-1.5 flex flex-col items-center justify-center gap-1 transition-all"
+                        class:opacity-60={wallpaperMode !== WALLPAPER_OVERLAY}
+                        class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_OVERLAY}
+                        class:wallpaper-mode-active={wallpaperMode === WALLPAPER_OVERLAY}
+                        onclick={() => switchWallpaperMode(WALLPAPER_OVERLAY)}
+                    >
+                        <Icon icon="material-symbols:full-coverage-outline-rounded" class="text-[1.2rem]"></Icon>
+                        <span class="text-[0.68rem] font-medium">全屏透明</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="wallpaper-mode-button btn-regular rounded-lg py-2.5 px-1.5 flex flex-col items-center justify-center gap-1 transition-all"
+                        class:opacity-60={wallpaperMode !== WALLPAPER_NONE}
+                        class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_NONE}
+                        class:wallpaper-mode-active={wallpaperMode === WALLPAPER_NONE}
+                        onclick={() => switchWallpaperMode(WALLPAPER_NONE)}
+                    >
+                        <Icon icon="material-symbols:hide-image-outline" class="text-[1.2rem]"></Icon>
+                        <span class="text-[0.68rem] font-medium">纯色背景</span>
+                    </button>
+                </div>
+            {/if}
 
-    <!-- Overlay Settings Section -->
-    {#if wallpaperMode === WALLPAPER_OVERLAY && hasOverlaySettings}
-        <div class="mt-2 mb-2">
-            <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
-                before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
-                before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
-            >
-                {i18n(I18nKey.overlaySettings)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md active:scale-90"
-                        class:opacity-0={overlaySettingsIsDefault} class:pointer-events-none={overlaySettingsIsDefault} onclick={resetOverlaySettings}>
-                    <div class="text-(--btn-content)">
-                        <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
-                    </div>
-                </button>
-            </div>
-            <div class="space-y-2">
-                {#each overlaySliderItems as item (item.key)}
-                    {#if item.enabled}
-                        <div class="rounded-md bg-(--btn-regular-bg) p-2">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-sm font-medium text-(--btn-content) opacity-80">{item.label}</span>
-                                <span class="text-xs text-(--btn-content)">{item.displayValue}</span>
-                            </div>
+            {#if wallpaperMode !== WALLPAPER_NONE}
+                <div class="wallpaper-control-card rounded-lg p-2.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-medium text-(--btn-content) opacity-80">壁纸透明度</span>
+                        <div class="numeric-value-field">
                             <input
-                                aria-label={item.ariaLabel}
-                                type="range"
-                                min={item.min}
-                                max={item.max}
-                                step={item.step}
-                                value={item.value}
-                                oninput={(e) => item.onValueChange(Number((e.currentTarget as HTMLInputElement).value))}
-                                class="slider w-full overlay-slider"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value={transparencyPercent(localWallpaperOpacity)}
+                                aria-label="壁纸透明度数值"
+                                oninput={(event) => updateLocalWallpaperOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                                class="numeric-value-input"
                             />
+                            <span>%</span>
                         </div>
-                    {/if}
-                {/each}
-            </div>
+                    </div>
+                    <input
+                        aria-label="当前壁纸透明度"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={transparencyPercent(localWallpaperOpacity)}
+                        oninput={(event) => updateLocalWallpaperOpacity(Number((event.currentTarget as HTMLInputElement).value))}
+                        class="slider w-full overlay-slider"
+                    />
+                </div>
+
+                <div class="wallpaper-control-card rounded-lg p-2.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-medium text-(--btn-content) opacity-80">背景模糊</span>
+                        <div class="numeric-value-field">
+                            <input
+                                type="number"
+                                min="0"
+                                max="20"
+                                step="0.5"
+                                value={localWallpaperBlur}
+                                aria-label="背景模糊数值"
+                                oninput={(event) => updateLocalWallpaperBlur((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                                class="numeric-value-input"
+                            />
+                            <span>px</span>
+                        </div>
+                    </div>
+                    <input
+                        aria-label="当前背景模糊度"
+                        type="range"
+                        min="0"
+                        max="20"
+                        step="0.5"
+                        value={localWallpaperBlur}
+                        oninput={(event) => updateLocalWallpaperBlur(Number((event.currentTarget as HTMLInputElement).value))}
+                        class="slider w-full overlay-slider"
+                    />
+                </div>
+
+                {#if wallpaperMode === WALLPAPER_OVERLAY && isOverlayCardOpacitySwitchable}
+                    <div class="wallpaper-control-card rounded-lg p-2.5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-medium text-(--btn-content) opacity-80">卡片透明度</span>
+                            <div class="numeric-value-field">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="1"
+                                    value={transparencyPercent(overlayCardOpacity)}
+                                    aria-label="卡片透明度数值"
+                                    oninput={(event) => updateOverlayCardOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                                    class="numeric-value-input"
+                                />
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <input
+                            aria-label="当前卡片透明度"
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={transparencyPercent(overlayCardOpacity)}
+                            oninput={(event) => updateOverlayCardOpacity(Number((event.currentTarget as HTMLInputElement).value))}
+                            class="slider w-full overlay-slider"
+                        />
+                    </div>
+                {/if}
+
+                <p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
+                    封面与全屏壁纸共用这一组透明度和模糊度；透明度越高，图层越透明（0% 完全显示，100% 完全透明）。
+                </p>
+            {:else}
+                <p class="m-0 px-1 py-2 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
+                    纯色背景不使用壁纸透明度和模糊度。
+                </p>
+            {/if}
         </div>
-    {/if}
+    </div>
 
     <!-- Banner Settings Section -->
-    {#if (wallpaperMode === WALLPAPER_BANNER || wallpaperMode === WALLPAPER_FULLSCREEN) && hasBannerSettings}
+    {#if wallpaperMode === WALLPAPER_FULLSCREEN && hasBannerSettings}
         <div class="mt-2 mb-2">
             <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
                 before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.wallpaperSettings)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
-                        class:opacity-0={bannerSettingsIsDefault} class:pointer-events-none={bannerSettingsIsDefault} onclick={resetBannerSettings}>
+                <button aria-label="恢复默认" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetBannerSettings}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
                     </div>
                 </button>
             </div>
-            <div class="space-y-1">
+            <div class="effect-toggle-list space-y-1.5">
                 <!-- Banner Title Switch -->
                 {#if isBannerTitleSwitchable}
                 <button
@@ -712,36 +750,74 @@ $effect(() => {
     {/if}
 
     <!-- Effects Settings Section -->
-    {#if isSakuraSwitchable}
+    {#if isSakuraSwitchable || isRainSwitchable || isSnowSwitchable}
         <div class="mt-2 mb-2">
             <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
                 before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.effectsSettings)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
-                        class:opacity-0={sakuraEnabled === defaultSakuraEnabled} class:pointer-events-none={sakuraEnabled === defaultSakuraEnabled} onclick={() => { sakuraEnabled = defaultSakuraEnabled; setSakuraEnabled(defaultSakuraEnabled); }}>
+                <button aria-label="恢复默认" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetEffectsSettings}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
                     </div>
                 </button>
             </div>
             <div class="space-y-1">
-                <button
-                    class="w-full btn-regular rounded-md py-2 px-3 flex items-center gap-3 text-left active:scale-95 transition-all relative overflow-hidden"
-                    class:bg-(--btn-regular-bg-hover)={sakuraEnabled}
-                    onclick={toggleSakuraEnabled}
-                >
-                    <Icon icon="mdi:flower-poppy" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-sm flex-1">{i18n(I18nKey.sakuraEffect)}</span>
-                    <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
-                         class:bg-(--primary)={sakuraEnabled}
-                         class:bg-(--btn-regular-bg-active)={!sakuraEnabled}>
-                        <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
-                             class:left-0.5={!sakuraEnabled}
-                             class:left-5={sakuraEnabled}></div>
-                    </div>
-                </button>
+                {#if isSakuraSwitchable}
+                    <button
+                        class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden"
+                        class:bg-(--btn-regular-bg-hover)={sakuraEnabled}
+                        class:effect-toggle-active={sakuraEnabled}
+                        onclick={toggleSakuraEnabled}
+                    >
+                        <Icon icon="mdi:flower-poppy" class="text-[1.25rem] shrink-0"></Icon>
+                        <span class="text-sm flex-1">{i18n(I18nKey.sakuraEffect)}</span>
+                        <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
+                             class:bg-(--primary)={sakuraEnabled}
+                             class:bg-(--btn-regular-bg-active)={!sakuraEnabled}>
+                            <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
+                                 class:left-0.5={!sakuraEnabled}
+                                 class:left-5={sakuraEnabled}></div>
+                        </div>
+                    </button>
+                {/if}
+                {#if isRainSwitchable}
+                    <button
+                        class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden"
+                        class:bg-(--btn-regular-bg-hover)={rainEnabled}
+                        class:effect-toggle-active={rainEnabled}
+                        onclick={toggleRainEnabled}
+                    >
+                        <Icon icon="material-symbols:rainy" class="text-[1.25rem] shrink-0"></Icon>
+                        <span class="text-sm flex-1">{i18n(I18nKey.rainEffect)}</span>
+                        <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
+                             class:bg-(--primary)={rainEnabled}
+                             class:bg-(--btn-regular-bg-active)={!rainEnabled}>
+                            <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
+                                 class:left-0.5={!rainEnabled}
+                                 class:left-5={rainEnabled}></div>
+                        </div>
+                    </button>
+                {/if}
+                {#if isSnowSwitchable}
+                    <button
+                        class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden"
+                        class:bg-(--btn-regular-bg-hover)={snowEnabled}
+                        class:effect-toggle-active={snowEnabled}
+                        onclick={toggleSnowEnabled}
+                    >
+                        <Icon icon="material-symbols:ac-unit" class="text-[1.25rem] shrink-0"></Icon>
+                        <span class="text-sm flex-1">{i18n(I18nKey.snowEffect)}</span>
+                        <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
+                             class:bg-(--primary)={snowEnabled}
+                             class:bg-(--btn-regular-bg-active)={!snowEnabled}>
+                            <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
+                                 class:left-0.5={!snowEnabled}
+                                 class:left-5={snowEnabled}></div>
+                        </div>
+                    </button>
+                {/if}
             </div>
         </div>
     {/if}
@@ -754,8 +830,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.postListLayout)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
-                        class:opacity-0={currentLayout === effectiveDefaultLayout} class:pointer-events-none={currentLayout === effectiveDefaultLayout} onclick={resetLayout}>
+                <button aria-label="恢复默认" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetLayout}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
                     </div>
@@ -799,6 +874,127 @@ $effect(() => {
 
 <style lang="stylus">
     #display-setting
+        max-height calc(100dvh - 6rem)
+        overflow-x hidden !important
+        overflow-y auto !important
+        overscroll-behavior contain
+        scrollbar-gutter stable
+
+        .reset-tooltip
+            position relative
+            overflow visible
+
+            &::after
+                content attr(data-tooltip)
+                position absolute
+                left calc(100% + 0.4rem)
+                top 50%
+                z-index 30
+                transform translate(-0.2rem, -50%)
+                padding 0.25rem 0.45rem
+                border-radius 0.4rem
+                background rgba(20, 24, 31, 0.9)
+                color white
+                font-size 0.68rem
+                font-weight 500
+                line-height 1
+                white-space nowrap
+                opacity 0
+                pointer-events none
+                transition opacity 0.15s ease, transform 0.15s ease
+
+            &:hover::after,
+            &:focus-visible::after
+                opacity 1
+                transform translate(0, -50%)
+
+        .wallpaper-settings-shell
+            border 1px solid rgba(90, 155, 92, 0.18)
+            background linear-gradient(145deg, rgba(137, 196, 137, 0.14), rgba(246, 252, 246, 0.07))
+            box-shadow inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 28px rgba(23, 45, 32, 0.06)
+            backdrop-filter blur(10px)
+
+        .wallpaper-mode-grid
+            padding 0.3rem
+            border 1px solid rgba(90, 155, 92, 0.12)
+            border-radius 0.85rem
+            background rgba(137, 196, 137, 0.08)
+
+        .wallpaper-mode-button
+            min-height 4.6rem
+            border 1px solid transparent
+
+            &:hover
+                transform translateY(-1px)
+                border-color rgba(90, 155, 92, 0.22)
+
+            &.wallpaper-mode-active
+                opacity 1 !important
+                transform translateY(-1px)
+                border-color rgba(72, 151, 76, 0.28)
+                box-shadow 0 5px 14px rgba(45, 92, 48, 0.12)
+
+        .wallpaper-control-card
+            border 1px solid rgba(90, 155, 92, 0.12)
+            background var(--card-bg)
+            box-shadow 0 4px 14px rgba(20, 45, 28, 0.045)
+            transition border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease
+
+            &:focus-within
+                border-color rgba(72, 151, 76, 0.36)
+                box-shadow 0 6px 18px rgba(45, 92, 48, 0.09)
+
+        .numeric-value-field
+            display flex
+            align-items center
+            justify-content flex-end
+            min-width 4.6rem
+            height 1.9rem
+            padding 0.1rem 0.45rem
+            border 1px solid rgba(90, 155, 92, 0.12)
+            border-radius 0.6rem
+            background var(--btn-regular-bg)
+            color var(--btn-content)
+            transition border-color 0.15s ease, box-shadow 0.15s ease
+
+            &:focus-within
+                border-color var(--primary)
+                box-shadow 0 0 0 2px rgba(72, 151, 76, 0.12)
+
+            span
+                margin-left 0.15rem
+                font-size 0.68rem
+                opacity 0.62
+
+        .numeric-value-input
+            width 2.9rem
+            min-width 0
+            border 0
+            outline 0
+            background transparent
+            color inherit
+            font-size 0.76rem
+            font-weight 650
+            line-height 1
+            text-align right
+
+        .effect-toggle-list
+            padding 0.3rem
+            border 1px solid rgba(90, 155, 92, 0.1)
+            border-radius 0.85rem
+            background rgba(137, 196, 137, 0.06)
+
+        .effect-toggle-button
+            border 1px solid transparent
+
+            &:hover
+                transform translateY(-1px)
+                border-color rgba(90, 155, 92, 0.2)
+
+            &.effect-toggle-active
+                border-color rgba(72, 151, 76, 0.28)
+                box-shadow 0 4px 12px rgba(45, 92, 48, 0.1)
+
         input[type="range"]
             -webkit-appearance none
             height 1.5rem
@@ -808,33 +1004,51 @@ $effect(() => {
 
         input[type="range"].overlay-slider
             height 0.85rem
+            cursor pointer
 
             /* Input Thumb */
             &::-webkit-slider-thumb
                 -webkit-appearance none
-                height 0
-                width 0
-                border 0
-                border-radius 0
-                background transparent
-                box-shadow none
+                height 1rem
+                width 1rem
+                border 2px solid var(--primary)
+                border-radius 50%
+                background var(--card-bg)
+                box-shadow 0 1px 4px rgba(0, 0, 0, 0.18)
+                cursor pointer
+                transition transform 0.15s ease, box-shadow 0.15s ease
+
+                &:hover
+                    transform scale(1.1)
+                    box-shadow 0 2px 6px rgba(0, 0, 0, 0.22)
+
+                &:active
+                    transform scale(1.18)
 
             &::-moz-range-thumb
-                height 0
-                width 0
-                border 0
-                border-radius 0
-                background transparent
-                box-shadow none
+                height 1rem
+                width 1rem
+                border 2px solid var(--primary)
+                border-radius 50%
+                background var(--card-bg)
+                box-shadow 0 1px 4px rgba(0, 0, 0, 0.18)
+                cursor pointer
+
+                &:hover
+                    transform scale(1.1)
+
+                &:active
+                    transform scale(1.18)
 
             &::-ms-thumb
                 -webkit-appearance none
-                height 0
-                width 0
-                border 0
-                border-radius 0
-                background transparent
-                box-shadow none
+                height 1rem
+                width 1rem
+                border 2px solid var(--primary)
+                border-radius 50%
+                background var(--card-bg)
+                box-shadow 0 1px 4px rgba(0, 0, 0, 0.18)
+                cursor pointer
 
         #colorSlider
             background-image var(--color-selection-bar)
@@ -844,43 +1058,51 @@ $effect(() => {
                 -webkit-appearance none
                 height 1rem
                 width 0.5rem
+                border 0
                 border-radius 0.125rem
-                background rgba(255, 255, 255, 0.7)
+                background rgba(255, 255, 255, 0.72)
                 box-shadow none
 
                 &:hover
-                    background rgba(255, 255, 255, 0.8)
+                    transform none
+                    background rgba(255, 255, 255, 0.84)
 
                 &:active
-                    background rgba(255, 255, 255, 0.6)
+                    transform none
+                    background rgba(255, 255, 255, 0.62)
 
             &::-moz-range-thumb
                 -webkit-appearance none
                 height 1rem
                 width 0.5rem
+                border 0
                 border-radius 0.125rem
-                border-width 0
-                background rgba(255, 255, 255, 0.7)
+                background rgba(255, 255, 255, 0.72)
                 box-shadow none
 
                 &:hover
-                    background rgba(255, 255, 255, 0.8)
+                    transform none
+                    background rgba(255, 255, 255, 0.84)
 
                 &:active
-                    background rgba(255, 255, 255, 0.6)
+                    transform none
+                    background rgba(255, 255, 255, 0.62)
 
             &::-ms-thumb
                 -webkit-appearance none
                 height 1rem
                 width 0.5rem
+                border 0
                 border-radius 0.125rem
-                background rgba(255, 255, 255, 0.7)
+                background rgba(255, 255, 255, 0.72)
                 box-shadow none
 
                 &:hover
-                    background rgba(255, 255, 255, 0.8)
+                    transform none
+                    background rgba(255, 255, 255, 0.84)
 
                 &:active
-                    background rgba(255, 255, 255, 0.6)
+                    transform none
+                    background rgba(255, 255, 255, 0.62)
 
 </style>

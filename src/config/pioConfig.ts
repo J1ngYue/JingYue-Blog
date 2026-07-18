@@ -3,7 +3,7 @@ import type { Live2DWidgetConfig, SpineModelConfig } from "../types/pioConfig";
 // Spine 看板娘配置
 export const spineModelConfig: SpineModelConfig = {
 	// Spine 看板娘开关
-	enable: false,
+	enable: true,
 
 	// Spine模型配置
 	model: {
@@ -48,21 +48,12 @@ export const spineModelConfig: SpineModelConfig = {
 			"emoji_4",
 			"emoji_5",
 		],
-		// 点击时随机显示的文字消息
-		clickMessages: [
-			"你好呀！我是流萤~",
-			"今天也要加油哦！✨",
-			"想要一起去看星空吗？🌟",
-			"记得要好好休息呢~",
-			"有什么想对我说的吗？💫",
-			"让我们一起探索未知的世界吧！🚀",
-			"每一颗星星都有自己的故事~⭐",
-			"希望能带给你温暖和快乐！💖",
-		],
+		// 不显示点击气泡，避免连续出现文字标签
+		clickMessages: [],
 		// 文字显示时间（毫秒）
 		messageDisplayTime: 3000,
 		// 待机动画列表
-		idleAnimations: ["idle", "emoji_0", "emoji_1", "emoji_3", "emoji_4"],
+		idleAnimations: ["idle"],
 		// 待机动画切换间隔（毫秒）
 		idleInterval: 8000,
 	},

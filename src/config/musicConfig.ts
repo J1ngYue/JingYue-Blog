@@ -8,6 +8,14 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 是否在侧边栏显示音乐播放器组件
 	showInSidebar: true,
 
+	// 网易云同步：公开歌单 ID 可直接切换；扫码登录需配置自己的 API 服务。
+	neteaseSync: {
+		enable: true,
+		apiBaseUrl: import.meta.env?.PUBLIC_NETEASE_API_BASE_URL || "",
+		defaultPlaylistId: "10046455237",
+		playlistLimit: 50,
+	},
+
 	// 使用方式："meting" 使用 Meting API，"local" 使用本地音乐列表
 	mode: "meting",
 

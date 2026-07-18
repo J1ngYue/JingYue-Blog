@@ -9,8 +9,10 @@ import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import FloatingControls from "@/components/controls/FloatingControls.astro";
+import QuickToolsDock from "@/components/controls/QuickToolsDock.astro";
 import ScrollDownIndicator from "@/components/controls/ScrollDownIndicator.astro";
 import BackgroundPlayer from "@/components/features/BackgroundPlayer.astro";
+import LocalWallpaperLayer from "@/components/features/LocalWallpaperLayer.svelte";
 import TypewriterText from "@/components/features/TypewriterText.astro";
 import CategoryBar from "@/components/layout/CategoryBar.astro";
 import {
@@ -52,6 +54,10 @@ interface Props {
 	postCategory?: string;
 	headings?: MarkdownHeading[];
 	encrypted?: boolean;
+	homeLanding?: boolean;
+	articleHub?: boolean;
+	contentOnly?: boolean;
+	bannerTitle?: string;
 	bannerPostMeta?: {
 		title: string;
 		published: Date;
@@ -73,6 +79,10 @@ const {
 	postCategory,
 	headings = [],
 	encrypted = false,
+	homeLanding = false,
+	articleHub = false,
+	contentOnly = !homeLanding,
+	bannerTitle,
 	bannerPostMeta,
 } = Astro.props;
 
@@ -152,6 +162,7 @@ const showBannerPageTitle =
 	!isHomePageCheck &&
 	!isPostPage &&
 	!!title;
+const resolvedBannerTitle = bannerTitle ?? title;
 // 手机端非首页不显示banner的CSS类
 const mobileNonHomeBannerClass = !isHomePageCheck ? "mobile-hide-banner" : "";
 
@@ -279,7 +290,7 @@ const hasMultipleImages =
 	backgroundImages.desktop.length > 1 || backgroundImages.mobile.length > 1;
 ---
 
-<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug}>
+<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug} homeLanding={homeLanding} articleHub={articleHub} contentOnly={contentOnly}>
 
 
 <!-- 为全屏壁纸模式添加body类 -->
@@ -325,6 +336,8 @@ const hasMultipleImages =
 				? ``
 				: `top: -${BANNER_HEIGHT_EXTEND}vh`
 }>
+    <LocalWallpaperLayer client:load surface="site" />
+
     <!-- 背景图片显示 -->
     {hasMultipleImages ? (
     /* 轮播模式：渲染所有图片为 slide-item */
@@ -591,6 +604,11 @@ const hasMultipleImages =
                     stopAutoPlay();
                 }
             });
+            window.addEventListener('jingyue:banner-step', function(e) {
+                var visibleSlides = getVisibleSlides();
+                var direction = Number(e.detail && e.detail.direction) || 1;
+                changeToSlide(getCurrentIndex(visibleSlides) + direction);
+            });
 
             // 随机首张
             var slides = getVisibleSlides();
@@ -682,7 +700,7 @@ const hasMultipleImages =
             <div class="w-4/5 lg:w-3/4 text-center mb-0">
                 <div class="banner-page-title font-bold text-white leading-tight inline-flex items-center justify-center gap-3">
                     {/* <Icon is:inline name="material-symbols:bookmark-rounded" class="banner-page-title-icon" /> */}
-                    <span class="banner-page-title-text">{title}</span>
+                    <span class="banner-page-title-text">{resolvedBannerTitle}</span>
                 </div>
             </div>
         </div>
@@ -805,9 +823,12 @@ const hasMultipleImages =
 )}
 
 <!-- Main content -->
-<div class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={isFullscreenMode ? 'top: 0;' : `top: ${finalMainPanelTop}`}>
+<div id="main-content-wrapper" class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={homeLanding ? 'top: 0;' : `top: ${contentOnly && isBackgroundEnabled && (isBannerMode || isFullscreenMode) ? 'calc(100dvh - 3.5rem)' : (isFullscreenMode ? '0' : finalMainPanelTop)}`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
-    <div class="relative w-full xl:w-[92vw] max-w-(--page-width) mx-auto pointer-events-auto">
+    <div id="main-layout-container" class:list={[
+        "relative w-full mx-auto pointer-events-auto",
+        "xl:w-[92vw] max-w-(--page-width)",
+    ]}>
         <div id="main-grid"
           class={`transition duration-700 w-full left-0 right-0 grid ${gridCols} grid-rows-[auto_1fr_auto] lg:grid-rows-[auto] mx-auto gap-4 px-2 md:px-4 ${!sidebarConfig.mobileShowSidebar ? 'mobile-no-sidebar' : ''}`}
           data-sidebar-enable={sidebarLayoutConfig.enable ? "true" : "false"}
@@ -827,7 +848,7 @@ const hasMultipleImages =
                 <>
                     {sidebarLayoutConfig.enable ? (
                         <div id="left-sidebar-wrapper" class="contents" data-hide-sidebar-on-post={hideSidebarOnPostPage ? "true" : "false"} style="contain: layout style paint;">
-                            {effectiveHasLeftComponents && (
+                            {effectiveHasLeftComponents && !homeLanding && !contentOnly && (
                                 <SideBar
                                     side={effectiveIsBothSidebars ? "left" : undefined}
                                     class={sidebarClass}
@@ -843,14 +864,14 @@ const hasMultipleImages =
                 </>
             ) : (
                 <div id="left-sidebar-dynamic" class="contents transition-swup-fade">
-                    {effectiveIsBothSidebars && effectiveHasLeftComponents && (
+                    {effectiveIsBothSidebars && effectiveHasLeftComponents && !homeLanding && !contentOnly && (
 						<SideBar side="left" class={sidebarClass} headings={headings} encrypted={encrypted}></SideBar>
                     )}
                 </div>
             )}
                     
             {/* 主内容区包装器 - 包含静态栏位和swup容器，作为单个grid item */}
-            <div class={staticBarClass}>
+            <div id="main-column-wrapper" class={staticBarClass}>
                 {/* 分类导航栏 - 全站渲染并显示 */}
                 {shouldRenderCategoryBar && <div id="category-bar-wrapper"><CategoryBar currentPostCategory={postCategory} /></div>}
                 {/* 主内容区 - 始终渲染，确保 Swup 容器存在 */}
@@ -861,6 +882,9 @@ const hasMultipleImages =
                 >
                 {/* 携带网格布局类名，用于JS更新父容器 */}
                 <div id="grid-class-carrier" data-grid-class={gridCols} class="hidden"></div>
+                <div id="home-layout-carrier" data-home-landing={homeLanding ? "true" : "false"} class="hidden"></div>
+				<div id="article-hub-layout-carrier" data-article-hub={articleHub ? "true" : "false"} class="hidden"></div>
+				<div id="content-only-layout-carrier" data-content-only={contentOnly ? "true" : "false"} class="hidden"></div>
                 {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
                 <h1 class="sr-only">{title}</h1>
                 <div id="content-wrapper" class="onload-animation transition-leaving">
@@ -880,7 +904,7 @@ const hasMultipleImages =
                 <>
                     {sidebarLayoutConfig.enable ? (
                         <div id="right-sidebar-static" class="contents" data-hide-sidebar-on-post={hideSidebarOnPostPage ? "true" : "false"}>
-                            {(effectiveIsBothSidebars || sidebarLayoutConfig.position === "right") && effectiveHasRightComponents && (
+                            {(effectiveIsBothSidebars || sidebarLayoutConfig.position === "right") && effectiveHasRightComponents && !homeLanding && !contentOnly && (
 								<SideBar side="right" class={rightSidebarClass} headings={headings} encrypted={encrypted}></SideBar>
                             )}
                         </div>
@@ -891,14 +915,14 @@ const hasMultipleImages =
                 </>
             ) : (
                 <div id="right-sidebar-dynamic" class="contents transition-swup-fade">
-                    {effectiveIsBothSidebars && effectiveHasRightComponents && (
+                    {effectiveIsBothSidebars && effectiveHasRightComponents && !homeLanding && !contentOnly && (
 						<SideBar side="right" class={rightSidebarClass} headings={headings} encrypted={encrypted}></SideBar>
                     )}
                 </div>
             )}
 
             {/* 移动端底部组件 - 768px及以下显示 */}
-            {sidebarLayoutConfig.mobileBottomComponents && sidebarLayoutConfig.mobileBottomComponents.length > 0 && (
+            {sidebarLayoutConfig.mobileBottomComponents && sidebarLayoutConfig.mobileBottomComponents.length > 0 && !homeLanding && !contentOnly && (
                 <div id="mobile-bottom-sidebar" class="col-span-1 block md:hidden mt-4">
 					<SideBar side="bottom" headings={headings} encrypted={encrypted}></SideBar>
                 </div>
@@ -915,12 +939,359 @@ const hasMultipleImages =
 </div>
 
 <FloatingControls headings={headings} encrypted={encrypted} />
+<QuickToolsDock />
+
+<script is:inline data-swup-ignore-script>
+	(function bindInternalCoverTransition() {
+		function scheduleInit() {
+			requestAnimationFrame(function () {
+				requestAnimationFrame(initInternalCoverTransition);
+			});
+		}
+
+		function initInternalCoverTransition() {
+			if (window.__jingyueInternalCoverCleanup) {
+				window.__jingyueInternalCoverCleanup();
+				window.__jingyueInternalCoverCleanup = null;
+			}
+
+			var wallpaper = document.getElementById("wallpaper-wrapper");
+			var mainContent = document.getElementById("main-content-wrapper");
+			var desktop = window.matchMedia("(min-width: 1024px) and (pointer: fine)");
+			var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+			var wallpaperMode = document.documentElement.getAttribute("data-wallpaper-mode");
+			var isEnabled =
+				document.body.classList.contains("content-only-active") &&
+				(wallpaperMode === "banner" || wallpaperMode === "fullscreen") &&
+				desktop.matches &&
+				!reducedMotion.matches &&
+				wallpaper &&
+				mainContent;
+
+			if (!isEnabled) {
+				document.documentElement.style.removeProperty("--internal-cover-scale");
+				document.documentElement.style.removeProperty("--internal-cover-radius");
+				document.documentElement.style.removeProperty("--internal-cover-title-opacity");
+				document.documentElement.style.removeProperty("--internal-cover-veil-opacity");
+				return;
+			}
+
+			var progressFrame = 0;
+			var resizeFrame = 0;
+			var targetY = 0;
+
+			function syncProgress() {
+				progressFrame = 0;
+				var progress = targetY > 0
+					? Math.min(1, Math.max(0, window.scrollY / targetY))
+					: 0;
+				document.documentElement.style.setProperty("--internal-cover-scale", String(1 - progress * 0.034));
+				document.documentElement.style.setProperty("--internal-cover-radius", (1.75 * progress).toFixed(3) + "rem");
+				document.documentElement.style.setProperty("--internal-cover-title-opacity", String(1 - progress * 0.92));
+				document.documentElement.style.setProperty("--internal-cover-veil-opacity", String(1 - progress * 0.22));
+			}
+
+			function scheduleProgress() {
+				if (!progressFrame) progressFrame = requestAnimationFrame(syncProgress);
+			}
+
+			function measureTarget() {
+				targetY = Math.max(0, mainContent.getBoundingClientRect().top + window.scrollY - 16);
+				scheduleProgress();
+			}
+
+			function onResize() {
+				if (resizeFrame) cancelAnimationFrame(resizeFrame);
+				resizeFrame = requestAnimationFrame(function () {
+					resizeFrame = 0;
+					if (!desktop.matches || reducedMotion.matches) {
+						scheduleInit();
+						return;
+					}
+					measureTarget();
+				});
+			}
+
+			window.addEventListener("scroll", scheduleProgress, { passive: true });
+			window.addEventListener("resize", onResize, { passive: true });
+			measureTarget();
+
+			window.__jingyueInternalCoverCleanup = function () {
+				if (progressFrame) cancelAnimationFrame(progressFrame);
+				if (resizeFrame) cancelAnimationFrame(resizeFrame);
+				window.removeEventListener("scroll", scheduleProgress);
+				window.removeEventListener("resize", onResize);
+				document.documentElement.style.removeProperty("--internal-cover-scale");
+				document.documentElement.style.removeProperty("--internal-cover-radius");
+				document.documentElement.style.removeProperty("--internal-cover-title-opacity");
+				document.documentElement.style.removeProperty("--internal-cover-veil-opacity");
+			};
+		}
+
+		if (!window.__jingyueInternalCoverEventsBound) {
+			window.__jingyueInternalCoverEventsBound = true;
+			document.addEventListener("astro:page-load", scheduleInit);
+			document.addEventListener("swup:contentReplaced", scheduleInit);
+			window.addEventListener("pageshow", scheduleInit);
+		}
+
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", scheduleInit, { once: true });
+		} else {
+			scheduleInit();
+		}
+	})();
+</script>
+
+<script is:inline data-swup-ignore-script>
+	(function bindContentEntryJump() {
+		function scheduleContentJump() {
+			if (window.location.hash !== "#main-content-wrapper") return;
+			requestAnimationFrame(function () {
+				requestAnimationFrame(function () {
+					var target = document.getElementById("main-content-wrapper");
+					if (!target) return;
+					var targetY = Math.max(
+						0,
+						target.getBoundingClientRect().top + window.scrollY - 16,
+					);
+					window.scrollTo({ top: targetY, left: 0, behavior: "auto" });
+				});
+			});
+		}
+
+		if (!window.__jingyueContentEntryJumpBound) {
+			window.__jingyueContentEntryJumpBound = true;
+			document.addEventListener("astro:page-load", scheduleContentJump);
+			document.addEventListener("swup:contentReplaced", scheduleContentJump);
+			window.addEventListener("hashchange", scheduleContentJump);
+			window.addEventListener("pageshow", scheduleContentJump);
+		}
+
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", scheduleContentJump, {
+				once: true,
+			});
+		} else {
+			scheduleContentJump();
+		}
+	})();
+</script>
 
 
 </Layout>
 
 <style is:global>
+  body.home-landing-active #wallpaper-wrapper,
+  body.home-landing-active #category-bar-wrapper,
+  body.home-landing-active #left-sidebar-wrapper,
+  body.home-landing-active #left-sidebar-dynamic,
+  body.home-landing-active #right-sidebar-static,
+  body.home-landing-active #right-sidebar-dynamic,
+  body.home-landing-active #mobile-bottom-sidebar {
+    display: none !important;
+  }
+
+  body.home-landing-active #top-row {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: auto !important;
+    z-index: 80;
+  }
+
+  body.home-landing-active #navbar-wrapper {
+    position: relative;
+  }
+
+  body.home-landing-active #main-content-wrapper {
+    top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  body.home-landing-active #main-layout-container {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  body.home-landing-active #main-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    transform: none !important;
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.home-landing-active #main-column-wrapper,
+  body.home-landing-active #swup-container,
+  body.home-landing-active #main-grid > .footer {
+    width: 100% !important;
+    min-width: 0;
+    grid-column: 1 / -1 !important;
+  }
+
+  body.home-landing-active #main-column-wrapper {
+    overflow: visible !important;
+  }
+
   /* 右侧栏平滑过渡 */
+  body.content-only-active #left-sidebar-wrapper,
+  body.content-only-active #left-sidebar-dynamic,
+  body.content-only-active #right-sidebar-static,
+  body.content-only-active #right-sidebar-dynamic,
+  body.content-only-active #mobile-bottom-sidebar {
+    display: none !important;
+  }
+
+  body.content-only-active #main-layout-container {
+    width: min(92vw, 92rem) !important;
+    max-width: 92rem !important;
+  }
+
+  body.content-only-active #main-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  body.content-only-active #main-column-wrapper,
+  body.content-only-active #swup-container,
+  body.content-only-active #main-grid > .footer {
+    width: 100% !important;
+    min-width: 0;
+    grid-column: 1 / -1 !important;
+  }
+
+  @media (min-width: 1024px) {
+    body.content-only-active.enable-banner #wallpaper-wrapper {
+      top: 0 !important;
+      display: block !important;
+      height: 100dvh !important;
+      transform: none !important;
+      background: transparent;
+    }
+
+    body.content-only-active.enable-banner #banner {
+      height: 100% !important;
+    }
+
+    body.content-only-active.enable-banner #main-content-wrapper {
+      top: calc(100dvh - 3.5rem) !important;
+    }
+
+    body.content-only-active.enable-banner #main-grid {
+      transform: none !important;
+    }
+
+    body.content-only-active.enable-banner #banner-images-container {
+      border-radius: var(--internal-cover-radius, 0);
+      transform: translateZ(0) scale(var(--internal-cover-scale, 1));
+      transform-origin: center bottom;
+      will-change: transform, border-radius;
+    }
+
+    body.content-only-active.enable-banner #banner-dim-container {
+      opacity: var(--internal-cover-veil-opacity, 1);
+    }
+
+    body.content-only-active.enable-banner .banner-page-title-overlay,
+    body.content-only-active.enable-banner .banner-post-meta-overlay {
+      opacity: var(--internal-cover-title-opacity, 1);
+    }
+
+    body.content-only-active.enable-banner #wallpaper-wrapper .scroll-down-indicator {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 50%;
+      z-index: 45;
+      display: flex;
+      cursor: pointer;
+      pointer-events: auto;
+      color: rgba(255, 255, 255, 0.88);
+      filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.32));
+      transform: translateX(-50%);
+    }
+
+    body.content-only-active.enable-banner #wallpaper-wrapper .scroll-down-icon {
+      font-size: 4.5rem;
+      animation: scroll-down-bounce 2s ease-in-out infinite;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #wallpaper-wrapper {
+      top: 0 !important;
+      display: block !important;
+      height: 100dvh !important;
+      transform: none !important;
+      background: transparent;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #banner {
+      height: 100% !important;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #main-content-wrapper {
+      top: calc(100dvh - 3.5rem) !important;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #main-grid {
+      transform: none !important;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #banner-images-container {
+      border-radius: var(--internal-cover-radius, 0);
+      transform: translateZ(0) scale(var(--internal-cover-scale, 1));
+      transform-origin: center bottom;
+      will-change: transform, border-radius;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #banner-dim-container {
+      opacity: var(--internal-cover-veil-opacity, 1);
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active .banner-page-title-overlay,
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active .banner-post-meta-overlay {
+      opacity: var(--internal-cover-title-opacity, 1);
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #wallpaper-wrapper .scroll-down-indicator {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 50%;
+      z-index: 45;
+      display: flex;
+      cursor: pointer;
+      pointer-events: auto;
+      color: rgba(255, 255, 255, 0.88);
+      filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.32));
+      transform: translateX(-50%);
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #wallpaper-wrapper .scroll-down-icon {
+      font-size: 4.5rem;
+      animation: scroll-down-bounce 2s ease-in-out infinite;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.content-only-active.enable-banner #banner-images-container {
+      border-radius: 0;
+      transform: none !important;
+      will-change: auto;
+    }
+
+    body.content-only-active.enable-banner #wallpaper-wrapper .scroll-down-icon {
+      animation: none;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #banner-images-container {
+      border-radius: 0;
+      transform: none !important;
+      will-change: auto;
+    }
+
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #wallpaper-wrapper .scroll-down-icon {
+      animation: none;
+    }
+  }
+
   #right-sidebar {
     transition: opacity 0.35s ease-in-out,
                 transform 0.35s ease-in-out;
@@ -936,4 +1307,3 @@ const hasMultipleImages =
   }
 
 </style>
-

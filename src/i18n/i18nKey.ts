@@ -286,6 +286,8 @@ enum I18nKey {
 	wavesAnimation = "wavesAnimation",
 	gradientTransition = "gradientTransition",
 	sakuraEffect = "sakuraEffect",
+	rainEffect = "rainEffect",
+	snowEffect = "snowEffect",
 	effectsSettings = "effectsSettings",
 	overlaySettings = "overlaySettings",
 	overlayOpacity = "overlayOpacity",

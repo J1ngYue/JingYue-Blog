@@ -2,9 +2,15 @@
 import type { GetStaticPaths } from "astro";
 import Pagination from "@/components/common/Pagination.astro";
 import PostPage from "@/components/layout/PostPage.astro";
+import HomeLanding from "@/components/pages/home/HomeLanding.astro";
 import { siteConfig } from "@/config";
+import { githubUsername } from "@/config/profileConfig";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
+import {
+	getBlogActivityCalendar,
+	getGithubActivityCalendar,
+} from "@/utils/home-activity";
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
 	// 使用配置中的文章数量
@@ -16,19 +22,35 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { page } = Astro.props;
 
 const len = page.data.length;
+const isLandingPage = page.currentPage === 1;
+const activityData = isLandingPage
+	? await Promise.all([
+			getBlogActivityCalendar(),
+			getGithubActivityCalendar(githubUsername),
+		])
+	: null;
 ---
 
-<MainGridLayout>
-  <PostPage page={page} />
-  {
-    page.total > page.size && (
-      <Pagination
-        class="mx-auto onload-animation"
-        page={page}
-        style={`animation-delay: calc(var(--content-delay) + ${len * 50}ms)`}
-      />
-    )
-  }
+<MainGridLayout homeLanding={isLandingPage}>
+  {isLandingPage && activityData ? (
+    <HomeLanding
+      blogActivity={activityData[0]}
+      githubActivity={activityData[1]}
+    />
+  ) : (
+    <>
+      <PostPage page={page} />
+      {
+        page.total > page.size && (
+          <Pagination
+            class="mx-auto onload-animation"
+            page={page}
+            style={`animation-delay: calc(var(--content-delay) + ${len * 50}ms)`}
+          />
+        )
+      }
+    </>
+  )}
 </MainGridLayout>
 
 <script>

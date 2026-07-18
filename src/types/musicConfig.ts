@@ -18,6 +18,14 @@ export type MusicPlayerConfig = {
 	// 是否在侧边栏显示音乐播放器组件
 	showInSidebar?: boolean;
 
+	// 网易云歌单同步。扫码登录依赖自建的 NeteaseCloudMusicApi 兼容服务。
+	neteaseSync?: {
+		enable?: boolean;
+		apiBaseUrl?: string;
+		defaultPlaylistId?: string;
+		playlistLimit?: number;
+	};
+
 	// Meting API 配置
 	meting?: {
 		// Meting API 地址
