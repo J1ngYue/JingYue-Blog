@@ -137,16 +137,19 @@ $: if (initialized && (keywordMobile || keywordMobile === "")) {
 </script>
 
 <!-- search bar for desktop view -->
-<div id="search-bar" class="hidden lg:flex transition-all items-center h-11 mr-2 rounded-lg
-      bg-black/4 hover:bg-black/6 focus-within:bg-black/6
-      dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10
+<div id="search-bar" class="hidden lg:flex relative items-center h-11 w-60 mr-2 rounded-xl
+      border border-white/30 bg-white/20 backdrop-blur-md
+      transition-colors duration-200 hover:bg-white/30 focus-within:bg-white/35
+      dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10
 ">
-    <Icon icon="material-symbols:search"
-          class="absolute text-[1.25rem] pointer-events-none ml-3 transition my-auto text-black/30 dark:text-white/30"></Icon>
+    <span class="search-icon-shell" aria-hidden="true">
+        <Icon icon="material-symbols:search-rounded"
+              class="text-[1.15rem]"></Icon>
+    </span>
     <input placeholder="{i18n(I18nKey.search)}" bind:value={keywordDesktop}
            on:focus={() => search(keywordDesktop, true)}
-           class="transition-all pl-10 text-sm bg-transparent outline-0
-         h-full w-40 active:w-60 focus:w-60 text-black/50 dark:text-white/50"
+           class="h-full w-full min-w-0 border-0 bg-transparent pl-10 pr-3 text-sm
+         text-black/60 outline-0 placeholder:text-black/40 dark:text-white/75 dark:placeholder:text-white/40"
     >
 </div>
 
@@ -233,6 +236,35 @@ top-20 left-4 md:left-[unset] right-4 shadow-2xl rounded-2xl p-2">
 <style>
     input:focus {
         outline: 0;
+    }
+
+    #search-bar:focus-within {
+        border-color: color-mix(in oklch, var(--primary) 42%, white);
+        box-shadow: 0 0 0 0.18rem color-mix(in oklch, var(--primary) 12%, transparent);
+    }
+
+    .search-icon-shell {
+        position: absolute;
+        left: 0.55rem;
+        display: grid;
+        width: 1.75rem;
+        height: 1.75rem;
+        place-items: center;
+        border: 1px solid color-mix(in oklch, var(--primary) 20%, transparent);
+        border-radius: 0.65rem;
+        background: color-mix(in oklch, var(--primary) 10%, transparent);
+        color: color-mix(in oklch, var(--primary) 72%, var(--content-meta));
+        pointer-events: none;
+        transition:
+            background-color 180ms ease,
+            color 180ms ease,
+            border-color 180ms ease;
+    }
+
+    #search-bar:focus-within .search-icon-shell {
+        border-color: color-mix(in oklch, var(--primary) 38%, transparent);
+        background: color-mix(in oklch, var(--primary) 17%, transparent);
+        color: var(--primary);
     }
 
     .search-panel {
