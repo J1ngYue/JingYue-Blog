@@ -65,6 +65,14 @@ const dynamicCount = (await getCollection("dynamic")).length;
 						</select>
 						<Icon is:inline name="material-symbols:arrow-drop-down-rounded" />
 					</label>
+					<label class="dynamic-sort-select">
+						<Icon is:inline name="material-symbols:swap-vert-rounded" />
+						<select data-dynamic-sort aria-label="动态排序">
+							<option value="newest">最新优先</option>
+							<option value="oldest">最早优先</option>
+						</select>
+						<Icon is:inline name="material-symbols:arrow-drop-down-rounded" />
+					</label>
 				</div>
 			</header>
 

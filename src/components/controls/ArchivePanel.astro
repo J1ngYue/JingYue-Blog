@@ -24,6 +24,13 @@ for (const post of posts) {
 const groups = Array.from(grouped.entries())
 	.map(([year, yearPosts]) => ({ year, posts: yearPosts }))
 	.sort((a, b) => b.year - a.year);
+const availableCategories = Array.from(
+	new Set(
+		posts
+			.map((post) => post.data.category)
+			.filter((category): category is string => Boolean(category)),
+	),
+).sort((left, right) => left.localeCompare(right, "zh-CN"));
 
 // 初始折叠规则：foldArticle 非 false 且多于一年时，除首年外全部折叠
 const foldArticle = siteConfig.foldArticle !== false;
@@ -57,7 +64,7 @@ const foldOnFilter = collapseAllButFirst;
   class="card-base px-8 py-6"
   data-fold={foldOnFilter ? "true" : "false"}
 >
-  <div class="archive-toolbar mb-5 grid gap-2 md:grid-cols-[minmax(0,1fr)_9rem_auto]">
+  <div class="archive-toolbar mb-5 grid gap-2 md:grid-cols-[minmax(0,1fr)_9rem_10rem_auto]">
     <label class="archive-search flex min-w-0 items-center gap-2 rounded-lg border border-(--line-divider) bg-transparent px-3 text-50 transition-colors">
       <svg class="h-4 w-4 shrink-0" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="7" />
@@ -71,6 +78,16 @@ const foldOnFilter = collapseAllButFirst;
         placeholder="搜索文章标题、分类或标签"
         autocomplete="off"
       />
+    </label>
+    <label class="archive-category-filter relative flex items-center rounded-lg bg-(--btn-regular-bg) text-50">
+      <span class="sr-only">按分类筛选</span>
+      <select data-archive-category class="h-10 w-full appearance-none border-0 bg-transparent px-3 pr-8 text-sm text-75 outline-none">
+        <option value="all">全部分类</option>
+        {availableCategories.map((category) => <option value={category}>{category}</option>)}
+      </select>
+      <svg class="pointer-events-none absolute right-2 h-4 w-4" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="m7 10 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </label>
     <label class="archive-year-filter relative flex items-center rounded-lg bg-(--btn-regular-bg) text-50">
       <span class="sr-only">按年份筛选</span>
@@ -243,7 +260,8 @@ const foldOnFilter = collapseAllButFirst;
     color: var(--content-meta);
   }
   .archive-search:focus-within,
-  .archive-year-filter:focus-within {
+  .archive-year-filter:focus-within,
+  .archive-category-filter:focus-within {
     background: var(--btn-regular-bg-hover);
   }
   .archive-search:focus-within {
@@ -270,15 +288,14 @@ const foldOnFilter = collapseAllButFirst;
       this.dataset.initialized = "true";
       this.init();
       requestAnimationFrame(() => {
-        const height = Math.max(
-          this.getBoundingClientRect().height,
-          window.innerHeight * 0.72,
-        );
-        this.style.setProperty("--archive-stable-height", `${Math.ceil(height)}px`);
+        this.reserveStableHeight();
       });
     }
 
     init() {
+      // Capture the unfiltered height before rows are hidden so search input
+      // never changes the archive panel's outer geometry.
+      this.reserveStableHeight();
       const params = new URLSearchParams(window.location.search);
       const tags = params.has("tag") ? params.getAll("tag") : [];
       const categories = params.has("category") ? params.getAll("category") : [];
@@ -299,9 +316,23 @@ const foldOnFilter = collapseAllButFirst;
       this.bindYearToggles();
     }
 
+    reserveStableHeight() {
+      const currentHeight = this.getBoundingClientRect().height;
+      const previousHeight = Number.parseFloat(this.style.minHeight) || 0;
+      const height = Math.max(
+        currentHeight,
+        previousHeight,
+        window.innerHeight * 0.72,
+      );
+      if (height > 0) {
+        this.style.minHeight = `${Math.ceil(height)}px`;
+      }
+    }
+
 	bindArchiveTools(params) {
 	  this.searchInput = this.querySelector("[data-archive-search]");
 	  this.yearSelect = this.querySelector("[data-archive-year]");
+	  this.categorySelect = this.querySelector("[data-archive-category]");
 	  this.resetButton = this.querySelector("[data-archive-reset]");
 	  if (this.searchInput) this.searchInput.value = params.get("q") || "";
 	  if (this.yearSelect) {
@@ -309,8 +340,16 @@ const foldOnFilter = collapseAllButFirst;
 		const exists = Array.from(this.yearSelect.options).some((option) => option.value === requestedYear);
 		this.yearSelect.value = exists ? requestedYear : "all";
 	  }
+	  if (this.categorySelect) {
+		const requestedCategory = params.getAll("category")[0] || "all";
+		const exists = Array.from(this.categorySelect.options).some((option) => option.value === requestedCategory);
+		this.categorySelect.value = exists ? requestedCategory : "all";
+	  }
 
 	  const refresh = () => {
+		const selectedCategory = this.categorySelect?.value || "all";
+		this.categories = selectedCategory === "all" ? [] : [selectedCategory];
+		this.uncategorized = false;
 		this.applyFilter(this.tags, this.categories, this.uncategorized);
 		this.updateToolUrl();
 	  };
@@ -326,9 +365,11 @@ const foldOnFilter = collapseAllButFirst;
 		else window.location.assign(target.href);
 	  });
 	  this.yearSelect?.addEventListener("change", refresh);
+	  this.categorySelect?.addEventListener("change", refresh);
 	  this.resetButton?.addEventListener("click", () => {
 		if (this.searchInput) this.searchInput.value = "";
 		if (this.yearSelect) this.yearSelect.value = "all";
+		if (this.categorySelect) this.categorySelect.value = "all";
 		refresh();
 		this.searchInput?.focus();
 	  });
@@ -338,10 +379,14 @@ const foldOnFilter = collapseAllButFirst;
 	  const current = new URL(window.location.href);
 	  const query = this.searchInput?.value.trim() || "";
 	  const year = this.yearSelect?.value || "all";
+	  const category = this.categorySelect?.value || "all";
 	  if (query) current.searchParams.set("q", query);
 	  else current.searchParams.delete("q");
 	  if (year !== "all") current.searchParams.set("year", year);
 	  else current.searchParams.delete("year");
+	  current.searchParams.delete("category");
+	  current.searchParams.delete("uncategorized");
+	  if (category !== "all") current.searchParams.set("category", category);
 	  history.replaceState(history.state, "", current);
 	}
 
@@ -474,7 +519,8 @@ const foldOnFilter = collapseAllButFirst;
 	  const empty = this.querySelector("[data-archive-empty]");
 	  if (empty) empty.hidden = totalVisible > 0;
 	  if (this.resetButton) {
-		this.resetButton.hidden = !query && selectedYear === "all";
+		this.resetButton.hidden =
+			!query && selectedYear === "all" && categories.length === 0;
 	  }
     }
 

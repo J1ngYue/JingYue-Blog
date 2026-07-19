@@ -17,6 +17,15 @@ let opacity = $state(0.82);
 let blur = $state(0);
 let hasMedia = $state(false);
 let wallpaperEnabled = $state(true);
+let videoElement: HTMLVideoElement | null = null;
+
+function ensureVideoPlayback() {
+	if (!videoElement) return;
+	videoElement.muted = true;
+	void videoElement.play().catch(() => {
+		// 浏览器仍可能在极端省电模式下拒绝自动播放；保持首帧作为背景。
+	});
+}
 
 onMount(() => {
 	const container =
@@ -133,7 +142,17 @@ onMount(() => {
 	{#if mediaType === "image" && sourceUrl}
 		<img src={sourceUrl} alt="" />
 	{:else if mediaType === "video" && sourceUrl}
-		<video src={sourceUrl} autoplay muted loop playsinline preload="metadata"></video>
+		<video
+			bind:this={videoElement}
+			src={sourceUrl}
+			autoplay
+			muted
+			loop
+			playsinline
+			preload="auto"
+			onloadedmetadata={ensureVideoPlayback}
+			oncanplay={ensureVideoPlayback}
+		></video>
 	{/if}
 </div>
 

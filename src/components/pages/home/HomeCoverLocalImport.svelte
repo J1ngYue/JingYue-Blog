@@ -14,20 +14,27 @@ import { setWallpaperMode } from "@/utils/setting-utils";
 
 const BUILT_IN_COVER_EVENT = "jingyue:select-built-in-cover";
 const LOCAL_COVER_STATE_EVENT = "jingyue:local-cover-state-change";
+const VIDEO_PATTERN = /\.(m4v|mov|mp4|ogv|webm)$/i;
 let { compact = false }: { compact?: boolean } = $props();
 
-let fileInput: HTMLInputElement;
-let wallpaperEngineInput: HTMLInputElement;
+let mediaInput: HTMLInputElement;
+let wallpaperEngineVideoInput: HTMLInputElement;
+let wallpaperEngineDirectoryInput: HTMLInputElement;
 let fileName = $state("");
 let fileType = $state<LocalWallpaperType | null>(null);
 let busy = $state(false);
 let message = $state("");
 let error = $state("");
+let dragging = $state(false);
 
 function publishLocalCoverState(active: boolean) {
 	window.dispatchEvent(
 		new CustomEvent(LOCAL_COVER_STATE_EVENT, { detail: { active } }),
 	);
+}
+
+function isVideoFile(file: File) {
+	return file.type.startsWith("video/") || VIDEO_PATTERN.test(file.name);
 }
 
 async function syncCurrentFile() {
@@ -41,15 +48,61 @@ async function syncCurrentFile() {
 	}
 }
 
-function openFilePicker() {
-	fileInput?.click();
+function openMediaPicker() {
+	mediaInput?.click();
 }
 
-function openWallpaperEnginePicker() {
-	wallpaperEngineInput?.click();
+function openWallpaperEngineVideoPicker() {
+	wallpaperEngineVideoInput?.click();
+}
+
+function openWallpaperEngineDirectoryPicker() {
+	wallpaperEngineDirectoryInput?.click();
+}
+
+async function validateVideo(file: File) {
+	const source = URL.createObjectURL(file);
+	try {
+		await new Promise<void>((resolve, reject) => {
+			const video = document.createElement("video");
+			const timer = window.setTimeout(() => {
+				video.removeAttribute("src");
+				reject(new Error("视频解析超时，请确认文件未损坏且浏览器支持该编码。"));
+			}, 12000);
+			const finish = (callback: () => void) => {
+				window.clearTimeout(timer);
+				video.removeAttribute("src");
+				video.load();
+				callback();
+			};
+			video.preload = "metadata";
+			video.muted = true;
+			video.onloadedmetadata = () => {
+				if (!Number.isFinite(video.duration) || video.videoWidth < 1) {
+					finish(() =>
+						reject(new Error("没有从该文件中识别到可播放的视频画面。")),
+					);
+					return;
+				}
+				finish(resolve);
+			};
+			video.onerror = () =>
+				finish(() =>
+					reject(
+						new Error(
+							"这个视频的编码暂不受浏览器支持，建议使用 H.264 编码的 MP4 或 WebM。",
+						),
+					),
+				);
+			video.src = source;
+		});
+	} finally {
+		URL.revokeObjectURL(source);
+	}
 }
 
 async function applyLocalFile(file: File, successMessage: string) {
+	if (isVideoFile(file)) await validateVideo(file);
 	const record = await saveLocalWallpaper(file);
 	fileName = record.name;
 	fileType = record.type;
@@ -58,22 +111,70 @@ async function applyLocalFile(file: File, successMessage: string) {
 	message = successMessage;
 }
 
-async function handleFileChange(event: Event) {
-	const input = event.currentTarget as HTMLInputElement;
-	const file = input.files?.[0];
-	input.value = "";
-	if (!file) return;
-
+async function runImport(file: File, successMessage: string) {
 	busy = true;
 	error = "";
 	message = "";
 	try {
-		await applyLocalFile(file, "已应用到首页封面与站点背景");
+		await applyLocalFile(file, successMessage);
 	} catch (reason) {
 		error = reason instanceof Error ? reason.message : "无法保存这个背景文件。";
 	} finally {
 		busy = false;
 	}
+}
+
+async function handleMediaChange(event: Event) {
+	const input = event.currentTarget as HTMLInputElement;
+	const file = input.files?.[0];
+	input.value = "";
+	if (!file) return;
+	await runImport(file, "已应用到首页封面和站点背景。");
+}
+
+async function handleWallpaperEngineVideo(event: Event) {
+	const input = event.currentTarget as HTMLInputElement;
+	const file = input.files?.[0];
+	input.value = "";
+	if (!file) return;
+	await runImport(file, "已识别 Wallpaper Engine 视频并开始静音循环播放。");
+}
+
+async function findWallpaperEngineVideo(files: File[]) {
+	const projectFile = files.find((file) =>
+		/(^|[/\\])project\.json$/i.test(file.webkitRelativePath || file.name),
+	);
+	if (projectFile) {
+		try {
+			const project = JSON.parse(await projectFile.text()) as { file?: string };
+			const target = String(project.file || "")
+				.replaceAll("\\", "/")
+				.toLocaleLowerCase();
+			if (target && VIDEO_PATTERN.test(target)) {
+				const exact = files.find((file) => {
+					const relative = (file.webkitRelativePath || file.name)
+						.replaceAll("\\", "/")
+						.toLocaleLowerCase();
+					return relative.endsWith(`/${target}`) || relative === target;
+				});
+				if (exact) return exact;
+			}
+		} catch {
+			// project.json 不是有效 JSON 时继续扫描目录中的视频文件。
+		}
+	}
+
+	return files.filter(isVideoFile).sort((left, right) => {
+		const leftPriority = /(?:wallpaper|background|video|main)/i.test(left.name)
+			? 1
+			: 0;
+		const rightPriority = /(?:wallpaper|background|video|main)/i.test(
+			right.name,
+		)
+			? 1
+			: 0;
+		return rightPriority - leftPriority || right.size - left.size;
+	})[0];
 }
 
 async function handleWallpaperEngineDirectory(event: Event) {
@@ -86,14 +187,7 @@ async function handleWallpaperEngineDirectory(event: Event) {
 	error = "";
 	message = "";
 	try {
-		const videos = files
-			.filter(
-				(file) =>
-					file.type.startsWith("video/") ||
-					/\.(m4v|mov|mp4|ogv|webm)$/i.test(file.name),
-			)
-			.sort((left, right) => right.size - left.size);
-		const wallpaper = videos[0];
+		const wallpaper = await findWallpaperEngineVideo(files);
 		if (!wallpaper) {
 			const isSceneProject = files.some((file) =>
 				/(^|[/\\])scene\.pkg$/i.test(file.webkitRelativePath || file.name),
@@ -107,13 +201,13 @@ async function handleWallpaperEngineDirectory(event: Event) {
 					? "网页"
 					: "非视频";
 			throw new Error(
-				`检测到${projectType}壁纸。浏览器只能直接使用 Wallpaper Engine 的视频壁纸，请选择包含 MP4 或 WebM 的项目文件夹。`,
+				`检测到${projectType}壁纸，浏览器只能直接播放视频壁纸。请选择包含 MP4 或 WebM 的项目文件夹。`,
 			);
 		}
 
 		await applyLocalFile(
 			wallpaper,
-			"已接入 Wallpaper Engine 视频壁纸并开始静音循环播放",
+			`已从项目中识别 ${wallpaper.name}，并开始静音循环播放。`,
 		);
 	} catch (reason) {
 		error =
@@ -123,6 +217,14 @@ async function handleWallpaperEngineDirectory(event: Event) {
 	} finally {
 		busy = false;
 	}
+}
+
+async function handleDrop(event: DragEvent) {
+	event.preventDefault();
+	dragging = false;
+	const file = event.dataTransfer?.files?.[0];
+	if (!file) return;
+	await runImport(file, "已从拖放文件应用新的背景。");
 }
 
 async function clearLocalFile(showMessage = true) {
@@ -135,7 +237,7 @@ async function clearLocalFile(showMessage = true) {
 		fileName = "";
 		fileType = null;
 		publishLocalCoverState(false);
-		if (showMessage) message = "已恢复内置封面";
+		if (showMessage) message = "已恢复内置封面。";
 	} catch (reason) {
 		error = reason instanceof Error ? reason.message : "无法移除本地背景。";
 	} finally {
@@ -144,8 +246,8 @@ async function clearLocalFile(showMessage = true) {
 }
 
 onMount(() => {
-	wallpaperEngineInput?.setAttribute("webkitdirectory", "");
-	wallpaperEngineInput?.setAttribute("directory", "");
+	wallpaperEngineDirectoryInput?.setAttribute("webkitdirectory", "");
+	wallpaperEngineDirectoryInput?.setAttribute("directory", "");
 	void syncCurrentFile();
 
 	const handleWallpaperChange = (event: Event) => {
@@ -166,126 +268,179 @@ onMount(() => {
 });
 </script>
 
-<section class:compact class="local-cover-import" aria-labelledby="local-cover-import-title">
-	<div class="local-cover-icon" aria-hidden="true">
-		{#if fileType === "video"}
-			<Icon icon="material-symbols:movie-outline-rounded" />
-		{:else}
-			<Icon icon="material-symbols:add-photo-alternate-outline-rounded" />
+<section
+	class:compact
+	class:is-dragging={dragging}
+	class="local-cover-import"
+	aria-labelledby="local-cover-import-title"
+	ondragenter={(event) => {
+		event.preventDefault();
+		dragging = true;
+	}}
+	ondragover={(event) => event.preventDefault()}
+	ondragleave={(event) => {
+		if (event.currentTarget === event.target) dragging = false;
+	}}
+	ondrop={handleDrop}
+>
+	<header class="local-cover-header">
+		<div class="local-cover-icon" aria-hidden="true">
+			<Icon
+				icon={fileType === "video"
+					? "material-symbols:movie-outline-rounded"
+					: "material-symbols:wallpaper-rounded"}
+			/>
+		</div>
+		<div class="local-cover-copy">
+			<strong id="local-cover-import-title">
+				{fileName ? "正在使用本地背景" : "导入图片或动态壁纸"}
+			</strong>
+			<p title={fileName}>
+				{fileName || "支持图片、H.264 MP4、WebM 和 Wallpaper Engine 视频项目"}
+			</p>
+		</div>
+		{#if fileType}
+			<span class="local-cover-format">{fileType === "video" ? "VIDEO" : "IMAGE"}</span>
 		{/if}
-	</div>
-	<div class="local-cover-copy">
-		<strong id="local-cover-import-title">
-			{fileName ? "正在使用本地背景" : "导入本地图片或视频"}
-		</strong>
-		<p title={fileName}>
-			{fileName || "支持图片、视频与 Wallpaper Engine 视频项目"}
-		</p>
-		{#if message}
-			<small class="is-success" role="status">{message}</small>
-		{:else if error}
-			<small class="is-error" role="alert">{error}</small>
-		{/if}
-	</div>
+	</header>
+
 	<div class="local-cover-actions">
-		<button type="button" class="local-cover-pick" disabled={busy} onclick={openFilePicker}>
-			<Icon icon="material-symbols:upload-rounded" />
-			<span>{busy ? "处理中…" : fileName ? "替换" : "选择文件"}</span>
-		</button>
+		<div class="local-cover-action-group">
+			<span>本地媒体</span>
+			<button type="button" class="local-cover-pick" disabled={busy} onclick={openMediaPicker}>
+				<Icon icon="material-symbols:upload-rounded" />
+				<span>{busy ? "正在解析" : fileName ? "替换文件" : "选择图片 / 视频"}</span>
+			</button>
+		</div>
+		<div class="local-cover-action-group local-cover-engine-group">
+			<span>Wallpaper Engine</span>
+			<div>
+				<button
+					type="button"
+					class="local-cover-engine"
+					disabled={busy}
+					onclick={openWallpaperEngineVideoPicker}
+				>
+					<Icon icon="material-symbols:movie-edit-outline-rounded" />
+					<span>选择 MP4</span>
+				</button>
+				<button
+					type="button"
+					class="local-cover-engine"
+					disabled={busy}
+					title="扫描 Wallpaper Engine 视频项目文件夹"
+					onclick={openWallpaperEngineDirectoryPicker}
+				>
+					<Icon icon="material-symbols:folder-open-rounded" />
+					<span>扫描项目</span>
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="local-cover-feedback" aria-live="polite">
+		{#if busy}
+			<Icon icon="svg-spinners:ring-resize" />
+			<span>正在识别媒体并检查浏览器兼容性…</span>
+		{:else if message}
+			<Icon icon="material-symbols:check-circle-rounded" />
+			<span class="is-success">{message}</span>
+		{:else if error}
+			<Icon icon="material-symbols:error-rounded" />
+			<span class="is-error">{error}</span>
+		{:else}
+			<Icon icon="material-symbols:drag-pan-rounded" />
+			<span>也可以把单个图片或 MP4 直接拖到这里</span>
+		{/if}
+	</div>
+
+	<input
+		bind:this={mediaInput}
+		hidden
+		type="file"
+		accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.webm,.m4v,.mov,.ogv"
+		disabled={busy}
+		onchange={handleMediaChange}
+	/>
+	<input
+		bind:this={wallpaperEngineVideoInput}
+		hidden
+		type="file"
+		accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.m4v,.mov,.ogv"
+		disabled={busy}
+		onchange={handleWallpaperEngineVideo}
+	/>
+	<input
+		bind:this={wallpaperEngineDirectoryInput}
+		hidden
+		type="file"
+		multiple
+		disabled={busy}
+		onchange={handleWallpaperEngineDirectory}
+	/>
+
+	{#if fileName}
 		<button
 			type="button"
-			class="local-cover-engine"
+			class="local-cover-remove"
+			aria-label="删除本地背景并恢复内置封面"
+			title="恢复内置封面"
 			disabled={busy}
-			title="选择 Wallpaper Engine 视频项目所在文件夹"
-			onclick={openWallpaperEnginePicker}
+			onclick={() => clearLocalFile()}
 		>
-			<Icon icon="material-symbols:folder-open-rounded" />
-			<span>导入 WE 项目</span>
+			<Icon icon="material-symbols:delete-outline-rounded" />
+			<span>恢复内置封面</span>
 		</button>
-		<input
-			bind:this={fileInput}
-			hidden
-			type="file"
-			accept="image/*,video/*"
-			disabled={busy}
-			 onchange={handleFileChange}
-		/>
-		<input
-			bind:this={wallpaperEngineInput}
-			hidden
-			type="file"
-			multiple
-			disabled={busy}
-			onchange={handleWallpaperEngineDirectory}
-		/>
-		{#if fileName}
-			<button
-				type="button"
-				class="local-cover-remove"
-				aria-label="删除本地背景并恢复内置封面"
-				title="恢复内置封面"
-				disabled={busy}
-				onclick={() => clearLocalFile()}
-			>
-				<Icon icon="material-symbols:delete-outline-rounded" />
-			</button>
-		{/if}
-	</div>
+	{/if}
 </section>
 
 <style>
 	.local-cover-import {
+		position: relative;
+		display: grid;
+		gap: 0.7rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 32%, rgba(255, 255, 255, 0.16));
+		border-radius: 1rem;
+		background:
+			radial-gradient(circle at 0 0, color-mix(in oklch, var(--primary) 20%, transparent), transparent 48%),
+			rgba(18, 26, 42, 0.76);
+		box-shadow: 0 0.9rem 2.4rem rgba(3, 8, 20, 0.26);
+		padding: 0.8rem;
+		color: white;
+		backdrop-filter: blur(0.9rem);
+		transition: border-color 180ms ease, background-color 180ms ease;
+	}
+
+	.local-cover-import.is-dragging {
+		border-color: var(--primary);
+		background-color: color-mix(in oklch, var(--primary) 20%, rgba(18, 26, 42, 0.88));
+	}
+
+	.local-cover-header {
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 0.8rem;
-		min-height: 4.2rem;
-		border: 1px solid rgba(196, 181, 253, 0.24);
-		border-radius: 1rem;
-		background:
-			linear-gradient(135deg, rgba(139, 92, 246, 0.13), rgba(56, 189, 248, 0.06)),
-			rgba(26, 28, 64, 0.78);
-		box-shadow: 0 0.8rem 2.2rem rgba(3, 5, 22, 0.32);
-		padding: 0.65rem 0.75rem;
-		color: white;
-		backdrop-filter: blur(0.9rem);
-	}
-
-	.local-cover-import.compact {
-		grid-template-columns: auto minmax(0, 1fr);
-		align-content: center;
-		min-height: 0;
-		padding: 0.8rem;
-	}
-
-	.local-cover-import.compact .local-cover-actions {
-		grid-column: 1 / -1;
-		width: 100%;
-	}
-
-	.local-cover-import.compact .local-cover-pick {
-		flex: 1;
-	}
-
-	.local-cover-import.compact .local-cover-engine {
-		flex: 1.2;
+		gap: 0.65rem;
 	}
 
 	.local-cover-icon {
 		display: grid;
 		place-items: center;
-		width: 2.6rem;
-		height: 2.6rem;
+		width: 2.5rem;
+		height: 2.5rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 45%, transparent);
 		border-radius: 0.8rem;
-		background: linear-gradient(145deg, rgba(167, 139, 250, 0.9), rgba(56, 189, 248, 0.7));
-		box-shadow: 0 0.5rem 1.4rem rgba(139, 92, 246, 0.28);
-		color: white;
+		background: color-mix(in oklch, var(--primary) 24%, rgba(255, 255, 255, 0.08));
+		color: color-mix(in oklch, var(--primary) 72%, white);
 	}
 
 	.local-cover-icon :global(svg),
-	.local-cover-actions :global(svg) {
-		width: 1.15rem;
-		height: 1.15rem;
+	.local-cover-actions :global(svg),
+	.local-cover-feedback :global(svg),
+	.local-cover-remove :global(svg) {
+		width: 1.05rem;
+		height: 1.05rem;
+		flex: 0 0 auto;
 	}
 
 	.local-cover-copy {
@@ -293,8 +448,7 @@ onMount(() => {
 	}
 
 	.local-cover-copy strong,
-	.local-cover-copy p,
-	.local-cover-copy small {
+	.local-cover-copy p {
 		display: block;
 		margin: 0;
 	}
@@ -307,102 +461,132 @@ onMount(() => {
 	.local-cover-copy p {
 		overflow: hidden;
 		margin-top: 0.18rem;
-		color: rgba(222, 224, 246, 0.68);
-		font-size: 0.64rem;
+		color: rgba(226, 232, 240, 0.68);
+		font-size: 0.61rem;
+		line-height: 1.45;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.local-cover-copy small {
-		margin-top: 0.18rem;
-		font-size: 0.58rem;
-	}
-
-	.local-cover-copy .is-success {
-		color: #c4b5fd;
-	}
-
-	.local-cover-copy .is-error {
-		color: #fecaca;
+	.local-cover-format {
+		border: 1px solid color-mix(in oklch, var(--primary) 38%, transparent);
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--primary) 16%, transparent);
+		padding: 0.22rem 0.42rem;
+		color: color-mix(in oklch, var(--primary) 70%, white);
+		font-size: 0.5rem;
+		font-weight: 850;
+		letter-spacing: 0.08em;
 	}
 
 	.local-cover-actions {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.45rem;
+		display: grid;
+		grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+		gap: 0.5rem;
 	}
 
-	.local-cover-actions button {
+	.local-cover-action-group {
+		display: grid;
+		align-content: start;
+		gap: 0.38rem;
+		min-width: 0;
+		border: 1px solid rgba(255, 255, 255, 0.09);
+		border-radius: 0.78rem;
+		background: rgba(255, 255, 255, 0.055);
+		padding: 0.48rem;
+	}
+
+	.local-cover-action-group > span {
+		color: rgba(226, 232, 240, 0.58);
+		font-size: 0.55rem;
+		font-weight: 750;
+		letter-spacing: 0.06em;
+	}
+
+	.local-cover-engine-group > div {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.35rem;
+	}
+
+	.local-cover-actions button,
+	.local-cover-remove {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.4rem;
-		height: 2.35rem;
-		border: 1px solid rgba(196, 181, 253, 0.24);
-		border-radius: 0.72rem;
-		background: rgba(41, 42, 86, 0.82);
+		gap: 0.32rem;
+		min-width: 0;
+		height: 2.15rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 28%, rgba(255, 255, 255, 0.12));
+		border-radius: 0.65rem;
+		background: rgba(255, 255, 255, 0.075);
+		padding-inline: 0.48rem;
 		color: white;
+		font-size: 0.58rem;
+		font-weight: 780;
 		cursor: pointer;
-		transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+		transition: background-color 180ms ease, border-color 180ms ease;
 	}
 
 	.local-cover-actions button:hover,
-	.local-cover-actions button:focus-visible {
-		border-color: #c4b5fd;
-		background: rgba(76, 63, 132, 0.82);
-		outline: 2px solid rgba(196, 181, 253, 0.76);
+	.local-cover-actions button:focus-visible,
+	.local-cover-remove:hover,
+	.local-cover-remove:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 72%, white);
+		background: color-mix(in oklch, var(--primary) 22%, rgba(255, 255, 255, 0.08));
+		outline: 2px solid color-mix(in oklch, var(--primary) 48%, transparent);
 		outline-offset: 2px;
 	}
 
-	.local-cover-actions button:active {
-		transform: scale(0.96);
-	}
-
-	.local-cover-actions button:disabled {
+	.local-cover-actions button:disabled,
+	.local-cover-remove:disabled {
 		cursor: wait;
 		opacity: 0.58;
 	}
 
 	.local-cover-pick {
-		padding-inline: 0.8rem;
-		background: linear-gradient(135deg, rgba(124, 58, 237, 0.84), rgba(99, 102, 241, 0.78)) !important;
-		font-size: 0.68rem;
-		font-weight: 800;
+		background: color-mix(in oklch, var(--primary) 38%, rgba(15, 23, 42, 0.74)) !important;
 	}
 
-	.local-cover-engine {
-		padding-inline: 0.8rem;
-		font-size: 0.68rem;
-		font-weight: 800;
+	.local-cover-feedback {
+		display: flex;
+		min-height: 1rem;
+		align-items: flex-start;
+		gap: 0.35rem;
+		color: rgba(226, 232, 240, 0.58);
+		font-size: 0.56rem;
+		line-height: 1.45;
+	}
+
+	.local-cover-feedback :global(svg) {
+		margin-top: 0.02rem;
+		color: color-mix(in oklch, var(--primary) 72%, white);
+	}
+
+	.local-cover-feedback .is-success {
+		color: #bbf7d0;
+	}
+
+	.local-cover-feedback .is-error {
+		color: #fecaca;
 	}
 
 	.local-cover-remove {
-		width: 2.35rem;
-		padding: 0;
+		width: 100%;
+		background: transparent;
+		color: rgba(226, 232, 240, 0.7);
 	}
 
 	@media (max-width: 640px) {
-		.local-cover-import {
-			grid-template-columns: auto minmax(0, 1fr);
-			gap: 0.65rem;
-		}
-
 		.local-cover-actions {
-			grid-column: 1 / -1;
-		}
-
-		.local-cover-pick {
-			flex: 1;
-		}
-
-		.local-cover-engine {
-			flex: 1.2;
+			grid-template-columns: minmax(0, 1fr);
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.local-cover-actions button {
+		.local-cover-import,
+		.local-cover-actions button,
+		.local-cover-remove {
 			transition: none;
 		}
 	}

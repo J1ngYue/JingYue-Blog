@@ -1,8 +1,336 @@
 ---
+import { Icon } from "astro-icon/components";
 import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
+import { commentConfig, getEnabledFriends, profileConfig } from "@/config";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { url } from "@/utils/url-utils";
+
+const friends = getEnabledFriends();
+const commentsEnabled = Boolean(
+	commentConfig.type && commentConfig.type !== "none",
+);
+const resolveProfileHref = (href: string) =>
+	href.startsWith("/") ? url(href) : href;
 ---
 
-<MainGridLayout title="社交" bannerTitle="社交" description="从这里进入友链与留言板。">
+<MainGridLayout title="社交" bannerTitle="社交" description="从这里进入友链、留言与联系方式。">
 	<FeatureHubHeader section="social" />
+
+	<section class="social-overview" aria-label="社交功能概览">
+		<article class="social-card social-friends card-base">
+			<header>
+				<span class="social-card-icon"><Icon is:inline name="material-symbols:group-rounded" /></span>
+				<div>
+					<p>FRIEND LINKS</p>
+					<h2>友邻小站</h2>
+				</div>
+				<strong>{friends.length}</strong>
+			</header>
+			<div class="social-friend-list">
+				{friends.slice(0, 3).map((friend) => (
+					<a href={friend.siteurl} target="_blank" rel="noopener noreferrer">
+						<img src={friend.imgurl} alt="" loading="lazy" />
+						<span><strong>{friend.title}</strong><small>{friend.desc}</small></span>
+						<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+					</a>
+				))}
+			</div>
+			<a class="social-primary-action" href={url("/friends/#main-content-wrapper")}>
+				查看全部友链
+				<Icon is:inline name="material-symbols:arrow-forward-rounded" />
+			</a>
+		</article>
+
+		<article class="social-card social-guestbook card-base">
+			<header>
+				<span class="social-card-icon"><Icon is:inline name="material-symbols:chat-rounded" /></span>
+				<div>
+					<p>GUESTBOOK</p>
+					<h2>留下一句话</h2>
+				</div>
+			</header>
+			<div class="social-guestbook-copy">
+				<span class:list={["social-status", { "is-ready": commentsEnabled }]}>
+					<i></i>{commentsEnabled ? "留言系统已就绪" : "留言系统待配置"}
+				</span>
+				<p>
+					{commentsEnabled
+						? "分享你此刻的想法，或者留下一句问候。"
+						: "留言后端尚未启用，你仍可通过邮件或 GitHub 与我联系。"}
+				</p>
+			</div>
+			<a class="social-primary-action" href={url("/guestbook/#main-content-wrapper")}>
+				进入留言板
+				<Icon is:inline name="material-symbols:arrow-forward-rounded" />
+			</a>
+		</article>
+
+		<article class="social-card social-contact card-base">
+			<header>
+				<span class="social-card-icon"><Icon is:inline name="material-symbols:alternate-email-rounded" /></span>
+				<div>
+					<p>CONTACT</p>
+					<h2>找到 JingYue</h2>
+				</div>
+			</header>
+			<p class="social-contact-intro">选择你习惯的方式，查看更新或发起交流。</p>
+			<nav class="social-contact-links" aria-label="联系方式">
+				{profileConfig.links.map((link) => {
+					const external = !link.url.startsWith("/") && !link.url.startsWith("mailto:");
+					return (
+						<a
+							href={resolveProfileHref(link.url)}
+							target={external ? "_blank" : undefined}
+							rel={external ? "noopener noreferrer" : undefined}
+						>
+							<Icon is:inline name={link.icon} />
+							<span>{link.name}</span>
+						</a>
+					);
+				})}
+			</nav>
+		</article>
+	</section>
 </MainGridLayout>
+
+<style>
+	.social-overview {
+		display: grid;
+		grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 0.9fr));
+		gap: 1rem;
+	}
+
+	.social-card {
+		display: flex;
+		min-width: 0;
+		min-height: 25rem;
+		flex-direction: column;
+		gap: 1.2rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 16%, var(--line-divider));
+		background:
+			radial-gradient(circle at 100% 0, color-mix(in oklch, var(--primary) 9%, transparent), transparent 40%),
+			var(--card-bg);
+		padding: 1.35rem;
+		box-shadow: 0 1rem 2.5rem color-mix(in oklch, var(--deep-text) 6%, transparent);
+	}
+
+	.social-card > header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.social-card > header > strong {
+		margin-left: auto;
+		color: var(--primary);
+		font-size: 1.35rem;
+	}
+
+	.social-card-icon {
+		display: grid;
+		width: 2.75rem;
+		height: 2.75rem;
+		flex: 0 0 2.75rem;
+		place-items: center;
+		border-radius: 0.9rem;
+		background: color-mix(in oklch, var(--primary) 14%, transparent);
+		color: var(--primary);
+		font-size: 1.4rem;
+	}
+
+	.social-card header p,
+	.social-card header h2,
+	.social-contact-intro,
+	.social-guestbook-copy p {
+		margin: 0;
+	}
+
+	.social-card header p {
+		color: var(--primary);
+		font-size: 0.6rem;
+		font-weight: 800;
+		letter-spacing: 0.15em;
+	}
+
+	.social-card header h2 {
+		margin-top: 0.2rem;
+		color: var(--text-90);
+		font-size: 1.1rem;
+	}
+
+	.social-friend-list {
+		display: grid;
+		gap: 0.55rem;
+	}
+
+	.social-friend-list a {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.7rem;
+		border: 1px solid var(--line-divider);
+		border-radius: 0.9rem;
+		padding: 0.62rem;
+		color: var(--text-75);
+		transition: border-color 180ms ease, background-color 180ms ease;
+	}
+
+	.social-friend-list a:hover,
+	.social-friend-list a:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 55%, var(--line-divider));
+		background: color-mix(in oklch, var(--primary) 7%, transparent);
+		outline: 2px solid color-mix(in oklch, var(--primary) 25%, transparent);
+		outline-offset: 2px;
+	}
+
+	.social-friend-list img {
+		width: 2.65rem;
+		height: 2.65rem;
+		border-radius: 0.75rem;
+		object-fit: cover;
+	}
+
+	.social-friend-list span,
+	.social-friend-list strong,
+	.social-friend-list small {
+		display: block;
+		min-width: 0;
+	}
+
+	.social-friend-list strong,
+	.social-friend-list small {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.social-friend-list small,
+	.social-contact-intro,
+	.social-guestbook-copy p {
+		margin-top: 0.18rem;
+		color: var(--text-50);
+		font-size: 0.76rem;
+		line-height: 1.55;
+	}
+
+	.social-friend-list a > :global(svg) {
+		color: var(--primary);
+	}
+
+	.social-primary-action {
+		display: inline-flex;
+		min-height: 2.7rem;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		margin-top: auto;
+		border-radius: 0.85rem;
+		background: var(--primary);
+		color: white;
+		font-size: 0.82rem;
+		font-weight: 750;
+		transition: filter 180ms ease, box-shadow 180ms ease;
+	}
+
+	.social-primary-action:hover,
+	.social-primary-action:focus-visible {
+		filter: brightness(1.06);
+		box-shadow: 0 0.75rem 1.6rem color-mix(in oklch, var(--primary) 24%, transparent);
+		outline: 2px solid color-mix(in oklch, var(--primary) 38%, transparent);
+		outline-offset: 2px;
+	}
+
+	.social-guestbook-copy {
+		display: grid;
+		gap: 0.8rem;
+		border-radius: 1rem;
+		background: color-mix(in oklch, var(--primary) 6%, var(--btn-regular-bg));
+		padding: 1rem;
+	}
+
+	.social-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		color: var(--text-50);
+		font-size: 0.73rem;
+		font-weight: 700;
+	}
+
+	.social-status i {
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 50%;
+		background: #f59e0b;
+	}
+
+	.social-status.is-ready i {
+		background: var(--primary);
+	}
+
+	.social-contact-intro {
+		font-size: 0.82rem;
+	}
+
+	.social-contact-links {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.6rem;
+	}
+
+	.social-contact-links a {
+		display: flex;
+		min-width: 0;
+		min-height: 3.35rem;
+		align-items: center;
+		gap: 0.55rem;
+		border: 1px solid var(--line-divider);
+		border-radius: 0.9rem;
+		padding: 0.7rem;
+		color: var(--text-75);
+		font-size: 0.78rem;
+		font-weight: 700;
+		transition: border-color 180ms ease, background-color 180ms ease;
+	}
+
+	.social-contact-links a:hover,
+	.social-contact-links a:focus-visible {
+		border-color: var(--primary);
+		background: color-mix(in oklch, var(--primary) 8%, transparent);
+		outline: none;
+	}
+
+	.social-contact-links :global(svg) {
+		color: var(--primary);
+		font-size: 1.15rem;
+	}
+
+	@media (max-width: 1050px) {
+		.social-overview {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.social-friends {
+			grid-column: 1 / -1;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.social-overview {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.social-friends {
+			grid-column: auto;
+		}
+		.social-card {
+			min-height: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.social-friend-list a,
+		.social-primary-action,
+		.social-contact-links a {
+			transition: none;
+		}
+	}
+</style>

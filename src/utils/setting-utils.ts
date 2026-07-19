@@ -90,6 +90,9 @@ export function setHue(hue: number): void {
 		return;
 	}
 	r.style.setProperty("--hue", String(hue));
+	window.dispatchEvent(
+		new CustomEvent("firefly:theme-hue-change", { detail: { hue } }),
+	);
 }
 
 export function applyThemeToDocument(theme: LIGHT_DARK_MODE) {
@@ -960,6 +963,10 @@ export function getDefaultOverlayCardOpacity(): number {
 	return backgroundWallpaper.overlay?.cardOpacity ?? 0.6;
 }
 
+export function getDefaultNavbarOpacity(): number {
+	return 0.55;
+}
+
 export function getStoredOverlayOpacity(): number {
 	if (
 		typeof localStorage === "undefined" ||
@@ -1014,6 +1021,24 @@ export function getStoredOverlayCardOpacity(): number {
 	return clampNumber(parsed, 0, 1);
 }
 
+export function getStoredNavbarOpacity(): number {
+	if (
+		typeof localStorage === "undefined" ||
+		typeof localStorage.getItem !== "function"
+	) {
+		return getDefaultNavbarOpacity();
+	}
+	const stored = localStorage.getItem("navbarSurfaceOpacity");
+	if (stored === null) {
+		return getDefaultNavbarOpacity();
+	}
+	const parsed = Number.parseFloat(stored);
+	if (Number.isNaN(parsed)) {
+		return getDefaultNavbarOpacity();
+	}
+	return clampNumber(parsed, 0, 1);
+}
+
 export function applyOverlayOpacityToDocument(opacity: number): void {
 	if (typeof document === "undefined") {
 		return;
@@ -1050,6 +1075,17 @@ export function applyOverlayCardOpacityToDocument(cardOpacity: number): void {
 	);
 }
 
+export function applyNavbarOpacityToDocument(navbarOpacity: number): void {
+	if (typeof document === "undefined") {
+		return;
+	}
+	const safeNavbarOpacity = clampNumber(navbarOpacity, 0, 1);
+	document.documentElement.style.setProperty(
+		"--navbar-surface-opacity",
+		String(safeNavbarOpacity),
+	);
+}
+
 export function setOverlayOpacity(opacity: number): void {
 	const safeOpacity = clampNumber(opacity, 0, 1);
 	if (
@@ -1083,10 +1119,22 @@ export function setOverlayCardOpacity(cardOpacity: number): void {
 	applyOverlayCardOpacityToDocument(safeCardOpacity);
 }
 
+export function setNavbarOpacity(navbarOpacity: number): void {
+	const safeNavbarOpacity = clampNumber(navbarOpacity, 0, 1);
+	if (
+		typeof localStorage !== "undefined" &&
+		typeof localStorage.setItem === "function"
+	) {
+		localStorage.setItem("navbarSurfaceOpacity", String(safeNavbarOpacity));
+	}
+	applyNavbarOpacityToDocument(safeNavbarOpacity);
+}
+
 export function applyStoredOverlaySettingsToDocument(): void {
 	applyOverlayOpacityToDocument(getLocalWallpaperOpacity());
 	applyOverlayBlurToDocument(getLocalWallpaperBlur());
 	applyOverlayCardOpacityToDocument(getStoredOverlayCardOpacity());
+	applyNavbarOpacityToDocument(getStoredNavbarOpacity());
 }
 
 // Waves animation functions

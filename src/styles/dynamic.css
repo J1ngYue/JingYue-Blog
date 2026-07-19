@@ -157,7 +157,8 @@ dynamic-feed {
 	box-shadow: 0 0 0 1px var(--primary);
 }
 
-.dynamic-year-select {
+.dynamic-year-select,
+.dynamic-sort-select {
 	position: relative;
 	display: flex;
 	flex: 0 0 auto;
@@ -165,21 +166,24 @@ dynamic-feed {
 	color: var(--content-meta);
 }
 
-.dynamic-year-select svg:first-child {
+.dynamic-year-select svg:first-child,
+.dynamic-sort-select svg:first-child {
 	position: absolute;
 	left: 0.75rem;
 	font-size: 1.15rem;
 	pointer-events: none;
 }
 
-.dynamic-year-select svg:last-child {
+.dynamic-year-select svg:last-child,
+.dynamic-sort-select svg:last-child {
 	position: absolute;
 	right: 0.5rem;
 	font-size: 1.25rem;
 	pointer-events: none;
 }
 
-.dynamic-year-select select {
+.dynamic-year-select select,
+.dynamic-sort-select select {
 	min-width: 9.5rem;
 	min-height: 2.75rem;
 	appearance: none;
@@ -194,12 +198,14 @@ dynamic-feed {
 	cursor: pointer;
 }
 
-.dynamic-year-select select option {
+.dynamic-year-select select option,
+.dynamic-sort-select select option {
 	background: var(--card-bg);
 	color: rgb(0 0 0 / 90%);
 }
 
-.dynamic-year-select select:focus {
+.dynamic-year-select select:focus,
+.dynamic-sort-select select:focus {
 	border-color: var(--primary);
 	box-shadow: 0 0 0 1px var(--primary);
 }
@@ -207,6 +213,8 @@ dynamic-feed {
 .dynamic-feed {
 	position: relative;
 	display: grid;
+	min-height: var(--dynamic-feed-stable-height, 24rem);
+	align-content: start;
 	gap: 0.875rem;
 }
 
@@ -718,13 +726,15 @@ dynamic-feed {
 :root.dark .dynamic-identity strong,
 :root.dark .dynamic-content,
 :root.dark .dynamic-search input,
-:root.dark .dynamic-year-select select {
+:root.dark .dynamic-year-select select,
+:root.dark .dynamic-sort-select select {
 	background: var(--card-bg);
 	color: rgb(255 255 255 / 90%);
 	color-scheme: dark;
 }
 
-:root.dark .dynamic-year-select select option {
+:root.dark .dynamic-year-select select option,
+:root.dark .dynamic-sort-select select option {
 	background: var(--card-bg);
 	color: rgb(255 255 255 / 90%);
 }
@@ -762,7 +772,8 @@ dynamic-feed {
 		flex-direction: column;
 	}
 
-	.dynamic-year-select select {
+	.dynamic-year-select select,
+	.dynamic-sort-select select {
 		width: 100%;
 	}
 

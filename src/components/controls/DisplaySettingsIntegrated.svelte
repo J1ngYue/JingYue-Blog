@@ -8,9 +8,9 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import {
 	getDefaultBannerCarouselEnabled,
-	getDefaultBannerTitleEnabled,
 	getDefaultGradientEnabled,
 	getDefaultHue,
+	getDefaultNavbarOpacity,
 	getDefaultOverlayCardOpacity,
 	getDefaultRainEnabled,
 	getDefaultSakuraEnabled,
@@ -18,8 +18,8 @@ import {
 	getDefaultWavesEnabled,
 	getHue,
 	getStoredBannerCarouselEnabled,
-	getStoredBannerTitleEnabled,
 	getStoredGradientEnabled,
+	getStoredNavbarOpacity,
 	getStoredOverlayCardOpacity,
 	getStoredRainEnabled,
 	getStoredSakuraEnabled,
@@ -27,9 +27,9 @@ import {
 	getStoredWallpaperMode,
 	getStoredWavesEnabled,
 	setBannerCarouselEnabled,
-	setBannerTitleEnabled,
 	setGradientEnabled,
 	setHue,
+	setNavbarOpacity,
 	setOverlayBlur,
 	setOverlayCardOpacity,
 	setOverlayOpacity,
@@ -76,8 +76,6 @@ let wavesEnabled = $state(true);
 const defaultWavesEnabled = getDefaultWavesEnabled();
 let gradientEnabled = $state(true);
 const defaultGradientEnabled = getDefaultGradientEnabled();
-let bannerTitleEnabled = $state(true);
-const defaultBannerTitleEnabled = getDefaultBannerTitleEnabled();
 let bannerCarouselEnabled = $state(true);
 const defaultBannerCarouselEnabled = getDefaultBannerCarouselEnabled();
 let sakuraEnabled = $state(true);
@@ -88,6 +86,8 @@ let snowEnabled = $state(false);
 const defaultSnowEnabled = getDefaultSnowEnabled();
 let overlayCardOpacity = $state(getDefaultOverlayCardOpacity());
 const defaultOverlayCardOpacity = getDefaultOverlayCardOpacity();
+let navbarOpacity = $state(getDefaultNavbarOpacity());
+const defaultNavbarOpacity = getDefaultNavbarOpacity();
 let localWallpaperOpacity = $state(getLocalWallpaperOpacity());
 let localWallpaperBlur = $state(getLocalWallpaperBlur());
 const defaultLocalWallpaperOpacity = getDefaultLocalWallpaperOpacity();
@@ -117,12 +117,6 @@ const isWavesSwitchable =
 const isGradientSwitchable =
 	backgroundWallpaper.common?.gradient?.switchable ?? false;
 // 检查是否启用横幅标题配置
-const isBannerTitleEnabled =
-	backgroundWallpaper.common?.homeText?.enable ?? false;
-// 是否允许用户切换横幅标题
-const isBannerTitleSwitchable =
-	isBannerTitleEnabled &&
-	(backgroundWallpaper.common?.homeText?.switchable ?? false);
 // 是否允许用户切换横幅轮播
 const isBannerCarouselSwitchable =
 	backgroundWallpaper.common?.carousel?.switchable ?? false;
@@ -133,11 +127,8 @@ const isRainSwitchable = rainConfig?.switchable ?? false;
 // 飘雪与其他特效使用独立开关，可以同时启用
 const isSnowSwitchable = snowConfig?.switchable ?? false;
 // 是否有任何横幅设置可显示（后续添加新设置时在此处添加条件）
-const hasBannerSettings =
-	isWavesSwitchable ||
-	isGradientSwitchable ||
-	isBannerTitleSwitchable ||
-	isBannerCarouselSwitchable;
+const hasWallpaperMotionSettings =
+	isWavesSwitchable || isGradientSwitchable || isBannerCarouselSwitchable;
 const overlaySwitchableConfig =
 	backgroundWallpaper.overlay?.switchable ?? false;
 const isOverlayCardOpacitySwitchable =
@@ -171,6 +162,10 @@ function resetBackgroundSettings() {
 		overlayCardOpacity = defaultOverlayCardOpacity;
 		setOverlayCardOpacity(defaultOverlayCardOpacity);
 	}
+	if (navbarOpacity !== defaultNavbarOpacity) {
+		navbarOpacity = defaultNavbarOpacity;
+		setNavbarOpacity(defaultNavbarOpacity);
+	}
 
 	requestAnimationFrame(refreshAllRangeProgress);
 }
@@ -197,13 +192,6 @@ function resetGradientEnabled() {
 }
 
 function resetBannerSettings() {
-	if (
-		isBannerTitleSwitchable &&
-		bannerTitleEnabled !== defaultBannerTitleEnabled
-	) {
-		bannerTitleEnabled = defaultBannerTitleEnabled;
-		setBannerTitleEnabled(defaultBannerTitleEnabled);
-	}
 	if (isWavesSwitchable && wavesEnabled !== defaultWavesEnabled) {
 		wavesEnabled = defaultWavesEnabled;
 		setWavesEnabled(defaultWavesEnabled);
@@ -244,6 +232,13 @@ function updateOverlayCardOpacity(value: number) {
 	requestAnimationFrame(refreshAllRangeProgress);
 }
 
+function updateNavbarOpacity(value: number) {
+	if (!Number.isFinite(value)) return;
+	navbarOpacity = opacityFromTransparencyPercent(value);
+	setNavbarOpacity(navbarOpacity);
+	requestAnimationFrame(refreshAllRangeProgress);
+}
+
 function toggleWavesEnabled() {
 	wavesEnabled = !wavesEnabled;
 	setWavesEnabled(wavesEnabled);
@@ -252,11 +247,6 @@ function toggleWavesEnabled() {
 function toggleGradientEnabled() {
 	gradientEnabled = !gradientEnabled;
 	setGradientEnabled(gradientEnabled);
-}
-
-function toggleBannerTitleEnabled() {
-	bannerTitleEnabled = !bannerTitleEnabled;
-	setBannerTitleEnabled(bannerTitleEnabled);
 }
 
 function toggleBannerCarouselEnabled() {
@@ -374,8 +364,6 @@ onMount(() => {
 	gradientEnabled = getStoredGradientEnabled();
 
 	// 从localStorage读取横幅标题状态
-	bannerTitleEnabled = getStoredBannerTitleEnabled();
-
 	// 从localStorage读取横幅轮播状态
 	bannerCarouselEnabled = getStoredBannerCarouselEnabled();
 
@@ -392,6 +380,7 @@ onMount(() => {
 	setOverlayOpacity(localWallpaperOpacity);
 	setOverlayBlur(localWallpaperBlur);
 	overlayCardOpacity = getStoredOverlayCardOpacity();
+	navbarOpacity = getStoredNavbarOpacity();
 
 	// 从localStorage读取用户偏好布局
 	const savedLayout = localStorage.getItem("postListLayout");
@@ -455,6 +444,25 @@ onMount(() => {
 		window.removeEventListener(
 			"wallpaperModeChange",
 			handleWallpaperModeChange,
+		);
+	};
+});
+
+onMount(() => {
+	const handleThemeHueChange = (event: Event) => {
+		const nextHue = Number(
+			(event as CustomEvent<{ hue?: number }>).detail?.hue,
+		);
+		if (!Number.isFinite(nextHue) || nextHue === hue) return;
+		hue = Math.round(Math.min(360, Math.max(0, nextHue)));
+		requestAnimationFrame(refreshAllRangeProgress);
+	};
+
+	window.addEventListener("firefly:theme-hue-change", handleThemeHueChange);
+	return () => {
+		window.removeEventListener(
+			"firefly:theme-hue-change",
+			handleThemeHueChange,
 		);
 	};
 });
@@ -615,7 +623,36 @@ $effect(() => {
                     />
                 </div>
 
-                {#if wallpaperMode === WALLPAPER_OVERLAY && isOverlayCardOpacitySwitchable}
+                <div class="wallpaper-control-card rounded-lg p-2.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-medium text-(--btn-content) opacity-80">导航栏透明度</span>
+                        <div class="numeric-value-field">
+                            <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value={transparencyPercent(navbarOpacity)}
+                                aria-label="导航栏透明度数值"
+                                oninput={(event) => updateNavbarOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                                class="numeric-value-input"
+                            />
+                            <span>%</span>
+                        </div>
+                    </div>
+                    <input
+                        aria-label="当前导航栏透明度"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={transparencyPercent(navbarOpacity)}
+                        oninput={(event) => updateNavbarOpacity(Number((event.currentTarget as HTMLInputElement).value))}
+                        class="slider w-full overlay-slider"
+                    />
+                </div>
+
+                {#if isOverlayCardOpacitySwitchable}
                     <div class="wallpaper-control-card rounded-lg p-2.5">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-sm font-medium text-(--btn-content) opacity-80">卡片透明度</span>
@@ -646,6 +683,68 @@ $effect(() => {
                     </div>
                 {/if}
 
+                {#if wallpaperMode === WALLPAPER_FULLSCREEN && hasWallpaperMotionSettings}
+                    <div class="wallpaper-motion-settings">
+                        <div class="wallpaper-motion-heading">
+                            <span>壁纸动态</span>
+                            <button
+                                type="button"
+                                aria-label="重置壁纸动态效果"
+                                title="重置"
+                                data-tooltip="重置"
+                                class="reset-tooltip btn-regular w-7 h-7 rounded-md"
+                                onclick={resetBannerSettings}
+                            >
+                                <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
+                            </button>
+                        </div>
+                        <div class="effect-toggle-list space-y-1.5">
+                            {#if isBannerCarouselSwitchable}
+                                <button
+                                    type="button"
+                                    class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left transition-all relative overflow-hidden"
+                                    class:bg-(--btn-regular-bg-hover)={bannerCarouselEnabled}
+                                    class:effect-toggle-active={bannerCarouselEnabled}
+                                    aria-pressed={bannerCarouselEnabled}
+                                    onclick={toggleBannerCarouselEnabled}
+                                >
+                                    <Icon icon="material-symbols:view-carousel-outline" class="text-[1.25rem] shrink-0"></Icon>
+                                    <span class="text-sm flex-1">{i18n(I18nKey.wallpaperCarousel)}</span>
+                                    <span class:toggle-on={bannerCarouselEnabled} class="settings-toggle" aria-hidden="true"><i></i></span>
+                                </button>
+                            {/if}
+                            {#if isWavesSwitchable}
+                                <button
+                                    type="button"
+                                    class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left transition-all relative overflow-hidden"
+                                    class:bg-(--btn-regular-bg-hover)={wavesEnabled}
+                                    class:effect-toggle-active={wavesEnabled}
+                                    aria-pressed={wavesEnabled}
+                                    onclick={toggleWavesEnabled}
+                                >
+                                    <Icon icon="material-symbols:airwave-rounded" class="text-[1.25rem] shrink-0"></Icon>
+                                    <span class="text-sm flex-1">{i18n(I18nKey.wavesAnimation)}</span>
+                                    <span class:toggle-on={wavesEnabled} class="settings-toggle" aria-hidden="true"><i></i></span>
+                                </button>
+                            {/if}
+                            {#if isGradientSwitchable}
+                                <button
+                                    type="button"
+                                    class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left transition-all relative overflow-hidden"
+                                    class:bg-(--btn-regular-bg-hover)={gradientEnabled}
+                                    class:effect-toggle-active={gradientEnabled}
+                                    aria-pressed={gradientEnabled}
+                                    onclick={toggleGradientEnabled}
+                                >
+                                    <Icon icon="material-symbols:gradient" class="text-[1.25rem] shrink-0"></Icon>
+                                    <span class="text-sm flex-1">{i18n(I18nKey.gradientTransition)}</span>
+                                    <span class:toggle-on={gradientEnabled} class="settings-toggle" aria-hidden="true"><i></i></span>
+                                </button>
+                            {/if}
+                        </div>
+                    </div>
+                {/if}
+
                 <p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
                     封面与全屏壁纸共用这一组透明度和模糊度；透明度越高，图层越透明（0% 完全显示，100% 完全透明）。
                 </p>
@@ -656,97 +755,6 @@ $effect(() => {
             {/if}
         </div>
     </div>
-
-    <!-- Banner Settings Section -->
-    {#if wallpaperMode === WALLPAPER_FULLSCREEN && hasBannerSettings}
-        <div class="mt-2 mb-2">
-            <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
-                before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
-                before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
-            >
-                {i18n(I18nKey.wallpaperSettings)}
-                <button aria-label="恢复默认" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetBannerSettings}>
-                    <div class="text-(--btn-content)">
-                        <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
-                    </div>
-                </button>
-            </div>
-            <div class="effect-toggle-list space-y-1.5">
-                <!-- Banner Title Switch -->
-                {#if isBannerTitleSwitchable}
-                <button
-                    class="w-full btn-regular rounded-md py-2 px-3 flex items-center gap-3 text-left active:scale-95 transition-all relative overflow-hidden"
-                    class:bg-(--btn-regular-bg-hover)={bannerTitleEnabled}
-                    onclick={toggleBannerTitleEnabled}
-                >
-                    <Icon icon="material-symbols:titlecase-rounded" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-sm flex-1">{i18n(I18nKey.wallpaperTitle)}</span>
-                    <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
-                         class:bg-(--primary)={bannerTitleEnabled}
-                         class:bg-(--btn-regular-bg-active)={!bannerTitleEnabled}>
-                        <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
-                             class:left-0.5={!bannerTitleEnabled}
-                             class:left-5={bannerTitleEnabled}></div>
-                    </div>
-                </button>
-                {/if}
-                <!-- Banner Carousel Switch -->
-                {#if isBannerCarouselSwitchable}
-                <button
-                    class="w-full btn-regular rounded-md py-2 px-3 flex items-center gap-3 text-left active:scale-95 transition-all relative overflow-hidden"
-                    class:bg-(--btn-regular-bg-hover)={bannerCarouselEnabled}
-                    onclick={toggleBannerCarouselEnabled}
-                >
-                    <Icon icon="material-symbols:view-carousel-outline" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-sm flex-1">{i18n(I18nKey.wallpaperCarousel)}</span>
-                    <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
-                         class:bg-(--primary)={bannerCarouselEnabled}
-                         class:bg-(--btn-regular-bg-active)={!bannerCarouselEnabled}>
-                        <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
-                             class:left-0.5={!bannerCarouselEnabled}
-                             class:left-5={bannerCarouselEnabled}></div>
-                    </div>
-                </button>
-                {/if}
-                <!-- Waves Animation Switch -->
-                {#if isWavesSwitchable}
-                <button
-                    class="w-full btn-regular rounded-md py-2 px-3 flex items-center gap-3 text-left active:scale-95 transition-all relative overflow-hidden"
-                    class:bg-(--btn-regular-bg-hover)={wavesEnabled}
-                    onclick={toggleWavesEnabled}
-                >
-                    <Icon icon="material-symbols:airwave-rounded" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-sm flex-1">{i18n(I18nKey.wavesAnimation)}</span>
-                    <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
-                         class:bg-(--primary)={wavesEnabled}
-                         class:bg-(--btn-regular-bg-active)={!wavesEnabled}>
-                        <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
-                             class:left-0.5={!wavesEnabled}
-                             class:left-5={wavesEnabled}></div>
-                    </div>
-                </button>
-                {/if}
-                <!-- Gradient Transition Switch -->
-                {#if isGradientSwitchable}
-                <button
-                    class="w-full btn-regular rounded-md py-2 px-3 flex items-center gap-3 text-left active:scale-95 transition-all relative overflow-hidden"
-                    class:bg-(--btn-regular-bg-hover)={gradientEnabled}
-                    onclick={toggleGradientEnabled}
-                >
-                    <Icon icon="material-symbols:gradient" class="text-[1.25rem] shrink-0"></Icon>
-                    <span class="text-sm flex-1">{i18n(I18nKey.gradientTransition)}</span>
-                    <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
-                         class:bg-(--primary)={gradientEnabled}
-                         class:bg-(--btn-regular-bg-active)={!gradientEnabled}>
-                        <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
-                             class:left-0.5={!gradientEnabled}
-                             class:left-5={gradientEnabled}></div>
-                    </div>
-                </button>
-                {/if}
-            </div>
-        </div>
-    {/if}
 
     <!-- Effects Settings Section -->
     {#if isSakuraSwitchable || isRainSwitchable || isSnowSwitchable}
@@ -942,6 +950,46 @@ $effect(() => {
             &:focus-within
                 border-color rgba(72, 151, 76, 0.36)
                 box-shadow 0 6px 18px rgba(45, 92, 48, 0.09)
+
+        .wallpaper-motion-settings
+            padding-top 0.15rem
+
+        .wallpaper-motion-heading
+            display flex
+            align-items center
+            justify-content space-between
+            margin 0.15rem 0 0.35rem
+            padding 0 0.25rem
+            color var(--btn-content)
+            font-size 0.72rem
+            font-weight 700
+            opacity 0.78
+
+        .settings-toggle
+            position relative
+            display inline-flex
+            width 2.5rem
+            height 1.35rem
+            flex 0 0 auto
+            align-items center
+            border-radius 999px
+            background var(--btn-regular-bg-active)
+            transition background-color 0.18s ease
+
+            i
+                width 1rem
+                height 1rem
+                margin-left 0.18rem
+                border-radius 50%
+                background white
+                box-shadow 0 1px 3px rgba(0, 0, 0, 0.18)
+                transition transform 0.18s ease
+
+            &.toggle-on
+                background var(--primary)
+
+                i
+                    transform translateX(1.08rem)
 
         .numeric-value-field
             display flex

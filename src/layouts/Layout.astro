@@ -317,6 +317,14 @@ const siteLang = lang.replace("_", "-");
         ? Math.min(1, Math.max(0, parsedCardOpacity))
         : cardTransparentOpacity;
       document.documentElement.style.setProperty("--card-transparent-opacity", String(resolvedCardOpacity));
+      const storedNavbarOpacity = localStorage.getItem("navbarSurfaceOpacity");
+      const parsedNavbarOpacity = storedNavbarOpacity === null
+        ? NaN
+        : Number.parseFloat(storedNavbarOpacity);
+      const resolvedNavbarOpacity = Number.isFinite(parsedNavbarOpacity)
+        ? Math.min(1, Math.max(0, parsedNavbarOpacity))
+        : 0.55;
+      document.documentElement.style.setProperty("--navbar-surface-opacity", String(resolvedNavbarOpacity));
 
       // calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
       // 使用更准确的窗口高度计算
@@ -1049,6 +1057,14 @@ function disableAnimation() {
       if (!isSamePage) {
         // 添加页面切换保护，防止导航栏闪烁
         document.documentElement.classList.add("is-page-transitioning");
+		// 切换模式时先隐藏外层容器，让页面位置变化在不可见状态下完成，避免视觉抖动。
+		const transitionShell = document.querySelector<HTMLElement>(
+			".w-full.z-30.pointer-events-none",
+		);
+		if (transitionShell) {
+			transitionShell.style.setProperty("visibility", "hidden", "important");
+			transitionShell.style.setProperty("opacity", "0", "important");
+		}
       }
 
       const navbar = document.getElementById("navbar-wrapper");
@@ -1063,7 +1079,6 @@ function disableAnimation() {
     });
     window.swup.hooks.on("content:replace", () => {
       syncHomeLandingLayout();
-      requestAnimationFrame(syncHomeLandingLayout);
       const isHome = pathsEqual(window.location.pathname, url("/"));
       const currentMode = document.documentElement.getAttribute("data-wallpaper-mode");
       const isMobileForBanner = window.innerWidth < 1024;
@@ -1171,24 +1186,12 @@ function disableAnimation() {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       }
 
-      // 禁用 #main-grid 的过渡动画，防止 lg:is-home 切换时 transform 产生 700ms 动画
-      const mainGrid = document.getElementById("main-grid");
-      if (mainGrid) {
-        mainGrid.style.setProperty("transition", "none", "important");
-      }
-
       if (isHomePage) {
         bodyElement!.classList.add("lg:is-home");
         bodyElement!.classList.add("is-home");
       } else {
         bodyElement!.classList.remove("lg:is-home");
         bodyElement!.classList.remove("is-home");
-      }
-
-      // 强制回流，确保 transform 立即生效，然后恢复过渡动画
-      if (mainGrid) {
-        void mainGrid.offsetWidth;
-        mainGrid.style.removeProperty("transition");
       }
 
       // 同步壁纸模式的 body 类（防止 enable-banner 从初始加载残留到全屏/overlay/none 模式）
@@ -1224,14 +1227,6 @@ function disableAnimation() {
       // 只在移动端（1024px以下）处理banner隐藏
       const isMobile = window.innerWidth < 1024;
 
-      // 在移动端禁用文章列表容器的过渡动画，防止与主内容区位置变化冲突
-      if (isMobile) {
-        const postListContainer = document.getElementById("post-list-container");
-        if (postListContainer) {
-          postListContainer.style.transition = "none";
-        }
-      }
-
       const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
       const mainContentWrapper = document.querySelector(
         ".w-full.z-30.pointer-events-none"
@@ -1247,15 +1242,12 @@ function disableAnimation() {
           wallpaperWrapper.classList.add("mobile-hide-banner", "hidden", "opacity-0");
           wallpaperWrapper.classList.remove("opacity-100");
           wallpaperWrapper.style.setProperty("display", "none", "important");
-          setTimeout(() => {
-            mainContentWrapper.classList.remove("mobile-main-no-banner");
-            mainContentWrapper.classList.add("no-banner-layout");
-            mainContentWrapper.style.position = "relative";
-            mainContentWrapper.style.zIndex = "30";
-            mainContentWrapper.style.setProperty("top", "0", "important");
-            mainContentWrapper.style.setProperty("margin-top", "0", "important");
-            // 不在此处恢复过渡动画，由 page:view 统一管理，避免与后续钩子冲突
-          }, 150);
+		  mainContentWrapper.classList.remove("mobile-main-no-banner");
+		  mainContentWrapper.classList.add("no-banner-layout");
+		  mainContentWrapper.style.position = "relative";
+		  mainContentWrapper.style.zIndex = "30";
+		  mainContentWrapper.style.setProperty("top", "0", "important");
+		  mainContentWrapper.style.setProperty("margin-top", "0", "important");
         } else {
           // 非首页：隐藏壁纸并移动内容
           wallpaperWrapper.classList.add("mobile-hide-banner");
@@ -1325,14 +1317,14 @@ function disableAnimation() {
       }
     });
     window.swup.hooks.on("page:view", () => {
-      syncHomeLandingLayout();
-      requestAnimationFrame(syncHomeLandingLayout);
+	  const transitionShell = document.querySelector<HTMLElement>(
+		".w-full.z-30.pointer-events-none",
+	  );
+	  if (transitionShell) {
+		transitionShell.style.removeProperty("visibility");
+		transitionShell.style.removeProperty("opacity");
+	  }
       requestAnimationFrame(applyContentOnlyMainLayout);
-      // 恢复 #main-grid 的过渡动画（visit:start 中禁用了）
-      const mainGrid = document.getElementById("main-grid");
-      if (mainGrid) {
-        mainGrid.style.removeProperty("transition");
-      }
 
       // 更新网格列数和侧边栏组件可见性
       updateMainGridCols();
@@ -1385,13 +1377,7 @@ function disableAnimation() {
               wrapper.style.display = "block";
               wrapper.classList.remove("mobile-hide-banner");
             }
-            if (mainEl) {
-              // visit:start 已禁用过渡并移除了类，此处确认最终状态
-              // 位置变化完成后，延迟恢复过渡动画（确保浏览器已应用新位置）
-              setTimeout(() => {
-                mainEl.style.removeProperty("transition");
-              }, 50);
-            }
+			if (mainEl) mainEl.style.removeProperty("transition");
           }
       }
 
@@ -1414,17 +1400,6 @@ function disableAnimation() {
       if (!isImmersiveHomeLanding && isContentOnly && !isMobileForBanner && mainEl &&
           (currentMode === "banner" || currentMode === "fullscreen")) {
         applyContentOnlyMainLayout();
-      }
-
-      // 在移动端恢复文章列表容器的过渡动画（在主内容区位置动画完成后）
-      const isMobile = window.innerWidth < 1024;
-      if (isMobile) {
-        setTimeout(() => {
-          const postListContainer = document.getElementById("post-list-container");
-          if (postListContainer) {
-            postListContainer.style.transition = "";
-          }
-        }, 600); // 等待主内容区动画完成（0.4s + 0.1s delay + 100ms buffer）
       }
 
       // 同步主题状态 - 解决从首页进入文章页面时代码块渲染问题

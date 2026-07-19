@@ -129,6 +129,34 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 
 	// 菜单动作映射
 	let currentModelIndex = 0;
+	let widget: any = (window as any).__fireflyLive2DWidget || null;
+	let widgetRoot: HTMLElement | null =
+		document.getElementById("firefly-live2d-runtime") as HTMLElement | null;
+	let widgetInitializing = false;
+	const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
+
+	function getSelectedCharacterModel() {
+		const stored = localStorage.getItem(CHARACTER_MODEL_KEY);
+		return stored === "snow-miku" || stored === "black-cat" ? stored : "firefly";
+	}
+
+	function getLive2DModelIndex(model = getSelectedCharacterModel()) {
+		return model === "black-cat" ? 1 : 0;
+	}
+
+	function syncWidgetVisibility() {
+		const selectedModel = getSelectedCharacterModel();
+		const responsive = JSON.parse(
+			document.getElementById("l2d-widget-container")?.dataset.responsive || "{}",
+		);
+		const hiddenOnMobile =
+			responsive.hideOnMobile &&
+			window.innerWidth <= (responsive.mobileBreakpoint || 768);
+		if (widgetRoot) {
+			widgetRoot.style.display =
+				selectedModel === "firefly" || hiddenOnMobile ? "none" : "block";
+		}
+	}
 	const menuActions: Record<string, (widget: any) => void> = {
 		home: () => (window.location.href = "/"),
 		scrollToTop: () => window.scrollTo({ top: 0, behavior: "smooth" }),
@@ -142,9 +170,21 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 		},
 	};
 
-	function initWidget() {
+	async function initWidget(initialModelIndex = getLive2DModelIndex()) {
 		const container = document.getElementById("l2d-widget-container");
-		if (!container) return;
+		if (!container || widgetInitializing) return;
+		if (widget) {
+			widgetRoot =
+				widgetRoot ||
+				(widget.l2d?.getCanvas?.()?.parentElement as HTMLElement | null);
+			syncWidgetVisibility();
+			if (currentModelIndex !== initialModelIndex) {
+				currentModelIndex = initialModelIndex;
+				await widget.switchModel(initialModelIndex);
+			}
+			return;
+		}
+		widgetInitializing = true;
 
 		try {
 			const models = JSON.parse(container.dataset.models || "[]");
@@ -225,17 +265,50 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 				}
 			}
 
-			createWidget(options);
+			widget = createWidget(options);
+			(window as any).__fireflyLive2DWidget = widget;
+			widgetRoot = widget.l2d?.getCanvas?.()?.parentElement || null;
+			if (widgetRoot) {
+				widgetRoot.id = "firefly-live2d-runtime";
+				widgetRoot.dataset.characterModelRuntime = "live2d";
+			}
+			currentModelIndex = 0;
+			syncWidgetVisibility();
+			if (initialModelIndex !== 0) {
+				let initialSwitchPending = true;
+				widget.l2d?.on?.("loaded", () => {
+					if (!initialSwitchPending) return;
+					initialSwitchPending = false;
+					currentModelIndex = initialModelIndex;
+					widget.switchModel(initialModelIndex);
+				});
+			}
 		} catch (e) {
 			console.error("Failed to initialize Live2D widget:", e);
+		} finally {
+			widgetInitializing = false;
 		}
+	}
+
+	async function handleCharacterModelChange(event: CustomEvent) {
+		const model = event.detail?.model || getSelectedCharacterModel();
+		if (model === "firefly") {
+			syncWidgetVisibility();
+			return;
+		}
+		await initWidget(getLive2DModelIndex(model));
+		syncWidgetVisibility();
 	}
 
 	// 确保只初始化一次
 	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", initWidget);
+		window.addEventListener("DOMContentLoaded", () => {
+			handleResponsive();
+			if (getSelectedCharacterModel() !== "firefly") initWidget();
+		}, { once: true });
 	} else {
-		initWidget();
+		handleResponsive();
+		if (getSelectedCharacterModel() !== "firefly") initWidget();
 	}
 
 	// 响应式处理：窗口大小变化时显示/隐藏
@@ -244,15 +317,21 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 		if (!container) return;
 
 		const responsive = JSON.parse(container.dataset.responsive || "{}");
-		if (responsive.hideOnMobile) {
-			const breakpoint = responsive.mobileBreakpoint || 768;
-			if (window.innerWidth <= breakpoint) {
-				container.style.display = "none";
-			} else {
-				container.style.display = "";
-			}
-		}
+		const breakpoint = responsive.mobileBreakpoint || 768;
+		container.style.display =
+			responsive.hideOnMobile && window.innerWidth <= breakpoint ? "none" : "";
+		syncWidgetVisibility();
 	}
 
-	window.addEventListener("resize", handleResponsive);
+	(window as any).__fireflyLive2DAbort?.abort();
+	const live2dController = new AbortController();
+	(window as any).__fireflyLive2DAbort = live2dController;
+	window.addEventListener(
+		"firefly:character-model-change",
+		handleCharacterModelChange as unknown as EventListener,
+		{ signal: live2dController.signal },
+	);
+	window.addEventListener("resize", handleResponsive, {
+		signal: live2dController.signal,
+	});
 </script>

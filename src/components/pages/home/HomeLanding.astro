@@ -201,6 +201,7 @@ const avatarParticles = [
 	data-home-landing
 	data-home-timezone={siteTimezone}
 	data-home-start-date={siteStartDate}
+	data-home-default-hue={siteConfig.themeColor.hue}
 >
 	<LocalWallpaperLayer client:load surface="home" />
 
@@ -296,6 +297,39 @@ const avatarParticles = [
 						</p>
 					</div>
 					<div class="home-cover-switcher-utilities">
+						<section class="home-cover-theme-control" aria-labelledby="home-cover-theme-title">
+							<div class="home-cover-theme-heading">
+								<span id="home-cover-theme-title">
+									<Icon is:inline name="material-symbols:palette-outline" />
+									主题颜色
+								</span>
+								<output data-home-cover-theme-value>{siteConfig.themeColor.hue}°</output>
+							</div>
+							<input
+								type="range"
+								min="0"
+								max="360"
+								step="1"
+								value={siteConfig.themeColor.hue}
+								data-home-cover-theme-range
+								aria-label="调整壁纸选择器与站点主题色"
+							/>
+							<div class="home-cover-theme-presets" aria-label="主题色预设">
+								{[140, 190, 230, 285, 330].map((hue) => (
+									<button
+										type="button"
+										data-home-cover-theme-preset={hue}
+										style={`--preset-hue: ${hue}`}
+										aria-label={`切换到 ${hue} 度主题色`}
+										aria-pressed="false"
+									></button>
+								))}
+								<button type="button" class="home-cover-theme-reset" data-home-cover-theme-reset>
+									<Icon is:inline name="material-symbols:restart-alt-rounded" />
+									恢复默认
+								</button>
+							</div>
+						</section>
 						<div class="home-cover-local-import">
 							<HomeCoverLocalImport compact client:load />
 						</div>
@@ -431,16 +465,12 @@ const avatarParticles = [
 							<span aria-hidden="true">·</span>
 							<span data-home-days>正在计算站点时光</span>
 						</p>
-						<blockquote class="home-clock-quote">
-							<Icon is:inline name="material-symbols:format-quote-rounded" aria-hidden="true" />
+						<blockquote class="home-clock-quote" aria-live="polite">
 							<p data-home-quote data-quotes={JSON.stringify(heroQuotes)}>{heroQuotes[0]}</p>
 						</blockquote>
 					</aside>
 
 					<nav class="home-hero-tools" aria-label="封面快捷工具">
-						<button type="button" data-home-quote-trigger aria-label="换一句短句" title="换一句">
-							<Icon is:inline name="material-symbols:refresh-rounded" />
-						</button>
 						<a href="/about/" aria-label="查看关于页面" title="关于">
 							<Icon is:inline name="material-symbols:person-outline-rounded" />
 						</a>
@@ -645,7 +675,7 @@ const avatarParticles = [
 				<div class="home-overview-illustration-shade"></div>
 				<span class="home-overview-illustration-index">片段 01</span>
 			</div>
-			<div class="home-overview-grid">
+			<div class="home-overview-grid" data-home-scroll-stop>
 				<Dynamic
 					class="home-overview-card home-overview-dynamic"
 					widgetConfig={{
@@ -791,7 +821,6 @@ const avatarParticles = [
 		const greeting = root.querySelector("[data-home-greeting]");
 		const days = root.querySelector("[data-home-days]");
 		const quote = root.querySelector("[data-home-quote]");
-		const quoteTriggers = Array.from(root.querySelectorAll("[data-home-quote-trigger]"));
 		const musicTrigger = root.querySelector("[data-home-music-trigger]");
 		const musicPanel = document.getElementById("music-nav-panel");
 		const coverSwitcherTrigger = root.querySelector("[data-home-cover-switcher-trigger]");
@@ -803,6 +832,10 @@ const avatarParticles = [
 		const profileRail = root.querySelector(".home-profile-rail");
 		const coverSwitcherClosers = Array.from(root.querySelectorAll("[data-home-cover-switcher-close]"));
 		const coverOptions = Array.from(root.querySelectorAll("[data-home-cover-option]"));
+		const themeRange = root.querySelector("[data-home-cover-theme-range]");
+		const themeValue = root.querySelector("[data-home-cover-theme-value]");
+		const themePresets = Array.from(root.querySelectorAll("[data-home-cover-theme-preset]"));
+		const themeReset = root.querySelector("[data-home-cover-theme-reset]");
 		const homeQuickTools = Array.from(root.querySelectorAll("[data-home-quick-tool]"));
 		const coverImages = Array.from(
 			root.querySelectorAll("[id^='home-cover-desktop-'], [id^='home-cover-mobile-']"),
@@ -822,6 +855,7 @@ const avatarParticles = [
 		const coverScene = root.querySelector("[data-home-cover-scene]");
 		const profileScene = root.querySelector("[data-home-profile-scene]");
 		const scrollScenes = Array.from(root.querySelectorAll("[data-home-scroll-scene]"));
+		const scrollStops = Array.from(root.querySelectorAll("[data-home-scroll-stop]"));
 		const terminal = root.querySelector("[data-home-terminal]");
 		const profileTerminal = root.querySelector("[data-home-profile-terminal]");
 		const avatarTrigger = root.querySelector("[data-home-avatar-trigger]");
@@ -847,6 +881,7 @@ const avatarParticles = [
 		let avatarFeedbackTimer = 0;
 		let sceneWheelQuietTimer = 0;
 		let musicCloseTimer = 0;
+		let quoteTimer = 0;
 		let coverSwitcherTimer = 0;
 		let coverChangeTimer = 0;
 		let particleArrowFrame = 0;
@@ -858,6 +893,36 @@ const avatarParticles = [
 		let quoteIndex = 0;
 		let avatarResponseIndex = 0;
 		let coverSwitcherOpen = false;
+		const defaultHue = Math.max(0, Math.min(360, Number(root.dataset.homeDefaultHue) || 140));
+		const storedHue = Math.max(
+			0,
+			Math.min(360, Number(window.localStorage.getItem("hue")) || defaultHue),
+		);
+		const syncThemeControls = (value) => {
+			const nextHue = Math.round(Math.max(0, Math.min(360, Number(value) || 0)));
+			if (themeRange) themeRange.value = String(nextHue);
+			if (themeValue) themeValue.textContent = `${nextHue}°`;
+			themePresets.forEach((preset) => {
+				preset.setAttribute(
+					"aria-pressed",
+					String(Number(preset.dataset.homeCoverThemePreset) === nextHue),
+				);
+			});
+		};
+		const applyThemeHue = (value) => {
+			const nextHue = Math.round(Math.max(0, Math.min(360, Number(value) || 0)));
+			document.documentElement.style.setProperty("--hue", String(nextHue));
+			window.localStorage.setItem("hue", String(nextHue));
+			syncThemeControls(nextHue);
+			window.dispatchEvent(
+				new CustomEvent("firefly:theme-hue-change", { detail: { hue: nextHue } }),
+			);
+		};
+		const handleThemeRange = (event) => applyThemeHue(event.currentTarget.valueAsNumber);
+		const handleThemePreset = (event) =>
+			applyThemeHue(Number(event.currentTarget.dataset.homeCoverThemePreset));
+		const resetThemeHue = () => applyThemeHue(defaultHue);
+		syncThemeControls(storedHue);
 		let selectedCoverIndex = Number(
 			coverOptions.find((option) => option.classList.contains("is-active"))?.dataset.homeCoverOption ?? 0,
 		);
@@ -983,7 +1048,15 @@ const avatarParticles = [
 		const showNextQuote = () => {
 			if (!quote || quotes.length < 2) return;
 			quoteIndex = (quoteIndex + 1) % quotes.length;
-			quote.textContent = quotes[quoteIndex];
+			if (reducedMotion.matches) {
+				quote.textContent = quotes[quoteIndex];
+				return;
+			}
+			quote.classList.add("is-changing");
+			window.setTimeout(() => {
+				quote.textContent = quotes[quoteIndex];
+				requestAnimationFrame(() => quote.classList.remove("is-changing"));
+			}, 180);
 		};
 
 		const setMusicDockOpen = (open) => {
@@ -1322,11 +1395,17 @@ const avatarParticles = [
 		const updateSceneMetrics = () => {
 			heroTop = getElementPageTop(hero);
 			heroScrollDistance = Math.max(hero.offsetHeight - window.innerHeight, 1);
-			sceneTargets = [
+			const sectionTargets = [
 				heroTop,
 				heroTop + heroScrollDistance,
 				...scrollScenes.map((scene) => getElementPageTop(scene)),
 			];
+			const stopTargets = scrollStops.map(
+				(stop) => Math.max(heroTop, getElementPageTop(stop) - Math.min(56, window.innerHeight * 0.06)),
+			);
+			sceneTargets = [...new Set([...sectionTargets, ...stopTargets])]
+				.sort((a, b) => a - b)
+				.filter((target, index, targets) => index === 0 || target - targets[index - 1] > 24);
 			if (!sceneTransitioning) setActiveSceneIndex(getClosestSceneIndex(sceneTargets));
 		};
 
@@ -1575,7 +1654,7 @@ const avatarParticles = [
 
 		updateClock();
 		const clockInterval = window.setInterval(updateClock, 1000);
-		quoteTriggers.forEach((trigger) => trigger.addEventListener("click", showNextQuote));
+		quoteTimer = window.setInterval(showNextQuote, 6000);
 		avatarTrigger?.addEventListener("click", showAvatarReaction);
 		musicTrigger?.addEventListener("click", openMusicDockFromClick);
 		musicTrigger?.addEventListener("pointerenter", openMusicDock);
@@ -1591,6 +1670,9 @@ const avatarParticles = [
 		coverSwitcherTrigger?.addEventListener("click", openCoverSwitcher);
 		coverSwitcherClosers.forEach((closer) => closer.addEventListener("click", closeCoverSwitcher));
 		coverOptions.forEach((option) => option.addEventListener("click", selectCoverIllustration));
+		themeRange?.addEventListener("input", handleThemeRange);
+		themePresets.forEach((preset) => preset.addEventListener("click", handleThemePreset));
+		themeReset?.addEventListener("click", resetThemeHue);
 		coverSwitcher?.addEventListener("keydown", handleCoverSwitcherKeydown);
 		coverOrbit?.addEventListener("pointermove", handleCoverOrbitPointerMove);
 		coverOrbit?.addEventListener("pointerleave", handleCoverOrbitPointerLeave);
@@ -1674,7 +1756,6 @@ const avatarParticles = [
 			window.removeEventListener("scroll", scheduleRender);
 			window.removeEventListener("resize", handleViewportResize);
 			reducedMotion.removeEventListener("change", handleMotionPreference);
-			quoteTriggers.forEach((trigger) => trigger.removeEventListener("click", showNextQuote));
 			avatarTrigger?.removeEventListener("click", showAvatarReaction);
 			musicTrigger?.removeEventListener("click", openMusicDockFromClick);
 			musicTrigger?.removeEventListener("pointerenter", openMusicDock);
@@ -1690,6 +1771,9 @@ const avatarParticles = [
 			coverSwitcherTrigger?.removeEventListener("click", openCoverSwitcher);
 			coverSwitcherClosers.forEach((closer) => closer.removeEventListener("click", closeCoverSwitcher));
 			coverOptions.forEach((option) => option.removeEventListener("click", selectCoverIllustration));
+			themeRange?.removeEventListener("input", handleThemeRange);
+			themePresets.forEach((preset) => preset.removeEventListener("click", handleThemePreset));
+			themeReset?.removeEventListener("click", resetThemeHue);
 			homeQuickTools.forEach((tool) => {
 				if (tool.dataset.homeQuickTool !== "home") {
 					tool.removeEventListener("click", handleHomeQuickTool);
@@ -1719,6 +1803,7 @@ const avatarParticles = [
 			if (coverSwitcherOpen) setCoverSwitcherOpen(false, false);
 			document.body.classList.remove("home-cover-switcher-open");
 			window.clearInterval(clockInterval);
+			if (quoteTimer) window.clearInterval(quoteTimer);
 			if (terminalTimer) window.clearTimeout(terminalTimer);
 			if (profileTerminalTimer) window.clearTimeout(profileTerminalTimer);
 			if (avatarReactionTimer) window.clearTimeout(avatarReactionTimer);
@@ -1896,8 +1981,8 @@ const avatarParticles = [
 		inset: 0;
 		border: 0;
 		background:
-			radial-gradient(circle at 20% 18%, rgba(139, 92, 246, 0.25), transparent 36%),
-			radial-gradient(circle at 78% 74%, rgba(56, 189, 248, 0.17), transparent 38%),
+			radial-gradient(circle at 20% 18%, color-mix(in oklch, var(--primary) 28%, transparent), transparent 36%),
+			radial-gradient(circle at 78% 74%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 38%),
 			rgba(8, 10, 27, 0.86);
 		cursor: pointer;
 		backdrop-filter: blur(1.15rem) saturate(0.9);
@@ -1908,10 +1993,10 @@ const avatarParticles = [
 		width: min(72rem, calc(100vw - 3rem));
 		max-height: calc(100dvh - 3rem);
 		overflow: hidden;
-		border: 1px solid rgba(196, 181, 253, 0.3);
+		border: 1px solid color-mix(in oklch, var(--primary) 36%, rgba(255, 255, 255, 0.12));
 		border-radius: 1.8rem;
 		background:
-			linear-gradient(145deg, rgba(48, 42, 84, 0.97), rgba(15, 22, 46, 0.98)),
+			linear-gradient(145deg, color-mix(in oklch, var(--primary) 17%, rgba(27, 34, 55, 0.97)), rgba(15, 22, 46, 0.98)),
 			#15172f;
 		box-shadow:
 			0 2rem 7rem rgba(3, 5, 22, 0.58),
@@ -1942,10 +2027,10 @@ const avatarParticles = [
 		justify-content: space-between;
 		flex-direction: column;
 		gap: 1.5rem;
-		border: 1px solid rgba(196, 181, 253, 0.2);
+		border: 1px solid color-mix(in oklch, var(--primary) 28%, rgba(255, 255, 255, 0.08));
 		border-radius: 1.3rem;
 		background:
-			linear-gradient(180deg, rgba(167, 139, 250, 0.14), rgba(56, 189, 248, 0.05)),
+			linear-gradient(180deg, color-mix(in oklch, var(--primary) 16%, transparent), color-mix(in oklch, var(--primary) 5%, transparent)),
 			rgba(24, 25, 55, 0.74);
 		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 		padding: 1.25rem;
@@ -2006,6 +2091,116 @@ const avatarParticles = [
 		gap: 0.65rem;
 	}
 
+	.home-cover-theme-control {
+		display: grid;
+		gap: 0.58rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 25%, rgba(255, 255, 255, 0.08));
+		border-radius: 1rem;
+		background: rgba(255, 255, 255, 0.055);
+		padding: 0.72rem;
+	}
+
+	.home-cover-theme-heading,
+	.home-cover-theme-heading > span,
+	.home-cover-theme-presets {
+		display: flex;
+		align-items: center;
+	}
+
+	.home-cover-theme-heading {
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.home-cover-theme-heading > span {
+		gap: 0.38rem;
+		font-size: 0.66rem;
+		font-weight: 800;
+	}
+
+	.home-cover-theme-heading :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		color: color-mix(in oklch, var(--primary) 72%, white);
+	}
+
+	.home-cover-theme-heading output {
+		min-width: 2.6rem;
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--primary) 20%, transparent);
+		padding: 0.22rem 0.45rem;
+		color: color-mix(in oklch, var(--primary) 70%, white);
+		font-size: 0.58rem;
+		font-weight: 850;
+		text-align: center;
+	}
+
+	.home-cover-theme-control input[type="range"] {
+		width: 100%;
+		height: 0.42rem;
+		appearance: none;
+		border-radius: 999px;
+		background: linear-gradient(90deg, #f2a2b7, #e6c16e, #69d3b2, #6ec9e9, #aaa4f5, #ef9fc7);
+		cursor: pointer;
+	}
+
+	.home-cover-theme-control input[type="range"]::-webkit-slider-thumb {
+		width: 0.82rem;
+		height: 1rem;
+		appearance: none;
+		border: 2px solid rgba(255, 255, 255, 0.92);
+		border-radius: 0.28rem;
+		background: var(--primary);
+		box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12);
+	}
+
+	.home-cover-theme-control input[type="range"]::-moz-range-thumb {
+		width: 0.7rem;
+		height: 0.9rem;
+		border: 2px solid rgba(255, 255, 255, 0.92);
+		border-radius: 0.28rem;
+		background: var(--primary);
+	}
+
+	.home-cover-theme-presets {
+		gap: 0.42rem;
+	}
+
+	.home-cover-theme-presets > button:not(.home-cover-theme-reset) {
+		width: 1.1rem;
+		height: 1.1rem;
+		border: 2px solid transparent;
+		border-radius: 50%;
+		background: oklch(0.72 0.16 var(--preset-hue));
+		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+		cursor: pointer;
+	}
+
+	.home-cover-theme-presets > button[aria-pressed="true"] {
+		border-color: white;
+		box-shadow: 0 0 0 2px var(--primary);
+	}
+
+	.home-cover-theme-reset {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		margin-left: auto;
+		border: 0;
+		background: transparent;
+		color: rgba(226, 232, 240, 0.7);
+		font-size: 0.56rem;
+		font-weight: 750;
+		cursor: pointer;
+	}
+
+	.home-cover-theme-reset:hover,
+	.home-cover-theme-reset:focus-visible {
+		color: white;
+		outline: 2px solid color-mix(in oklch, var(--primary) 50%, transparent);
+		outline-offset: 2px;
+	}
+
 	.home-cover-favorites-note :global(svg) {
 		width: 0.85rem;
 		height: 0.85rem;
@@ -2041,11 +2236,11 @@ const avatarParticles = [
 		position: relative;
 		height: 100%;
 		overflow: hidden;
-		border: 1px solid rgba(129, 140, 248, 0.24);
+		border: 1px solid color-mix(in oklch, var(--primary) 30%, transparent);
 		border-radius: 1.3rem;
 		background:
-			radial-gradient(circle at 50% 50%, rgba(167, 139, 250, 0.22), transparent 34%),
-			radial-gradient(circle at 76% 28%, rgba(56, 189, 248, 0.13), transparent 32%),
+			radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--primary) 24%, transparent), transparent 34%),
+			radial-gradient(circle at 76% 28%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 32%),
 			linear-gradient(145deg, rgba(34, 35, 73, 0.94), rgba(12, 19, 43, 0.98));
 		isolation: isolate;
 	}
@@ -2055,7 +2250,7 @@ const avatarParticles = [
 		position: absolute;
 		left: 50%;
 		top: 50%;
-		border: 1px solid rgba(196, 181, 253, 0.25);
+		border: 1px solid color-mix(in oklch, var(--primary) 30%, transparent);
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		pointer-events: none;
@@ -2097,10 +2292,10 @@ const avatarParticles = [
 		flex-direction: column;
 		width: clamp(8.5rem, 14vw, 12rem);
 		aspect-ratio: 1;
-		border: 1px solid rgba(196, 181, 253, 0.4);
+		border: 1px solid color-mix(in oklch, var(--primary) 48%, rgba(255, 255, 255, 0.12));
 		border-radius: 50%;
-		background: radial-gradient(circle, rgba(167, 139, 250, 0.25), rgba(18, 25, 55, 0.78));
-		box-shadow: 0 0 4rem rgba(139, 92, 246, 0.26);
+		background: radial-gradient(circle, color-mix(in oklch, var(--primary) 27%, transparent), rgba(18, 25, 55, 0.78));
+		box-shadow: 0 0 4rem color-mix(in oklch, var(--primary) 28%, transparent);
 		transform: translate(-50%, -50%);
 		backdrop-filter: blur(0.8rem);
 	}
@@ -2316,7 +2511,7 @@ const avatarParticles = [
 		position: absolute;
 		z-index: 5;
 		width: clamp(9rem, 14vw, 12rem);
-		border: 1px solid rgba(196, 181, 253, 0.24);
+		border: 1px solid color-mix(in oklch, var(--primary) 28%, rgba(255, 255, 255, 0.08));
 		border-radius: 1rem;
 		background: rgba(31, 32, 69, 0.78);
 		box-shadow: 0 1rem 2.5rem rgba(3, 5, 22, 0.38);
@@ -2353,18 +2548,18 @@ const avatarParticles = [
 
 	.home-cover-option:hover,
 	.home-cover-option:focus-visible {
-		border-color: #c4b5fd;
-		box-shadow: 0 1.2rem 3rem rgba(3, 5, 22, 0.46), 0 0 2rem rgba(139, 92, 246, 0.3);
+		border-color: color-mix(in oklch, var(--primary) 75%, white);
+		box-shadow: 0 1.2rem 3rem rgba(3, 5, 22, 0.46), 0 0 2rem color-mix(in oklch, var(--primary) 32%, transparent);
 		outline: none;
 	}
 
 	.home-cover-option.is-active {
-		border-color: #a78bfa;
-		background: rgba(76, 63, 132, 0.72);
+		border-color: var(--primary);
+		background: color-mix(in oklch, var(--primary) 28%, rgba(24, 30, 58, 0.78));
 		box-shadow:
 			0 1rem 2.5rem rgba(3, 5, 22, 0.42),
-			0 0 0 2px rgba(167, 139, 250, 0.16),
-			0 0 2rem rgba(139, 92, 246, 0.22);
+			0 0 0 2px color-mix(in oklch, var(--primary) 18%, transparent),
+			0 0 2rem color-mix(in oklch, var(--primary) 24%, transparent);
 	}
 
 	.home-cover-option:nth-of-type(1):hover,
@@ -2778,9 +2973,7 @@ const avatarParticles = [
 	}
 
 	.home-clock-quote {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.5rem;
+		display: block;
 		margin-top: 0.75rem;
 		margin-left: auto;
 		border: 1px solid rgba(255, 255, 255, 0.22);
@@ -2791,18 +2984,16 @@ const avatarParticles = [
 		backdrop-filter: blur(0.25rem);
 	}
 
-	.home-clock-quote :global(svg) {
-		flex: 0 0 auto;
-		width: 1rem;
-		height: 1rem;
-		margin-top: 0.08rem;
-		opacity: 0.72;
-	}
-
 	.home-clock-quote p {
 		font-size: 0.76rem;
 		font-weight: 650;
 		line-height: 1.55;
+		transition: opacity 180ms ease, transform 180ms ease;
+	}
+
+	.home-clock-quote p.is-changing {
+		opacity: 0;
+		transform: translateY(0.2rem);
 	}
 
 	.home-hero-tools {

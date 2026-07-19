@@ -304,7 +304,7 @@ const hasMultipleImages =
 <slot slot="head" name="head"></slot>
 <div
     id="top-row"
-    class="z-50 pointer-events-none relative transition-all duration-700 mx-auto"
+    class="z-50 pointer-events-none relative mx-auto"
     class:list={[
         stickyNavbar ? "h-18 fixed top-0 left-0 right-0 z-80" : "",
         navbarWidthFull ? "" : "w-full xl:w-[92vw] max-w-(--page-width) px-0 md:px-4",
@@ -313,7 +313,7 @@ const hasMultipleImages =
     <div
         id="navbar-wrapper"
         class:list={[
-            "pointer-events-auto transition-all",
+            "pointer-events-auto",
             stickyNavbar ? "" : "sticky top-0",
         ]}
     >
@@ -324,7 +324,7 @@ const hasMultipleImages =
 <!-- Wallpaper - 如果允许切换则始终渲染，否则只渲染当前模式 -->
 {(isWallpaperSwitchable || isBannerMode || isFullscreenMode || isOverlayMode) && (
 <div id="wallpaper-wrapper" class:list={[
-	`absolute z-10 w-full transition duration-700 overflow-hidden ${mobileNonHomeBannerClass}`,
+	`absolute z-10 w-full transition-opacity duration-200 overflow-hidden ${mobileNonHomeBannerClass}`,
 	(isOverlayMode && !isWallpaperSwitchable) ? 'wallpaper-overlay' : '',
 	(isFullscreenMode && !isWallpaperSwitchable) ? 'wallpaper-fullscreen' : '',
 ]} style={
@@ -830,7 +830,7 @@ const hasMultipleImages =
         "xl:w-[92vw] max-w-(--page-width)",
     ]}>
         <div id="main-grid"
-          class={`transition duration-700 w-full left-0 right-0 grid ${gridCols} grid-rows-[auto_1fr_auto] lg:grid-rows-[auto] mx-auto gap-4 px-2 md:px-4 ${!sidebarConfig.mobileShowSidebar ? 'mobile-no-sidebar' : ''}`}
+          class={`w-full left-0 right-0 grid ${gridCols} grid-rows-[auto_1fr_auto] lg:grid-rows-[auto] mx-auto gap-4 px-2 md:px-4 ${!sidebarConfig.mobileShowSidebar ? 'mobile-no-sidebar' : ''}`}
           data-sidebar-enable={sidebarLayoutConfig.enable ? "true" : "false"}
           data-grid-hide-sidebar-on-post={hideSidebarOnPostPage ? "true" : "false"}
           data-sidebar-position={sidebarLayoutConfig.position}

@@ -51,9 +51,11 @@ let list: HTMLElement;
 let template: HTMLTemplateElement | null = null;
 let searchInput: HTMLInputElement | null = null;
 let yearSelect: HTMLSelectElement | null = null;
+let sortSelect: HTMLSelectElement | null = null;
 let restoreAnchorAfterRender = false;
 let activeQuery = $state("");
 let activeYear = $state("all");
+let activeSort = $state<"newest" | "oldest">("newest");
 let notice = $state("");
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -76,21 +78,31 @@ function updateUrl(clearHash = false) {
 	else current.searchParams.delete("q");
 	if (activeYear !== "all") current.searchParams.set("year", activeYear);
 	else current.searchParams.delete("year");
+	if (activeSort === "oldest") current.searchParams.set("sort", activeSort);
+	else current.searchParams.delete("sort");
 	if (clearHash) current.hash = "";
 	history.replaceState(history.state, "", current);
 }
 
 function applyFilters(resetPage = true) {
-	const query = searchInput?.value.toLocaleLowerCase().trim() || "";
+	const query = normalizeSearchValue(searchInput?.value || "");
 	const year = yearSelect?.value || "all";
+	const sort = sortSelect?.value === "oldest" ? "oldest" : "newest";
 	activeQuery = query;
 	activeYear = year;
-	filtered = entries.filter(
-		(entry) =>
-			(year === "all" ||
-				String(new Date(entry.published).getUTCFullYear()) === year) &&
-			(!query || entry.searchText.includes(query)),
-	);
+	activeSort = sort;
+	filtered = entries
+		.filter(
+			(entry) =>
+				(year === "all" ||
+					String(new Date(entry.published).getUTCFullYear()) === year) &&
+				(!query || matchesQuery(entry.searchText, query)),
+		)
+		.sort((left, right) =>
+			sort === "oldest"
+				? left.published - right.published
+				: right.published - left.published,
+		);
 	if (resetPage) currentPage = 1;
 	const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
 	currentPage = Math.min(currentPage, totalPages);
@@ -100,8 +112,26 @@ function applyFilters(resetPage = true) {
 function resetFilters() {
 	if (searchInput) searchInput.value = "";
 	if (yearSelect) yearSelect.value = "all";
+	if (sortSelect) sortSelect.value = "newest";
 	applyFilters();
 	searchInput?.focus();
+}
+
+function normalizeSearchValue(value: string) {
+	return value
+		.normalize("NFKD")
+		.replace(/\p{Diacritic}/gu, "")
+		.toLocaleLowerCase()
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function matchesQuery(searchText: string, query: string) {
+	const haystack = normalizeSearchValue(searchText);
+	return query
+		.split(" ")
+		.filter(Boolean)
+		.every((token) => haystack.includes(token));
 }
 
 function showNotice(message: string) {
@@ -236,6 +266,13 @@ async function renderItems(items: DynamicData[]) {
 		const item = createItem(entry);
 		if (item) list.append(item);
 	}
+	if (!activeQuery && activeYear === "all" && activeSort === "newest") {
+		requestAnimationFrame(() => {
+			const height = Math.ceil(list.getBoundingClientRect().height);
+			if (height > 0)
+				list.style.setProperty("--dynamic-feed-stable-height", `${height}px`);
+		});
+	}
 	if (restoreAnchorAfterRender) {
 		restoreAnchorAfterRender = false;
 		const target = document.getElementById(
@@ -270,9 +307,12 @@ onMount(() => {
 		page?.querySelector<HTMLInputElement>("[data-dynamic-search]") ?? null;
 	yearSelect =
 		page?.querySelector<HTMLSelectElement>("[data-year-select]") ?? null;
+	sortSelect =
+		page?.querySelector<HTMLSelectElement>("[data-dynamic-sort]") ?? null;
 	const filter = () => applyFilters();
 	searchInput?.addEventListener("input", filter);
 	yearSelect?.addEventListener("change", filter);
+	sortSelect?.addEventListener("change", filter);
 
 	const load = async () => {
 		try {
@@ -289,6 +329,12 @@ onMount(() => {
 					(option) => option.value === requestedYear,
 				);
 				yearSelect.value = exists ? requestedYear : "all";
+			}
+			if (sortSelect) {
+				sortSelect.value =
+					currentUrl.searchParams.get("sort") === "oldest"
+						? "oldest"
+						: "newest";
 			}
 			currentPage = pageFromUrl();
 			applyFilters(false);
@@ -317,6 +363,7 @@ onMount(() => {
 		if (noticeTimer) clearTimeout(noticeTimer);
 		searchInput?.removeEventListener("input", filter);
 		yearSelect?.removeEventListener("change", filter);
+		sortSelect?.removeEventListener("change", filter);
 	};
 });
 </script>
@@ -341,7 +388,7 @@ onMount(() => {
 		<span>显示 {filtered.length} / {entries.length} 条动态</span>
 		{#if notice}
 			<strong>{notice}</strong>
-		{:else if activeQuery || activeYear !== "all"}
+		{:else if activeQuery || activeYear !== "all" || activeSort !== "newest"}
 			<button type="button" onclick={resetFilters}>清除筛选</button>
 		{/if}
 	</div>

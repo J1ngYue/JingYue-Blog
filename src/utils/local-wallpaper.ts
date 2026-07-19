@@ -114,12 +114,24 @@ export async function saveLocalWallpaper(
 				? "video"
 				: null;
 	if (!type) throw new Error("请选择图片或视频文件。");
+	const fallbackMime =
+		type === "video"
+			? /\.webm$/i.test(file.name)
+				? "video/webm"
+				: /\.ogv$/i.test(file.name)
+					? "video/ogg"
+					: "video/mp4"
+			: /\.png$/i.test(file.name)
+				? "image/png"
+				: /\.webp$/i.test(file.name)
+					? "image/webp"
+					: "image/jpeg";
 
 	const record: LocalWallpaperRecord = {
 		id: ACTIVE_ID,
 		name: file.name,
 		type,
-		mime: file.type,
+		mime: file.type || fallbackMime,
 		blob: file,
 	};
 	await runStoreRequest<IDBValidKey>("readwrite", (store) => store.put(record));

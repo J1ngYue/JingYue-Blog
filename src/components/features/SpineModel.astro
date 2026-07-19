@@ -4,6 +4,36 @@ import { spineModelConfig } from "@/config/pioConfig";
 import { url } from "@/utils/url-utils";
 ---
 
+<div
+  id="character-model-switcher"
+  data-character-model-switcher
+  style="position: fixed; left: 0.75rem; bottom: 10.75rem; z-index: 10001;"
+>
+  <button
+    type="button"
+    data-character-model-trigger
+    aria-expanded="false"
+    aria-controls="character-model-options"
+    title="切换角色模型"
+    style="display:flex; align-items:center; gap:0.45rem; min-height:2.1rem; padding:0.45rem 0.7rem; border:1px solid rgba(255,255,255,.42); border-radius:999px; background:rgba(18,31,45,.68); color:rgba(255,255,255,.92); box-shadow:0 .45rem 1.2rem rgba(0,0,0,.16); backdrop-filter:blur(.8rem); cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;"
+  >
+    <span aria-hidden="true">✦</span>
+    <span data-character-model-label>萤火虫</span>
+    <span aria-hidden="true">⌄</span>
+  </button>
+  <div
+    id="character-model-options"
+    data-character-model-options
+    hidden
+    role="menu"
+    style="position:absolute; left:0; bottom:calc(100% + .45rem); display:grid; gap:.3rem; min-width:8.5rem; padding:.35rem; border:1px solid rgba(255,255,255,.32); border-radius:.85rem; background:rgba(18,31,45,.82); box-shadow:0 .8rem 1.8rem rgba(0,0,0,.18); backdrop-filter:blur(1rem);"
+  >
+    <button type="button" role="menuitemradio" aria-checked="true" data-character-model-option="firefly" style="border:0; border-radius:.55rem; padding:.5rem .6rem; color:white; background:transparent; text-align:left; cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;">萤火虫 · Spine</button>
+    <button type="button" role="menuitemradio" aria-checked="false" data-character-model-option="snow-miku" style="border:0; border-radius:.55rem; padding:.5rem .6rem; color:white; background:transparent; text-align:left; cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;">雪未来 · Live2D</button>
+    <button type="button" role="menuitemradio" aria-checked="false" data-character-model-option="black-cat" style="border:0; border-radius:.55rem; padding:.5rem .6rem; color:white; background:transparent; text-align:left; cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;">黑猫 · Live2D</button>
+  </div>
+</div>
+
 <!-- Spine Web Player CSS 将在 script 中动态加载 -->{
   spineModelConfig.enable && (
     <div
@@ -28,6 +58,134 @@ import { url } from "@/utils/url-utils";
 <MessageBox />
 
 <script is:inline define:vars={{ spineModelConfig, modelPath: url(spineModelConfig.model.path), atlasPath: url(spineModelConfig.model.path.replace(".json", ".atlas")), cssPath: url("/pio/static/spine-player.min.css"), jsPath: url("/pio/static/spine-player.min.js") }}>
+  const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
+  const CHARACTER_MODEL_LABELS = {
+    firefly: "萤火虫",
+    "snow-miku": "雪未来",
+    "black-cat": "黑猫",
+  };
+  const CHARACTER_MODELS = Object.keys(CHARACTER_MODEL_LABELS);
+
+  function getSelectedCharacterModel() {
+    const stored = localStorage.getItem(CHARACTER_MODEL_KEY);
+    return CHARACTER_MODELS.includes(stored) ? stored : "firefly";
+  }
+
+  function updateCharacterModelUI(model) {
+    document.documentElement.dataset.characterModel = model;
+    const switcher = document.querySelector("[data-character-model-switcher]");
+    const label = switcher?.querySelector("[data-character-model-label]");
+    const options = switcher?.querySelectorAll("[data-character-model-option]") || [];
+    if (label) label.textContent = CHARACTER_MODEL_LABELS[model];
+    options.forEach((option) => {
+      const active = option.dataset.characterModelOption === model;
+      option.setAttribute("aria-checked", String(active));
+      option.style.background = active ? "rgba(76, 208, 162, .24)" : "transparent";
+    });
+
+    const spineContainer = document.getElementById("spine-model-container");
+    if (spineContainer) {
+      spineContainer.style.display = model === "firefly" ? "block" : "none";
+    }
+  }
+
+  function selectCharacterModel(model, notify = true) {
+    if (!CHARACTER_MODELS.includes(model)) return;
+    localStorage.setItem(CHARACTER_MODEL_KEY, model);
+    updateCharacterModelUI(model);
+    if (notify) {
+      window.dispatchEvent(
+        new CustomEvent("firefly:character-model-change", {
+          detail: {
+            model,
+            live2dIndex: model === "black-cat" ? 1 : 0,
+          },
+        }),
+      );
+    }
+  }
+
+  function initCharacterModelSwitcher() {
+    const switcher = document.querySelector("[data-character-model-switcher]");
+    if (!switcher) return;
+    if (switcher.parentElement !== document.body) {
+      document.body.appendChild(switcher);
+    }
+    const trigger = switcher.querySelector("[data-character-model-trigger]");
+    const optionsPanel = switcher.querySelector("[data-character-model-options]");
+    const options = Array.from(switcher.querySelectorAll("[data-character-model-option]"));
+    if (!trigger || !optionsPanel) return;
+
+    window.__fireflyCharacterModelAbort?.abort();
+    const controller = new AbortController();
+    window.__fireflyCharacterModelAbort = controller;
+    const listenerOptions = { signal: controller.signal };
+
+    const setOpen = (open) => {
+      trigger.setAttribute("aria-expanded", String(open));
+      optionsPanel.hidden = !open;
+    };
+
+    trigger.addEventListener(
+      "click",
+      () => setOpen(trigger.getAttribute("aria-expanded") !== "true"),
+      listenerOptions,
+    );
+    options.forEach((option) => {
+      option.addEventListener(
+        "click",
+        () => {
+          selectCharacterModel(option.dataset.characterModelOption);
+          setOpen(false);
+          trigger.focus({ preventScroll: true });
+        },
+        listenerOptions,
+      );
+      option.addEventListener(
+        "mouseenter",
+        () => {
+          if (option.getAttribute("aria-checked") !== "true") {
+            option.style.background = "rgba(255, 255, 255, .1)";
+          }
+        },
+        listenerOptions,
+      );
+      option.addEventListener(
+        "mouseleave",
+        () => updateCharacterModelUI(getSelectedCharacterModel()),
+        listenerOptions,
+      );
+    });
+    document.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (!switcher.contains(event.target)) setOpen(false);
+      },
+      listenerOptions,
+    );
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "Escape") {
+          setOpen(false);
+          trigger.focus({ preventScroll: true });
+        }
+      },
+      listenerOptions,
+    );
+    window.addEventListener(
+      "firefly:character-model-change",
+      (event) => {
+        updateCharacterModelUI(event.detail?.model || getSelectedCharacterModel());
+        updateResponsiveDisplay();
+        if (event.detail?.model === "firefly") initSpineModel();
+      },
+      listenerOptions,
+    );
+
+    selectCharacterModel(getSelectedCharacterModel(), false);
+  }
+
   // 动态加载 Spine CSS（带本地备用）
   function loadSpineCSS() {
     if (!spineModelConfig.enable) return;
@@ -89,13 +247,15 @@ import { url } from "@/utils/url-utils";
     if (!spineModelConfig.enable) return;
 
     const container = document.getElementById("spine-model-container");
+    const switcher = document.querySelector("[data-character-model-switcher]");
+    const isMobile =
+      spineModelConfig.responsive.hideOnMobile &&
+      window.innerWidth <= spineModelConfig.responsive.mobileBreakpoint;
+    if (switcher) switcher.style.display = isMobile ? "none" : "block";
     if (!container) return;
 
     // 检查移动端显示设置
-    if (
-      spineModelConfig.responsive.hideOnMobile &&
-      window.innerWidth <= spineModelConfig.responsive.mobileBreakpoint
-    ) {
+    if (isMobile || getSelectedCharacterModel() !== "firefly") {
       container.style.display = "none";
     } else {
       container.style.display = "block";
@@ -135,6 +295,10 @@ import { url } from "@/utils/url-utils";
 
   async function initSpineModel() {
     if (!spineModelConfig.enable) return;
+    if (getSelectedCharacterModel() !== "firefly") {
+      updateResponsiveDisplay();
+      return;
+    }
 
     // 检查移动端显示设置，如果隐藏则不加载运行时
     if (
@@ -442,9 +606,40 @@ import { url } from "@/utils/url-utils";
   window.addEventListener("resize", updateResponsiveDisplay);
 
   // 页面加载完成后初始化（只初始化一次）
+  initCharacterModelSwitcher();
+  updateResponsiveDisplay();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initSpineModel);
   } else {
     initSpineModel();
   }
 </script>
+
+<style is:global>
+  #character-model-options[hidden] {
+    display: none !important;
+  }
+
+  #character-model-switcher button {
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+
+  #character-model-switcher > button:hover,
+  #character-model-switcher > button:focus-visible {
+    border-color: color-mix(in oklch, var(--primary) 70%, white) !important;
+    background: color-mix(in oklch, var(--primary) 36%, rgba(18, 31, 45, 0.82)) !important;
+    outline: none;
+  }
+
+  #character-model-options button:focus-visible {
+    background: rgba(76, 208, 162, 0.24) !important;
+    outline: 2px solid color-mix(in oklch, var(--primary) 72%, white);
+    outline-offset: -2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #character-model-switcher button {
+      transition: none;
+    }
+  }
+</style>
