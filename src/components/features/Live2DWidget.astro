@@ -1,4 +1,5 @@
 ---
+import { characterModelCatalog } from "@/config/pioConfig";
 import { url } from "@/utils/url-utils";
 
 interface MenuItem {
@@ -70,6 +71,9 @@ const modelConfigs = models.map((m) => ({
 		offset: [m.x ?? 0, m.y ?? 0],
 	}),
 }));
+const live2dModelIds = characterModelCatalog
+	.filter((item) => item.type === "live2d")
+	.map((item) => item.id);
 
 // 序列化菜单配置（只保留 icon, label, action）
 function serializeMenus(menus: Props["config"]["menus"]) {
@@ -92,6 +96,7 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 	id="l2d-widget-container"
 	style="position: fixed; z-index: 999;"
 	data-models={JSON.stringify(modelConfigs)}
+	data-model-ids={JSON.stringify(live2dModelIds)}
 	data-position={config.position || "bottom-left"}
 	data-size={JSON.stringify(config.size || 300)}
 	data-primary-color={config.primaryColor || ""}
@@ -135,13 +140,20 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 	let widgetInitializing = false;
 	const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
 
+	function getLive2DModelIds() {
+		return JSON.parse(
+			document.getElementById("l2d-widget-container")?.dataset.modelIds || "[]",
+		) as string[];
+	}
+
 	function getSelectedCharacterModel() {
 		const stored = localStorage.getItem(CHARACTER_MODEL_KEY);
-		return stored === "snow-miku" || stored === "black-cat" ? stored : "firefly";
+		return stored && getLive2DModelIds().includes(stored) ? stored : "firefly";
 	}
 
 	function getLive2DModelIndex(model = getSelectedCharacterModel()) {
-		return model === "black-cat" ? 1 : 0;
+		const index = getLive2DModelIds().indexOf(model);
+		return index >= 0 ? index : 0;
 	}
 
 	function syncWidgetVisibility() {
@@ -162,11 +174,20 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 		scrollToTop: () => window.scrollTo({ top: 0, behavior: "smooth" }),
 		sleep: (widget) => widget.sleep(),
 		github: () => window.open("https://github.com/J1ngYue", "_blank"),
-		switchModel: (widget) => {
+		switchModel: async (widget) => {
 			const container = document.getElementById("l2d-widget-container");
 			const models = JSON.parse(container?.dataset.models || "[]");
 			currentModelIndex = (currentModelIndex + 1) % models.length;
-			widget.switchModel(currentModelIndex);
+			await widget.switchModel(currentModelIndex);
+			const model = getLive2DModelIds()[currentModelIndex];
+			if (model) {
+				localStorage.setItem(CHARACTER_MODEL_KEY, model);
+				window.dispatchEvent(
+					new CustomEvent("firefly:character-model-change", {
+						detail: { model, live2dIndex: currentModelIndex },
+					}),
+				);
+			}
 		},
 	};
 
@@ -296,7 +317,12 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 			syncWidgetVisibility();
 			return;
 		}
-		await initWidget(getLive2DModelIndex(model));
+		const requestedIndex = Number(event.detail?.live2dIndex);
+		await initWidget(
+			Number.isInteger(requestedIndex)
+				? requestedIndex
+				: getLive2DModelIndex(model),
+		);
 		syncWidgetVisibility();
 	}
 

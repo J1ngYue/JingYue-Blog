@@ -155,8 +155,7 @@ const current = sections[section];
 const tabs = current.tabs.filter(
 	(tab) => !tab.pageKey || siteConfig.pages[tab.pageKey] !== false,
 );
-const getHref = (tab: HubTab) =>
-	tab.external ? tab.href : url(`${tab.href}#main-content-wrapper`);
+const getHref = (tab: HubTab) => (tab.external ? tab.href : url(tab.href));
 ---
 
 <header class="feature-hub-header card-base onload-animation mb-4" aria-labelledby={`feature-hub-${section}`}>

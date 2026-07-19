@@ -8,37 +8,37 @@ const quickLinks = [
 		key: "archive",
 		label: "文章",
 		description: "浏览归档",
-		href: url("/archive/#main-content-wrapper"),
+		href: url("/archive/"),
 	},
 	{
 		key: "dynamic",
 		label: "动态",
 		description: "查看近况",
-		href: url("/dynamic/#main-content-wrapper"),
+		href: url("/dynamic/"),
 	},
 	{
 		key: "gallery",
 		label: "相册",
 		description: "收藏光影",
-		href: url("/gallery/#main-content-wrapper"),
+		href: url("/gallery/"),
 	},
 	{
 		key: "friends",
 		label: "友链",
 		description: "拜访朋友",
-		href: url("/friends/#main-content-wrapper"),
+		href: url("/friends/"),
 	},
 	{
 		key: "guestbook",
 		label: "留言",
 		description: "留下问候",
-		href: url("/guestbook/#main-content-wrapper"),
+		href: url("/guestbook/"),
 	},
 	{
 		key: "about",
 		label: "关于",
 		description: "认识这里",
-		href: url("/about/#main-content-wrapper"),
+		href: url("/about/"),
 	},
 ];
 ---
@@ -142,13 +142,13 @@ const quickLinks = [
 		>
 			<Icon is:inline name="material-symbols:wallpaper" />
 		</button>
-		<a class="quick-tools-button" href={url("/archive/#main-content-wrapper")} data-tooltip="文章" aria-label="查看文章">
+		<a class="quick-tools-button" href={url("/archive/")} data-tooltip="文章" aria-label="查看文章">
 			<Icon is:inline name="material-symbols:article-outline-rounded" />
 		</a>
-		<a class="quick-tools-button" href={url("/gallery/#main-content-wrapper")} data-tooltip="相册" aria-label="查看相册">
+		<a class="quick-tools-button" href={url("/gallery/")} data-tooltip="相册" aria-label="查看相册">
 			<Icon is:inline name="material-symbols:photo-library-outline-rounded" />
 		</a>
-		<a class="quick-tools-button" href={url("/dynamic/#main-content-wrapper")} data-tooltip="动态" aria-label="查看动态">
+		<a class="quick-tools-button" href={url("/dynamic/")} data-tooltip="动态" aria-label="查看动态">
 			<Icon is:inline name="material-symbols:forum-outline-rounded" />
 		</a>
 	</nav>

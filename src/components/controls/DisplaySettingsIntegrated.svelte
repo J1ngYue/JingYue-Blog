@@ -287,7 +287,6 @@ function resetEffectsSettings() {
 function switchWallpaperMode(newMode: WALLPAPER_MODE) {
 	wallpaperMode = newMode;
 	setWallpaperMode(newMode);
-	window.scrollTo({ top: 0 });
 
 	if (newMode === WALLPAPER_OVERLAY) {
 		requestAnimationFrame(refreshAllRangeProgress);
@@ -416,6 +415,19 @@ onMount(() => {
 onMount(() => {
 	const panel = document.getElementById("display-setting");
 	if (!panel) return;
+	const handlePanelWheel = (event: WheelEvent) => {
+		if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY))
+			return;
+		const maxScrollTop = panel.scrollHeight - panel.clientHeight;
+		if (maxScrollTop <= 0) return;
+		const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
+		panel.scrollTop = Math.min(
+			maxScrollTop,
+			Math.max(0, panel.scrollTop + event.deltaY * multiplier),
+		);
+		event.preventDefault();
+		event.stopPropagation();
+	};
 
 	const handleRangeInput = (event: Event) => {
 		const target = event.target;
@@ -426,9 +438,11 @@ onMount(() => {
 
 	refreshAllRangeProgress();
 	panel.addEventListener("input", handleRangeInput);
+	panel.addEventListener("wheel", handlePanelWheel, { passive: false });
 
 	return () => {
 		panel.removeEventListener("input", handleRangeInput);
+		panel.removeEventListener("wheel", handlePanelWheel);
 	};
 });
 
@@ -475,7 +489,7 @@ $effect(() => {
 </script>
 
 {#if hasAnyContent}
-<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 max-w-[calc(100vw-2rem)] right-4 px-4 py-2">
+<div id="display-setting" class="float-panel float-panel-closed display-setting-panel transition-all w-80 max-w-[calc(100vw-1.5rem)] px-4 py-2">
     <!-- Theme Color Section -->
     {#if showThemeColor}
     <div class="mt-2 mb-2">
@@ -506,8 +520,18 @@ $effect(() => {
             </div>
         </div>
         <div class="w-full h-6 px-1 bg-[oklch(0.80_0.10_0)] dark:bg-[oklch(0.70_0.10_0)] rounded-sm select-none">
-            <input aria-label={i18n(I18nKey.themeColor)} type="range" min="0" max="360" bind:value={hue}
-                   class="slider" id="colorSlider" step="5" style="width: 100%">
+            <input
+                aria-label={i18n(I18nKey.themeColor)}
+                aria-valuetext={`${hue}°`}
+                type="range"
+                min="0"
+                max="360"
+                bind:value={hue}
+                oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                class="slider theme-hue-slider"
+                id="colorSlider"
+                step="1"
+            >
         </div>
     </div>
     {/if}
@@ -881,11 +905,29 @@ $effect(() => {
 
 <style lang="stylus">
     #display-setting
-        max-height calc(100dvh - 6rem)
+        position fixed !important
+        top 5.75rem
+        right 0.75rem
+        height unquote("min(48rem, calc(100dvh - 6.5rem))")
+        max-height calc(100dvh - 6.5rem)
         overflow-x hidden !important
         overflow-y auto !important
         overscroll-behavior contain
         scrollbar-gutter stable
+        touch-action pan-y
+        -webkit-overflow-scrolling touch
+
+        &::-webkit-scrollbar
+            width 0.45rem
+
+        &::-webkit-scrollbar-track
+            background transparent
+
+        &::-webkit-scrollbar-thumb
+            border 0.12rem solid transparent
+            border-radius 999px
+            background unquote("color-mix(in oklch, var(--primary) 58%, transparent)")
+            background-clip padding-box
 
         .reset-tooltip
             position relative
@@ -1048,10 +1090,37 @@ $effect(() => {
             border-radius 999px
             background-image unquote("linear-gradient(90deg, var(--primary) 0 var(--range-progress, 50%), hsla(var(--hue), 22%, 28%, 0.18) var(--range-progress, 50%) 100%)")
             transition background-image 0.15s ease-in-out
+            cursor pointer
+
+        input[type="range"].theme-hue-slider
+            width 100%
+            height 1.5rem
+            touch-action none
+            background-image linear-gradient(90deg, #f29cac 0%, #efc36f 18%, #8ad49b 36%, #58d2ca 52%, #72b9eb 70%, #b8a6ee 84%, #e69dcb 100%)
+
+            &::-webkit-slider-thumb
+                -webkit-appearance none
+                width 0.72rem
+                height 1.1rem
+                border 2px solid rgba(255, 255, 255, 0.88)
+                border-radius 0.25rem
+                background var(--primary)
+                box-shadow 0 1px 5px rgba(0, 0, 0, 0.25)
+                cursor ew-resize
+
+            &::-moz-range-thumb
+                width 0.72rem
+                height 1.1rem
+                border 2px solid rgba(255, 255, 255, 0.88)
+                border-radius 0.25rem
+                background var(--primary)
+                box-shadow 0 1px 5px rgba(0, 0, 0, 0.25)
+                cursor ew-resize
 
         input[type="range"].overlay-slider
             height 0.85rem
             cursor pointer
+            touch-action none
 
             /* Input Thumb */
             &::-webkit-slider-thumb

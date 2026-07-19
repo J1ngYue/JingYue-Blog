@@ -1,36 +1,61 @@
 ---
 import MessageBox from "@/components/common/PioMessageBox.astro";
-import { spineModelConfig } from "@/config/pioConfig";
+import { characterModelCatalog, spineModelConfig } from "@/config/pioConfig";
 import { url } from "@/utils/url-utils";
 ---
 
 <div
   id="character-model-switcher"
   data-character-model-switcher
-  style="position: fixed; left: 0.75rem; bottom: 10.75rem; z-index: 10001;"
+  style="position: fixed; left: 0.75rem; bottom: 8.25rem; z-index: 10001;"
 >
   <button
     type="button"
     data-character-model-trigger
     aria-expanded="false"
     aria-controls="character-model-options"
-    title="切换角色模型"
-    style="display:flex; align-items:center; gap:0.45rem; min-height:2.1rem; padding:0.45rem 0.7rem; border:1px solid rgba(255,255,255,.42); border-radius:999px; background:rgba(18,31,45,.68); color:rgba(255,255,255,.92); box-shadow:0 .45rem 1.2rem rgba(0,0,0,.16); backdrop-filter:blur(.8rem); cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;"
+    aria-label="打开角色模型库"
+    title="打开模型库"
+    class="character-model-trigger"
   >
-    <span aria-hidden="true">✦</span>
+    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2.8 14 9l6.2 2-6.2 2-2 6.2-2-6.2-6.2-2 6.2-2 2-6.2Z" /></svg>
     <span data-character-model-label>萤火虫</span>
-    <span aria-hidden="true">⌄</span>
+    <small>模型库</small>
+    <svg class="character-model-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 9 5 5 5-5" /></svg>
   </button>
   <div
     id="character-model-options"
     data-character-model-options
     hidden
     role="menu"
-    style="position:absolute; left:0; bottom:calc(100% + .45rem); display:grid; gap:.3rem; min-width:8.5rem; padding:.35rem; border:1px solid rgba(255,255,255,.32); border-radius:.85rem; background:rgba(18,31,45,.82); box-shadow:0 .8rem 1.8rem rgba(0,0,0,.18); backdrop-filter:blur(1rem);"
+    aria-label="角色模型库"
+    class="character-model-library"
   >
-    <button type="button" role="menuitemradio" aria-checked="true" data-character-model-option="firefly" style="border:0; border-radius:.55rem; padding:.5rem .6rem; color:white; background:transparent; text-align:left; cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;">萤火虫 · Spine</button>
-    <button type="button" role="menuitemradio" aria-checked="false" data-character-model-option="snow-miku" style="border:0; border-radius:.55rem; padding:.5rem .6rem; color:white; background:transparent; text-align:left; cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;">雪未来 · Live2D</button>
-    <button type="button" role="menuitemradio" aria-checked="false" data-character-model-option="black-cat" style="border:0; border-radius:.55rem; padding:.5rem .6rem; color:white; background:transparent; text-align:left; cursor:pointer; font:600 .72rem/1 system-ui,sans-serif;">黑猫 · Live2D</button>
+    <div class="character-model-library-header" role="presentation">
+      <span>角色模型库</span>
+      <small>{characterModelCatalog.length} 个模型</small>
+    </div>
+    <div class="character-model-grid" role="presentation">
+      {characterModelCatalog.map((item) => (
+        <button
+          type="button"
+          role="menuitemradio"
+          aria-checked={item.id === "firefly" ? "true" : "false"}
+          data-character-model-option={item.id}
+          data-character-model-type={item.type}
+          class="character-model-option"
+        >
+          <span class="character-model-option-icon" aria-hidden="true">
+            {item.type === "spine" ? "SP" : "L2"}
+          </span>
+          <span class="character-model-option-copy">
+            <strong>{item.label}</strong>
+            <small>{item.description}</small>
+          </span>
+          <span class="character-model-selected" aria-hidden="true"></span>
+        </button>
+      ))}
+    </div>
   </div>
 </div>
 
@@ -57,13 +82,16 @@ import { url } from "@/utils/url-utils";
 <!-- 引入消息框组件 -->
 <MessageBox />
 
-<script is:inline define:vars={{ spineModelConfig, modelPath: url(spineModelConfig.model.path), atlasPath: url(spineModelConfig.model.path.replace(".json", ".atlas")), cssPath: url("/pio/static/spine-player.min.css"), jsPath: url("/pio/static/spine-player.min.js") }}>
+<script is:inline define:vars={{ characterModelCatalog, spineModelConfig, modelPath: url(spineModelConfig.model.path), atlasPath: url(spineModelConfig.model.path.replace(".json", ".atlas")), cssPath: url("/pio/static/spine-player.min.css"), jsPath: url("/pio/static/spine-player.min.js") }}>
   const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
-  const CHARACTER_MODEL_LABELS = {
-    firefly: "萤火虫",
-    "snow-miku": "雪未来",
-    "black-cat": "黑猫",
-  };
+  const CHARACTER_MODEL_LABELS = Object.fromEntries(
+    characterModelCatalog.map((item) => [item.id, item.label]),
+  );
+  const CHARACTER_MODEL_LIVE2D_INDEXES = Object.fromEntries(
+    characterModelCatalog
+      .filter((item) => item.type === "live2d")
+      .map((item) => [item.id, item.live2dIndex]),
+  );
   const CHARACTER_MODELS = Object.keys(CHARACTER_MODEL_LABELS);
 
   function getSelectedCharacterModel() {
@@ -80,7 +108,6 @@ import { url } from "@/utils/url-utils";
     options.forEach((option) => {
       const active = option.dataset.characterModelOption === model;
       option.setAttribute("aria-checked", String(active));
-      option.style.background = active ? "rgba(76, 208, 162, .24)" : "transparent";
     });
 
     const spineContainer = document.getElementById("spine-model-container");
@@ -98,7 +125,7 @@ import { url } from "@/utils/url-utils";
         new CustomEvent("firefly:character-model-change", {
           detail: {
             model,
-            live2dIndex: model === "black-cat" ? 1 : 0,
+            live2dIndex: CHARACTER_MODEL_LIVE2D_INDEXES[model] ?? 0,
           },
         }),
       );
@@ -141,20 +168,6 @@ import { url } from "@/utils/url-utils";
         },
         listenerOptions,
       );
-      option.addEventListener(
-        "mouseenter",
-        () => {
-          if (option.getAttribute("aria-checked") !== "true") {
-            option.style.background = "rgba(255, 255, 255, .1)";
-          }
-        },
-        listenerOptions,
-      );
-      option.addEventListener(
-        "mouseleave",
-        () => updateCharacterModelUI(getSelectedCharacterModel()),
-        listenerOptions,
-      );
     });
     document.addEventListener(
       "pointerdown",
@@ -169,6 +182,22 @@ import { url } from "@/utils/url-utils";
         if (event.key === "Escape") {
           setOpen(false);
           trigger.focus({ preventScroll: true });
+          return;
+        }
+        if (
+          trigger.getAttribute("aria-expanded") === "true" &&
+          ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+        ) {
+          event.preventDefault();
+          const currentIndex = options.indexOf(document.activeElement);
+          const nextIndex = event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? options.length - 1
+              : event.key === "ArrowUp"
+                ? (currentIndex <= 0 ? options.length - 1 : currentIndex - 1)
+                : (currentIndex + 1) % options.length;
+          options[nextIndex]?.focus({ preventScroll: true });
         }
       },
       listenerOptions,
@@ -620,8 +649,164 @@ import { url } from "@/utils/url-utils";
     display: none !important;
   }
 
-  #character-model-switcher button {
+  .character-model-trigger {
+    display: flex;
+    min-height: 2.45rem;
+    align-items: center;
+    gap: 0.42rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 999px;
+    background: rgba(18, 31, 45, 0.74);
+    color: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 0.45rem 1.2rem rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(0.8rem);
+    cursor: pointer;
+    font: 700 0.72rem/1 system-ui, sans-serif;
     transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+
+  .character-model-trigger svg {
+    width: 0.9rem;
+    height: 0.9rem;
+    flex: 0 0 auto;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .character-model-trigger small {
+    padding-left: 0.42rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.24);
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.62rem;
+    font-weight: 600;
+  }
+
+  .character-model-chevron {
+    transition: transform 160ms ease;
+  }
+
+  .character-model-trigger[aria-expanded="true"] .character-model-chevron {
+    transform: rotate(180deg);
+  }
+
+  .character-model-library {
+    position: absolute;
+    bottom: calc(100% + 0.5rem);
+    left: 0;
+    display: grid;
+    width: min(20rem, calc(100vw - 1.5rem));
+    max-height: min(27rem, calc(100dvh - 11.5rem));
+    overflow: hidden;
+    border: 1px solid color-mix(in oklch, var(--primary) 38%, rgba(255, 255, 255, 0.3));
+    border-radius: 1rem;
+    background: color-mix(in oklch, rgba(18, 31, 45, 0.94) 88%, var(--primary));
+    box-shadow: 0 1rem 2.6rem rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(1.15rem);
+    color: white;
+  }
+
+  .character-model-library-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 0.9rem 0.65rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .character-model-library-header span {
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .character-model-library-header small {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.65rem;
+  }
+
+  .character-model-grid {
+    display: grid;
+    gap: 0.35rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    touch-action: pan-y;
+    padding: 0.45rem;
+  }
+
+  .character-model-option {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) 0.75rem;
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 0.62rem;
+    padding: 0.46rem 0.58rem;
+    border: 1px solid transparent;
+    border-radius: 0.72rem;
+    background: transparent;
+    color: white;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .character-model-option:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .character-model-option[aria-checked="true"] {
+    border-color: color-mix(in oklch, var(--primary) 64%, rgba(255, 255, 255, 0.3));
+    background: color-mix(in oklch, var(--primary) 27%, transparent);
+  }
+
+  .character-model-option-icon {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 0.58rem;
+    background: rgba(255, 255, 255, 0.12);
+    color: color-mix(in oklch, var(--primary) 64%, white);
+    font-size: 0.6rem;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+  }
+
+  .character-model-option-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.2rem;
+  }
+
+  .character-model-option-copy strong {
+    font-size: 0.74rem;
+    line-height: 1;
+  }
+
+  .character-model-option-copy small {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.61);
+    font-size: 0.62rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .character-model-selected {
+    width: 0.48rem;
+    height: 0.48rem;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 50%;
+  }
+
+  .character-model-option[aria-checked="true"] .character-model-selected {
+    border-color: var(--primary);
+    background: var(--primary);
+    box-shadow: 0 0 0 0.2rem color-mix(in oklch, var(--primary) 22%, transparent);
   }
 
   #character-model-switcher > button:hover,
@@ -631,14 +816,24 @@ import { url } from "@/utils/url-utils";
     outline: none;
   }
 
-  #character-model-options button:focus-visible {
-    background: rgba(76, 208, 162, 0.24) !important;
-    outline: 2px solid color-mix(in oklch, var(--primary) 72%, white);
-    outline-offset: -2px;
+  .character-model-option:focus-visible {
+    outline: 3px solid color-mix(in oklch, var(--primary) 72%, white);
+    outline-offset: -3px;
+  }
+
+  @media (max-height: 700px) {
+    #character-model-switcher {
+      bottom: 7.4rem !important;
+    }
+
+    .character-model-library {
+      max-height: calc(100dvh - 10.5rem);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #character-model-switcher button {
+    #character-model-switcher button,
+    .character-model-chevron {
       transition: none;
     }
   }

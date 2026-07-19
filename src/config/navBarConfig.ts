@@ -10,8 +10,6 @@ import {
 // NavBar Configuration - Dynamically generate navigation bar links based on order
 // ============================================================================
 const getDynamicNavBarConfig = (): NavBarConfig => {
-	const contentPath = (path: string) => `${path}#main-content-wrapper`;
-
 	// 基础导航栏链接
 	const links: NavBarLink[] = [
 		// 主页
@@ -23,40 +21,40 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		...LinkPresets.Archive,
 		name: "文章",
 		icon: "material-symbols:article",
-		url: contentPath(LinkPresets.Archive.url),
+		url: LinkPresets.Archive.url,
 	});
 
 	// 动态
 	links.push({
 		...LinkPresets.Dynamic,
-		url: contentPath(LinkPresets.Dynamic.url),
+		url: LinkPresets.Dynamic.url,
 	});
 
 	// 社交：友链与留言在社交页面内部切换
 	links.push({
 		name: "社交",
-		url: "/social/#main-content-wrapper",
+		url: "/social/",
 		icon: "material-symbols:group",
 	});
 
 	// 我的：相册、追番与番组计划在页面内部切换
 	links.push({
 		name: "我的",
-		url: "/mine/#main-content-wrapper",
+		url: "/mine/",
 		icon: "material-symbols:person",
 	});
 
 	// 关于：个人介绍与支持本站在页面内部切换
 	links.push({
 		name: "关于",
-		url: "/about/#main-content-wrapper",
+		url: "/about/",
 		icon: "material-symbols:info",
 	});
 
 	// 链接：外部资源在链接页面内部选择
 	links.push({
 		name: "链接",
-		url: "/links/#main-content-wrapper",
+		url: "/links/",
 		icon: "material-symbols:link",
 	});
 

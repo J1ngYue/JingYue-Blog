@@ -1,5 +1,56 @@
 import type { Live2DWidgetConfig, SpineModelConfig } from "../types/pioConfig";
 
+export const characterModelCatalog = [
+	{
+		id: "firefly",
+		label: "萤火虫",
+		description: "本地 Spine · 可点击互动",
+		type: "spine",
+	},
+	{
+		id: "snow-miku",
+		label: "雪未来",
+		description: "本地 Live2D · 清新冬日",
+		type: "live2d",
+		live2dIndex: 0,
+	},
+	{
+		id: "black-cat",
+		label: "黑猫",
+		description: "Live2D · 黑猫看板娘",
+		type: "live2d",
+		live2dIndex: 1,
+	},
+	{
+		id: "white-cat",
+		label: "白猫",
+		description: "Live2D · 白猫看板娘",
+		type: "live2d",
+		live2dIndex: 2,
+	},
+	{
+		id: "chino",
+		label: "智乃",
+		description: "Live2D · 轻盈日常",
+		type: "live2d",
+		live2dIndex: 3,
+	},
+	{
+		id: "rem",
+		label: "蕾姆",
+		description: "Live2D · 蓝色女仆",
+		type: "live2d",
+		live2dIndex: 4,
+	},
+	{
+		id: "hiyori",
+		label: "日和",
+		description: "Live2D Cubism 3 · 元气",
+		type: "live2d",
+		live2dIndex: 5,
+	},
+] as const;
+
 // Spine 看板娘配置
 export const spineModelConfig: SpineModelConfig = {
 	// Spine 看板娘开关
@@ -94,6 +145,34 @@ export const live2dWidgetConfig: Live2DWidgetConfig = {
 		{
 			// 外部直连模型
 			path: "https://model.hacxy.cn/cat-black/model.json",
+			volume: 0,
+			scale: 1,
+			x: 0,
+			y: 0,
+		},
+		{
+			path: "https://model.hacxy.cn/cat-white/model.json",
+			volume: 0,
+			scale: 1,
+			x: 0,
+			y: 0,
+		},
+		{
+			path: "https://model.hacxy.cn/chino/model.json",
+			volume: 0,
+			scale: 1,
+			x: 0,
+			y: 0,
+		},
+		{
+			path: "https://model.hacxy.cn/rem/model.json",
+			volume: 0,
+			scale: 1,
+			x: 0,
+			y: 0,
+		},
+		{
+			path: "https://model.hacxy.cn/Hiyori/Hiyori.model3.json",
 			volume: 0,
 			scale: 1,
 			x: 0,
