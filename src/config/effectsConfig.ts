@@ -1,4 +1,8 @@
-import type { RainConfig, SakuraConfig, SnowConfig } from "../types/effectsConfig";
+import type {
+	RainConfig,
+	SakuraConfig,
+	SnowConfig,
+} from "../types/effectsConfig";
 
 // 特效配置 - 集中管理所有动画特效
 

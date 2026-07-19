@@ -15,8 +15,8 @@ import {
 	expressiveCodeConfig,
 	rainConfig,
 	sakuraConfig,
-	snowConfig,
 	siteConfig,
+	snowConfig,
 } from "../config";
 import { isHomePage as checkIsHomePage } from "./layout-utils";
 import {
@@ -933,7 +933,9 @@ export function getStoredWallpaperMode(): WALLPAPER_MODE {
 		return backgroundWallpaper.mode;
 	}
 
-	const storedMode = localStorage.getItem("wallpaperMode") as WALLPAPER_MODE | null;
+	const storedMode = localStorage.getItem(
+		"wallpaperMode",
+	) as WALLPAPER_MODE | null;
 	if (storedMode === WALLPAPER_BANNER) {
 		localStorage.setItem("wallpaperMode", WALLPAPER_FULLSCREEN);
 		return WALLPAPER_FULLSCREEN;
@@ -1259,9 +1261,7 @@ export function setRainEnabled(enabled: boolean): void {
 	}
 	localStorage.setItem("rainEnabled", String(enabled));
 	document.documentElement.setAttribute("data-rain-enabled", String(enabled));
-	window.dispatchEvent(
-		new CustomEvent("rainToggle", { detail: { enabled } }),
-	);
+	window.dispatchEvent(new CustomEvent("rainToggle", { detail: { enabled } }));
 }
 
 // Snow effect functions
@@ -1289,9 +1289,7 @@ export function setSnowEnabled(enabled: boolean): void {
 	}
 	localStorage.setItem("snowEnabled", String(enabled));
 	document.documentElement.setAttribute("data-snow-enabled", String(enabled));
-	window.dispatchEvent(
-		new CustomEvent("snowToggle", { detail: { enabled } }),
-	);
+	window.dispatchEvent(new CustomEvent("snowToggle", { detail: { enabled } }));
 }
 
 // Banner title functions

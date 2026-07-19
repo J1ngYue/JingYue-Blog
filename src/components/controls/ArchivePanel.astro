@@ -203,6 +203,7 @@ const foldOnFilter = collapseAllButFirst;
 <style>
   archive-panel {
     display: block;
+    min-height: var(--archive-stable-height, 42rem);
     border: 1px solid color-mix(in oklch, var(--primary) 14%, var(--line-divider));
     background:
       linear-gradient(135deg, color-mix(in oklch, var(--primary) 4%, transparent), transparent 34%),
@@ -232,6 +233,11 @@ const foldOnFilter = collapseAllButFirst;
   }
   archive-panel [hidden] {
     display: none !important;
+  }
+  .archive-toolbar [data-archive-reset][hidden] {
+    display: inline-flex !important;
+    visibility: hidden;
+    pointer-events: none;
   }
   .archive-search input::placeholder {
     color: var(--content-meta);
@@ -263,6 +269,13 @@ const foldOnFilter = collapseAllButFirst;
       if (this.dataset.initialized === "true") return;
       this.dataset.initialized = "true";
       this.init();
+      requestAnimationFrame(() => {
+        const height = Math.max(
+          this.getBoundingClientRect().height,
+          window.innerHeight * 0.72,
+        );
+        this.style.setProperty("--archive-stable-height", `${Math.ceil(height)}px`);
+      });
     }
 
     init() {

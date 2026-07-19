@@ -45,8 +45,8 @@ import {
 	backgroundWallpaper,
 	rainConfig,
 	sakuraConfig,
-	snowConfig,
 	siteConfig,
+	snowConfig,
 } from "@/config";
 import type { WALLPAPER_MODE } from "@/types/config";
 import {
@@ -464,7 +464,6 @@ $effect(() => {
 		setHue(hue);
 	}
 });
-
 </script>
 
 {#if hasAnyContent}

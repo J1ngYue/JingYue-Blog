@@ -6,8 +6,8 @@ import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontSetup from "@components/features/FontSetup.astro";
 import LayoutStabilityAgent from "@components/features/LayoutStabilityAgent.astro";
-import MusicManager from "@components/features/MusicManager.astro";
 import MusicLibraryDialog from "@components/features/MusicLibraryDialog.astro";
+import MusicManager from "@components/features/MusicManager.astro";
 import RainEffect from "@components/features/RainEffect.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import SnowEffect from "@components/features/SnowEffect.astro";
@@ -962,10 +962,57 @@ function disableAnimation() {
   }
 
   const setup = () => {
+    const homePath = new URL(url("/"), window.location.origin).pathname;
+    const toNavigationUrl = (value: string) =>
+      new URL(value, window.location.href);
+
+    if (!(window as any).__fireflyHomeLinkGuardBound) {
+      (window as any).__fireflyHomeLinkGuardBound = true;
+      document.addEventListener(
+        "click",
+        (event) => {
+          if (!(event instanceof MouseEvent) || event.button !== 0) return;
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          const target = event.target instanceof Element
+            ? event.target.closest<HTMLAnchorElement>("a[href]")
+            : null;
+          if (!target || target.target === "_blank") return;
+          const destination = toNavigationUrl(target.href);
+          if (
+            destination.origin !== window.location.origin ||
+            !pathsEqual(window.location.pathname, homePath) ||
+            !pathsEqual(destination.pathname, homePath) ||
+            destination.hash
+          ) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          document
+            .querySelector("[data-home-hero-frame]")
+            ?.classList.remove("home-hero-profile-active");
+          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        },
+        true,
+      );
+    }
+
     // 全屏壁纸模式：替换 swup 默认的回顶行为
     // 首页回顶部，其他页滚动到 #main-grid（与 ScrollDownIndicator 行为一致）
-    window.swup.hooks.replace("scroll:top", (_visit: { to: { url: string } }, args: { options: ScrollIntoViewOptions }) => {
-      // 内部页面保留封面首屏，交给统一的滚轮切换脚本进入正文。
+    window.swup.hooks.replace("scroll:top", (visit: { to: { url: string } }, args: { options: ScrollIntoViewOptions }) => {
+      const destination = toNavigationUrl(visit.to.url);
+      if (destination.hash === "#main-content-wrapper") {
+        const target = document.getElementById("main-content-wrapper");
+        if (target) {
+          const targetY = Math.max(
+            0,
+            target.getBoundingClientRect().top + window.scrollY - 16,
+          );
+          window.scrollTo({ top: targetY, left: 0, behavior: "auto" });
+          return true;
+        }
+      }
       window.scrollTo({ top: 0, left: 0, ...args.options });
       return true;
     });
@@ -1114,7 +1161,15 @@ function disableAnimation() {
 
       // change banner height immediately when a link is clicked
       const bodyElement = document.querySelector("body");
-      const isHomePage = pathsEqual(visit.to.url, url("/"));
+      const destination = toNavigationUrl(visit.to.url);
+      const isHomePage = pathsEqual(destination.pathname, homePath);
+      document.documentElement.toggleAttribute(
+        "data-firefly-entering-home",
+        isHomePage,
+      );
+      if (isHomePage) {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      }
 
       // 禁用 #main-grid 的过渡动画，防止 lg:is-home 切换时 transform 产生 700ms 动画
       const mainGrid = document.getElementById("main-grid");
@@ -1440,6 +1495,7 @@ function disableAnimation() {
 
         // 移除页面切换保护，恢复过渡动画
         document.documentElement.classList.remove("is-page-transitioning");
+        document.documentElement.removeAttribute("data-firefly-entering-home");
         scrollFunction();
       }, 200);
     });

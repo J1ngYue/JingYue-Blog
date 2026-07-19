@@ -4,12 +4,42 @@ import { musicPlayerConfig } from "@/config/musicConfig";
 import { url } from "@/utils/url-utils";
 
 const quickLinks = [
-	{ key: "archive", label: "文章", description: "浏览归档", href: url("/archive/#main-content-wrapper") },
-	{ key: "dynamic", label: "动态", description: "查看近况", href: url("/dynamic/#main-content-wrapper") },
-	{ key: "gallery", label: "相册", description: "收藏光影", href: url("/gallery/#main-content-wrapper") },
-	{ key: "friends", label: "友链", description: "拜访朋友", href: url("/friends/#main-content-wrapper") },
-	{ key: "guestbook", label: "留言", description: "留下问候", href: url("/guestbook/#main-content-wrapper") },
-	{ key: "about", label: "关于", description: "认识这里", href: url("/about/#main-content-wrapper") },
+	{
+		key: "archive",
+		label: "文章",
+		description: "浏览归档",
+		href: url("/archive/#main-content-wrapper"),
+	},
+	{
+		key: "dynamic",
+		label: "动态",
+		description: "查看近况",
+		href: url("/dynamic/#main-content-wrapper"),
+	},
+	{
+		key: "gallery",
+		label: "相册",
+		description: "收藏光影",
+		href: url("/gallery/#main-content-wrapper"),
+	},
+	{
+		key: "friends",
+		label: "友链",
+		description: "拜访朋友",
+		href: url("/friends/#main-content-wrapper"),
+	},
+	{
+		key: "guestbook",
+		label: "留言",
+		description: "留下问候",
+		href: url("/guestbook/#main-content-wrapper"),
+	},
+	{
+		key: "about",
+		label: "关于",
+		description: "认识这里",
+		href: url("/about/#main-content-wrapper"),
+	},
 ];
 ---
 
@@ -102,6 +132,7 @@ const quickLinks = [
 		>
 			<Icon is:inline name="material-symbols:settings-rounded" />
 		</button>
+		<i class="quick-tools-divider" aria-hidden="true"></i>
 		<button
 			id="quick-tools-wallpaper"
 			class="quick-tools-button"
@@ -111,7 +142,6 @@ const quickLinks = [
 		>
 			<Icon is:inline name="material-symbols:wallpaper" />
 		</button>
-		<i class="quick-tools-divider" aria-hidden="true"></i>
 		<a class="quick-tools-button" href={url("/archive/#main-content-wrapper")} data-tooltip="文章" aria-label="查看文章">
 			<Icon is:inline name="material-symbols:article-outline-rounded" />
 		</a>

@@ -281,7 +281,8 @@ onMount(() => {
 			entries = (await response.json()) as DynamicData[];
 			populateYears();
 			const currentUrl = new URL(window.location.href);
-			if (searchInput) searchInput.value = currentUrl.searchParams.get("q") || "";
+			if (searchInput)
+				searchInput.value = currentUrl.searchParams.get("q") || "";
 			if (yearSelect) {
 				const requestedYear = currentUrl.searchParams.get("year") || "all";
 				const exists = Array.from(yearSelect.options).some(

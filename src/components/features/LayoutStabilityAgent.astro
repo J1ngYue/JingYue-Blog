@@ -40,7 +40,6 @@ const enabledInDev = import.meta.env.DEV;
 		let transitionSnapshot = null;
 		let pendingProbe = 0;
 		let resizeProbe = 0;
-		let panel = null;
 		let currentContext = {
 			type: "页面空闲",
 			target: "document",
@@ -167,7 +166,6 @@ const enabledInDev = import.meta.env.DEV;
 			reports.unshift(completed);
 			reports.splice(MAX_REPORTS);
 			persistReports();
-			renderPanel();
 
 			const logger =
 				completed.severity === "warning" ? console.warn : console.info;
@@ -262,7 +260,6 @@ const enabledInDev = import.meta.env.DEV;
 			const before = transitionSnapshot || captureSnapshot();
 			transitionSnapshot = null;
 			window.setTimeout(() => {
-				ensurePanel();
 				compareSnapshot(before, "页面切换后的稳定性");
 			}, 650);
 		}
@@ -341,108 +338,6 @@ const enabledInDev = import.meta.env.DEV;
 			}
 		}
 
-		function ensurePanel() {
-			if (panel?.isConnected) return panel;
-
-			panel = document.createElement("aside");
-			panel.id = "firefly-jitter-agent";
-			panel.dataset.jitterAgentRoot = "";
-			panel.innerHTML = `
-				<button type="button" class="jitter-agent-toggle" aria-expanded="false">
-					<span>稳定性检测</span>
-					<strong data-jitter-count>0</strong>
-				</button>
-				<section class="jitter-agent-panel" hidden>
-					<header>
-						<div>
-							<strong>页面稳定性智能体</strong>
-							<small>切页、输入和交互抖动监测</small>
-						</div>
-						<button type="button" data-jitter-clear>清空</button>
-					</header>
-					<ol data-jitter-list></ol>
-				</section>
-			`;
-
-			let style = document.head.querySelector(
-				"style[data-jitter-agent-style]",
-			);
-			if (!style) {
-				style = document.createElement("style");
-				style.dataset.jitterAgentStyle = "";
-				style.textContent = `
-				#firefly-jitter-agent{position:fixed;right:1rem;bottom:1rem;z-index:2147483000;display:grid;justify-items:end;gap:.5rem;font:12px/1.45 system-ui,sans-serif;color:#dbe8e4;pointer-events:none}
-				#firefly-jitter-agent button{font:inherit;cursor:pointer}
-				.jitter-agent-toggle{display:flex;align-items:center;gap:.55rem;padding:.55rem .7rem;border:1px solid rgb(255 255 255/.18);border-radius:999px;background:rgb(24 38 38/.88);color:#e9f5f1;box-shadow:0 .6rem 1.8rem rgb(0 0 0/.2);backdrop-filter:blur(12px);pointer-events:auto}
-				.jitter-agent-toggle strong{display:grid;min-width:1.35rem;height:1.35rem;place-items:center;border-radius:999px;background:#2fc49a;color:#09251d;font-size:10px}
-				.jitter-agent-toggle.has-warning strong{background:#ffb35c;color:#3d2100}
-				.jitter-agent-panel{width:min(22rem,calc(100vw - 2rem));max-height:min(28rem,70vh);overflow:hidden;border:1px solid rgb(255 255 255/.16);border-radius:1rem;background:rgb(21 31 36/.94);box-shadow:0 1.2rem 3rem rgb(0 0 0/.28);backdrop-filter:blur(18px);pointer-events:auto}
-				.jitter-agent-panel header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem .9rem;border-bottom:1px solid rgb(255 255 255/.1)}
-				.jitter-agent-panel header div{display:grid}
-				.jitter-agent-panel header small{color:rgb(219 232 228/.58)}
-				.jitter-agent-panel header button{padding:.3rem .5rem;border-radius:.45rem;background:rgb(255 255 255/.08);color:inherit}
-				.jitter-agent-panel ol{display:grid;gap:.45rem;max-height:22rem;margin:0;padding:.65rem;overflow:auto;list-style:none}
-				.jitter-agent-panel li{display:grid;gap:.15rem;padding:.55rem .65rem;border-left:3px solid #2fc49a;border-radius:.5rem;background:rgb(255 255 255/.055)}
-				.jitter-agent-panel li.is-warning{border-left-color:#ffb35c}
-				.jitter-agent-panel li strong{font-size:11px}
-				.jitter-agent-panel li small{color:rgb(219 232 228/.62)}
-				.jitter-agent-panel .is-empty{border-left:0;text-align:center;color:rgb(219 232 228/.58)}
-				@media(prefers-reduced-motion:reduce){#firefly-jitter-agent *{transition:none!important}}
-			`;
-				document.head.appendChild(style);
-			}
-			document.body.appendChild(panel);
-
-			const toggle = panel.querySelector(".jitter-agent-toggle");
-			const detail = panel.querySelector(".jitter-agent-panel");
-			toggle?.addEventListener("click", () => {
-				const open = detail?.hidden !== false;
-				if (detail) detail.hidden = !open;
-				toggle.setAttribute("aria-expanded", String(open));
-			});
-			panel
-				.querySelector("[data-jitter-clear]")
-				?.addEventListener("click", clearReports);
-			renderPanel();
-			return panel;
-		}
-
-		function renderPanel() {
-			if (!panel?.isConnected) return;
-			const count = panel.querySelector("[data-jitter-count]");
-			const toggle = panel.querySelector(".jitter-agent-toggle");
-			const list = panel.querySelector("[data-jitter-list]");
-			const warnings = reports.filter(
-				(report) => report.severity === "warning",
-			).length;
-			if (count) count.textContent = String(reports.length);
-			toggle?.classList.toggle("has-warning", warnings > 0);
-			if (!list) return;
-			list.replaceChildren();
-
-			if (!reports.length) {
-				const empty = document.createElement("li");
-				empty.className = "is-empty";
-				empty.textContent = "尚未检测到明显位移";
-				list.appendChild(empty);
-				return;
-			}
-
-			for (const report of reports.slice(0, 10)) {
-				const item = document.createElement("li");
-				item.classList.toggle(
-					"is-warning",
-					report.severity === "warning",
-				);
-				const title = document.createElement("strong");
-				title.textContent = `${report.time} · ${report.message}`;
-				const detail = document.createElement("small");
-				detail.textContent = `${report.context.type} · ${report.context.target} · ${report.url}`;
-				item.append(title, detail);
-				list.appendChild(item);
-			}
-		}
-
 		function clearReports() {
 			reports.length = 0;
 			try {
@@ -450,7 +345,6 @@ const enabledInDev = import.meta.env.DEV;
 			} catch {
 				// ignore
 			}
-			renderPanel();
 		}
 
 		const interactionEvents = ["pointerdown", "click", "input", "change", "submit"];
@@ -461,14 +355,10 @@ const enabledInDev = import.meta.env.DEV;
 		];
 
 		function start(persist = false) {
-			if (active) {
-				ensurePanel();
-				return;
-			}
+			if (active) return;
 			active = true;
 			document.documentElement.dataset.jitterAgent = "on";
 			if (persist) localStorage.setItem(PREFERENCE_KEY, "1");
-			ensurePanel();
 			observeLayoutShift();
 			interactionEvents.forEach((name) =>
 				document.addEventListener(name, rememberInteraction, true),
@@ -506,8 +396,6 @@ const enabledInDev = import.meta.env.DEV;
 			);
 			window.removeEventListener("resize", handleResize);
 			window.removeEventListener("beforeunload", persistReports);
-			panel?.remove();
-			panel = null;
 		}
 
 		window.__fireflyJitterAgent = {
