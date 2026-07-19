@@ -1,0 +1,529 @@
+---
+const enabledInDev = import.meta.env.DEV;
+---
+
+<script
+	is:inline
+	data-swup-ignore-script
+	define:vars={{ enabledInDev }}
+>
+	(() => {
+		if (window.__fireflyJitterAgent) return;
+
+		const PREFERENCE_KEY = "firefly-jitter-agent";
+		const REPORT_KEY = "firefly-jitter-agent-reports";
+		const MAX_REPORTS = 40;
+		const MOVE_THRESHOLD = 5;
+		const SNAPSHOT_SELECTOR = [
+			"header",
+			"nav",
+			"main",
+			"input",
+			"select",
+			"textarea",
+			"button",
+			"a",
+			"dialog",
+			"[role='dialog']",
+			"#main-content-wrapper",
+			"#search-panel",
+			"#display-setting",
+			"#music-nav-panel",
+			".archive-toolbar",
+			".archive-year-block",
+			".music-player-widget",
+			".quick-tools-rail",
+		].join(",");
+
+		let active = false;
+		let performanceObserver = null;
+		let transitionSnapshot = null;
+		let pendingProbe = 0;
+		let resizeProbe = 0;
+		let panel = null;
+		let currentContext = {
+			type: "页面空闲",
+			target: "document",
+			at: Date.now(),
+		};
+		const reports = readReports();
+
+		function readReports() {
+			try {
+				const value = JSON.parse(sessionStorage.getItem(REPORT_KEY) || "[]");
+				return Array.isArray(value) ? value.slice(0, MAX_REPORTS) : [];
+			} catch {
+				return [];
+			}
+		}
+
+		function persistReports() {
+			try {
+				sessionStorage.setItem(
+					REPORT_KEY,
+					JSON.stringify(reports.slice(0, MAX_REPORTS)),
+				);
+			} catch {
+				// 会话存储不可用时仍保留当前页面内的报告。
+			}
+		}
+
+		function elementLabel(node) {
+			if (!(node instanceof Element)) return "document";
+			if (node.id) return `#${node.id}`;
+
+			const dataName = [
+				"data-archive-search",
+				"data-music-tab",
+				"data-quick-tool",
+				"data-home-quick-tool",
+				"data-tooltip",
+			].find((name) => node.hasAttribute(name));
+			if (dataName) {
+				const value = node.getAttribute(dataName);
+				return value ? `[${dataName}="${value}"]` : `[${dataName}]`;
+			}
+
+			const description =
+				node.getAttribute("aria-label") ||
+				node.getAttribute("placeholder") ||
+				node.textContent?.trim().replace(/\s+/g, " ").slice(0, 36) ||
+				"";
+			return `${node.tagName.toLowerCase()}${description ? `「${description}」` : ""}`;
+		}
+
+		function elementPath(element) {
+			if (!(element instanceof Element)) return "document";
+			const parts = [];
+			let node = element;
+			while (node && node !== document.body && parts.length < 5) {
+				if (node.id) {
+					parts.unshift(`#${node.id}`);
+					break;
+				}
+				const tag = node.tagName.toLowerCase();
+				const siblings = node.parentElement
+					? Array.from(node.parentElement.children).filter(
+							(sibling) => sibling.tagName === node.tagName,
+						)
+					: [];
+				const index = siblings.indexOf(node) + 1;
+				parts.unshift(`${tag}:nth-of-type(${Math.max(index, 1)})`);
+				node = node.parentElement;
+			}
+			return parts.join(">");
+		}
+
+		function captureSnapshot() {
+			const elements = Array.from(
+				document.querySelectorAll(SNAPSHOT_SELECTOR),
+			).slice(0, 180);
+			const items = new Map();
+
+			for (const element of elements) {
+				if (!(element instanceof HTMLElement)) continue;
+				if (element.closest("[data-jitter-agent-root]")) continue;
+				const rect = element.getBoundingClientRect();
+				if (!rect.width || !rect.height) continue;
+				if (rect.bottom < -40 || rect.top > window.innerHeight + 40) continue;
+
+				const label = elementLabel(element);
+				const key = `${elementPath(element)}::${label}`;
+				items.set(key, {
+					label,
+					x: rect.x,
+					y: rect.y,
+					width: rect.width,
+					height: rect.height,
+				});
+			}
+
+			return {
+				items,
+				scrollX: window.scrollX,
+				scrollY: window.scrollY,
+				at: Date.now(),
+			};
+		}
+
+		function contextForReport() {
+			if (Date.now() - currentContext.at > 1800) {
+				return { type: "页面空闲", target: "document" };
+			}
+			return {
+				type: currentContext.type,
+				target: currentContext.target,
+			};
+		}
+
+		function addReport(report) {
+			const completed = {
+				id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+				time: new Date().toLocaleTimeString("zh-CN", { hour12: false }),
+				url: `${location.pathname}${location.search}`,
+				context: contextForReport(),
+				...report,
+			};
+			reports.unshift(completed);
+			reports.splice(MAX_REPORTS);
+			persistReports();
+			renderPanel();
+
+			const logger =
+				completed.severity === "warning" ? console.warn : console.info;
+			logger("[Firefly 页面稳定性智能体]", completed);
+			window.dispatchEvent(
+				new CustomEvent("firefly:jitter-report", { detail: completed }),
+			);
+		}
+
+		function compareSnapshot(before, reason) {
+			if (!before || !active) return;
+			const after = captureSnapshot();
+			const moved = [];
+
+			for (const [key, previous] of before.items) {
+				const current = after.items.get(key);
+				if (!current) continue;
+				const deltaX = Math.abs(current.x - previous.x);
+				const deltaY = Math.abs(current.y - previous.y);
+				const deltaWidth = Math.abs(current.width - previous.width);
+				const deltaHeight = Math.abs(current.height - previous.height);
+				const maximum = Math.max(
+					deltaX,
+					deltaY,
+					deltaWidth,
+					deltaHeight,
+				);
+				if (maximum < MOVE_THRESHOLD) continue;
+				moved.push({
+					target: previous.label,
+					deltaX: Number(deltaX.toFixed(1)),
+					deltaY: Number(deltaY.toFixed(1)),
+					deltaWidth: Number(deltaWidth.toFixed(1)),
+					deltaHeight: Number(deltaHeight.toFixed(1)),
+					maximum: Number(maximum.toFixed(1)),
+				});
+			}
+
+			if (!moved.length) return;
+			moved.sort((left, right) => right.maximum - left.maximum);
+			const maximum = moved[0].maximum;
+			addReport({
+				kind: "element-movement",
+				severity:
+					moved.length >= 2 || maximum >= 12 ? "warning" : "notice",
+				reason,
+				message: `${moved.length} 个可见元素发生位移，最大 ${maximum}px`,
+				sources: moved.slice(0, 6),
+				scrollDelta: Number(
+					Math.abs(after.scrollY - before.scrollY).toFixed(1),
+				),
+			});
+		}
+
+		function scheduleProbe(reason, delay = 360) {
+			if (!active) return;
+			const before = captureSnapshot();
+			if (pendingProbe) window.clearTimeout(pendingProbe);
+			pendingProbe = window.setTimeout(() => {
+				pendingProbe = 0;
+				compareSnapshot(before, reason);
+			}, delay);
+		}
+
+		function rememberInteraction(event) {
+			if (event.type === "keydown") {
+				if (!["Enter", "Escape", " ", "Tab"].includes(event.key)) return;
+			}
+			currentContext = {
+				type: event.type,
+				target: elementLabel(event.target),
+				at: Date.now(),
+			};
+			scheduleProbe(`${event.type} 后的布局变化`);
+		}
+
+		function handleTransitionStart(event) {
+			currentContext = {
+				type: "页面切换",
+				target: event.type,
+				at: Date.now(),
+			};
+			transitionSnapshot = captureSnapshot();
+		}
+
+		function handleTransitionEnd(event) {
+			currentContext = {
+				type: "页面切换完成",
+				target: event.type,
+				at: Date.now(),
+			};
+			const before = transitionSnapshot || captureSnapshot();
+			transitionSnapshot = null;
+			window.setTimeout(() => {
+				ensurePanel();
+				compareSnapshot(before, "页面切换后的稳定性");
+			}, 650);
+		}
+
+		function handleResize() {
+			if (resizeProbe) window.clearTimeout(resizeProbe);
+			const before = captureSnapshot();
+			currentContext = {
+				type: "视口变化",
+				target: `${window.innerWidth}×${window.innerHeight}`,
+				at: Date.now(),
+			};
+			resizeProbe = window.setTimeout(() => {
+				resizeProbe = 0;
+				compareSnapshot(before, "窗口尺寸变化后的布局");
+			}, 260);
+		}
+
+		function observeLayoutShift() {
+			if (
+				!("PerformanceObserver" in window) ||
+				!PerformanceObserver.supportedEntryTypes?.includes("layout-shift")
+			) {
+				return;
+			}
+
+			try {
+				performanceObserver = new PerformanceObserver((list) => {
+					for (const entry of list.getEntries()) {
+						const value = Number(entry.value || 0);
+						if (value < 0.001) continue;
+						const sources = Array.from(entry.sources || [])
+							.map((source) => {
+								const previous = source.previousRect;
+								const current = source.currentRect;
+								const maximum = Math.max(
+									Math.abs((current?.x || 0) - (previous?.x || 0)),
+									Math.abs((current?.y || 0) - (previous?.y || 0)),
+									Math.abs(
+										(current?.width || 0) - (previous?.width || 0),
+									),
+									Math.abs(
+										(current?.height || 0) - (previous?.height || 0),
+									),
+								);
+								return {
+									target: elementLabel(source.node),
+									maximum: Number(maximum.toFixed(1)),
+								};
+							})
+							.filter((source) => source.target !== "document")
+							.sort((left, right) => right.maximum - left.maximum)
+							.slice(0, 6);
+						const maximum = sources[0]?.maximum || 0;
+
+						addReport({
+							kind: "layout-shift",
+							severity:
+								value >= 0.02 || maximum >= 8 ? "warning" : "notice",
+							reason: entry.hadRecentInput
+								? "交互期间发生 Layout Shift"
+								: "无直接输入时发生 Layout Shift",
+							message: `布局偏移分数 ${value.toFixed(4)}${maximum ? `，最大位移 ${maximum}px` : ""}`,
+							score: Number(value.toFixed(4)),
+							hadRecentInput: Boolean(entry.hadRecentInput),
+							sources,
+						});
+					}
+				});
+				performanceObserver.observe({
+					type: "layout-shift",
+					buffered: true,
+				});
+			} catch {
+				performanceObserver = null;
+			}
+		}
+
+		function ensurePanel() {
+			if (panel?.isConnected) return panel;
+
+			panel = document.createElement("aside");
+			panel.id = "firefly-jitter-agent";
+			panel.dataset.jitterAgentRoot = "";
+			panel.innerHTML = `
+				<button type="button" class="jitter-agent-toggle" aria-expanded="false">
+					<span>稳定性检测</span>
+					<strong data-jitter-count>0</strong>
+				</button>
+				<section class="jitter-agent-panel" hidden>
+					<header>
+						<div>
+							<strong>页面稳定性智能体</strong>
+							<small>切页、输入和交互抖动监测</small>
+						</div>
+						<button type="button" data-jitter-clear>清空</button>
+					</header>
+					<ol data-jitter-list></ol>
+				</section>
+			`;
+
+			let style = document.head.querySelector(
+				"style[data-jitter-agent-style]",
+			);
+			if (!style) {
+				style = document.createElement("style");
+				style.dataset.jitterAgentStyle = "";
+				style.textContent = `
+				#firefly-jitter-agent{position:fixed;right:1rem;bottom:1rem;z-index:2147483000;display:grid;justify-items:end;gap:.5rem;font:12px/1.45 system-ui,sans-serif;color:#dbe8e4;pointer-events:none}
+				#firefly-jitter-agent button{font:inherit;cursor:pointer}
+				.jitter-agent-toggle{display:flex;align-items:center;gap:.55rem;padding:.55rem .7rem;border:1px solid rgb(255 255 255/.18);border-radius:999px;background:rgb(24 38 38/.88);color:#e9f5f1;box-shadow:0 .6rem 1.8rem rgb(0 0 0/.2);backdrop-filter:blur(12px);pointer-events:auto}
+				.jitter-agent-toggle strong{display:grid;min-width:1.35rem;height:1.35rem;place-items:center;border-radius:999px;background:#2fc49a;color:#09251d;font-size:10px}
+				.jitter-agent-toggle.has-warning strong{background:#ffb35c;color:#3d2100}
+				.jitter-agent-panel{width:min(22rem,calc(100vw - 2rem));max-height:min(28rem,70vh);overflow:hidden;border:1px solid rgb(255 255 255/.16);border-radius:1rem;background:rgb(21 31 36/.94);box-shadow:0 1.2rem 3rem rgb(0 0 0/.28);backdrop-filter:blur(18px);pointer-events:auto}
+				.jitter-agent-panel header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem .9rem;border-bottom:1px solid rgb(255 255 255/.1)}
+				.jitter-agent-panel header div{display:grid}
+				.jitter-agent-panel header small{color:rgb(219 232 228/.58)}
+				.jitter-agent-panel header button{padding:.3rem .5rem;border-radius:.45rem;background:rgb(255 255 255/.08);color:inherit}
+				.jitter-agent-panel ol{display:grid;gap:.45rem;max-height:22rem;margin:0;padding:.65rem;overflow:auto;list-style:none}
+				.jitter-agent-panel li{display:grid;gap:.15rem;padding:.55rem .65rem;border-left:3px solid #2fc49a;border-radius:.5rem;background:rgb(255 255 255/.055)}
+				.jitter-agent-panel li.is-warning{border-left-color:#ffb35c}
+				.jitter-agent-panel li strong{font-size:11px}
+				.jitter-agent-panel li small{color:rgb(219 232 228/.62)}
+				.jitter-agent-panel .is-empty{border-left:0;text-align:center;color:rgb(219 232 228/.58)}
+				@media(prefers-reduced-motion:reduce){#firefly-jitter-agent *{transition:none!important}}
+			`;
+				document.head.appendChild(style);
+			}
+			document.body.appendChild(panel);
+
+			const toggle = panel.querySelector(".jitter-agent-toggle");
+			const detail = panel.querySelector(".jitter-agent-panel");
+			toggle?.addEventListener("click", () => {
+				const open = detail?.hidden !== false;
+				if (detail) detail.hidden = !open;
+				toggle.setAttribute("aria-expanded", String(open));
+			});
+			panel
+				.querySelector("[data-jitter-clear]")
+				?.addEventListener("click", clearReports);
+			renderPanel();
+			return panel;
+		}
+
+		function renderPanel() {
+			if (!panel?.isConnected) return;
+			const count = panel.querySelector("[data-jitter-count]");
+			const toggle = panel.querySelector(".jitter-agent-toggle");
+			const list = panel.querySelector("[data-jitter-list]");
+			const warnings = reports.filter(
+				(report) => report.severity === "warning",
+			).length;
+			if (count) count.textContent = String(reports.length);
+			toggle?.classList.toggle("has-warning", warnings > 0);
+			if (!list) return;
+			list.replaceChildren();
+
+			if (!reports.length) {
+				const empty = document.createElement("li");
+				empty.className = "is-empty";
+				empty.textContent = "尚未检测到明显位移";
+				list.appendChild(empty);
+				return;
+			}
+
+			for (const report of reports.slice(0, 10)) {
+				const item = document.createElement("li");
+				item.classList.toggle(
+					"is-warning",
+					report.severity === "warning",
+				);
+				const title = document.createElement("strong");
+				title.textContent = `${report.time} · ${report.message}`;
+				const detail = document.createElement("small");
+				detail.textContent = `${report.context.type} · ${report.context.target} · ${report.url}`;
+				item.append(title, detail);
+				list.appendChild(item);
+			}
+		}
+
+		function clearReports() {
+			reports.length = 0;
+			try {
+				sessionStorage.removeItem(REPORT_KEY);
+			} catch {
+				// ignore
+			}
+			renderPanel();
+		}
+
+		const interactionEvents = ["pointerdown", "click", "input", "change", "submit"];
+		const transitionStartEvents = ["swup:visit:start", "astro:before-swap"];
+		const transitionEndEvents = [
+			"swup:contentReplaced",
+			"astro:page-load",
+		];
+
+		function start(persist = false) {
+			if (active) {
+				ensurePanel();
+				return;
+			}
+			active = true;
+			document.documentElement.dataset.jitterAgent = "on";
+			if (persist) localStorage.setItem(PREFERENCE_KEY, "1");
+			ensurePanel();
+			observeLayoutShift();
+			interactionEvents.forEach((name) =>
+				document.addEventListener(name, rememberInteraction, true),
+			);
+			document.addEventListener("keydown", rememberInteraction, true);
+			transitionStartEvents.forEach((name) =>
+				document.addEventListener(name, handleTransitionStart),
+			);
+			transitionEndEvents.forEach((name) =>
+				document.addEventListener(name, handleTransitionEnd),
+			);
+			window.addEventListener("resize", handleResize);
+			window.addEventListener("beforeunload", persistReports);
+			scheduleProbe("页面初始加载后的稳定性", 900);
+		}
+
+		function stop(persist = false) {
+			if (!active) return;
+			active = false;
+			delete document.documentElement.dataset.jitterAgent;
+			if (persist) localStorage.setItem(PREFERENCE_KEY, "0");
+			if (pendingProbe) window.clearTimeout(pendingProbe);
+			if (resizeProbe) window.clearTimeout(resizeProbe);
+			performanceObserver?.disconnect();
+			performanceObserver = null;
+			interactionEvents.forEach((name) =>
+				document.removeEventListener(name, rememberInteraction, true),
+			);
+			document.removeEventListener("keydown", rememberInteraction, true);
+			transitionStartEvents.forEach((name) =>
+				document.removeEventListener(name, handleTransitionStart),
+			);
+			transitionEndEvents.forEach((name) =>
+				document.removeEventListener(name, handleTransitionEnd),
+			);
+			window.removeEventListener("resize", handleResize);
+			window.removeEventListener("beforeunload", persistReports);
+			panel?.remove();
+			panel = null;
+		}
+
+		window.__fireflyJitterAgent = {
+			enable: () => start(true),
+			disable: () => stop(true),
+			clear: clearReports,
+			getReports: () => reports.map((report) => ({ ...report })),
+			isEnabled: () => active,
+		};
+
+		const query = new URLSearchParams(location.search).get("jitter");
+		const preference = localStorage.getItem(PREFERENCE_KEY);
+		const shouldStart =
+			query === "1" ||
+			preference === "1" ||
+			(query !== "0" && preference !== "0" && enabledInDev);
+		if (shouldStart) start(false);
+	})();
+</script>

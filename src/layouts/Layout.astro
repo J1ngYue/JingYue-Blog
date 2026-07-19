@@ -5,6 +5,7 @@ import MicrosoftClarity from "@components/analytics/MicrosoftClarity.astro";
 import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontSetup from "@components/features/FontSetup.astro";
+import LayoutStabilityAgent from "@components/features/LayoutStabilityAgent.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import MusicLibraryDialog from "@components/features/MusicLibraryDialog.astro";
 import RainEffect from "@components/features/RainEffect.astro";
@@ -631,6 +632,7 @@ const siteLang = lang.replace("_", "-");
     <!-- 页面顶部渐变高光效果 - 只在full和semifull模式下显示 -->
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
+    <LayoutStabilityAgent />
     <MusicManager />
     <MusicLibraryDialog />
     <slot />
