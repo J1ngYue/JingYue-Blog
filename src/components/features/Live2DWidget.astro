@@ -139,6 +139,8 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 		document.getElementById("firefly-live2d-runtime") as HTMLElement | null;
 	let widgetInitializing = false;
 	const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
+	const CHARACTER_SLEEP_KEY = "fireflyCharacterSleeping";
+	let characterSleeping = localStorage.getItem(CHARACTER_SLEEP_KEY) === "true";
 
 	function getLive2DModelIds() {
 		return JSON.parse(
@@ -167,6 +169,36 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 		if (widgetRoot) {
 			widgetRoot.style.display =
 				selectedModel === "firefly" || hiddenOnMobile ? "none" : "block";
+		}
+	}
+
+	function syncCharacterSleepState(nextSleeping = characterSleeping) {
+		characterSleeping = Boolean(nextSleeping);
+		if (widgetRoot) {
+			widgetRoot.classList.toggle("is-character-sleeping", characterSleeping);
+		}
+	}
+
+	function playLive2DInteraction() {
+		if (!widget || characterSleeping) return;
+		const motions = widget.l2d?.getMotions?.() || {};
+		const availableMotions = Object.entries(motions).flatMap(
+			([group, files]) =>
+				Array.isArray(files)
+					? files.map((_file, index) => ({ group, index }))
+					: [],
+		);
+		if (availableMotions.length > 0) {
+			const motion = availableMotions[
+				Math.floor(Math.random() * availableMotions.length)
+			];
+			widget.l2d.playMotion?.(motion.group, motion.index, 3);
+		}
+		const expressions = widget.l2d?.getExpressions?.() || [];
+		if (expressions.length > 0 && Math.random() > 0.45) {
+			widget.l2d.setExpression?.(
+				expressions[Math.floor(Math.random() * expressions.length)],
+			);
 		}
 	}
 	const menuActions: Record<string, (widget: any) => void> = {
@@ -292,6 +324,15 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 			if (widgetRoot) {
 				widgetRoot.id = "firefly-live2d-runtime";
 				widgetRoot.dataset.characterModelRuntime = "live2d";
+				syncCharacterSleepState();
+				(window as any).__fireflyCharacterPositionManager?.attachRuntime?.(
+					widgetRoot,
+				);
+				window.dispatchEvent(
+					new CustomEvent("firefly:character-runtime-ready", {
+						detail: { runtime: widgetRoot },
+					}),
+				);
 			}
 			currentModelIndex = 0;
 			syncWidgetVisibility();
@@ -313,7 +354,8 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 
 	async function handleCharacterModelChange(event: CustomEvent) {
 		const model = event.detail?.model || getSelectedCharacterModel();
-		if (model === "firefly") {
+		const modelIds = getLive2DModelIds();
+		if (model === "firefly" || !modelIds.includes(model)) {
 			syncWidgetVisibility();
 			return;
 		}
@@ -355,6 +397,23 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 	window.addEventListener(
 		"firefly:character-model-change",
 		handleCharacterModelChange as unknown as EventListener,
+		{ signal: live2dController.signal },
+	);
+	window.addEventListener(
+		"firefly:character-sleep-change",
+		(event: Event) => {
+			const sleeping = (event as CustomEvent).detail?.sleeping;
+			if (typeof sleeping === "boolean") syncCharacterSleepState(sleeping);
+		},
+		{ signal: live2dController.signal },
+	);
+	window.addEventListener(
+		"firefly:character-interact",
+		(event: Event) => {
+			if ((event as CustomEvent).detail?.type === "live2d") {
+				playLive2DInteraction();
+			}
+		},
 		{ signal: live2dController.signal },
 	);
 	window.addEventListener("resize", handleResponsive, {

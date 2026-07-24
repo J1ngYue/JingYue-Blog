@@ -92,6 +92,11 @@ let localWallpaperOpacity = $state(getLocalWallpaperOpacity());
 let localWallpaperBlur = $state(getLocalWallpaperBlur());
 const defaultLocalWallpaperOpacity = getDefaultLocalWallpaperOpacity();
 const defaultLocalWallpaperBlur = getDefaultLocalWallpaperBlur();
+let localWallpaperTransparency = $state(
+	transparencyPercent(localWallpaperOpacity),
+);
+let navbarTransparency = $state(transparencyPercent(navbarOpacity));
+let overlayCardTransparency = $state(transparencyPercent(overlayCardOpacity));
 
 function transparencyPercent(opacity: number) {
 	return Math.round((1 - Math.min(1, Math.max(0, opacity))) * 100);
@@ -151,6 +156,9 @@ function updateHue(value: number) {
 function resetBackgroundSettings() {
 	localWallpaperOpacity = defaultLocalWallpaperOpacity;
 	localWallpaperBlur = defaultLocalWallpaperBlur;
+	localWallpaperTransparency = transparencyPercent(
+		defaultLocalWallpaperOpacity,
+	);
 	setLocalWallpaperOpacity(defaultLocalWallpaperOpacity);
 	setLocalWallpaperBlur(defaultLocalWallpaperBlur);
 	setOverlayOpacity(defaultLocalWallpaperOpacity);
@@ -160,10 +168,12 @@ function resetBackgroundSettings() {
 		overlayCardOpacity !== defaultOverlayCardOpacity
 	) {
 		overlayCardOpacity = defaultOverlayCardOpacity;
+		overlayCardTransparency = transparencyPercent(defaultOverlayCardOpacity);
 		setOverlayCardOpacity(defaultOverlayCardOpacity);
 	}
 	if (navbarOpacity !== defaultNavbarOpacity) {
 		navbarOpacity = defaultNavbarOpacity;
+		navbarTransparency = transparencyPercent(defaultNavbarOpacity);
 		setNavbarOpacity(defaultNavbarOpacity);
 	}
 
@@ -211,7 +221,10 @@ function resetBannerSettings() {
 
 function updateLocalWallpaperOpacity(value: number) {
 	if (!Number.isFinite(value)) return;
-	localWallpaperOpacity = opacityFromTransparencyPercent(value);
+	localWallpaperTransparency = Math.round(Math.min(100, Math.max(0, value)));
+	localWallpaperOpacity = opacityFromTransparencyPercent(
+		localWallpaperTransparency,
+	);
 	setLocalWallpaperOpacity(localWallpaperOpacity);
 	setOverlayOpacity(localWallpaperOpacity);
 	requestAnimationFrame(refreshAllRangeProgress);
@@ -227,14 +240,16 @@ function updateLocalWallpaperBlur(value: number) {
 
 function updateOverlayCardOpacity(value: number) {
 	if (!Number.isFinite(value)) return;
-	overlayCardOpacity = opacityFromTransparencyPercent(value);
+	overlayCardTransparency = Math.round(Math.min(100, Math.max(0, value)));
+	overlayCardOpacity = opacityFromTransparencyPercent(overlayCardTransparency);
 	setOverlayCardOpacity(overlayCardOpacity);
 	requestAnimationFrame(refreshAllRangeProgress);
 }
 
 function updateNavbarOpacity(value: number) {
 	if (!Number.isFinite(value)) return;
-	navbarOpacity = opacityFromTransparencyPercent(value);
+	navbarTransparency = Math.round(Math.min(100, Math.max(0, value)));
+	navbarOpacity = opacityFromTransparencyPercent(navbarTransparency);
 	setNavbarOpacity(navbarOpacity);
 	requestAnimationFrame(refreshAllRangeProgress);
 }
@@ -376,10 +391,15 @@ onMount(() => {
 	// 封面与全屏透明模式共享同一组透明度和模糊度
 	localWallpaperOpacity = getLocalWallpaperOpacity();
 	localWallpaperBlur = getLocalWallpaperBlur();
+	localWallpaperTransparency = transparencyPercent(localWallpaperOpacity);
 	setOverlayOpacity(localWallpaperOpacity);
 	setOverlayBlur(localWallpaperBlur);
 	overlayCardOpacity = getStoredOverlayCardOpacity();
+	overlayCardTransparency = transparencyPercent(overlayCardOpacity);
+	setOverlayCardOpacity(overlayCardOpacity);
 	navbarOpacity = getStoredNavbarOpacity();
+	navbarTransparency = transparencyPercent(navbarOpacity);
+	setNavbarOpacity(navbarOpacity);
 
 	// 从localStorage读取用户偏好布局
 	const savedLayout = localStorage.getItem("postListLayout");
@@ -415,20 +435,6 @@ onMount(() => {
 onMount(() => {
 	const panel = document.getElementById("display-setting");
 	if (!panel) return;
-	const handlePanelWheel = (event: WheelEvent) => {
-		if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY))
-			return;
-		const maxScrollTop = panel.scrollHeight - panel.clientHeight;
-		if (maxScrollTop <= 0) return;
-		const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
-		panel.scrollTop = Math.min(
-			maxScrollTop,
-			Math.max(0, panel.scrollTop + event.deltaY * multiplier),
-		);
-		event.preventDefault();
-		event.stopPropagation();
-	};
-
 	const handleRangeInput = (event: Event) => {
 		const target = event.target;
 		if (target instanceof HTMLInputElement && target.type === "range") {
@@ -438,11 +444,9 @@ onMount(() => {
 
 	refreshAllRangeProgress();
 	panel.addEventListener("input", handleRangeInput);
-	panel.addEventListener("wheel", handlePanelWheel, { passive: false });
 
 	return () => {
 		panel.removeEventListener("input", handleRangeInput);
-		panel.removeEventListener("wheel", handlePanelWheel);
 	};
 });
 
@@ -598,7 +602,7 @@ $effect(() => {
                                 min="0"
                                 max="100"
                                 step="1"
-                                value={transparencyPercent(localWallpaperOpacity)}
+                                bind:value={localWallpaperTransparency}
                                 aria-label="壁纸透明度数值"
                                 oninput={(event) => updateLocalWallpaperOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
                                 class="numeric-value-input"
@@ -612,7 +616,7 @@ $effect(() => {
                         min="0"
                         max="100"
                         step="1"
-                        value={transparencyPercent(localWallpaperOpacity)}
+                        bind:value={localWallpaperTransparency}
                         oninput={(event) => updateLocalWallpaperOpacity(Number((event.currentTarget as HTMLInputElement).value))}
                         class="slider w-full overlay-slider"
                     />
@@ -627,7 +631,7 @@ $effect(() => {
                                 min="0"
                                 max="20"
                                 step="0.5"
-                                value={localWallpaperBlur}
+                                bind:value={localWallpaperBlur}
                                 aria-label="背景模糊数值"
                                 oninput={(event) => updateLocalWallpaperBlur((event.currentTarget as HTMLInputElement).valueAsNumber)}
                                 class="numeric-value-input"
@@ -641,7 +645,7 @@ $effect(() => {
                         min="0"
                         max="20"
                         step="0.5"
-                        value={localWallpaperBlur}
+                        bind:value={localWallpaperBlur}
                         oninput={(event) => updateLocalWallpaperBlur(Number((event.currentTarget as HTMLInputElement).value))}
                         class="slider w-full overlay-slider"
                     />
@@ -656,7 +660,7 @@ $effect(() => {
                                 min="0"
                                 max="100"
                                 step="1"
-                                value={transparencyPercent(navbarOpacity)}
+                                bind:value={navbarTransparency}
                                 aria-label="导航栏透明度数值"
                                 oninput={(event) => updateNavbarOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
                                 class="numeric-value-input"
@@ -670,7 +674,7 @@ $effect(() => {
                         min="0"
                         max="100"
                         step="1"
-                        value={transparencyPercent(navbarOpacity)}
+                        bind:value={navbarTransparency}
                         oninput={(event) => updateNavbarOpacity(Number((event.currentTarget as HTMLInputElement).value))}
                         class="slider w-full overlay-slider"
                     />
@@ -686,7 +690,7 @@ $effect(() => {
                                     min="0"
                                     max="100"
                                     step="1"
-                                    value={transparencyPercent(overlayCardOpacity)}
+                                    bind:value={overlayCardTransparency}
                                     aria-label="卡片透明度数值"
                                     oninput={(event) => updateOverlayCardOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
                                     class="numeric-value-input"
@@ -700,7 +704,7 @@ $effect(() => {
                             min="0"
                             max="100"
                             step="1"
-                            value={transparencyPercent(overlayCardOpacity)}
+                            bind:value={overlayCardTransparency}
                             oninput={(event) => updateOverlayCardOpacity(Number((event.currentTarget as HTMLInputElement).value))}
                             class="slider w-full overlay-slider"
                         />
@@ -1106,7 +1110,7 @@ $effect(() => {
                 border-radius 0.25rem
                 background var(--primary)
                 box-shadow 0 1px 5px rgba(0, 0, 0, 0.25)
-                cursor ew-resize
+                cursor pointer
 
             &::-moz-range-thumb
                 width 0.72rem
@@ -1115,7 +1119,7 @@ $effect(() => {
                 border-radius 0.25rem
                 background var(--primary)
                 box-shadow 0 1px 5px rgba(0, 0, 0, 0.25)
-                cursor ew-resize
+                cursor pointer
 
         input[type="range"].overlay-slider
             height 0.85rem

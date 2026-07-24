@@ -3,11 +3,16 @@ export const LOCAL_WALLPAPER_CHANGE_EVENT = "firefly:local-wallpaper-change";
 export type LocalWallpaperType = "image" | "video";
 
 export interface LocalWallpaperRecord {
-	id: "active";
+	id: string;
 	name: string;
 	type: LocalWallpaperType;
 	mime: string;
 	blob: Blob;
+	createdAt?: number;
+}
+
+export interface LocalWallpaperHistoryRecord extends LocalWallpaperRecord {
+	createdAt: number;
 }
 
 export interface LocalWallpaperChangeDetail {
@@ -18,6 +23,8 @@ const DB_NAME = "firefly-local-wallpaper";
 const DB_VERSION = 1;
 const STORE_NAME = "media";
 const ACTIVE_ID = "active";
+const HISTORY_PREFIX = "history:";
+const HISTORY_LIMIT = 12;
 const OPACITY_KEY = "fireflyLocalWallpaperOpacity";
 const BLUR_KEY = "fireflyLocalWallpaperBlur";
 const DEFAULT_OPACITY = 0.82;
@@ -127,16 +134,78 @@ export async function saveLocalWallpaper(
 					? "image/webp"
 					: "image/jpeg";
 
+	const createdAt = Date.now();
 	const record: LocalWallpaperRecord = {
 		id: ACTIVE_ID,
 		name: file.name,
 		type,
 		mime: file.type || fallbackMime,
 		blob: file,
+		createdAt,
 	};
 	await runStoreRequest<IDBValidKey>("readwrite", (store) => store.put(record));
+	const historyRecord: LocalWallpaperHistoryRecord = {
+		...record,
+		id: `${HISTORY_PREFIX}${createdAt}:${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`,
+		createdAt,
+	};
+	await runStoreRequest<IDBValidKey>("readwrite", (store) =>
+		store.put(historyRecord),
+	);
+	const history = await getLocalWallpaperHistory();
+	for (const stale of history.slice(HISTORY_LIMIT)) {
+		await runStoreRequest<undefined>("readwrite", (store) =>
+			store.delete(stale.id),
+		);
+	}
 	notify("media");
 	return record;
+}
+
+export async function getLocalWallpaperHistory(): Promise<
+	LocalWallpaperHistoryRecord[]
+> {
+	const records = await runStoreRequest<LocalWallpaperRecord[]>(
+		"readonly",
+		(store) => store.getAll(),
+	);
+	return records
+		.filter(
+			(record): record is LocalWallpaperHistoryRecord =>
+				record.id.startsWith(HISTORY_PREFIX) &&
+				Number.isFinite(record.createdAt),
+		)
+		.sort((left, right) => right.createdAt - left.createdAt);
+}
+
+export async function activateLocalWallpaperHistory(
+	id: string,
+): Promise<LocalWallpaperRecord> {
+	if (!id.startsWith(HISTORY_PREFIX)) throw new Error("无效的历史媒体记录。");
+	const historyRecord = await runStoreRequest<LocalWallpaperRecord | undefined>(
+		"readonly",
+		(store) => store.get(id),
+	);
+	if (!historyRecord) throw new Error("这条历史媒体记录已不存在。");
+	const activeRecord: LocalWallpaperRecord = {
+		...historyRecord,
+		id: ACTIVE_ID,
+		createdAt: Date.now(),
+	};
+	await runStoreRequest<IDBValidKey>("readwrite", (store) =>
+		store.put(activeRecord),
+	);
+	await runStoreRequest<IDBValidKey>("readwrite", (store) =>
+		store.put({ ...historyRecord, createdAt: activeRecord.createdAt }),
+	);
+	notify("media");
+	return activeRecord;
+}
+
+export async function removeLocalWallpaperHistory(id: string) {
+	if (!id.startsWith(HISTORY_PREFIX)) throw new Error("无效的历史媒体记录。");
+	await runStoreRequest<undefined>("readwrite", (store) => store.delete(id));
+	notify("media");
 }
 
 export async function removeLocalWallpaper() {

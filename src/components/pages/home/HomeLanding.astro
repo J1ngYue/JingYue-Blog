@@ -363,7 +363,7 @@ const avatarParticles = [
 					<small>选择封面</small>
 				</div>
 				<div class="home-cover-particle-arrow" data-home-cover-particle-arrow aria-hidden="true">
-					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
 					<Icon is:inline name="material-symbols:arrow-forward-rounded" />
 				</div>
 				</div>
@@ -449,11 +449,11 @@ const avatarParticles = [
 							<span data-home-terminal data-lines={JSON.stringify(terminalLines)}>{terminalLines[0]}</span>
 							<i aria-hidden="true"></i>
 						</div>
-						<a class="home-hero-action" href="#home-profile-scene" data-home-profile-trigger>
-							<span>向下探索</span>
-							<Icon is:inline name="material-symbols:arrow-downward-rounded" />
-						</a>
 					</div>
+					<a class="home-hero-action home-scene-next" href="#home-profile-scene" data-home-profile-trigger>
+						<span>向下探索</span>
+						<Icon is:inline name="material-symbols:arrow-downward-rounded" />
+					</a>
 
 					<aside class="home-hero-status" aria-label="封面时间与问候">
 						<p class="home-clock-label">LOCAL TIME · {siteTimezone.replace("/", " / ")}</p>
@@ -583,8 +583,8 @@ const avatarParticles = [
 						</div>
 					</div>
 
-					<a class="home-profile-continue" href="#home-navigation" data-home-navigation-trigger>
-						<span>继续探索</span>
+					<a class="home-profile-continue home-scene-next" href="#home-navigation" data-home-navigation-trigger>
+						<span>向下探索</span>
 						<Icon is:inline name="material-symbols:keyboard-double-arrow-down-rounded" />
 					</a>
 				</section>
@@ -636,9 +636,14 @@ const avatarParticles = [
 					</a>
 				))}
 			</nav>
+			<a class="home-scene-next home-section-next" href="#home-overview" aria-label="向下探索站点一览">
+				<span>向下探索</span>
+				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
+			</a>
 		</section>
 
 		<section
+			id="home-overview"
 			class="home-section home-overview home-scroll-scene"
 			aria-labelledby="home-overview-title"
 			data-home-scroll-scene
@@ -712,9 +717,14 @@ const avatarParticles = [
 					widgetConfig={{ type: "siteInfo", enable: true, position: "top" }}
 				/>
 			</div>
+			<a class="home-scene-next home-section-next" href="#home-exhibit" aria-label="向下探索收藏影像">
+				<span>向下探索</span>
+				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
+			</a>
 		</section>
 
 		<section
+			id="home-exhibit"
 			class="home-section home-exhibit home-scroll-scene"
 			aria-labelledby="home-exhibit-title"
 			data-home-scroll-scene
@@ -740,17 +750,26 @@ const avatarParticles = [
 					<span>让喜欢的画面，在经过时轻轻停一下。</span>
 				</div>
 			</div>
+			<a class="home-scene-next home-section-next" href="#home-activity" aria-label="向下探索创作活动">
+				<span>向下探索</span>
+				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
+			</a>
 		</section>
 
-		<section class="home-section home-activity home-scroll-scene" aria-label="创作活动" data-home-scroll-scene>
+		<section id="home-activity" class="home-section home-activity home-scroll-scene" aria-label="创作活动" data-home-scroll-scene>
 			<ContributionHeatmap
 				blog={blogActivity}
 				github={githubActivity}
 				githubUsername={githubUsername}
 			/>
+			<a class="home-scene-next home-section-next" href="#home-ending" aria-label="向下探索首页结语">
+				<span>向下探索</span>
+				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
+			</a>
 		</section>
 
 		<section
+			id="home-ending"
 			class="home-ending home-scroll-scene"
 			aria-labelledby="home-ending-title"
 			data-home-scroll-scene
@@ -832,6 +851,7 @@ const avatarParticles = [
 		const profileRail = root.querySelector(".home-profile-rail");
 		const coverSwitcherClosers = Array.from(root.querySelectorAll("[data-home-cover-switcher-close]"));
 		const coverOptions = Array.from(root.querySelectorAll("[data-home-cover-option]"));
+		const historyDragType = "application/x-firefly-local-cover";
 		const themeRange = root.querySelector("[data-home-cover-theme-range]");
 		const themeValue = root.querySelector("[data-home-cover-theme-value]");
 		const themePresets = Array.from(root.querySelectorAll("[data-home-cover-theme-preset]"));
@@ -940,9 +960,9 @@ const avatarParticles = [
 		let heroScrollDistance = 1;
 		let originalScrollBehavior = "";
 		let pageScrollBehaviorLocked = false;
-		const sceneScrollDuration = 660;
-		const sceneWheelThreshold = 24;
-		const sceneWheelQuietDelay = 120;
+		const sceneScrollDuration = 440;
+		const sceneWheelThreshold = 32;
+		const sceneWheelQuietDelay = 90;
 		const sceneEdgeTolerance = 32;
 
 		if (
@@ -1214,6 +1234,60 @@ const avatarParticles = [
 			});
 		};
 
+		const syncLocalCoverFavorites = (event) => {
+			const items = Array.isArray(event.detail?.items) ? event.detail.items : [];
+			const itemsByIndex = new Map(items.map((item) => [Number(item.index), item]));
+			coverOptions.forEach((option) => {
+				const index = Number(option.dataset.homeCoverOption);
+				const item = itemsByIndex.get(index);
+				option.querySelector(".home-cover-option-custom")?.remove();
+				option.classList.toggle("has-local-favorite", Boolean(item));
+				if (!item) {
+					delete option.dataset.localCoverHistoryId;
+					return;
+				}
+
+				option.dataset.localCoverHistoryId = item.id;
+				const media = document.createElement(item.type === "video" ? "video" : "img");
+				media.className = "home-cover-option-custom";
+				media.src = item.previewUrl;
+				media.alt = "";
+				media.draggable = false;
+				if (media instanceof HTMLVideoElement) {
+					media.muted = true;
+					media.playsInline = true;
+					media.preload = "metadata";
+				}
+				option.insertBefore(media, option.lastElementChild);
+			});
+		};
+
+		const hasLocalCoverDrag = (event) =>
+			Array.from(event.dataTransfer?.types || []).includes(historyDragType);
+		const handleCoverDragOver = (event) => {
+			if (!hasLocalCoverDrag(event)) return;
+			event.preventDefault();
+			event.dataTransfer.dropEffect = "copy";
+			event.currentTarget.classList.add("is-history-drag-target");
+		};
+		const handleCoverDragLeave = (event) => {
+			if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+			event.currentTarget.classList.remove("is-history-drag-target");
+		};
+		const handleCoverDrop = (event) => {
+			const option = event.currentTarget;
+			option.classList.remove("is-history-drag-target");
+			const id = event.dataTransfer?.getData(historyDragType);
+			if (!id) return;
+			event.preventDefault();
+			event.stopPropagation();
+			window.dispatchEvent(
+				new CustomEvent("jingyue:assign-local-cover-favorite", {
+					detail: { id, index: Number(option.dataset.homeCoverOption) },
+				}),
+			);
+		};
+
 		const handleHomeQuickTool = (event) => {
 			const action = event.currentTarget?.dataset.homeQuickTool;
 			const targetId = {
@@ -1269,9 +1343,7 @@ const avatarParticles = [
 		};
 		openWallpaperSwitcherFromQuery();
 
-		const selectCoverIllustration = (event) => {
-			const option = event.currentTarget;
-			const nextIndex = Number(option.dataset.homeCoverOption);
+		const applyBuiltInCover = (nextIndex) => {
 			if (!Number.isInteger(nextIndex)) return;
 			selectedCoverIndex = nextIndex;
 			window.dispatchEvent(new CustomEvent("jingyue:select-built-in-cover"));
@@ -1293,7 +1365,43 @@ const avatarParticles = [
 				root.classList.remove("home-cover-changing");
 			}, 760);
 			playWordmark();
+			const selectedOption = coverOptions.find(
+				(item) => Number(item.dataset.homeCoverOption) === nextIndex,
+			);
+			const selectedPreview = selectedOption?.querySelector("img")?.currentSrc ||
+				selectedOption?.querySelector("img")?.src || "";
+			window.dispatchEvent(
+				new CustomEvent("jingyue:built-in-cover-used", {
+					detail: {
+						index: nextIndex,
+						name: `常用封面 ${String(nextIndex + 1).padStart(2, "0")}`,
+						previewUrl: selectedPreview,
+					},
+				}),
+			);
 			setCoverSwitcherOpen(false);
+		};
+
+		const selectCoverIllustration = (event) => {
+			const option = event.currentTarget;
+			const nextIndex = Number(option.dataset.homeCoverOption);
+			if (!Number.isInteger(nextIndex)) return;
+			const historyId = option.dataset.localCoverHistoryId;
+			if (historyId) {
+				window.dispatchEvent(
+					new CustomEvent("jingyue:select-local-cover-history", {
+						detail: { id: historyId },
+					}),
+				);
+				setCoverSwitcherOpen(false);
+				return;
+			}
+			applyBuiltInCover(nextIndex);
+		};
+
+		const selectBuiltInCoverFromHistory = (event) => {
+			const nextIndex = Number(event.detail?.index);
+			if (Number.isInteger(nextIndex)) applyBuiltInCover(nextIndex);
 		};
 
 		const handleCoverSwitcherKeydown = (event) => {
@@ -1475,6 +1583,7 @@ const avatarParticles = [
 		};
 
 		const handleHomeWheel = (event) => {
+			if (document.body.classList.contains("character-model-library-open")) return;
 			if (
 				reducedMotion.matches ||
 				!desktopSceneNavigation.matches ||
@@ -1486,7 +1595,7 @@ const avatarParticles = [
 			const eventTarget = event.target instanceof Element ? event.target : null;
 			if (
 				coverSwitcherOpen ||
-				eventTarget?.closest("#music-nav-panel, #display-setting, [data-home-cover-switcher], input, textarea, select")
+				eventTarget?.closest("#music-nav-panel, #display-setting, [data-home-cover-switcher], [data-character-model-options], input, textarea, select")
 			) return;
 
 			const deltaY = normalizeWheelDelta(event, event.deltaY);
@@ -1501,7 +1610,9 @@ const avatarParticles = [
 
 			if (sceneWheelDelta === 0 && sceneWheelDirection === 0) updateSceneMetrics();
 			setActiveSceneIndex(getClosestSceneIndex(sceneTargets));
-			const lastSceneIndex = sceneTargets.length - 1;
+			// Only the opening storyboard is wheel-snapped. Content sections keep
+			// native scrolling so trackpads and high-resolution wheels stay fluid.
+			const lastSceneIndex = Math.min(2, sceneTargets.length - 1);
 			const beyondLastScene =
 				window.scrollY > (sceneTargets[lastSceneIndex] ?? 0) + sceneEdgeTolerance;
 			if (
@@ -1670,6 +1781,17 @@ const avatarParticles = [
 		coverSwitcherTrigger?.addEventListener("click", openCoverSwitcher);
 		coverSwitcherClosers.forEach((closer) => closer.addEventListener("click", closeCoverSwitcher));
 		coverOptions.forEach((option) => option.addEventListener("click", selectCoverIllustration));
+		coverOptions.forEach((option) => {
+			option.addEventListener("dragover", handleCoverDragOver);
+			option.addEventListener("dragleave", handleCoverDragLeave);
+			option.addEventListener("drop", handleCoverDrop);
+		});
+		window.addEventListener("jingyue:local-cover-favorites-sync", syncLocalCoverFavorites);
+		window.addEventListener(
+			"jingyue:select-built-in-cover-history",
+			selectBuiltInCoverFromHistory,
+		);
+		window.dispatchEvent(new CustomEvent("jingyue:request-local-cover-favorites-sync"));
 		themeRange?.addEventListener("input", handleThemeRange);
 		themePresets.forEach((preset) => preset.addEventListener("click", handleThemePreset));
 		themeReset?.addEventListener("click", resetThemeHue);
@@ -1771,6 +1893,16 @@ const avatarParticles = [
 			coverSwitcherTrigger?.removeEventListener("click", openCoverSwitcher);
 			coverSwitcherClosers.forEach((closer) => closer.removeEventListener("click", closeCoverSwitcher));
 			coverOptions.forEach((option) => option.removeEventListener("click", selectCoverIllustration));
+			coverOptions.forEach((option) => {
+				option.removeEventListener("dragover", handleCoverDragOver);
+				option.removeEventListener("dragleave", handleCoverDragLeave);
+				option.removeEventListener("drop", handleCoverDrop);
+			});
+			window.removeEventListener("jingyue:local-cover-favorites-sync", syncLocalCoverFavorites);
+			window.removeEventListener(
+				"jingyue:select-built-in-cover-history",
+				selectBuiltInCoverFromHistory,
+			);
 			themeRange?.removeEventListener("input", handleThemeRange);
 			themePresets.forEach((preset) => preset.removeEventListener("click", handleThemePreset));
 			themeReset?.removeEventListener("click", resetThemeHue);
@@ -1990,8 +2122,8 @@ const avatarParticles = [
 
 	.home-cover-switcher-dialog {
 		position: relative;
-		width: min(72rem, calc(100vw - 3rem));
-		max-height: calc(100dvh - 3rem);
+		width: min(96rem, calc(100vw - 2rem));
+		max-height: calc(100dvh - 2rem);
 		overflow: hidden;
 		border: 1px solid color-mix(in oklch, var(--primary) 36%, rgba(255, 255, 255, 0.12));
 		border-radius: 1.8rem;
@@ -2001,7 +2133,7 @@ const avatarParticles = [
 		box-shadow:
 			0 2rem 7rem rgba(3, 5, 22, 0.58),
 			inset 0 1px 0 rgba(255, 255, 255, 0.08);
-		padding: 1rem;
+		padding: 1.2rem;
 		color: #f8f7ff;
 		transform: translateY(1.25rem) scale(0.97);
 		backdrop-filter: blur(1.5rem) saturate(1.08);
@@ -2014,10 +2146,10 @@ const avatarParticles = [
 
 	.home-cover-switcher-layout {
 		display: grid;
-		grid-template-columns: minmax(16rem, 18.5rem) minmax(0, 1fr);
-		gap: 1rem;
-		height: min(74dvh, 39rem);
-		min-height: 32rem;
+		grid-template-columns: minmax(23rem, 26rem) minmax(0, 1fr);
+		gap: 1.2rem;
+		height: min(88dvh, 51rem);
+		min-height: 38rem;
 	}
 
 	.home-cover-switcher-sidebar {
@@ -2026,14 +2158,14 @@ const avatarParticles = [
 		display: flex;
 		justify-content: space-between;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1.75rem;
 		border: 1px solid color-mix(in oklch, var(--primary) 28%, rgba(255, 255, 255, 0.08));
 		border-radius: 1.3rem;
 		background:
 			linear-gradient(180deg, color-mix(in oklch, var(--primary) 16%, transparent), color-mix(in oklch, var(--primary) 5%, transparent)),
 			rgba(24, 25, 55, 0.74);
 		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-		padding: 1.25rem;
+		padding: 1.6rem;
 		backdrop-filter: blur(1rem);
 	}
 
@@ -2046,14 +2178,14 @@ const avatarParticles = [
 
 	.home-cover-switcher-heading > p:first-child {
 		color: rgba(216, 205, 255, 0.78);
-		font-size: 0.62rem;
+		font-size: 0.72rem;
 		font-weight: 800;
 		letter-spacing: 0.2em;
 	}
 
 	.home-cover-switcher-heading h2 {
-		margin-top: 0.6rem;
-		font-size: clamp(1.4rem, 2vw, 1.65rem);
+		margin-top: 0.7rem;
+		font-size: clamp(1.9rem, 2.4vw, 2.35rem);
 		font-weight: 800;
 		line-height: 1.18;
 		white-space: nowrap;
@@ -2069,35 +2201,35 @@ const avatarParticles = [
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		margin-top: 0.9rem;
+		margin-top: 1rem;
 		border: 1px solid rgba(196, 181, 253, 0.22);
 		border-radius: 999px;
 		background: rgba(139, 92, 246, 0.12);
-		padding: 0.3rem 0.55rem;
+		padding: 0.42rem 0.7rem;
 		color: rgba(232, 226, 255, 0.82);
-		font-size: 0.6rem;
+		font-size: 0.72rem;
 		font-weight: 750;
 	}
 
 	.home-cover-switcher-description {
-		margin-top: 1rem;
+		margin-top: 1.05rem;
 		color: rgba(222, 224, 246, 0.72);
-		font-size: 0.7rem;
-		line-height: 1.7;
+		font-size: 0.86rem;
+		line-height: 1.75;
 	}
 
 	.home-cover-switcher-utilities {
 		display: grid;
-		gap: 0.65rem;
+		gap: 0.85rem;
 	}
 
 	.home-cover-theme-control {
 		display: grid;
-		gap: 0.58rem;
+		gap: 0.75rem;
 		border: 1px solid color-mix(in oklch, var(--primary) 25%, rgba(255, 255, 255, 0.08));
 		border-radius: 1rem;
 		background: rgba(255, 255, 255, 0.055);
-		padding: 0.72rem;
+		padding: 0.95rem;
 	}
 
 	.home-cover-theme-heading,
@@ -2113,31 +2245,31 @@ const avatarParticles = [
 	}
 
 	.home-cover-theme-heading > span {
-		gap: 0.38rem;
-		font-size: 0.66rem;
+		gap: 0.45rem;
+		font-size: 0.82rem;
 		font-weight: 800;
 	}
 
 	.home-cover-theme-heading :global(svg) {
-		width: 1rem;
-		height: 1rem;
+		width: 1.15rem;
+		height: 1.15rem;
 		color: color-mix(in oklch, var(--primary) 72%, white);
 	}
 
 	.home-cover-theme-heading output {
-		min-width: 2.6rem;
+		min-width: 3.25rem;
 		border-radius: 999px;
 		background: color-mix(in oklch, var(--primary) 20%, transparent);
-		padding: 0.22rem 0.45rem;
+		padding: 0.32rem 0.55rem;
 		color: color-mix(in oklch, var(--primary) 70%, white);
-		font-size: 0.58rem;
+		font-size: 0.72rem;
 		font-weight: 850;
 		text-align: center;
 	}
 
 	.home-cover-theme-control input[type="range"] {
 		width: 100%;
-		height: 0.42rem;
+		height: 0.5rem;
 		appearance: none;
 		border-radius: 999px;
 		background: linear-gradient(90deg, #f2a2b7, #e6c16e, #69d3b2, #6ec9e9, #aaa4f5, #ef9fc7);
@@ -2163,12 +2295,12 @@ const avatarParticles = [
 	}
 
 	.home-cover-theme-presets {
-		gap: 0.42rem;
+		gap: 0.52rem;
 	}
 
 	.home-cover-theme-presets > button:not(.home-cover-theme-reset) {
-		width: 1.1rem;
-		height: 1.1rem;
+		width: 1.35rem;
+		height: 1.35rem;
 		border: 2px solid transparent;
 		border-radius: 50%;
 		background: oklch(0.72 0.16 var(--preset-hue));
@@ -2189,7 +2321,7 @@ const avatarParticles = [
 		border: 0;
 		background: transparent;
 		color: rgba(226, 232, 240, 0.7);
-		font-size: 0.56rem;
+		font-size: 0.68rem;
 		font-weight: 750;
 		cursor: pointer;
 	}
@@ -2290,7 +2422,7 @@ const avatarParticles = [
 		align-items: center;
 		justify-content: center;
 		flex-direction: column;
-		width: clamp(8.5rem, 14vw, 12rem);
+		width: clamp(10rem, 15vw, 14.5rem);
 		aspect-ratio: 1;
 		border: 1px solid color-mix(in oklch, var(--primary) 48%, rgba(255, 255, 255, 0.12));
 		border-radius: 50%;
@@ -2301,14 +2433,14 @@ const avatarParticles = [
 	}
 
 	.home-cover-orbit-center :global(svg) {
-		width: 1.5rem;
-		height: 1.5rem;
+		width: 1.8rem;
+		height: 1.8rem;
 		color: #c4b5fd;
 	}
 
 	.home-cover-orbit-center span {
-		margin-top: 0.45rem;
-		font-size: 0.82rem;
+		margin-top: 0.55rem;
+		font-size: 1rem;
 		font-weight: 900;
 		letter-spacing: 0.22em;
 	}
@@ -2316,7 +2448,7 @@ const avatarParticles = [
 	.home-cover-orbit-center small {
 		margin-top: 0.18rem;
 		color: rgba(222, 224, 246, 0.62);
-		font-size: 0.48rem;
+		font-size: 0.6rem;
 		font-weight: 800;
 		letter-spacing: 0.16em;
 	}
@@ -2380,7 +2512,12 @@ const avatarParticles = [
 		height: 2.25rem;
 		border: 1px solid color-mix(in oklch, currentColor 54%, transparent);
 		border-radius: 50%;
-		background: radial-gradient(circle, color-mix(in oklch, currentColor 24%, transparent), transparent 68%);
+		background:
+			radial-gradient(circle at 18% 32%, currentColor 0 0.1rem, transparent 0.13rem),
+			radial-gradient(circle at 78% 18%, currentColor 0 0.075rem, transparent 0.11rem),
+			radial-gradient(circle at 88% 68%, currentColor 0 0.12rem, transparent 0.15rem),
+			radial-gradient(circle at 38% 84%, currentColor 0 0.08rem, transparent 0.12rem),
+			radial-gradient(circle, color-mix(in oklch, currentColor 24%, transparent), transparent 68%);
 		box-shadow:
 			inset 0 0 0.8rem color-mix(in oklch, currentColor 18%, transparent),
 			0 0 1.1rem rgba(139, 92, 246, 0.5);
@@ -2494,6 +2631,38 @@ const avatarParticles = [
 		--particle-delay: -0.72s;
 	}
 
+	.home-cover-particle-arrow i:nth-child(11) {
+		--particle-left: 48%;
+		--particle-size: 0.12rem;
+		--particle-offset: 0.96rem;
+		--particle-duration: 1.4s;
+		--particle-delay: -1.18s;
+	}
+
+	.home-cover-particle-arrow i:nth-child(12) {
+		--particle-left: 62%;
+		--particle-size: 0.18rem;
+		--particle-offset: -0.72rem;
+		--particle-duration: 1.6s;
+		--particle-delay: -0.5s;
+	}
+
+	.home-cover-particle-arrow i:nth-child(13) {
+		--particle-left: 72%;
+		--particle-size: 0.13rem;
+		--particle-offset: 0.88rem;
+		--particle-duration: 1.25s;
+		--particle-delay: -0.95s;
+	}
+
+	.home-cover-particle-arrow i:nth-child(14) {
+		--particle-left: 82%;
+		--particle-size: 0.22rem;
+		--particle-offset: -0.48rem;
+		--particle-duration: 1.5s;
+		--particle-delay: -0.2s;
+	}
+
 	.home-cover-particle-arrow.is-visible i {
 		animation-play-state: running;
 	}
@@ -2505,17 +2674,18 @@ const avatarParticles = [
 		height: 1.9rem;
 		flex: 0 0 auto;
 		filter: drop-shadow(0 0 0.36rem currentColor);
+		animation: home-cover-arrowhead-pulse 1.35s ease-in-out infinite;
 	}
 
 	.home-cover-option {
 		position: absolute;
 		z-index: 5;
-		width: clamp(9rem, 14vw, 12rem);
+		width: clamp(11rem, 15vw, 15rem);
 		border: 1px solid color-mix(in oklch, var(--primary) 28%, rgba(255, 255, 255, 0.08));
 		border-radius: 1rem;
 		background: rgba(31, 32, 69, 0.78);
 		box-shadow: 0 1rem 2.5rem rgba(3, 5, 22, 0.38);
-		padding: 0.42rem;
+		padding: 0.52rem;
 		color: white;
 		cursor: pointer;
 		backdrop-filter: blur(0.65rem);
@@ -2562,6 +2732,14 @@ const avatarParticles = [
 			0 0 2rem color-mix(in oklch, var(--primary) 24%, transparent);
 	}
 
+	.home-cover-option.is-history-drag-target {
+		border-color: white;
+		background: color-mix(in oklch, var(--primary) 48%, rgba(24, 30, 58, 0.86));
+		box-shadow:
+			0 0 0 3px color-mix(in oklch, var(--primary) 28%, transparent),
+			0 0 2.4rem color-mix(in oklch, var(--primary) 56%, transparent);
+	}
+
 	.home-cover-option:nth-of-type(1):hover,
 	.home-cover-option:nth-of-type(1):focus-visible,
 	.home-cover-option:nth-of-type(3):hover,
@@ -2586,11 +2764,24 @@ const avatarParticles = [
 		object-fit: cover !important;
 	}
 
+	.home-cover-option.has-local-favorite :global(.home-cover-option-image) {
+		display: none;
+	}
+
+	:global(.home-cover-option-custom) {
+		display: block;
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		border-radius: 0.72rem;
+		background: rgba(10, 16, 34, 0.7);
+		object-fit: cover;
+	}
+
 	.home-cover-option > span {
 		display: block;
-		padding: 0.55rem 0.35rem 0.2rem;
+		padding: 0.65rem 0.42rem 0.28rem;
 		color: rgba(239, 235, 255, 0.84);
-		font-size: 0.54rem;
+		font-size: 0.68rem;
 		font-weight: 850;
 		letter-spacing: 0.13em;
 	}
@@ -2603,9 +2794,140 @@ const avatarParticles = [
 
 	.home-cover-switcher-hint {
 		color: rgba(222, 224, 246, 0.66);
-		font-size: 0.62rem;
+		font-size: 0.72rem;
 		line-height: 1.55;
 		text-align: left;
+	}
+
+	:global(html:not(.dark)) .home-cover-switcher-backdrop {
+		background:
+			radial-gradient(circle at 20% 18%, color-mix(in oklch, var(--primary) 18%, transparent), transparent 36%),
+			radial-gradient(circle at 78% 74%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 38%),
+			rgba(235, 244, 241, 0.84);
+		backdrop-filter: blur(1.15rem) saturate(0.96);
+	}
+
+	:global(html:not(.dark)) .home-cover-switcher-dialog {
+		border-color: color-mix(in oklch, var(--primary) 28%, #c8dbd4);
+		background:
+			linear-gradient(145deg, color-mix(in oklch, var(--primary) 7%, rgba(255, 255, 255, 0.98)), rgba(244, 249, 247, 0.98)),
+			#f6faf8;
+		box-shadow:
+			0 2rem 7rem rgba(44, 85, 73, 0.2),
+			inset 0 1px 0 rgba(255, 255, 255, 0.94);
+		color: #173a31;
+	}
+
+	:global(html:not(.dark)) .home-cover-switcher-sidebar {
+		border-color: color-mix(in oklch, var(--primary) 24%, #d6e5e0);
+		background:
+			linear-gradient(180deg, color-mix(in oklch, var(--primary) 8%, transparent), transparent),
+			rgba(250, 253, 252, 0.88);
+		box-shadow: inset 0 1px 0 white;
+	}
+
+	:global(html:not(.dark)) .home-cover-switcher-heading > p:first-child,
+	:global(html:not(.dark)) .home-cover-switcher-description,
+	:global(html:not(.dark)) .home-cover-switcher-hint {
+		color: #688079;
+	}
+
+	:global(html:not(.dark)) .home-cover-favorites-note {
+		border-color: color-mix(in oklch, var(--primary) 24%, #d4e6df);
+		background: color-mix(in oklch, var(--primary) 9%, white);
+		color: #4f6f66;
+	}
+
+	:global(html:not(.dark)) .home-cover-favorites-note :global(svg),
+	:global(html:not(.dark)) .home-cover-theme-heading :global(svg),
+	:global(html:not(.dark)) .home-cover-orbit-center :global(svg) {
+		color: color-mix(in oklch, var(--primary) 76%, #2b7662);
+	}
+
+	:global(html:not(.dark)) .home-cover-theme-control {
+		border-color: color-mix(in oklch, var(--primary) 22%, #d4e3de);
+		background: rgba(255, 255, 255, 0.72);
+	}
+
+	:global(html:not(.dark)) .home-cover-theme-heading output {
+		background: color-mix(in oklch, var(--primary) 12%, white);
+		color: color-mix(in oklch, var(--primary) 78%, #285c4e);
+	}
+
+	:global(html:not(.dark)) .home-cover-theme-reset {
+		color: #627a73;
+	}
+
+	:global(html:not(.dark)) .home-cover-theme-reset:hover,
+	:global(html:not(.dark)) .home-cover-theme-reset:focus-visible {
+		color: #1b5d4d;
+	}
+
+	:global(html:not(.dark)) .home-cover-switcher-close {
+		border-color: color-mix(in oklch, var(--primary) 25%, #c8dbd4);
+		background: rgba(255, 255, 255, 0.88);
+		box-shadow: 0 0.45rem 1.25rem rgba(42, 88, 75, 0.12);
+		color: #315c51;
+	}
+
+	:global(html:not(.dark)) .home-cover-switcher-close:hover,
+	:global(html:not(.dark)) .home-cover-switcher-close:focus-visible {
+		background: color-mix(in oklch, var(--primary) 14%, white);
+		outline-color: color-mix(in oklch, var(--primary) 56%, white);
+	}
+
+	:global(html:not(.dark)) .home-cover-orbit {
+		border-color: color-mix(in oklch, var(--primary) 24%, #d7e5e0);
+		background:
+			radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--primary) 15%, transparent), transparent 34%),
+			radial-gradient(circle at 76% 28%, color-mix(in oklch, var(--primary) 8%, transparent), transparent 32%),
+			linear-gradient(145deg, rgba(250, 253, 252, 0.96), rgba(232, 242, 238, 0.98));
+	}
+
+	:global(html:not(.dark)) .home-cover-orbit-center {
+		border-color: color-mix(in oklch, var(--primary) 34%, #cbded7);
+		background: radial-gradient(circle, color-mix(in oklch, var(--primary) 15%, white), rgba(246, 251, 249, 0.88));
+		box-shadow: 0 0 4rem color-mix(in oklch, var(--primary) 18%, transparent);
+	}
+
+	:global(html:not(.dark)) .home-cover-orbit-center small {
+		color: #789088;
+	}
+
+	:global(html:not(.dark)) .home-cover-particle-arrow {
+		color: color-mix(in oklch, var(--primary) 68%, #5d8f82);
+		filter: drop-shadow(0 0 0.7rem color-mix(in oklch, var(--primary) 38%, transparent));
+	}
+
+	:global(html:not(.dark)) .home-cover-option {
+		border-color: color-mix(in oklch, var(--primary) 22%, #d4e3de);
+		background: rgba(255, 255, 255, 0.88);
+		box-shadow: 0 1rem 2.5rem rgba(47, 84, 74, 0.14);
+		color: #23453c;
+	}
+
+	:global(html:not(.dark)) .home-cover-option:hover,
+	:global(html:not(.dark)) .home-cover-option:focus-visible {
+		box-shadow:
+			0 1.2rem 3rem rgba(47, 84, 74, 0.18),
+			0 0 2rem color-mix(in oklch, var(--primary) 18%, transparent);
+	}
+
+	:global(html:not(.dark)) .home-cover-option.is-active {
+		background: color-mix(in oklch, var(--primary) 12%, white);
+		box-shadow:
+			0 1rem 2.5rem rgba(47, 84, 74, 0.15),
+			0 0 0 2px color-mix(in oklch, var(--primary) 16%, transparent),
+			0 0 2rem color-mix(in oklch, var(--primary) 18%, transparent);
+	}
+
+	:global(html:not(.dark)) .home-cover-option.is-history-drag-target {
+		border-color: var(--primary);
+		background: color-mix(in oklch, var(--primary) 18%, white);
+	}
+
+	:global(html:not(.dark)) .home-cover-option > span {
+		color: #36584f;
 	}
 
 	@media (min-width: 901px) and (pointer: fine) {
@@ -2882,10 +3204,15 @@ const avatarParticles = [
 	}
 
 	.home-hero-action {
+		position: absolute;
+		left: 50%;
+		bottom: clamp(1.25rem, 4vh, 2.25rem);
+		z-index: 5;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.65rem;
-		margin-top: 2rem;
+		min-height: 2.75rem;
+		margin: 0;
 		border: 1px solid rgba(255, 255, 255, 0.42);
 		border-radius: 999px;
 		background: rgba(255, 255, 255, 0.16);
@@ -2894,6 +3221,7 @@ const avatarParticles = [
 		font-size: 0.84rem;
 		font-weight: 800;
 		text-decoration: none;
+		transform: translateX(-50%);
 		backdrop-filter: blur(0.8rem);
 		transition: border-color 180ms ease, background-color 180ms ease;
 	}
@@ -3626,6 +3954,7 @@ const avatarParticles = [
 		display: inline-flex;
 		align-items: center;
 		gap: 0.45rem;
+		min-height: 2.75rem;
 		border-radius: 999px;
 		background: rgba(255, 255, 255, 0.66);
 		box-shadow: 0 0.65rem 1.8rem rgba(64, 79, 93, 0.13);
@@ -3640,6 +3969,48 @@ const avatarParticles = [
 	.home-profile-continue :global(svg) {
 		width: 1rem;
 		height: 1rem;
+	}
+
+	.home-section-next {
+		position: absolute;
+		left: 50%;
+		bottom: 1rem;
+		z-index: 6;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-height: 2.75rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 35%, rgba(255, 255, 255, 0.62));
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--card-bg) 84%, transparent);
+		box-shadow: 0 0.7rem 1.8rem color-mix(in oklch, var(--deep-text) 12%, transparent);
+		padding: 0.58rem 0.9rem 0.58rem 1rem;
+		color: color-mix(in oklch, var(--primary) 76%, var(--deep-text));
+		font-size: 0.72rem;
+		font-weight: 800;
+		text-decoration: none;
+		transform: translateX(-50%);
+		backdrop-filter: blur(0.75rem);
+		transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+	}
+
+	.home-section-next:hover,
+	.home-section-next:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 72%, white);
+		background: color-mix(in oklch, var(--primary) 16%, var(--card-bg));
+		box-shadow: 0 0.9rem 2.1rem color-mix(in oklch, var(--primary) 18%, transparent);
+		outline: none;
+	}
+
+	.home-scene-next :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		animation: home-scene-next-pulse 1.8s ease-in-out infinite;
+	}
+
+	@keyframes home-scene-next-pulse {
+		0%, 100% { transform: translateY(-0.08rem); }
+		50% { transform: translateY(0.18rem); }
 	}
 
 	.home-hero-corner {
@@ -3729,6 +4100,7 @@ const avatarParticles = [
 	}
 
 	.home-section {
+		position: relative;
 		width: min(74rem, calc(100% - 2rem));
 		margin-inline: auto;
 	}
@@ -4472,7 +4844,7 @@ const avatarParticles = [
 			justify-content: center;
 			flex-direction: column;
 			min-height: 100dvh;
-			padding: 6.5rem 0 3rem;
+			padding: 6.5rem 0 5rem;
 			scroll-margin-top: 0;
 		}
 
@@ -4572,6 +4944,19 @@ const avatarParticles = [
 		50% {
 			opacity: 0.56;
 			transform: scale(1.02);
+		}
+	}
+
+	@keyframes home-cover-arrowhead-pulse {
+		0%,
+		100% {
+			opacity: 0.78;
+			transform: scale(0.9);
+		}
+
+		50% {
+			opacity: 1;
+			transform: scale(1.08);
 		}
 	}
 
@@ -4824,7 +5209,16 @@ const avatarParticles = [
 		}
 
 		.home-hero-action {
-			margin-top: 1.25rem;
+			margin: 0;
+		}
+
+		.home-section-next {
+			position: relative;
+			left: auto;
+			bottom: auto;
+			width: max-content;
+			margin: 1.5rem auto 0;
+			transform: none;
 		}
 
 		.home-hero-status {

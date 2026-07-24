@@ -169,6 +169,26 @@ const quickLinks = [
 		const musicButton = dock.querySelector<HTMLElement>("[data-quick-tools-music]");
 		const musicPanel = document.getElementById("music-nav-panel");
 		let musicCloseTimer = 0;
+		let musicLayoutFrame = 0;
+
+		const syncMusicPanelPosition = () => {
+			if (!musicButton || !musicPanel) return;
+			if (musicLayoutFrame) cancelAnimationFrame(musicLayoutFrame);
+			musicLayoutFrame = requestAnimationFrame(() => {
+				musicLayoutFrame = 0;
+				const buttonRect = musicButton.getBoundingClientRect();
+				const viewportLeft = Math.round(Math.max(8, musicButton.offsetWidth + 8));
+				const viewportTop = Math.max(8, Math.round(buttonRect.top));
+				const containingBlock = musicPanel.offsetParent?.getBoundingClientRect();
+				const left = viewportLeft - (containingBlock?.left ?? 0);
+				const top = viewportTop - (containingBlock?.top ?? 0);
+				const availableWidth = Math.max(0, window.innerWidth - viewportLeft - 12);
+				musicPanel.style.setProperty("left", `${left}px`, "important");
+				musicPanel.style.setProperty("right", "auto", "important");
+				musicPanel.style.setProperty("top", `${top}px`, "important");
+				musicPanel.style.setProperty("width", `${Math.min(384, availableWidth)}px`, "important");
+			});
+		};
 
 		const setMenuOpen = (open: boolean, focusMenu = false, restoreFocus = false) => {
 			dock.dataset.open = open ? "true" : "false";
@@ -187,6 +207,7 @@ const quickLinks = [
 			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
 			musicPanel.classList.toggle("float-panel-closed", !open);
 			musicButton?.setAttribute("aria-expanded", String(open));
+			syncMusicPanelPosition();
 		};
 		const openMusic = () => setMusicOpen(true);
 		const scheduleMusicClose = () => {
@@ -258,6 +279,8 @@ const quickLinks = [
 		musicPanel?.addEventListener("pointerleave", scheduleMusicClose);
 		musicPanel?.addEventListener("focusin", openMusic);
 		musicPanel?.addEventListener("focusout", scheduleMusicClose);
+		window.addEventListener("resize", syncMusicPanelPosition, { passive: true });
+		window.visualViewport?.addEventListener("resize", syncMusicPanelPosition, { passive: true });
 
 		document.addEventListener("click", (event) => {
 			if (
@@ -294,9 +317,13 @@ const quickLinks = [
 				setMenuOpen(false);
 				setMusicOpen(false);
 			});
-			window.swup.hooks.on("page:view", syncCurrentLink);
+			window.swup.hooks.on("page:view", () => {
+				syncCurrentLink();
+				syncMusicPanelPosition();
+			});
 		};
 		syncCurrentLink();
+		syncMusicPanelPosition();
 		if (window.swup?.hooks) bindSwup();
 		else document.addEventListener("swup:enable", bindSwup, { once: true });
 	}
@@ -600,7 +627,7 @@ const quickLinks = [
 	:global(#music-nav-panel) {
 		position: fixed !important;
 		top: clamp(5.5rem, 14vh, 8.5rem) !important;
-		left: -0.75rem !important;
+		left: 3.7rem !important;
 		right: auto !important;
 		z-index: 1049 !important;
 		width: min(24rem, calc(100vw - 5rem)) !important;
@@ -613,7 +640,7 @@ const quickLinks = [
 	}
 
 	:global(body.home-landing-active #music-nav-panel) {
-		left: -0.75rem !important;
+		left: 3.7rem !important;
 		top: clamp(5.5rem, 14vh, 8.5rem) !important;
 		width: min(24rem, calc(100vw - 5rem)) !important;
 	}

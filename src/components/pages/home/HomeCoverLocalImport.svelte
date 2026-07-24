@@ -3,29 +3,61 @@ import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
 import { WALLPAPER_FULLSCREEN } from "@/constants/constants";
 import {
+	activateLocalWallpaperHistory,
 	getLocalWallpaper,
+	getLocalWallpaperHistory,
 	LOCAL_WALLPAPER_CHANGE_EVENT,
 	type LocalWallpaperChangeDetail,
+	type LocalWallpaperHistoryRecord,
 	type LocalWallpaperType,
 	removeLocalWallpaper,
+	removeLocalWallpaperHistory,
 	saveLocalWallpaper,
 } from "@/utils/local-wallpaper";
 import { setWallpaperMode } from "@/utils/setting-utils";
 
 const BUILT_IN_COVER_EVENT = "jingyue:select-built-in-cover";
+const BUILT_IN_COVER_USED_EVENT = "jingyue:built-in-cover-used";
+const BUILT_IN_COVER_HISTORY_SELECT_EVENT =
+	"jingyue:select-built-in-cover-history";
 const LOCAL_COVER_STATE_EVENT = "jingyue:local-cover-state-change";
+const FAVORITE_ASSIGN_EVENT = "jingyue:assign-local-cover-favorite";
+const FAVORITE_SELECT_EVENT = "jingyue:select-local-cover-history";
+const FAVORITES_SYNC_EVENT = "jingyue:local-cover-favorites-sync";
+const FAVORITES_REQUEST_EVENT = "jingyue:request-local-cover-favorites-sync";
+const FAVORITES_KEY = "fireflyLocalCoverFavorites";
+const HISTORY_DRAG_TYPE = "application/x-firefly-local-cover";
+const BUILT_IN_HISTORY_KEY = "fireflyBuiltInCoverHistory";
 const VIDEO_PATTERN = /\.(m4v|mov|mp4|ogv|webm)$/i;
 let { compact = false }: { compact?: boolean } = $props();
 
+type LocalRecentItem = LocalWallpaperHistoryRecord & {
+	source: "local";
+	previewUrl: string;
+};
+
+interface BuiltInRecentItem {
+	id: string;
+	source: "built-in";
+	index: number;
+	name: string;
+	type: "image";
+	previewUrl: string;
+	createdAt: number;
+}
+
+type RecentItem = LocalRecentItem | BuiltInRecentItem;
+
 let mediaInput: HTMLInputElement;
-let wallpaperEngineVideoInput: HTMLInputElement;
-let wallpaperEngineDirectoryInput: HTMLInputElement;
 let fileName = $state("");
 let fileType = $state<LocalWallpaperType | null>(null);
 let busy = $state(false);
 let message = $state("");
 let error = $state("");
 let dragging = $state(false);
+let history = $state<RecentItem[]>([]);
+let deleteCandidate = $state<string | null>(null);
+const previewUrls = new Set<string>();
 
 function publishLocalCoverState(active: boolean) {
 	window.dispatchEvent(
@@ -50,14 +82,6 @@ async function syncCurrentFile() {
 
 function openMediaPicker() {
 	mediaInput?.click();
-}
-
-function openWallpaperEngineVideoPicker() {
-	wallpaperEngineVideoInput?.click();
-}
-
-function openWallpaperEngineDirectoryPicker() {
-	wallpaperEngineDirectoryInput?.click();
 }
 
 async function validateVideo(file: File) {
@@ -132,91 +156,173 @@ async function handleMediaChange(event: Event) {
 	await runImport(file, "已应用到首页封面和站点背景。");
 }
 
-async function handleWallpaperEngineVideo(event: Event) {
-	const input = event.currentTarget as HTMLInputElement;
-	const file = input.files?.[0];
-	input.value = "";
-	if (!file) return;
-	await runImport(file, "已识别 Wallpaper Engine 视频并开始静音循环播放。");
-}
-
-async function findWallpaperEngineVideo(files: File[]) {
-	const projectFile = files.find((file) =>
-		/(^|[/\\])project\.json$/i.test(file.webkitRelativePath || file.name),
-	);
-	if (projectFile) {
-		try {
-			const project = JSON.parse(await projectFile.text()) as { file?: string };
-			const target = String(project.file || "")
-				.replaceAll("\\", "/")
-				.toLocaleLowerCase();
-			if (target && VIDEO_PATTERN.test(target)) {
-				const exact = files.find((file) => {
-					const relative = (file.webkitRelativePath || file.name)
-						.replaceAll("\\", "/")
-						.toLocaleLowerCase();
-					return relative.endsWith(`/${target}`) || relative === target;
-				});
-				if (exact) return exact;
-			}
-		} catch {
-			// project.json 不是有效 JSON 时继续扫描目录中的视频文件。
-		}
+function readFavoriteMap(): Record<string, string> {
+	try {
+		return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "{}") ?? {};
+	} catch {
+		return {};
 	}
-
-	return files.filter(isVideoFile).sort((left, right) => {
-		const leftPriority = /(?:wallpaper|background|video|main)/i.test(left.name)
-			? 1
-			: 0;
-		const rightPriority = /(?:wallpaper|background|video|main)/i.test(
-			right.name,
-		)
-			? 1
-			: 0;
-		return rightPriority - leftPriority || right.size - left.size;
-	})[0];
 }
 
-async function handleWallpaperEngineDirectory(event: Event) {
-	const input = event.currentTarget as HTMLInputElement;
-	const files = Array.from(input.files ?? []);
-	input.value = "";
-	if (!files.length) return;
+function publishFavoritePreviews() {
+	const favorites = readFavoriteMap();
+	const items = Object.entries(favorites).flatMap(([index, id]) => {
+		const item = history.find((entry) => entry.id === id);
+		return item ? [{ index: Number(index), ...item }] : [];
+	});
+	window.dispatchEvent(
+		new CustomEvent(FAVORITES_SYNC_EVENT, { detail: { items } }),
+	);
+}
 
+async function refreshHistory() {
+	previewUrls.forEach((url) => {
+		URL.revokeObjectURL(url);
+	});
+	previewUrls.clear();
+	const records = await getLocalWallpaperHistory();
+	const localItems: LocalRecentItem[] = records.map((record) => {
+		const previewUrl = URL.createObjectURL(record.blob);
+		previewUrls.add(previewUrl);
+		return { ...record, source: "local", previewUrl };
+	});
+	history = [...localItems, ...readBuiltInHistory()]
+		.sort((left, right) => right.createdAt - left.createdAt)
+		.slice(0, 12);
+	publishFavoritePreviews();
+}
+
+function readBuiltInHistory(): BuiltInRecentItem[] {
+	try {
+		const stored = JSON.parse(
+			localStorage.getItem(BUILT_IN_HISTORY_KEY) || "[]",
+		);
+		if (!Array.isArray(stored)) return [];
+		return stored.filter(
+			(item): item is BuiltInRecentItem =>
+				item?.source === "built-in" &&
+				Number.isInteger(item.index) &&
+				typeof item.previewUrl === "string" &&
+				Number.isFinite(item.createdAt),
+		);
+	} catch {
+		return [];
+	}
+}
+
+function rememberBuiltInCover(detail: {
+	index?: number;
+	name?: string;
+	previewUrl?: string;
+}) {
+	if (!Number.isInteger(detail.index) || !detail.previewUrl) return;
+	const item: BuiltInRecentItem = {
+		id: `built-in:${detail.index}`,
+		source: "built-in",
+		index: Number(detail.index),
+		name:
+			detail.name ||
+			`常用封面 ${String(Number(detail.index) + 1).padStart(2, "0")}`,
+		type: "image",
+		previewUrl: detail.previewUrl,
+		createdAt: Date.now(),
+	};
+	const next = [
+		item,
+		...readBuiltInHistory().filter((entry) => entry.id !== item.id),
+	].slice(0, 12);
+	localStorage.setItem(BUILT_IN_HISTORY_KEY, JSON.stringify(next));
+	void refreshHistory();
+}
+
+async function activateHistory(id: string) {
+	if (busy) return;
 	busy = true;
 	error = "";
 	message = "";
 	try {
-		const wallpaper = await findWallpaperEngineVideo(files);
-		if (!wallpaper) {
-			const isSceneProject = files.some((file) =>
-				/(^|[/\\])scene\.pkg$/i.test(file.webkitRelativePath || file.name),
-			);
-			const isWebProject = files.some((file) =>
-				/(^|[/\\])index\.html?$/i.test(file.webkitRelativePath || file.name),
-			);
-			const projectType = isSceneProject
-				? "Scene 场景"
-				: isWebProject
-					? "网页"
-					: "非视频";
-			throw new Error(
-				`检测到${projectType}壁纸，浏览器只能直接播放视频壁纸。请选择包含 MP4 或 WebM 的项目文件夹。`,
-			);
-		}
-
-		await applyLocalFile(
-			wallpaper,
-			`已从项目中识别 ${wallpaper.name}，并开始静音循环播放。`,
-		);
+		const record = await activateLocalWallpaperHistory(id);
+		fileName = record.name;
+		fileType = record.type;
+		publishLocalCoverState(true);
+		setWallpaperMode(WALLPAPER_FULLSCREEN);
+		message = `已重新应用 ${record.name}。`;
 	} catch (reason) {
-		error =
-			reason instanceof Error
-				? reason.message
-				: "无法读取这个 Wallpaper Engine 项目。";
+		error = reason instanceof Error ? reason.message : "无法应用这条历史媒体。";
 	} finally {
 		busy = false;
 	}
+}
+
+function handleHistoryDragStart(event: DragEvent, item: RecentItem) {
+	if (item.source !== "local") {
+		event.preventDefault();
+		return;
+	}
+	if (!event.dataTransfer) return;
+	event.dataTransfer.effectAllowed = "copy";
+	event.dataTransfer.setData(HISTORY_DRAG_TYPE, item.id);
+	event.dataTransfer.setData("text/plain", item.name);
+}
+
+function activateRecent(item: RecentItem) {
+	deleteCandidate = null;
+	if (item.source === "local") {
+		void activateHistory(item.id);
+		return;
+	}
+	window.dispatchEvent(
+		new CustomEvent(BUILT_IN_COVER_HISTORY_SELECT_EVENT, {
+			detail: { index: item.index },
+		}),
+	);
+}
+
+async function deleteRecent(item: RecentItem) {
+	if (busy) return;
+	busy = true;
+	error = "";
+	message = "";
+	try {
+		if (item.source === "local") {
+			await removeLocalWallpaperHistory(item.id);
+			const favorites = readFavoriteMap();
+			for (const [index, id] of Object.entries(favorites)) {
+				if (id === item.id) delete favorites[index];
+			}
+			localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+		} else {
+			const next = readBuiltInHistory().filter((entry) => entry.id !== item.id);
+			localStorage.setItem(BUILT_IN_HISTORY_KEY, JSON.stringify(next));
+		}
+		deleteCandidate = null;
+		message = `已从最近使用中删除 ${item.name}。`;
+		await refreshHistory();
+	} catch (reason) {
+		error =
+			reason instanceof Error ? reason.message : "无法删除这条最近使用记录。";
+	} finally {
+		busy = false;
+	}
+}
+
+function handleFavoriteAssign(event: Event) {
+	const detail = (event as CustomEvent<{ index?: number; id?: string }>).detail;
+	if (
+		!Number.isInteger(detail?.index) ||
+		!history.some((item) => item.id === detail?.id)
+	)
+		return;
+	const favorites = readFavoriteMap();
+	favorites[String(detail.index)] = String(detail.id);
+	localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+	message = `已替换常用封面 ${String(Number(detail.index) + 1).padStart(2, "0")}。`;
+	publishFavoritePreviews();
+}
+
+function handleFavoriteSelect(event: Event) {
+	const id = (event as CustomEvent<{ id?: string }>).detail?.id;
+	if (id) void activateHistory(id);
 }
 
 async function handleDrop(event: DragEvent) {
@@ -246,24 +352,55 @@ async function clearLocalFile(showMessage = true) {
 }
 
 onMount(() => {
-	wallpaperEngineDirectoryInput?.setAttribute("webkitdirectory", "");
-	wallpaperEngineDirectoryInput?.setAttribute("directory", "");
 	void syncCurrentFile();
+	void refreshHistory();
 
 	const handleWallpaperChange = (event: Event) => {
 		const detail = (event as CustomEvent<LocalWallpaperChangeDetail>).detail;
-		if (detail?.kind === "media") void syncCurrentFile();
+		if (detail?.kind === "media") {
+			void syncCurrentFile();
+			void refreshHistory();
+		}
 	};
 	const handleBuiltInCover = () => void clearLocalFile(false);
+	const handleBuiltInCoverUsed = (event: Event) => {
+		rememberBuiltInCover(
+			(
+				event as CustomEvent<{
+					index?: number;
+					name?: string;
+					previewUrl?: string;
+				}>
+			).detail || {},
+		);
+	};
 
 	window.addEventListener(LOCAL_WALLPAPER_CHANGE_EVENT, handleWallpaperChange);
 	window.addEventListener(BUILT_IN_COVER_EVENT, handleBuiltInCover);
+	window.addEventListener(BUILT_IN_COVER_USED_EVENT, handleBuiltInCoverUsed);
+	window.addEventListener(FAVORITE_ASSIGN_EVENT, handleFavoriteAssign);
+	window.addEventListener(FAVORITE_SELECT_EVENT, handleFavoriteSelect);
+	window.addEventListener(FAVORITES_REQUEST_EVENT, publishFavoritePreviews);
 	return () => {
 		window.removeEventListener(
 			LOCAL_WALLPAPER_CHANGE_EVENT,
 			handleWallpaperChange,
 		);
 		window.removeEventListener(BUILT_IN_COVER_EVENT, handleBuiltInCover);
+		window.removeEventListener(
+			BUILT_IN_COVER_USED_EVENT,
+			handleBuiltInCoverUsed,
+		);
+		window.removeEventListener(FAVORITE_ASSIGN_EVENT, handleFavoriteAssign);
+		window.removeEventListener(FAVORITE_SELECT_EVENT, handleFavoriteSelect);
+		window.removeEventListener(
+			FAVORITES_REQUEST_EVENT,
+			publishFavoritePreviews,
+		);
+		previewUrls.forEach((url) => {
+			URL.revokeObjectURL(url);
+		});
+		previewUrls.clear();
 	};
 });
 </script>
@@ -284,19 +421,12 @@ onMount(() => {
 	ondrop={handleDrop}
 >
 	<header class="local-cover-header">
-		<div class="local-cover-icon" aria-hidden="true">
-			<Icon
-				icon={fileType === "video"
-					? "material-symbols:movie-outline-rounded"
-					: "material-symbols:wallpaper-rounded"}
-			/>
-		</div>
 		<div class="local-cover-copy">
 			<strong id="local-cover-import-title">
-				{fileName ? "正在使用本地背景" : "导入图片或动态壁纸"}
+				{fileName ? "正在使用本地背景" : "导入本地媒体或动态壁纸"}
 			</strong>
 			<p title={fileName}>
-				{fileName || "支持图片、H.264 MP4、WebM 和 Wallpaper Engine 视频项目"}
+				{fileName || "选择图片或视频，导入后会自动保存到历史记录"}
 			</p>
 		</div>
 		{#if fileType}
@@ -305,37 +435,15 @@ onMount(() => {
 	</header>
 
 	<div class="local-cover-actions">
-		<div class="local-cover-action-group">
-			<span>本地媒体</span>
-			<button type="button" class="local-cover-pick" disabled={busy} onclick={openMediaPicker}>
-				<Icon icon="material-symbols:upload-rounded" />
-				<span>{busy ? "正在解析" : fileName ? "替换文件" : "选择图片 / 视频"}</span>
-			</button>
-		</div>
-		<div class="local-cover-action-group local-cover-engine-group">
-			<span>Wallpaper Engine</span>
-			<div>
-				<button
-					type="button"
-					class="local-cover-engine"
-					disabled={busy}
-					onclick={openWallpaperEngineVideoPicker}
-				>
-					<Icon icon="material-symbols:movie-edit-outline-rounded" />
-					<span>选择 MP4</span>
-				</button>
-				<button
-					type="button"
-					class="local-cover-engine"
-					disabled={busy}
-					title="扫描 Wallpaper Engine 视频项目文件夹"
-					onclick={openWallpaperEngineDirectoryPicker}
-				>
-					<Icon icon="material-symbols:folder-open-rounded" />
-					<span>扫描项目</span>
-				</button>
-			</div>
-		</div>
+		<button type="button" class="local-cover-pick" disabled={busy} onclick={openMediaPicker}>
+			<span class="local-cover-action-icon" aria-hidden="true">
+				<Icon icon="material-symbols:upload-file-rounded" />
+			</span>
+			<span class="local-cover-action-copy">
+				<strong>{busy ? "正在解析" : fileName ? "替换媒体文件" : "选择媒体文件"}</strong>
+				<small>图片、视频文件</small>
+			</span>
+		</button>
 	</div>
 
 	<div class="local-cover-feedback" aria-live="polite">
@@ -350,9 +458,65 @@ onMount(() => {
 			<span class="is-error">{error}</span>
 		{:else}
 			<Icon icon="material-symbols:drag-pan-rounded" />
-			<span>也可以把单个图片或 MP4 直接拖到这里</span>
+			<span>也可以把图片或视频直接拖到这里</span>
 		{/if}
 	</div>
+
+	{#if history.length > 0}
+		<section class="local-cover-history" aria-labelledby="local-cover-history-title">
+			<header>
+				<strong id="local-cover-history-title">最近使用</strong>
+				<span>拖到右侧常用封面即可替换</span>
+			</header>
+			<div class="local-cover-history-list">
+				{#each history as item (item.id)}
+					<div
+						class="local-cover-history-item"
+						class:is-confirming={deleteCandidate === item.id}
+						draggable={item.source === "local"}
+						ondragstart={(event) => handleHistoryDragStart(event, item)}
+					>
+						<button
+							type="button"
+							class="local-cover-history-apply"
+							title={`点击应用${item.source === "local" ? "，或拖到常用封面" : ""}：${item.name}`}
+							onclick={() => activateRecent(item)}
+						>
+							<span class="local-cover-history-preview" aria-hidden="true">
+								{#if item.type === "video"}
+									<video src={item.previewUrl} muted playsinline preload="metadata"></video>
+									<Icon icon="material-symbols:play-circle-rounded" />
+								{:else}
+									<img src={item.previewUrl} alt="" loading="lazy" />
+								{/if}
+							</span>
+							<span>{item.name}</span>
+						</button>
+						<button
+							type="button"
+							class="local-cover-history-delete"
+							aria-label={`从最近使用中删除 ${item.name}`}
+							title="删除记录"
+							onclick={() => (deleteCandidate = item.id)}
+						>
+							<Icon icon="material-symbols:close-rounded" />
+						</button>
+						{#if deleteCandidate === item.id}
+							<div class="local-cover-history-confirm" role="alert">
+								<strong>删除这条记录？</strong>
+								<div>
+									<button type="button" onclick={() => (deleteCandidate = null)}>取消</button>
+									<button type="button" class="is-danger" onclick={() => deleteRecent(item)}>
+										确定删除
+									</button>
+								</div>
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
 
 	<input
 		bind:this={mediaInput}
@@ -362,23 +526,6 @@ onMount(() => {
 		disabled={busy}
 		onchange={handleMediaChange}
 	/>
-	<input
-		bind:this={wallpaperEngineVideoInput}
-		hidden
-		type="file"
-		accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.m4v,.mov,.ogv"
-		disabled={busy}
-		onchange={handleWallpaperEngineVideo}
-	/>
-	<input
-		bind:this={wallpaperEngineDirectoryInput}
-		hidden
-		type="file"
-		multiple
-		disabled={busy}
-		onchange={handleWallpaperEngineDirectory}
-	/>
-
 	{#if fileName}
 		<button
 			type="button"
@@ -398,14 +545,14 @@ onMount(() => {
 	.local-cover-import {
 		position: relative;
 		display: grid;
-		gap: 0.7rem;
+		gap: 0.9rem;
 		border: 1px solid color-mix(in oklch, var(--primary) 32%, rgba(255, 255, 255, 0.16));
 		border-radius: 1rem;
 		background:
 			radial-gradient(circle at 0 0, color-mix(in oklch, var(--primary) 20%, transparent), transparent 48%),
 			rgba(18, 26, 42, 0.76);
 		box-shadow: 0 0.9rem 2.4rem rgba(3, 8, 20, 0.26);
-		padding: 0.8rem;
+		padding: 1rem;
 		color: white;
 		backdrop-filter: blur(0.9rem);
 		transition: border-color 180ms ease, background-color 180ms ease;
@@ -418,23 +565,11 @@ onMount(() => {
 
 	.local-cover-header {
 		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 0.65rem;
+		gap: 0.8rem;
 	}
 
-	.local-cover-icon {
-		display: grid;
-		place-items: center;
-		width: 2.5rem;
-		height: 2.5rem;
-		border: 1px solid color-mix(in oklch, var(--primary) 45%, transparent);
-		border-radius: 0.8rem;
-		background: color-mix(in oklch, var(--primary) 24%, rgba(255, 255, 255, 0.08));
-		color: color-mix(in oklch, var(--primary) 72%, white);
-	}
-
-	.local-cover-icon :global(svg),
 	.local-cover-actions :global(svg),
 	.local-cover-feedback :global(svg),
 	.local-cover-remove :global(svg) {
@@ -454,18 +589,17 @@ onMount(() => {
 	}
 
 	.local-cover-copy strong {
-		font-size: 0.76rem;
+		font-size: 0.92rem;
 		font-weight: 800;
+		line-height: 1.25;
 	}
 
 	.local-cover-copy p {
-		overflow: hidden;
 		margin-top: 0.18rem;
 		color: rgba(226, 232, 240, 0.68);
-		font-size: 0.61rem;
+		font-size: 0.72rem;
 		line-height: 1.45;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		white-space: normal;
 	}
 
 	.local-cover-format {
@@ -481,48 +615,39 @@ onMount(() => {
 
 	.local-cover-actions {
 		display: grid;
-		grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-		gap: 0.5rem;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.65rem;
 	}
 
-	.local-cover-action-group {
-		display: grid;
-		align-content: start;
-		gap: 0.38rem;
+	.local-cover-actions button {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 0.6rem;
 		min-width: 0;
-		border: 1px solid rgba(255, 255, 255, 0.09);
-		border-radius: 0.78rem;
-		background: rgba(255, 255, 255, 0.055);
-		padding: 0.48rem;
+		height: 3.75rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 28%, rgba(255, 255, 255, 0.12));
+		border-radius: 0.85rem;
+		background: rgba(255, 255, 255, 0.075);
+		padding: 0.55rem 0.7rem;
+		color: white;
+		cursor: pointer;
+		transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
 	}
 
-	.local-cover-action-group > span {
-		color: rgba(226, 232, 240, 0.58);
-		font-size: 0.55rem;
-		font-weight: 750;
-		letter-spacing: 0.06em;
-	}
-
-	.local-cover-engine-group > div {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 0.35rem;
-	}
-
-	.local-cover-actions button,
 	.local-cover-remove {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.32rem;
 		min-width: 0;
-		height: 2.15rem;
+		height: 2.25rem;
 		border: 1px solid color-mix(in oklch, var(--primary) 28%, rgba(255, 255, 255, 0.12));
 		border-radius: 0.65rem;
 		background: rgba(255, 255, 255, 0.075);
 		padding-inline: 0.48rem;
 		color: white;
-		font-size: 0.58rem;
+		font-size: 0.68rem;
 		font-weight: 780;
 		cursor: pointer;
 		transition: background-color 180ms ease, border-color 180ms ease;
@@ -538,6 +663,10 @@ onMount(() => {
 		outline-offset: 2px;
 	}
 
+	.local-cover-actions button:hover {
+		transform: translateY(-1px);
+	}
+
 	.local-cover-actions button:disabled,
 	.local-cover-remove:disabled {
 		cursor: wait;
@@ -548,13 +677,256 @@ onMount(() => {
 		background: color-mix(in oklch, var(--primary) 38%, rgba(15, 23, 42, 0.74)) !important;
 	}
 
+	.local-cover-action-icon {
+		display: grid;
+		flex: 0 0 auto;
+		place-items: center;
+		width: 2.2rem;
+		height: 2.2rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 42%, rgba(255, 255, 255, 0.16));
+		border-radius: 0.68rem;
+		background: color-mix(in oklch, var(--primary) 24%, rgba(255, 255, 255, 0.1));
+		color: color-mix(in oklch, var(--primary) 82%, white);
+	}
+
+	.local-cover-action-icon :global(svg) {
+		width: 1.3rem;
+		height: 1.3rem;
+	}
+
+	.local-cover-action-copy {
+		display: grid;
+		min-width: 0;
+		gap: 0.2rem;
+		text-align: left;
+	}
+
+	.local-cover-action-copy strong,
+	.local-cover-action-copy small {
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.local-cover-action-copy strong {
+		font-size: 0.75rem;
+		font-weight: 820;
+	}
+
+	.local-cover-action-copy small {
+		color: rgba(226, 232, 240, 0.62);
+		font-size: 0.6rem;
+		font-weight: 650;
+	}
+
+	.local-cover-history {
+		display: grid;
+		min-width: 0;
+		gap: 0.52rem;
+		border-top: 1px solid rgba(226, 232, 240, 0.12);
+		padding-top: 0.72rem;
+	}
+
+	.local-cover-history > header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.6rem;
+	}
+
+	.local-cover-history > header strong {
+		font-size: 0.72rem;
+		font-weight: 820;
+	}
+
+	.local-cover-history > header span {
+		color: rgba(226, 232, 240, 0.56);
+		font-size: 0.58rem;
+	}
+
+	.local-cover-history-list {
+		display: grid;
+		grid-auto-columns: 7.25rem;
+		grid-auto-flow: column;
+		gap: 0.48rem;
+		overflow-x: auto;
+		overscroll-behavior-inline: contain;
+		padding: 0.08rem 0.08rem 0.35rem;
+		scroll-snap-type: inline proximity;
+		scrollbar-color: color-mix(in oklch, var(--primary) 48%, transparent) transparent;
+		scrollbar-width: thin;
+	}
+
+	.local-cover-history-item {
+		position: relative;
+		display: block;
+		min-width: 0;
+		overflow: hidden;
+		border: 1px solid rgba(226, 232, 240, 0.12);
+		border-radius: 0.82rem;
+		background: rgba(255, 255, 255, 0.065);
+		padding: 0;
+		color: rgba(241, 245, 249, 0.78);
+		scroll-snap-align: start;
+		text-align: left;
+		transition: border-color 160ms ease, background-color 160ms ease;
+	}
+
+	.local-cover-history-item[draggable="true"] {
+		cursor: grab;
+	}
+
+	.local-cover-history-item[draggable="true"]:active {
+		cursor: grabbing;
+	}
+
+	.local-cover-history-item:hover,
+	.local-cover-history-item:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 66%, white);
+		background: color-mix(in oklch, var(--primary) 18%, rgba(255, 255, 255, 0.08));
+		outline: none;
+	}
+
+	.local-cover-history-apply {
+		display: grid;
+		width: 100%;
+		min-width: 0;
+		gap: 0.38rem;
+		border: 0;
+		background: transparent;
+		padding: 0.38rem;
+		color: inherit;
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.local-cover-history-apply:focus-visible {
+		outline: 2px solid color-mix(in oklch, var(--primary) 68%, white);
+		outline-offset: -2px;
+	}
+
+	.local-cover-history-preview {
+		position: relative;
+		display: grid;
+		place-items: center;
+		overflow: hidden;
+		width: 100%;
+		aspect-ratio: 16 / 10;
+		border-radius: 0.48rem;
+		background: rgba(15, 23, 42, 0.5);
+	}
+
+	.local-cover-history-preview img,
+	.local-cover-history-preview video {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.local-cover-history-preview :global(svg) {
+		position: absolute;
+		width: 1.2rem;
+		height: 1.2rem;
+		color: white;
+		filter: drop-shadow(0 0.12rem 0.35rem rgba(0, 0, 0, 0.45));
+	}
+
+	.local-cover-history-apply > span:last-child {
+		overflow: hidden;
+		padding-inline: 0.08rem;
+		font-size: 0.62rem;
+		font-weight: 700;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.local-cover-history-delete {
+		position: absolute;
+		right: 0.56rem;
+		top: 0.56rem;
+		display: grid;
+		place-items: center;
+		width: 1.55rem;
+		height: 1.55rem;
+		border: 1px solid rgba(255, 255, 255, 0.48);
+		border-radius: 999px;
+		background: rgba(15, 23, 42, 0.68);
+		color: white;
+		cursor: pointer;
+		opacity: 0;
+		transform: translateY(-0.2rem);
+		transition: opacity 150ms ease, transform 150ms ease, background-color 150ms ease;
+	}
+
+	.local-cover-history-delete :global(svg) {
+		width: 0.92rem;
+		height: 0.92rem;
+	}
+
+	.local-cover-history-item:hover .local-cover-history-delete,
+	.local-cover-history-delete:focus-visible,
+	.local-cover-history-item.is-confirming .local-cover-history-delete {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	.local-cover-history-delete:hover,
+	.local-cover-history-delete:focus-visible {
+		background: #b83e53;
+		outline: 2px solid rgba(255, 255, 255, 0.72);
+		outline-offset: 1px;
+	}
+
+	.local-cover-history-confirm {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-direction: column;
+		gap: 0.55rem;
+		background: rgba(250, 252, 251, 0.96);
+		padding: 0.55rem;
+		color: #293a36;
+		text-align: center;
+		backdrop-filter: blur(0.55rem);
+	}
+
+	.local-cover-history-confirm > strong {
+		font-size: 0.66rem;
+	}
+
+	.local-cover-history-confirm > div {
+		display: flex;
+		gap: 0.35rem;
+	}
+
+	.local-cover-history-confirm button {
+		min-height: 1.75rem;
+		border: 1px solid rgba(42, 76, 67, 0.18);
+		border-radius: 0.48rem;
+		background: white;
+		padding-inline: 0.48rem;
+		color: #47645c;
+		font-size: 0.56rem;
+		font-weight: 760;
+		cursor: pointer;
+	}
+
+	.local-cover-history-confirm button.is-danger {
+		border-color: rgba(184, 62, 83, 0.3);
+		background: #b83e53;
+		color: white;
+	}
+
 	.local-cover-feedback {
 		display: flex;
 		min-height: 1rem;
 		align-items: flex-start;
 		gap: 0.35rem;
 		color: rgba(226, 232, 240, 0.58);
-		font-size: 0.56rem;
+		font-size: 0.65rem;
 		line-height: 1.45;
 	}
 
@@ -577,9 +949,66 @@ onMount(() => {
 		color: rgba(226, 232, 240, 0.7);
 	}
 
+	:global(html:not(.dark)) .local-cover-import {
+		border-color: color-mix(in oklch, var(--primary) 25%, #cadbd5);
+		background:
+			radial-gradient(circle at 0 0, color-mix(in oklch, var(--primary) 13%, transparent), transparent 48%),
+			rgba(249, 252, 251, 0.9);
+		box-shadow: 0 0.9rem 2.4rem rgba(48, 85, 75, 0.1);
+		color: #203c35;
+	}
+
+	:global(html:not(.dark)) .local-cover-import.is-dragging {
+		background-color: color-mix(in oklch, var(--primary) 12%, white);
+	}
+
+	:global(html:not(.dark)) .local-cover-copy p,
+	:global(html:not(.dark)) .local-cover-action-copy small,
+	:global(html:not(.dark)) .local-cover-history > header span,
+	:global(html:not(.dark)) .local-cover-feedback {
+		color: #6e847e;
+	}
+
+	:global(html:not(.dark)) .local-cover-actions button,
+	:global(html:not(.dark)) .local-cover-remove,
+	:global(html:not(.dark)) .local-cover-history-item {
+		border-color: rgba(66, 115, 101, 0.16);
+		background: rgba(255, 255, 255, 0.82);
+		color: #29483f;
+	}
+
+	:global(html:not(.dark)) .local-cover-pick {
+		background: color-mix(in oklch, var(--primary) 14%, white) !important;
+	}
+
+	:global(html:not(.dark)) .local-cover-action-icon {
+		background: color-mix(in oklch, var(--primary) 13%, white);
+		color: color-mix(in oklch, var(--primary) 78%, #285c4e);
+	}
+
+	:global(html:not(.dark)) .local-cover-history {
+		border-top-color: rgba(66, 115, 101, 0.14);
+	}
+
+	:global(html:not(.dark)) .local-cover-history-preview {
+		background: #e6efec;
+	}
+
+	:global(html:not(.dark)) .local-cover-feedback .is-success {
+		color: #28785f;
+	}
+
+	:global(html:not(.dark)) .local-cover-feedback .is-error {
+		color: #b83e53;
+	}
+
 	@media (max-width: 640px) {
 		.local-cover-actions {
 			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.local-cover-actions button {
+			height: 3.35rem;
 		}
 	}
 

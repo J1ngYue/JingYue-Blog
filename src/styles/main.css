@@ -256,7 +256,7 @@ html {
  
     
     .wallpaper-transparent #navbar > div {
-        background-color: var(--card-bg-transparent) !important;
+        background: color-mix(in oklch, var(--card-bg) calc(var(--navbar-surface-opacity, var(--opacity-55)) * 100%), transparent) !important;
     }
 
     /* Overlay 模式下，滚动后提高导航栏背景模糊度，增强与正文区分 */
@@ -586,4 +586,3 @@ html {
 .pagination-info {
   @apply text-sm text-(--text-secondary) text-center mb-2;
 }
-

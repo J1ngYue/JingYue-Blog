@@ -33,7 +33,7 @@
  * 适用: 所有模式，所有设备
  * ============================================ */
 #navbar>div {
-    background-color: var(--card-bg);
+    background: color-mix(in oklch, var(--card-bg) calc(var(--navbar-surface-opacity, var(--opacity-55)) * 100%), transparent);
     border: 1px solid transparent;
     border-radius: 0 0 0.75rem 0.75rem;
     backdrop-filter: blur(0);

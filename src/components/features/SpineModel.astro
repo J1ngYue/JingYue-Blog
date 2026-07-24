@@ -7,33 +7,46 @@ import { url } from "@/utils/url-utils";
 <div
   id="character-model-switcher"
   data-character-model-switcher
-  style="position: fixed; left: 0.75rem; bottom: 8.25rem; z-index: 10001;"
+  style="position: fixed; left: 9.25rem; top: calc(100dvh - 4.25rem); z-index: 2147483000; pointer-events: none;"
 >
+  <div class="character-model-hover-card" data-character-model-hover-card>
+    <strong data-character-model-hover-label>萤火虫</strong>
+    <div class="character-model-hover-actions">
+      <button type="button" data-character-action="switch" title="选择角色">切换模型</button>
+      <button type="button" data-character-action="sleep" aria-pressed="false" title="暂停或唤醒模型">
+        <span data-character-sleep-label>休眠</span>
+      </button>
+    </div>
+  </div>
   <button
     type="button"
-    data-character-model-trigger
-    aria-expanded="false"
-    aria-controls="character-model-options"
-    aria-label="打开角色模型库"
-    title="打开模型库"
-    class="character-model-trigger"
+    class="character-model-wake-tab"
+    data-character-wake
+    aria-label="唤醒宠物"
+    title="唤醒宠物"
+    hidden
   >
-    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2.8 14 9l6.2 2-6.2 2-2 6.2-2-6.2-6.2-2 6.2-2 2-6.2Z" /></svg>
-    <span data-character-model-label>萤火虫</span>
-    <small>模型库</small>
-    <svg class="character-model-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 9 5 5 5-5" /></svg>
+    <span aria-hidden="true">Zzz</span>
+    <strong>唤醒</strong>
   </button>
+  <button
+    type="button"
+    class="character-model-backdrop"
+    data-character-model-backdrop
+    aria-label="关闭角色选择面板"
+    hidden
+  ></button>
   <div
     id="character-model-options"
     data-character-model-options
     hidden
     role="menu"
-    aria-label="角色模型库"
+    aria-label="角色选择面板"
     class="character-model-library"
   >
     <div class="character-model-library-header" role="presentation">
-      <span>角色模型库</span>
-      <small>{characterModelCatalog.length} 个模型</small>
+      <span>选择角色</span>
+      <small>{characterModelCatalog.length} 个模型 · 拖动角色可调整位置</small>
     </div>
     <div class="character-model-grid" role="presentation">
       {characterModelCatalog.map((item) => (
@@ -45,14 +58,23 @@ import { url } from "@/utils/url-utils";
           data-character-model-type={item.type}
           class="character-model-option"
         >
-          <span class="character-model-option-icon" aria-hidden="true">
-            {item.type === "spine" ? "SP" : "L2"}
+          <span class="character-model-option-preview" aria-hidden="true">
+            <span>{item.type === "spine" ? "SP" : item.type === "sprite" ? "PX" : "L2"}</span>
+            {item.type === "sprite" ? (
+              <span
+                class="character-model-sprite-preview"
+                style={`background-image: url('${item.preview}')`}
+              ></span>
+            ) : (
+              <img src={item.preview} alt="" loading="lazy" decoding="async" />
+            )}
           </span>
           <span class="character-model-option-copy">
             <strong>{item.label}</strong>
             <small>{item.description}</small>
+            <em>{item.type === "spine" ? "Spine" : item.type === "sprite" ? "像素宠物" : "Live2D"}</em>
           </span>
-          <span class="character-model-selected" aria-hidden="true"></span>
+          <span class="character-model-selected" aria-hidden="true">使用中</span>
         </button>
       ))}
     </div>
@@ -79,11 +101,26 @@ import { url } from "@/utils/url-utils";
   )
 }
 
+<div
+  id="sprite-model-container"
+  data-character-model-runtime="sprite"
+  style="position: fixed; left: 8px; bottom: 8px; width: 154px; height: 166px; display: none; pointer-events: auto; z-index: 1000;"
+>
+  <div id="sprite-model" aria-label="像素宠物"></div>
+  <div class="sprite-model-reaction" aria-hidden="true">
+    <span>♥</span>
+    <span>✦</span>
+    <span>♥</span>
+  </div>
+</div>
+
 <!-- 引入消息框组件 -->
 <MessageBox />
 
 <script is:inline define:vars={{ characterModelCatalog, spineModelConfig, modelPath: url(spineModelConfig.model.path), atlasPath: url(spineModelConfig.model.path.replace(".json", ".atlas")), cssPath: url("/pio/static/spine-player.min.css"), jsPath: url("/pio/static/spine-player.min.js") }}>
   const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
+  const CHARACTER_POSITION_KEY = "fireflyCharacterPosition";
+  const CHARACTER_SLEEP_KEY = "fireflyCharacterSleeping";
   const CHARACTER_MODEL_LABELS = Object.fromEntries(
     characterModelCatalog.map((item) => [item.id, item.label]),
   );
@@ -92,6 +129,9 @@ import { url } from "@/utils/url-utils";
       .filter((item) => item.type === "live2d")
       .map((item) => [item.id, item.live2dIndex]),
   );
+  const CHARACTER_MODEL_TYPES = Object.fromEntries(
+    characterModelCatalog.map((item) => [item.id, item.type]),
+  );
   const CHARACTER_MODELS = Object.keys(CHARACTER_MODEL_LABELS);
 
   function getSelectedCharacterModel() {
@@ -99,21 +139,323 @@ import { url } from "@/utils/url-utils";
     return CHARACTER_MODELS.includes(stored) ? stored : "firefly";
   }
 
+  function getStoredCharacterPosition() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(CHARACTER_POSITION_KEY) || "null");
+      if (Number.isFinite(stored?.x) && Number.isFinite(stored?.bottom)) {
+        return { x: stored.x, bottom: stored.bottom };
+      }
+    } catch (_error) {
+      // Ignore malformed values and fall back to the safe corner position.
+    }
+    return { x: 8, bottom: 8 };
+  }
+
+  let characterPosition = getStoredCharacterPosition();
+  let characterLayoutFrame = 0;
+  let suppressCharacterClick = false;
+  let activeCharacterDragCleanup = null;
+  let characterInteractionTimer = 0;
+  let characterSleeping = localStorage.getItem(CHARACTER_SLEEP_KEY) === "true";
+  let characterHoverTimer = 0;
+
+  function getActiveCharacterRuntime() {
+    const model = getSelectedCharacterModel();
+    if (model === "firefly") return document.getElementById("spine-model-container");
+    if (CHARACTER_MODEL_TYPES[model] === "sprite") {
+      return document.getElementById("sprite-model-container");
+    }
+    return document.getElementById("firefly-live2d-runtime");
+  }
+
+  function clampCharacterPosition(position, runtime = getActiveCharacterRuntime()) {
+    const model = getSelectedCharacterModel();
+    const runtimeWidth = runtime?.offsetWidth || (model === "firefly" ? 135 : model === "totoro" || model === "gugugaga" || model === "feibi" || model === "nailong" ? 154 : 200);
+    const runtimeHeight = runtime?.offsetHeight || (model === "firefly" ? 165 : model === "totoro" || model === "gugugaga" || model === "feibi" || model === "nailong" ? 166 : 200);
+    const safeTopSpace = 84;
+    return {
+      x: Math.min(Math.max(8, position.x), Math.max(8, window.innerWidth - runtimeWidth - 8)),
+      bottom: Math.min(
+        Math.max(8, position.bottom),
+        Math.max(8, window.innerHeight - runtimeHeight - safeTopSpace),
+      ),
+    };
+  }
+
+  function positionCharacterLibrary() {
+    const switcher = document.querySelector("[data-character-model-switcher]");
+    const panel = switcher?.querySelector("[data-character-model-options]");
+    if (!panel || panel.hidden) return;
+    panel.style.left = "50%";
+    panel.style.top = "50%";
+  }
+
+  function layoutCharacterControls() {
+    if (characterLayoutFrame) cancelAnimationFrame(characterLayoutFrame);
+    characterLayoutFrame = requestAnimationFrame(() => {
+      characterLayoutFrame = 0;
+      const switcher = document.querySelector("[data-character-model-switcher]");
+      const card = switcher?.querySelector("[data-character-model-hover-card]");
+      const runtime = getActiveCharacterRuntime();
+      if (!switcher || !card || !runtime || runtime.style.display === "none") return;
+
+      const runtimeRect = runtime.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const gap = 10;
+      const padding = 8;
+      const cardWidth = cardRect.width || 190;
+      const cardHeight = cardRect.height || 76;
+      let left = runtimeRect.left + (runtimeRect.width - cardWidth) / 2;
+      let top = runtimeRect.top - cardHeight - gap;
+
+      if (top < padding) top = runtimeRect.bottom + gap;
+      if (top + cardHeight > window.innerHeight - padding) {
+        top = Math.max(padding, window.innerHeight - cardHeight - padding);
+      }
+      left = Math.min(Math.max(padding, left), Math.max(padding, window.innerWidth - cardWidth - padding));
+
+      switcher.style.left = `${left}px`;
+      switcher.style.top = `${top}px`;
+      positionCharacterLibrary();
+    });
+  }
+
+  function applyCharacterPosition(nextPosition = characterPosition, persist = false) {
+    const activeRuntime = getActiveCharacterRuntime();
+    characterPosition = clampCharacterPosition(nextPosition, activeRuntime);
+    [
+      document.getElementById("spine-model-container"),
+      document.getElementById("sprite-model-container"),
+      document.getElementById("firefly-live2d-runtime"),
+    ].forEach((runtime) => {
+      if (!runtime) return;
+      runtime.style.left = `${characterPosition.x}px`;
+      runtime.style.right = "auto";
+      runtime.style.bottom = `${characterPosition.bottom}px`;
+      runtime.style.top = "auto";
+    });
+    if (persist) {
+      localStorage.setItem(CHARACTER_POSITION_KEY, JSON.stringify(characterPosition));
+    }
+    layoutCharacterControls();
+  }
+
+  function playCharacterClickFeedback(runtime) {
+    if (!runtime || characterSleeping) return;
+    const model = getSelectedCharacterModel();
+    const modelType = CHARACTER_MODEL_TYPES[model];
+
+    if (modelType === "sprite") {
+      window.clearTimeout(characterInteractionTimer);
+      runtime.classList.remove("is-character-interacting");
+      void runtime.offsetWidth;
+      runtime.classList.add("is-character-interacting");
+      characterInteractionTimer = window.setTimeout(() => {
+        runtime.classList.remove("is-character-interacting");
+      }, 760);
+    } else if (modelType === "spine") {
+      window.__fireflySpineInteract?.();
+    } else if (modelType === "live2d") {
+      window.dispatchEvent(
+        new CustomEvent("firefly:character-interact", {
+          detail: { model, type: modelType },
+        }),
+      );
+    }
+
+    if (modelType === "sprite") {
+      const messages = spineModelConfig.interactive.clickMessages || [];
+      const message = messages[Math.floor(Math.random() * messages.length)];
+      if (message) {
+        window.showModelMessage?.(message, {
+          containerId: runtime.id,
+          displayTime: Math.min(2200, spineModelConfig.interactive.messageDisplayTime || 2200),
+        });
+      }
+    }
+  }
+
+  function attachCharacterDragHandle(element) {
+    if (!element || element.dataset.characterDragReady === "true") return;
+    element.dataset.characterDragReady = "true";
+    element.style.touchAction = "none";
+    element.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.isPrimary === false) return;
+      activeCharacterDragCleanup?.();
+      const start = { ...characterPosition };
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let moved = false;
+      let finished = false;
+      const pointerId = event.pointerId;
+      try {
+        element.setPointerCapture?.(pointerId);
+      } catch (_error) {
+        // Window-level listeners below still guarantee a clean drag session.
+      }
+
+      const handleMove = (moveEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+        if (!moved && Math.hypot(deltaX, deltaY) < 5) return;
+        moved = true;
+        suppressCharacterClick = true;
+        window.clearModelMessage?.();
+        applyCharacterPosition(
+          { x: start.x + deltaX, bottom: start.bottom - deltaY },
+          false,
+        );
+        moveEvent.preventDefault();
+      };
+
+      const handleEnd = (endEvent) => {
+        if (endEvent?.pointerId !== undefined && endEvent.pointerId !== pointerId) return;
+        if (finished) return;
+        finished = true;
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", handleEnd);
+        window.removeEventListener("pointercancel", handleEnd);
+        window.removeEventListener("blur", handleEnd);
+        element.removeEventListener("lostpointercapture", handleEnd);
+        try {
+          if (element.hasPointerCapture?.(pointerId)) element.releasePointerCapture(pointerId);
+        } catch (_error) {
+          // The pointer may already have been released by the browser.
+        }
+        activeCharacterDragCleanup = null;
+        if (moved) {
+          localStorage.setItem(CHARACTER_POSITION_KEY, JSON.stringify(characterPosition));
+          window.setTimeout(() => {
+            suppressCharacterClick = false;
+          }, 180);
+        } else if (characterSleeping) {
+          setCharacterSleeping(false);
+        } else {
+          playCharacterClickFeedback(getActiveCharacterRuntime());
+        }
+      };
+
+      activeCharacterDragCleanup = () => handleEnd();
+      window.addEventListener("pointermove", handleMove, { passive: false });
+      window.addEventListener("pointerup", handleEnd);
+      window.addEventListener("pointercancel", handleEnd);
+      window.addEventListener("blur", handleEnd);
+      element.addEventListener("lostpointercapture", handleEnd);
+    });
+  }
+
+  function attachCharacterRuntime(runtime) {
+    if (!runtime) return;
+    applyCharacterPosition(characterPosition);
+    attachCharacterDragHandle(runtime.querySelector("canvas") || runtime);
+    attachCharacterHoverReveal(runtime);
+    runtime.classList.toggle("is-character-sleeping", characterSleeping);
+    if (getSelectedCharacterModel() === "firefly" && window.spinePlayerInstance) {
+      if (characterSleeping) window.spinePlayerInstance.pause?.();
+      else window.spinePlayerInstance.play?.();
+    }
+  }
+
+  function setCharacterHoverState(hovered) {
+    const switcher = document.querySelector("[data-character-model-switcher]");
+    if (!switcher) return;
+    window.clearTimeout(characterHoverTimer);
+    if (hovered) {
+      switcher.dataset.petHovered = "true";
+      switcher.style.pointerEvents = "auto";
+      return;
+    }
+    characterHoverTimer = window.setTimeout(() => {
+      delete switcher.dataset.petHovered;
+      if (
+        !characterSleeping &&
+        document.querySelector("[data-character-model-options]")?.hidden !== false
+      ) {
+        switcher.style.pointerEvents = "none";
+      }
+    }, 550);
+  }
+
+  function attachCharacterHoverReveal(runtime) {
+    if (!runtime || runtime.dataset.characterHoverReady === "true") return;
+    runtime.dataset.characterHoverReady = "true";
+    runtime.addEventListener("pointerenter", () => setCharacterHoverState(true));
+    runtime.addEventListener("pointerleave", () => setCharacterHoverState(false));
+  }
+
+  function updateCharacterSleepUI() {
+    const switcher = document.querySelector("[data-character-model-switcher]");
+    const button = switcher?.querySelector("[data-character-action='sleep']");
+    const label = switcher?.querySelector("[data-character-sleep-label]");
+    const wakeTab = switcher?.querySelector("[data-character-wake]");
+    const sleeping = characterSleeping;
+    if (button) {
+      button.setAttribute("aria-pressed", String(sleeping));
+      button.setAttribute("title", sleeping ? "唤醒模型" : "暂停或唤醒模型");
+    }
+    if (label) label.textContent = sleeping ? "唤醒" : "休眠";
+    if (wakeTab) wakeTab.hidden = !sleeping;
+    if (switcher) {
+      switcher.dataset.petSleeping = String(sleeping);
+      if (sleeping) switcher.style.pointerEvents = "auto";
+      else if (
+        switcher.dataset.petHovered !== "true" &&
+        switcher.dataset.libraryOpen !== "true"
+      ) {
+        switcher.style.pointerEvents = "none";
+      }
+    }
+    document.documentElement.dataset.characterSleeping = String(sleeping);
+    document.querySelectorAll("#spine-model-container, #sprite-model-container, #firefly-live2d-runtime").forEach((runtime) => {
+      runtime.classList.toggle("is-character-sleeping", sleeping);
+    });
+    applyCharacterPosition(characterPosition);
+  }
+
+  function setCharacterSleeping(nextSleeping, persist = true) {
+    characterSleeping = Boolean(nextSleeping);
+    if (persist) localStorage.setItem(CHARACTER_SLEEP_KEY, String(characterSleeping));
+    const player = window.spinePlayerInstance;
+    if (getSelectedCharacterModel() === "firefly" && player) {
+      if (characterSleeping) player.pause?.();
+      else player.play?.();
+    }
+    updateCharacterSleepUI();
+    window.dispatchEvent(
+      new CustomEvent("firefly:character-sleep-change", {
+        detail: { sleeping: characterSleeping },
+      }),
+    );
+  }
+
   function updateCharacterModelUI(model) {
     document.documentElement.dataset.characterModel = model;
     const switcher = document.querySelector("[data-character-model-switcher]");
-    const label = switcher?.querySelector("[data-character-model-label]");
+    const hoverLabel = switcher?.querySelector("[data-character-model-hover-label]");
     const options = switcher?.querySelectorAll("[data-character-model-option]") || [];
-    if (label) label.textContent = CHARACTER_MODEL_LABELS[model];
+    if (hoverLabel) hoverLabel.textContent = CHARACTER_MODEL_LABELS[model];
     options.forEach((option) => {
       const active = option.dataset.characterModelOption === model;
       option.setAttribute("aria-checked", String(active));
     });
 
     const spineContainer = document.getElementById("spine-model-container");
+    const spriteContainer = document.getElementById("sprite-model-container");
+    const sprite = document.getElementById("sprite-model");
+    const modelType = CHARACTER_MODEL_TYPES[model];
     if (spineContainer) {
-      spineContainer.style.display = model === "firefly" ? "block" : "none";
+      spineContainer.style.display = modelType === "spine" ? "block" : "none";
     }
+    if (spriteContainer) {
+      spriteContainer.style.display = modelType === "sprite" ? "block" : "none";
+    }
+    if (sprite) {
+      const item = characterModelCatalog.find((entry) => entry.id === model);
+      sprite.style.backgroundImage = item?.type === "sprite" ? `url('${item.sprite}')` : "none";
+      sprite.dataset.spriteModel = item?.type === "sprite" ? item.id : "";
+    }
+    layoutCharacterControls();
+    updateCharacterSleepUI();
   }
 
   function selectCharacterModel(model, notify = true) {
@@ -125,6 +467,7 @@ import { url } from "@/utils/url-utils";
         new CustomEvent("firefly:character-model-change", {
           detail: {
             model,
+            type: CHARACTER_MODEL_TYPES[model],
             live2dIndex: CHARACTER_MODEL_LIVE2D_INDEXES[model] ?? 0,
           },
         }),
@@ -138,24 +481,66 @@ import { url } from "@/utils/url-utils";
     if (switcher.parentElement !== document.body) {
       document.body.appendChild(switcher);
     }
-    const trigger = switcher.querySelector("[data-character-model-trigger]");
     const optionsPanel = switcher.querySelector("[data-character-model-options]");
+    const backdrop = switcher.querySelector("[data-character-model-backdrop]");
     const options = Array.from(switcher.querySelectorAll("[data-character-model-option]"));
-    if (!trigger || !optionsPanel) return;
+    const switchAction = switcher.querySelector("[data-character-action='switch']");
+    const sleepAction = switcher.querySelector("[data-character-action='sleep']");
+    const wakeAction = switcher.querySelector("[data-character-wake]");
+    if (!optionsPanel || !backdrop) return;
 
     window.__fireflyCharacterModelAbort?.abort();
     const controller = new AbortController();
     window.__fireflyCharacterModelAbort = controller;
     const listenerOptions = { signal: controller.signal };
-
-    const setOpen = (open) => {
-      trigger.setAttribute("aria-expanded", String(open));
-      optionsPanel.hidden = !open;
+    let scrollLockEnabled = false;
+    let lockedScrollY = window.scrollY;
+    const restoreLockedScroll = () => {
+      if (scrollLockEnabled && window.scrollY !== lockedScrollY) {
+        window.scrollTo({ top: lockedScrollY, left: 0, behavior: "instant" });
+      }
     };
 
-    trigger.addEventListener(
+    const setOpen = (open) => {
+      if (open) lockedScrollY = window.scrollY;
+      scrollLockEnabled = open;
+      optionsPanel.hidden = !open;
+      backdrop.hidden = !open;
+      if (open) {
+        switcher.style.pointerEvents = "auto";
+        switcher.dataset.libraryOpen = "true";
+      } else {
+        delete switcher.dataset.petHovered;
+        delete switcher.dataset.libraryOpen;
+        switcher.style.pointerEvents = "none";
+      }
+      document.documentElement.classList.toggle("character-model-library-open", open);
+      document.body.classList.toggle("character-model-library-open", open);
+      if (open) {
+        requestAnimationFrame(() => {
+          positionCharacterLibrary();
+          options.find((option) => option.getAttribute("aria-checked") === "true")?.focus({ preventScroll: true });
+        });
+      }
+    };
+
+    attachCharacterRuntime(document.getElementById("spine-model-container"));
+    attachCharacterRuntime(document.getElementById("sprite-model-container"));
+    switcher.addEventListener("pointerenter", () => setCharacterHoverState(true), listenerOptions);
+    switcher.addEventListener("pointerleave", () => setCharacterHoverState(false), listenerOptions);
+    switchAction?.addEventListener(
       "click",
-      () => setOpen(trigger.getAttribute("aria-expanded") !== "true"),
+      () => setOpen(true),
+      listenerOptions,
+    );
+    sleepAction?.addEventListener(
+      "click",
+      () => setCharacterSleeping(!characterSleeping),
+      listenerOptions,
+    );
+    wakeAction?.addEventListener(
+      "click",
+      () => setCharacterSleeping(false),
       listenerOptions,
     );
     options.forEach((option) => {
@@ -164,28 +549,32 @@ import { url } from "@/utils/url-utils";
         () => {
           selectCharacterModel(option.dataset.characterModelOption);
           setOpen(false);
-          trigger.focus({ preventScroll: true });
         },
         listenerOptions,
       );
     });
+    backdrop.addEventListener("click", () => setOpen(false), listenerOptions);
     document.addEventListener(
-      "pointerdown",
+      "click",
       (event) => {
-        if (!switcher.contains(event.target)) setOpen(false);
+        if (!suppressCharacterClick) return;
+        const runtime = getActiveCharacterRuntime();
+        if (runtime?.contains(event.target)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
       },
-      listenerOptions,
+      { signal: controller.signal, capture: true },
     );
     document.addEventListener(
       "keydown",
       (event) => {
         if (event.key === "Escape") {
           setOpen(false);
-          trigger.focus({ preventScroll: true });
           return;
         }
         if (
-          trigger.getAttribute("aria-expanded") === "true" &&
+          !optionsPanel.hidden &&
           ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
         ) {
           event.preventDefault();
@@ -202,17 +591,59 @@ import { url } from "@/utils/url-utils";
       },
       listenerOptions,
     );
+    const preventBackgroundScroll = (event) => {
+      if (optionsPanel.hidden) return;
+      if (optionsPanel.contains(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    document.addEventListener("wheel", preventBackgroundScroll, {
+      signal: controller.signal,
+      capture: true,
+      passive: false,
+    });
+    document.addEventListener("touchmove", preventBackgroundScroll, {
+      signal: controller.signal,
+      capture: true,
+      passive: false,
+    });
+    window.addEventListener("scroll", restoreLockedScroll, listenerOptions);
     window.addEventListener(
       "firefly:character-model-change",
       (event) => {
         updateCharacterModelUI(event.detail?.model || getSelectedCharacterModel());
         updateResponsiveDisplay();
         if (event.detail?.model === "firefly") initSpineModel();
+        requestAnimationFrame(() => {
+          attachCharacterRuntime(getActiveCharacterRuntime());
+          applyCharacterPosition(characterPosition);
+        });
       },
       listenerOptions,
     );
+    window.addEventListener(
+      "firefly:character-runtime-ready",
+      (event) => {
+        attachCharacterRuntime(event.detail?.runtime);
+        setCharacterSleeping(characterSleeping, false);
+      },
+      listenerOptions,
+    );
+    window.addEventListener(
+      "resize",
+      () => applyCharacterPosition(characterPosition, true),
+      listenerOptions,
+    );
 
+    setOpen(false);
     selectCharacterModel(getSelectedCharacterModel(), false);
+    updateCharacterSleepUI();
+    applyCharacterPosition(characterPosition);
+    window.__fireflyCharacterPositionManager = {
+      attachRuntime: attachCharacterRuntime,
+      apply: applyCharacterPosition,
+      layout: layoutCharacterControls,
+    };
   }
 
   // 动态加载 Spine CSS（带本地备用）
@@ -276,19 +707,23 @@ import { url } from "@/utils/url-utils";
     if (!spineModelConfig.enable) return;
 
     const container = document.getElementById("spine-model-container");
+    const spriteContainer = document.getElementById("sprite-model-container");
     const switcher = document.querySelector("[data-character-model-switcher]");
     const isMobile =
       spineModelConfig.responsive.hideOnMobile &&
       window.innerWidth <= spineModelConfig.responsive.mobileBreakpoint;
     if (switcher) switcher.style.display = isMobile ? "none" : "block";
-    if (!container) return;
+    if (!container && !spriteContainer) return;
 
     // 检查移动端显示设置
-    if (isMobile || getSelectedCharacterModel() !== "firefly") {
-      container.style.display = "none";
-    } else {
-      container.style.display = "block";
+    const modelType = CHARACTER_MODEL_TYPES[getSelectedCharacterModel()];
+    if (container) {
+      container.style.display = isMobile || modelType !== "spine" ? "none" : "block";
     }
+    if (spriteContainer) {
+      spriteContainer.style.display = isMobile || modelType !== "sprite" ? "none" : "block";
+    }
+    layoutCharacterControls();
   }
 
   // 清理函数
@@ -482,6 +917,36 @@ import { url } from "@/utils/url-utils";
             }
           };
 
+          const runSpineInteraction = () => {
+            if (characterSleeping) return;
+            const currentTime = Date.now();
+            if (isClickProcessing || currentTime - lastClickTime < 500) return;
+
+            isClickProcessing = true;
+            lastClickTime = currentTime;
+
+            if (validClickAnims.length > 0) {
+              const randomClickAnim = pickRandom(validClickAnims);
+              safeSetAnimation(randomClickAnim, false);
+              window.setTimeout(() => {
+                if (characterSleeping) return;
+                const randomIdle = validIdleAnims.length > 0
+                  ? pickRandom(validIdleAnims)
+                  : fallbackIdleAnim;
+                safeSetAnimation(randomIdle, true);
+              }, 2000);
+            } else if (fallbackIdleAnim) {
+              safeSetAnimation(fallbackIdleAnim, true);
+            }
+
+            const messages = spineModelConfig.interactive.clickMessages;
+            if (messages?.length > 0) showMessage(pickRandom(messages));
+            window.setTimeout(() => {
+              isClickProcessing = false;
+            }, 500);
+          };
+          window.__fireflySpineInteract = runSpineInteraction;
+
           // 初始动画兜底，防止默认 idle 不存在
           if (!safeSetAnimation("idle", true) && fallbackIdleAnim) {
             safeSetAnimation(fallbackIdleAnim, true);
@@ -521,46 +986,7 @@ import { url } from "@/utils/url-utils";
               "#spine-player-container canvas"
             );
             if (canvas) {
-              canvas.addEventListener("click", () => {
-                // 防抖处理：防止重复点击
-                const currentTime = Date.now();
-                if (isClickProcessing || currentTime - lastClickTime < 500) {
-                  return; // 500ms 内重复点击忽略
-                }
-
-                isClickProcessing = true;
-                lastClickTime = currentTime;
-
-                // 随机播放点击动画（仅在动画存在时）
-                if (validClickAnims.length > 0) {
-                  const randomClickAnim = pickRandom(validClickAnims);
-                  safeSetAnimation(randomClickAnim, false);
-
-                  // 动画播放完成后回到待机状态
-                  setTimeout(() => {
-                    const randomIdle =
-                      validIdleAnims.length > 0
-                        ? pickRandom(validIdleAnims)
-                        : fallbackIdleAnim;
-                    safeSetAnimation(randomIdle, true);
-                  }, 2000);
-                } else if (fallbackIdleAnim) {
-                  safeSetAnimation(fallbackIdleAnim, true);
-                }
-
-                // 显示随机消息
-                const messages = spineModelConfig.interactive.clickMessages;
-                if (messages && messages.length > 0) {
-                  const randomMessage =
-                    messages[Math.floor(Math.random() * messages.length)];
-                  showMessage(randomMessage);
-                }
-
-                // 500ms 后重置防抖标志
-                setTimeout(() => {
-                  isClickProcessing = false;
-                }, 500);
-              });
+              canvas.addEventListener("click", runSpineInteraction);
 
               // 设置待机动画循环（仅在至少两个有效待机动画时启用）
               if (validIdleAnims.length > 1) {
@@ -649,171 +1075,429 @@ import { url } from "@/utils/url-utils";
     display: none !important;
   }
 
-  .character-model-trigger {
-    display: flex;
-    min-height: 2.45rem;
-    align-items: center;
-    gap: 0.42rem;
-    padding: 0.5rem 0.65rem;
-    border: 1px solid rgba(255, 255, 255, 0.42);
-    border-radius: 999px;
-    background: rgba(18, 31, 45, 0.74);
-    color: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 0.45rem 1.2rem rgba(0, 0, 0, 0.16);
-    backdrop-filter: blur(0.8rem);
+  .character-model-backdrop[hidden] {
+    display: none !important;
+  }
+
+  #character-model-switcher {
+    width: max-content;
+    max-width: calc(100vw - 1rem);
+    will-change: left, top;
+  }
+
+  .character-model-hover-card {
+    position: relative;
+    z-index: 10004;
+    display: grid;
+    min-width: 12rem;
+    gap: 0.55rem;
+    padding: 0.7rem;
+    border: 1px solid rgba(39, 107, 91, 0.2);
+    border-radius: 1rem;
+    background: rgba(250, 253, 252, 0.96);
+    box-shadow: 0 0.85rem 2rem rgba(28, 71, 62, 0.2);
+    backdrop-filter: blur(1rem);
+    color: #16342f;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.35rem);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .character-model-hover-card strong {
+    padding: 0 0.2rem;
+    font-size: 0.8rem;
+    line-height: 1.1;
+  }
+
+  .character-model-hover-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .character-model-hover-actions button {
+    min-width: 0;
+    padding: 0.42rem 0.45rem;
+    border: 1px solid rgba(35, 111, 91, 0.18);
+    border-radius: 0.65rem;
+    background: rgba(224, 244, 236, 0.75);
+    color: #1b725e;
     cursor: pointer;
-    font: 700 0.72rem/1 system-ui, sans-serif;
-    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    font: 700 0.64rem/1.1 system-ui, sans-serif;
+    transition: background-color 160ms ease, border-color 160ms ease;
   }
 
-  .character-model-trigger svg {
-    width: 0.9rem;
-    height: 0.9rem;
-    flex: 0 0 auto;
-    fill: currentColor;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+  .character-model-hover-actions button:hover,
+  .character-model-hover-actions button:focus-visible {
+    border-color: color-mix(in oklch, var(--primary) 68%, #1a6453);
+    background: color-mix(in oklch, var(--primary) 28%, white);
+    outline: none;
   }
 
-  .character-model-trigger small {
-    padding-left: 0.42rem;
-    border-left: 1px solid rgba(255, 255, 255, 0.24);
-    color: rgba(255, 255, 255, 0.66);
-    font-size: 0.62rem;
-    font-weight: 600;
+  #character-model-switcher[data-pet-hovered="true"] .character-model-hover-card {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
   }
 
-  .character-model-chevron {
-    transition: transform 160ms ease;
+  #character-model-switcher[data-library-open="true"] .character-model-hover-card {
+    opacity: 0;
+    pointer-events: none;
   }
 
-  .character-model-trigger[aria-expanded="true"] .character-model-chevron {
-    transform: rotate(180deg);
+  #character-model-switcher[data-pet-sleeping="true"] .character-model-hover-card {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .character-model-wake-tab {
+    position: relative;
+    z-index: 10004;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    min-height: 2.8rem;
+    margin-inline: auto;
+    padding: 0.58rem 0.82rem;
+    border: 1px solid rgba(35, 111, 91, 0.22);
+    border-radius: 999px;
+    background: rgba(250, 253, 252, 0.96);
+    box-shadow: 0 0.7rem 1.8rem rgba(28, 71, 62, 0.18);
+    color: #1b725e;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .character-model-wake-tab::after {
+    position: absolute;
+    left: 50%;
+    bottom: -0.34rem;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-right: 1px solid rgba(35, 111, 91, 0.22);
+    border-bottom: 1px solid rgba(35, 111, 91, 0.22);
+    background: inherit;
+    content: "";
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  .character-model-wake-tab[hidden] {
+    display: none !important;
+  }
+
+  .character-model-wake-tab span {
+    font: 850 0.72rem/1 system-ui, sans-serif;
+    letter-spacing: -0.04em;
+    animation: character-sleep-text 2.2s ease-in-out infinite;
+  }
+
+  .character-model-wake-tab strong {
+    font: 750 0.72rem/1 system-ui, sans-serif;
+  }
+
+  .character-model-wake-tab:hover,
+  .character-model-wake-tab:focus-visible {
+    border-color: color-mix(in oklch, var(--primary) 55%, rgba(35, 111, 91, 0.22));
+    background: color-mix(in oklch, var(--primary) 18%, white);
+    outline: none;
+  }
+
+  #spine-model-container.is-character-sleeping,
+  #sprite-model-container.is-character-sleeping,
+  #firefly-live2d-runtime.is-character-sleeping {
+    filter: saturate(0.62) brightness(0.94);
+    opacity: 0.78;
+    pointer-events: auto !important;
+    transition: filter 220ms ease, opacity 220ms ease;
+  }
+
+  #sprite-model-container.is-character-sleeping #sprite-model {
+    animation: character-sprite-sleep 2.8s ease-in-out infinite;
+    transform-origin: 50% 82%;
+  }
+
+  #spine-model-container.is-character-sleeping #spine-player-container,
+  #firefly-live2d-runtime.is-character-sleeping canvas {
+    animation: character-model-sleep 3.2s ease-in-out infinite;
+    transform-origin: 50% 88%;
+  }
+
+  #sprite-model-container.is-character-interacting #sprite-model {
+    animation: character-sprite-react 720ms steps(3, end) 1 both;
+  }
+
+  .sprite-model-reaction {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .sprite-model-reaction span {
+    position: absolute;
+    left: 50%;
+    top: 26%;
+    color: color-mix(in oklch, var(--primary) 68%, #ff8ab8);
+    font-size: 0.82rem;
+    opacity: 0;
+    filter: drop-shadow(0 0.18rem 0.22rem rgba(255, 255, 255, 0.88));
+  }
+
+  #sprite-model-container.is-character-interacting .sprite-model-reaction span {
+    animation: character-pet-spark 680ms ease-out both;
+  }
+
+  #sprite-model-container.is-character-interacting .sprite-model-reaction span:nth-child(1) {
+    --pet-spark-x: -2.2rem;
+  }
+
+  #sprite-model-container.is-character-interacting .sprite-model-reaction span:nth-child(2) {
+    --pet-spark-x: 0.15rem;
+    animation-delay: 70ms;
+  }
+
+  #sprite-model-container.is-character-interacting .sprite-model-reaction span:nth-child(3) {
+    --pet-spark-x: 2.1rem;
+    animation-delay: 120ms;
+  }
+
+  @keyframes character-model-sleep {
+    0%, 100% { transform: translateY(0.2rem) rotate(-3deg) scale(0.965); }
+    50% { transform: translateY(0.38rem) rotate(-3.8deg) scale(0.975, 0.955); }
+  }
+
+  @keyframes character-sprite-sleep {
+    0%, 100% { background-position: 28.571429% 62.5%; transform: translateY(0.2rem) rotate(-2deg) scale(0.97); }
+    50% { background-position: 28.571429% 62.5%; transform: translateY(0.42rem) rotate(-3deg) scale(0.98, 0.95); }
+  }
+
+  @keyframes character-sleep-text {
+    0%, 100% { opacity: 0.56; transform: translateY(0.08rem); }
+    50% { opacity: 1; transform: translateY(-0.08rem); }
+  }
+
+  @keyframes character-pet-spark {
+    0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+    28% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--pet-spark-x)), -2.6rem) scale(1.12); }
+  }
+
+  .character-model-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+    padding: 0;
+    background: rgba(231, 242, 237, 0.78);
+    backdrop-filter: blur(0.7rem);
+    cursor: default;
+    pointer-events: auto;
   }
 
   .character-model-library {
-    position: absolute;
-    bottom: calc(100% + 0.5rem);
-    left: 0;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 10003;
     display: grid;
-    width: min(20rem, calc(100vw - 1.5rem));
-    max-height: min(27rem, calc(100dvh - 11.5rem));
+    grid-template-rows: auto minmax(0, 1fr);
+    width: min(76vw, 76rem);
+    max-height: min(78dvh, 52rem);
     overflow: hidden;
-    border: 1px solid color-mix(in oklch, var(--primary) 38%, rgba(255, 255, 255, 0.3));
-    border-radius: 1rem;
-    background: color-mix(in oklch, rgba(18, 31, 45, 0.94) 88%, var(--primary));
-    box-shadow: 0 1rem 2.6rem rgba(0, 0, 0, 0.24);
+    border: 1px solid rgba(31, 117, 95, 0.2);
+    border-radius: 1.35rem;
+    background: rgba(250, 253, 252, 0.98);
+    box-shadow: 0 1.5rem 4rem rgba(24, 73, 61, 0.24);
     backdrop-filter: blur(1.15rem);
-    color: white;
+    color: #17322d;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
   }
 
   .character-model-library-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.8rem 0.9rem 0.65rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 1rem 1.25rem 0.9rem;
+    border-bottom: 1px solid rgba(31, 117, 95, 0.14);
   }
 
   .character-model-library-header span {
-    font-size: 0.82rem;
+    font-size: 1rem;
     font-weight: 800;
   }
 
   .character-model-library-header small {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.65rem;
+    color: #55726c;
+    font-size: 0.72rem;
   }
 
   .character-model-grid {
     display: grid;
-    gap: 0.35rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
     overflow-y: auto;
     overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     scrollbar-width: thin;
     touch-action: pan-y;
-    padding: 0.45rem;
+    padding: 0.85rem;
   }
 
   .character-model-option {
+    position: relative;
     display: grid;
-    grid-template-columns: 2rem minmax(0, 1fr) 0.75rem;
-    min-height: 3.25rem;
-    align-items: center;
-    gap: 0.62rem;
-    padding: 0.46rem 0.58rem;
+    grid-template-rows: 12rem auto;
+    min-width: 0;
+    min-height: 17rem;
+    overflow: hidden;
+    padding: 0;
     border: 1px solid transparent;
-    border-radius: 0.72rem;
-    background: transparent;
-    color: white;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.88);
+    color: #183832;
     text-align: left;
     cursor: pointer;
-    transition: background-color 160ms ease, border-color 160ms ease;
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
   }
 
   .character-model-option:hover {
-    border-color: rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(26, 153, 119, 0.38);
+    background: rgba(225, 247, 238, 0.92);
+    transform: translateY(-2px);
   }
 
   .character-model-option[aria-checked="true"] {
     border-color: color-mix(in oklch, var(--primary) 64%, rgba(255, 255, 255, 0.3));
-    background: color-mix(in oklch, var(--primary) 27%, transparent);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--primary) 18%, transparent);
   }
 
-  .character-model-option-icon {
+  .character-model-option-preview {
+    position: relative;
     display: grid;
-    width: 2rem;
-    height: 2rem;
     place-items: center;
-    border-radius: 0.58rem;
-    background: rgba(255, 255, 255, 0.12);
-    color: color-mix(in oklch, var(--primary) 64%, white);
-    font-size: 0.6rem;
+    overflow: hidden;
+    background:
+      linear-gradient(45deg, rgba(42, 131, 105, 0.08) 25%, transparent 25%) 0 0 / 1rem 1rem,
+      linear-gradient(-45deg, rgba(42, 131, 105, 0.08) 25%, transparent 25%) 0 0 / 1rem 1rem,
+      #eff8f4;
+    color: #299a7a;
+    font-size: 0.72rem;
     font-weight: 850;
     letter-spacing: 0.04em;
+  }
+
+  .character-model-option-preview img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0.45rem 0.7rem rgba(24, 73, 61, 0.18));
+  }
+
+  .character-model-sprite-preview {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(8.9rem, 76%);
+    aspect-ratio: 192 / 208;
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: 800% 900%;
+    filter: drop-shadow(0 0.45rem 0.7rem rgba(24, 73, 61, 0.18));
+    transform: translate(-50%, -50%);
   }
 
   .character-model-option-copy {
     display: grid;
     min-width: 0;
-    gap: 0.2rem;
+    gap: 0.24rem;
+    padding: 0.78rem 0.85rem 0.85rem;
   }
 
   .character-model-option-copy strong {
-    font-size: 0.74rem;
+    font-size: 0.92rem;
     line-height: 1;
   }
 
   .character-model-option-copy small {
     overflow: hidden;
-    color: rgba(255, 255, 255, 0.61);
-    font-size: 0.62rem;
+    color: #58716b;
+    font-size: 0.7rem;
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  .character-model-option-copy em {
+    width: max-content;
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--primary) 22%, transparent);
+    padding: 0.2rem 0.42rem;
+    color: #21876b;
+    font-size: 0.54rem;
+    font-style: normal;
+    font-weight: 750;
+  }
+
   .character-model-selected {
-    width: 0.48rem;
-    height: 0.48rem;
-    border: 1px solid rgba(255, 255, 255, 0.42);
-    border-radius: 50%;
+    position: absolute;
+    right: 0.7rem;
+    top: 0.7rem;
+    width: auto;
+    height: auto;
+    min-height: 1.45rem;
+    border: 1px solid rgba(31, 117, 95, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.84);
+    padding: 0.28rem 0.5rem;
+    color: transparent;
+    font: 750 0.58rem/1 system-ui, sans-serif;
+    opacity: 0;
   }
 
   .character-model-option[aria-checked="true"] .character-model-selected {
     border-color: var(--primary);
     background: var(--primary);
-    box-shadow: 0 0 0 0.2rem color-mix(in oklch, var(--primary) 22%, transparent);
+    box-shadow: 0 0.3rem 0.8rem color-mix(in oklch, var(--primary) 24%, transparent);
+    color: white;
+    opacity: 1;
   }
 
-  #character-model-switcher > button:hover,
-  #character-model-switcher > button:focus-visible {
-    border-color: color-mix(in oklch, var(--primary) 70%, white) !important;
-    background: color-mix(in oklch, var(--primary) 36%, rgba(18, 31, 45, 0.82)) !important;
-    outline: none;
+  #sprite-model {
+    width: 100%;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-size: 800% 900%;
+    cursor: grab;
+    animation: character-sprite-idle 1.5s steps(5, end) infinite;
+    filter: drop-shadow(0 0.55rem 0.7rem rgba(19, 54, 47, 0.16));
+  }
+
+  #sprite-model:active {
+    cursor: grabbing;
+  }
+
+  @keyframes character-sprite-idle {
+    from { background-position: 0 0; }
+    to { background-position: 71.428571% 0; }
+  }
+
+  @keyframes character-sprite-react {
+    from { background-position: 0 37.5%; }
+    to { background-position: 42.857143% 37.5%; }
+  }
+
+  html.character-model-library-open,
+  body.character-model-library-open {
+    overflow: hidden !important;
+    overscroll-behavior: none;
   }
 
   .character-model-option:focus-visible {
@@ -822,19 +1506,51 @@ import { url } from "@/utils/url-utils";
   }
 
   @media (max-height: 700px) {
-    #character-model-switcher {
-      bottom: 7.4rem !important;
+    .character-model-library {
+      max-height: calc(100dvh - 1.5rem);
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .character-model-library {
+      width: min(90vw, 52rem);
     }
 
+    .character-model-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 520px) {
     .character-model-library {
-      max-height: calc(100dvh - 10.5rem);
+      width: calc(100vw - 1rem);
+      max-height: calc(100dvh - 1rem);
+      border-radius: 1rem;
+    }
+
+    .character-model-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .character-model-option {
+      grid-template-columns: 6.5rem minmax(0, 1fr);
+      grid-template-rows: minmax(5.8rem, auto);
+      min-height: 5.8rem;
+    }
+
+    .character-model-option-copy {
+      align-content: center;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #character-model-switcher button,
-    .character-model-chevron {
+    #character-model-switcher button {
       transition: none;
     }
+
+    #sprite-model,
+    #spine-player-container,
+    #firefly-live2d-runtime canvas,
+    .character-model-wake-tab span { animation: none; }
   }
 </style>
