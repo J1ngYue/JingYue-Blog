@@ -20,12 +20,32 @@ if (!link) {
 const processedLink = link;
 
 const hasChildren = processedLink.children && processedLink.children.length > 0;
+const normalizePath = (pathname: string) => {
+	const normalized = pathname.replace(/\/+$/, "");
+	return normalized || "/";
+};
+const currentPath = normalizePath(Astro.url.pathname);
+const matchesCurrentPath = (pathname: string) => {
+	const targetPath = normalizePath(pathname);
+	return targetPath === "/"
+		? currentPath === "/"
+		: currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
+};
+const isActive =
+	!processedLink.external &&
+	(matchesCurrentPath(processedLink.url) ||
+		Boolean(
+			processedLink.children?.some(
+				(child) => !child.external && matchesCurrentPath(child.url),
+			),
+		));
 ---
 
-<div class:list={["dropdown-container", className]} data-dropdown>
+<div class:list={["dropdown-container", { "is-active": isActive }, className]} data-dropdown>
 	{hasChildren ? (
-		<button 
-			class="btn-plain scale-animation rounded-lg h-10 font-bold px-3 pr-7 active:scale-95 dropdown-trigger relative whitespace-nowrap shrink-0"
+		<button
+			type="button"
+			class:list={["navbar-menu-item dropdown-trigger", { "is-active": isActive }]}
 			aria-expanded="false"
 			aria-haspopup="true"
 			data-dropdown-trigger
@@ -34,7 +54,7 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 				{processedLink.icon && <Icon is:inline name={processedLink.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
 				{processedLink.name}
 			</div>
-			<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" class="text-[1.2rem] transition-transform duration-200 dropdown-arrow absolute right-2.5 top-1/2 -translate-y-1/2" />
+			<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" class="text-[1.2rem] transition-transform duration-200 dropdown-arrow ml-1" />
 		</button>
 		<div class="dropdown-menu" data-dropdown-menu>
 			<DropdownPanel class="dropdown-content">
@@ -43,7 +63,7 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 						href={child.external ? child.url : url(child.url)}
 						target={child.external ? "_blank" : undefined}
 						isLast={index === (processedLink.children?.length || 0) - 1}
-						class="dropdown-item h-10"
+						class="dropdown-item"
 					>
 						{child.icon && <Icon is:inline name={child.icon} class="text-[1.25rem] mr-3 navbar-icon" />}
 						<span>{child.name}</span>
@@ -55,11 +75,12 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 			</DropdownPanel>
 		</div>
 	) : (
-		<a 
-			aria-label={processedLink.name} 
-			href={processedLink.external ? processedLink.url : url(processedLink.url)} 
+		<a
+			aria-label={processedLink.name}
+			aria-current={isActive ? "page" : undefined}
+			href={processedLink.external ? processedLink.url : url(processedLink.url)}
 			target={processedLink.external ? "_blank" : null}
-			class="btn-plain scale-animation rounded-lg h-10 font-bold px-3 active:scale-95 whitespace-nowrap shrink-0"
+			class:list={["navbar-menu-item", { "is-active": isActive }]}
 		>
 			<div class="flex items-center gap-1.5 whitespace-nowrap">
 				{processedLink.icon && <Icon is:inline name={processedLink.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
@@ -184,4 +205,41 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 		menu.classList.add('opacity-0', 'invisible', 'pointer-events-none', 'translate-y-[-8px]');
 		menu.classList.remove('opacity-100', 'visible', 'pointer-events-auto', 'translate-y-0');
 	}
+
+	function syncNavbarActiveState() {
+		const normalizePath = (pathname: string) => pathname.replace(/\/+$/, '') || '/';
+		const currentPath = normalizePath(window.location.pathname);
+		const matchesPath = (pathname: string) => {
+			const targetPath = normalizePath(pathname);
+			return targetPath === '/'
+				? currentPath === '/'
+				: currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
+		};
+
+		document.querySelectorAll('#navbar .navbar-main-menu > [data-dropdown]').forEach((dropdown) => {
+			const links = dropdown.querySelectorAll<HTMLAnchorElement>('.navbar-menu-item[href], .dropdown-item[href]');
+			const isActive = Array.from(links).some((link) => {
+				const target = new URL(link.href, window.location.href);
+				return target.origin === window.location.origin && matchesPath(target.pathname);
+			});
+			const trigger = dropdown.querySelector<HTMLElement>(':scope > .navbar-menu-item');
+
+			dropdown.classList.toggle('is-active', isActive);
+			trigger?.classList.toggle('is-active', isActive);
+			if (trigger instanceof HTMLAnchorElement) {
+				if (isActive) trigger.setAttribute('aria-current', 'page');
+				else trigger.removeAttribute('aria-current');
+			}
+		});
+	}
+
+	document.addEventListener('DOMContentLoaded', syncNavbarActiveState);
+	document.addEventListener('astro:page-load', syncNavbarActiveState);
+	document.addEventListener('swup:contentReplaced', syncNavbarActiveState);
+
+	const bindNavbarSwup = () => {
+		window.swup?.hooks.on('page:view', syncNavbarActiveState);
+	};
+	if (window.swup) bindNavbarSwup();
+	else document.addEventListener('swup:enable', bindNavbarSwup, { once: true });
 </script>
