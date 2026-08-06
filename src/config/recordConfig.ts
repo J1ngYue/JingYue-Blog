@@ -110,7 +110,10 @@ const manualChangelogEntries: ChangelogEntry[] = [
 ];
 
 export const changelogEntries: ChangelogEntry[] = [
-	...generatedChangelogEntries,
+	...generatedChangelogEntries.map((entry) => ({
+		...entry,
+		changes: [...entry.changes],
+	})),
 	...manualChangelogEntries,
 ];
 
