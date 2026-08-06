@@ -34,6 +34,16 @@ function cleanSubject(subject) {
 	return subject.replace(/^[a-z]+(?:\([^)]*\))?:\s*/i, "").trim() || subject;
 }
 
+function stableVersion(commit, title) {
+	const slug =
+		title
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-|-$/g, "")
+			.slice(0, 24) || "update";
+	return `commit-${commit.dateKey.replaceAll("-", "")}-${commit.time.replace(":", "")}-${slug}`;
+}
+
 function getBaselineDate() {
 	try {
 		const source = readFileSync(recordConfigPath, "utf8");
@@ -51,7 +61,7 @@ function listCommits() {
 		"log",
 		"--date=iso-strict",
 		"--format=%h%x1f%ad%x1f%s",
-		"--max-count=1000",
+		"--max-count=5000",
 	]);
 	return output
 		.split("\n")
@@ -99,7 +109,7 @@ const generatedEntries = commits
 		const title = cleanSubject(commit.subject);
 		const files = changedFiles(commit.hash);
 		return {
-			version: `commit-${commit.dateKey.replaceAll("-", "")}-${commit.time.replace(":", "")}`,
+			version: stableVersion(commit, title),
 			date: commit.dateKey,
 			time: commit.time,
 			type: classify(commit.subject),
