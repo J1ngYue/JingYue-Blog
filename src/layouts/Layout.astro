@@ -10,9 +10,9 @@ import MusicLibraryDialog from "@components/features/MusicLibraryDialog.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import RainEffect from "@components/features/RainEffect.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
-import SnowEffect from "@components/features/SnowEffect.astro";
 import SiteAvatarManager from "@components/features/SiteAvatarManager.astro";
 import SiteProfileCoverManager from "@components/features/SiteProfileCoverManager.astro";
+import SnowEffect from "@components/features/SnowEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
 
 import {
@@ -1054,10 +1054,33 @@ function disableAnimation() {
     });
   }
 
+  function restoreTransitionShell() {
+    const transitionShell = document.querySelector<HTMLElement>(
+      ".w-full.z-30.pointer-events-none",
+    );
+    if (!transitionShell) return;
+
+    transitionShell.style.removeProperty("visibility");
+    transitionShell.style.removeProperty("opacity");
+  }
+
+  function scheduleTransitionShellRecovery() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(restoreTransitionShell);
+    });
+  }
+
   const setup = () => {
     const homePath = new URL(url("/"), window.location.origin).pathname;
     const toNavigationUrl = (value: string) =>
       new URL(value, window.location.href);
+
+    if (!(window as any).__fireflyTransitionShellRecoveryBound) {
+      (window as any).__fireflyTransitionShellRecoveryBound = true;
+      document.addEventListener("astro:page-load", scheduleTransitionShellRecovery);
+      document.addEventListener("swup:contentReplaced", scheduleTransitionShellRecovery);
+      document.addEventListener("swup:content:replaced", scheduleTransitionShellRecovery);
+    }
 
     if (!(window as any).__fireflyHomeLinkGuardBound) {
       (window as any).__fireflyHomeLinkGuardBound = true;
@@ -1403,13 +1426,7 @@ function disableAnimation() {
       }
     });
     window.swup.hooks.on("page:view", () => {
-	  const transitionShell = document.querySelector<HTMLElement>(
-		".w-full.z-30.pointer-events-none",
-	  );
-	  if (transitionShell) {
-		transitionShell.style.removeProperty("visibility");
-		transitionShell.style.removeProperty("opacity");
-	  }
+      restoreTransitionShell();
       requestAnimationFrame(applyContentOnlyMainLayout);
 
       // 更新网格列数和侧边栏组件可见性
@@ -1528,6 +1545,8 @@ function disableAnimation() {
       }, 300);
     });
     window.swup.hooks.on("visit:end", (_visit: { to: { url: string } }) => {
+      restoreTransitionShell();
+
       // Finish progress bar
       const progressBar = document.getElementById("progress-bar");
       if (progressBar) {
