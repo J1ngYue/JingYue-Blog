@@ -1,6 +1,15 @@
 ---
 import { Icon } from "astro-icon/components";
+import galleryImage1 from "@/assets/images/HomeReference/gallery-1.webp";
+import galleryImage2 from "@/assets/images/HomeReference/gallery-2.webp";
+import galleryImage3 from "@/assets/images/HomeReference/gallery-3.webp";
+import galleryImage4 from "@/assets/images/HomeReference/gallery-4.webp";
+import galleryImage5 from "@/assets/images/HomeReference/gallery-5.webp";
+import endingMidgroundImage from "@/assets/images/HomeReference/utl-back1.webp";
+import endingBackgroundVideo from "@/assets/images/HomeReference/utl-back2.webm";
+import endingForegroundImage from "@/assets/images/HomeReference/utl-1.webp";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import DarkModeSpotlight from "@/components/features/DarkModeSpotlight.svelte";
 import LocalWallpaperLayer from "@/components/features/LocalWallpaperLayer.svelte";
 import Categories from "@/components/widget/Categories.astro";
 import Dynamic from "@/components/widget/Dynamic.astro";
@@ -14,15 +23,16 @@ import { siteConfig } from "@/config/siteConfig";
 import type { ActivityCalendar } from "@/utils/home-activity";
 import { getBackgroundImages } from "@/utils/layout-utils";
 import ContributionHeatmap from "./ContributionHeatmap.astro";
-import HomeCoverLocalImport from "./HomeCoverLocalImport.svelte";
+import HomeEditorialPanels from "./HomeEditorialPanels.astro";
+import HomeHeroExperience from "./HomeHeroExperience.astro";
+import HomeProfileMatrix from "./HomeProfileMatrix.astro";
 import JingYueWordmark from "./JingYueWordmark.astro";
 
 interface Props {
-	blogActivity: ActivityCalendar;
 	githubActivity: ActivityCalendar;
 }
 
-const { blogActivity, githubActivity } = Astro.props;
+const { githubActivity } = Astro.props;
 const backgroundImages = getBackgroundImages();
 const heroDesktop =
 	backgroundImages.desktop[0] ||
@@ -48,53 +58,45 @@ const coverIllustrations = Array.from(
 	}),
 );
 
-const navigationItems = [
+const editorialPanels = [
 	{
-		name: "文章",
-		description: "归档每一段认真写下的文字",
-		href: "/archive/",
-		icon: "material-symbols:article-outline-rounded",
-	},
-	{
-		name: "动态",
-		description: "收藏日常、近况与灵感碎片",
-		href: "/dynamic/",
-		icon: "material-symbols:forum-outline-rounded",
-	},
-	{
-		name: "相册",
-		description: "让值得记住的光影慢慢停留",
-		href: "/gallery/",
-		icon: "material-symbols:photo-library-outline-rounded",
-	},
-	{
-		name: "友链",
-		description: "去往朋友们各自闪亮的小世界",
+		title: "外部站点",
+		label: "PROJECTS",
+		description: "友链站点 · 工具导航",
 		href: "/friends/",
-		icon: "material-symbols:link-rounded",
+		image: galleryImage1,
 	},
 	{
-		name: "留言",
-		description: "留下问候，也带走一份好心情",
-		href: "/guestbook/",
-		icon: "material-symbols:chat-bubble-outline-rounded",
+		title: "术业专攻",
+		label: "SPECIALITIES",
+		description: "AI 学习 · 技术架构 · 踩坑记录",
+		href: "/categories/",
+		image: galleryImage2,
 	},
 	{
-		name: "关于",
-		description: "认识站点，也认识屏幕后的我",
-		href: "/about/",
-		icon: "material-symbols:person-outline-rounded",
+		title: "博客特色",
+		label: "BLOG FEATURES",
+		description: "内容归档 · 活动热力图 · 结构化导航",
+		href: "/archive/",
+		image: galleryImage3,
+	},
+	{
+		title: "站点技术",
+		label: "STACK",
+		description: "Astro 7 · Svelte 5 · Tailwind CSS 4",
+		href: "/posts/firefly/",
+		image: galleryImage4,
+	},
+	{
+		title: "相册收录",
+		label: "PHOTO ALBUM",
+		description: "影像收藏 · 光影片刻",
+		href: "/gallery/",
+		image: galleryImage5,
 	},
 ];
-
-const cardImages = navigationItems.map(
-	(_, index) =>
-		backgroundImages.desktop[index % backgroundImages.desktop.length] ||
-		heroDesktop,
-);
 const exhibitImage = backgroundImages.desktop[2] || profileDesktop;
 const overviewImage = backgroundImages.desktop[3] || exhibitImage;
-const endingImage = backgroundImages.desktop[4] || heroDesktop;
 const overviewVideo =
 	"https://tzyy-1330068502.cos.ap-beijing.myqcloud.com/AI%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87/main/videos/feature-1.mp4";
 const siteTimezone = siteConfig.timezone || "Asia/Shanghai";
@@ -111,7 +113,6 @@ const terminalLines = [
 	"collect /dynamic --moments",
 	"explore /gallery --slowly",
 ];
-const profileTerminalLines = ["whoami", "cat ./about.txt", "ls ./social"];
 const heroMotes = Array.from({ length: 12 }, (_, index) => ({
 	x: `${8 + ((index * 23) % 86)}%`,
 	y: `${12 + ((index * 31) % 72)}%`,
@@ -119,81 +120,7 @@ const heroMotes = Array.from({ length: 12 }, (_, index) => ({
 	duration: `${8 + (index % 5)}s`,
 	size: `${3 + (index % 4)}px`,
 }));
-const profileHandle =
-	profileConfig.name.toLowerCase().replace(/[^a-z0-9_-]+/g, "") || "jingyue";
-const profilePath = `C:\\Users\\${profileHandle}\\profile`;
 const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
-const avatarResponses = [
-	"收到你的问候啦！",
-	"今天也要闪闪发光。",
-	"谢谢你来看我呀。",
-	"愿你此刻有个好心情。",
-];
-const avatarParticles = [
-	{
-		x: "-4.4rem",
-		y: "-4.7rem",
-		delay: "0ms",
-		scale: "0.72",
-		rotation: "-34deg",
-	},
-	{
-		x: "-2.8rem",
-		y: "-6.1rem",
-		delay: "45ms",
-		scale: "0.56",
-		rotation: "18deg",
-	},
-	{
-		x: "-0.8rem",
-		y: "-5.5rem",
-		delay: "90ms",
-		scale: "0.82",
-		rotation: "-12deg",
-	},
-	{
-		x: "1.5rem",
-		y: "-6.2rem",
-		delay: "20ms",
-		scale: "0.62",
-		rotation: "27deg",
-	},
-	{
-		x: "3.8rem",
-		y: "-4.8rem",
-		delay: "75ms",
-		scale: "0.76",
-		rotation: "42deg",
-	},
-	{
-		x: "4.8rem",
-		y: "-2.2rem",
-		delay: "115ms",
-		scale: "0.52",
-		rotation: "-20deg",
-	},
-	{
-		x: "-5rem",
-		y: "-1.8rem",
-		delay: "130ms",
-		scale: "0.58",
-		rotation: "24deg",
-	},
-	{
-		x: "3.5rem",
-		y: "0.8rem",
-		delay: "155ms",
-		scale: "0.48",
-		rotation: "38deg",
-	},
-	{
-		x: "-3.7rem",
-		y: "0.6rem",
-		delay: "165ms",
-		scale: "0.5",
-		rotation: "-28deg",
-	},
-];
 ---
 
 <div
@@ -204,6 +131,7 @@ const avatarParticles = [
 	data-home-default-hue={siteConfig.themeColor.hue}
 >
 	<LocalWallpaperLayer client:load surface="home" />
+	<DarkModeSpotlight client:load />
 
 	{musicPlayerConfig.showInNavbar && (
 		<button
@@ -211,7 +139,7 @@ const avatarParticles = [
 			class="home-music-edge"
 			data-home-music-trigger
 			aria-label="打开音乐播放器"
-			aria-controls="music-nav-panel"
+			aria-controls="music-mini-panel"
 			aria-expanded="false"
 			title="将指针移到这里打开音乐播放器"
 		>
@@ -237,11 +165,11 @@ const avatarParticles = [
 		<i class="home-profile-rail-divider" aria-hidden="true"></i>
 		<button
 			type="button"
-			data-home-cover-switcher-trigger
-			aria-label="打开动态插画选择器"
-			aria-controls="home-cover-switcher"
+			data-global-wallpaper-trigger
+			aria-label="打开页面壁纸选择器"
+			aria-controls="page-wallpaper-picker"
 			aria-expanded="false"
-			data-tooltip="动态插画"
+			data-tooltip="切换壁纸"
 		>
 			<Icon is:inline name="material-symbols:wallpaper" />
 		</button>
@@ -256,122 +184,14 @@ const avatarParticles = [
 		</a>
 	</nav>
 
-	<div
-		id="home-cover-switcher"
-		class="home-cover-switcher"
-		data-home-cover-switcher
-		aria-hidden="true"
-		hidden
+	<section
+		id="home-hero"
+		class="home-hero"
+		data-home-hero
+		data-home-page
+		data-home-section-tone="light"
+		aria-labelledby="home-hero-title"
 	>
-		<button
-			type="button"
-			class="home-cover-switcher-backdrop"
-			data-home-cover-switcher-close
-			aria-label="关闭动态插画选择器"
-		></button>
-		<section
-			class="home-cover-switcher-dialog"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="home-cover-switcher-title"
-		>
-			<button
-				type="button"
-				class="home-cover-switcher-close"
-				data-home-cover-switcher-close
-				aria-label="关闭"
-			>
-				<Icon is:inline name="material-symbols:close-rounded" />
-			</button>
-			<div class="home-cover-switcher-layout">
-				<aside class="home-cover-switcher-sidebar">
-					<div class="home-cover-switcher-heading">
-						<p>JINGYUE · 动态封面</p>
-						<h2 id="home-cover-switcher-title">选择一幅封面插画</h2>
-						<span class="home-cover-favorites-note">
-							<Icon is:inline name="material-symbols:star-rounded" />
-							这里展示的是我最常用的 4 张封面
-						</span>
-						<p class="home-cover-switcher-description">
-							从常用封面中快速切换，也可以导入自己的图片或动态视频。
-						</p>
-					</div>
-					<div class="home-cover-switcher-utilities">
-						<section class="home-cover-theme-control" aria-labelledby="home-cover-theme-title">
-							<div class="home-cover-theme-heading">
-								<span id="home-cover-theme-title">
-									<Icon is:inline name="material-symbols:palette-outline" />
-									主题颜色
-								</span>
-								<output data-home-cover-theme-value>{siteConfig.themeColor.hue}°</output>
-							</div>
-							<input
-								type="range"
-								min="0"
-								max="360"
-								step="1"
-								value={siteConfig.themeColor.hue}
-								data-home-cover-theme-range
-								aria-label="调整壁纸选择器与站点主题色"
-							/>
-							<div class="home-cover-theme-presets" aria-label="主题色预设">
-								{[140, 190, 230, 285, 330].map((hue) => (
-									<button
-										type="button"
-										data-home-cover-theme-preset={hue}
-										style={`--preset-hue: ${hue}`}
-										aria-label={`切换到 ${hue} 度主题色`}
-										aria-pressed="false"
-									></button>
-								))}
-								<button type="button" class="home-cover-theme-reset" data-home-cover-theme-reset>
-									<Icon is:inline name="material-symbols:restart-alt-rounded" />
-									恢复默认
-								</button>
-							</div>
-						</section>
-						<div class="home-cover-local-import">
-							<HomeCoverLocalImport compact client:load />
-						</div>
-						<p class="home-cover-switcher-hint">图片与视频会自动裁切并适配当前屏幕。</p>
-					</div>
-				</aside>
-				<div class="home-cover-orbit" data-home-cover-orbit aria-label="可选封面插画">
-				<div class="home-cover-orbit-lines" aria-hidden="true"><i></i><i></i><i></i></div>
-				{coverIllustrations.map((cover, index) => (
-					<button
-						type="button"
-						class:list={["home-cover-option", { "is-active": index === 0 }]}
-						data-home-cover-option={index}
-						aria-pressed={index === 0 ? "true" : "false"}
-					>
-						<ImageWrapper
-							src={cover.desktop}
-							alt=""
-							class="home-cover-option-image"
-							loading={index === 0 ? "eager" : "lazy"}
-							widths={[320, 480, 640]}
-							sizes="(max-width: 640px) 42vw, 18vw"
-							fadeIn={false}
-						/>
-						<span>常用封面 {String(index + 1).padStart(2, "0")}</span>
-					</button>
-				))}
-				<div class="home-cover-orbit-center" aria-hidden="true">
-					<Icon is:inline name="material-symbols:flare-rounded" />
-					<span>JINGYUE</span>
-					<small>选择封面</small>
-				</div>
-				<div class="home-cover-particle-arrow" data-home-cover-particle-arrow aria-hidden="true">
-					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-					<Icon is:inline name="material-symbols:arrow-forward-rounded" />
-				</div>
-				</div>
-			</div>
-		</section>
-	</div>
-
-	<section class="home-hero" data-home-hero aria-labelledby="home-hero-title">
 		<div class="home-hero-sticky">
 			<div class="home-hero-frame" data-home-hero-frame>
 				{coverIllustrations.map((cover, index) => (
@@ -427,7 +247,6 @@ const avatarParticles = [
 				</div>
 
 				<div class="home-hero-wash" aria-hidden="true"></div>
-				<div class="home-hero-grid" aria-hidden="true"></div>
 				<div class="home-hero-motes" aria-hidden="true">
 					{heroMotes.map((mote) => (
 						<i
@@ -436,21 +255,23 @@ const avatarParticles = [
 					))}
 				</div>
 
+				<HomeHeroExperience avatar={profileAvatar} />
+
 				<div class="home-cover-scene" data-home-cover-scene>
 					<div class="home-hero-content">
 						<p class="home-hero-eyebrow">JINGYUE · PERSONAL SPACE</p>
+						<p class="home-hero-subtitle">{siteConfig.subtitle}</p>
 						<h1 id="home-hero-title" class="home-hero-title">
 							<span class="sr-only">{siteConfig.title}</span>
 							<JingYueWordmark />
 						</h1>
-						<p class="home-hero-subtitle">{siteConfig.subtitle}</p>
 						<div class="home-hero-terminal" aria-label="封面动态指令">
 							<span class="home-terminal-prompt" aria-hidden="true">visitor@jingyue:~$</span>
 							<span data-home-terminal data-lines={JSON.stringify(terminalLines)}>{terminalLines[0]}</span>
 							<i aria-hidden="true"></i>
 						</div>
 					</div>
-					<a class="home-hero-action home-scene-next" href="#home-profile-scene" data-home-profile-trigger>
+					<a class="home-hero-action home-scene-next" href="#home-capabilities">
 						<span>向下探索</span>
 						<Icon is:inline name="material-symbols:arrow-downward-rounded" />
 					</a>
@@ -470,12 +291,6 @@ const avatarParticles = [
 						</blockquote>
 					</aside>
 
-					<nav class="home-hero-tools" aria-label="封面快捷工具">
-						<a href="/about/" aria-label="查看关于页面" title="关于">
-							<Icon is:inline name="material-symbols:person-outline-rounded" />
-						</a>
-					</nav>
-
 					<div class="home-hero-corner home-hero-corner-left" aria-hidden="true">
 						<span>SCROLL · MEET THE PERSON BEHIND JINGYUE</span>
 					</div>
@@ -484,169 +299,52 @@ const avatarParticles = [
 					</div>
 				</div>
 
-				<section
-					id="home-profile-scene"
-					class="home-profile-scene"
-					aria-labelledby="home-profile-title"
-					aria-hidden="true"
-					data-home-profile-scene
-					inert
-				>
-					<div class="home-scene-indicator" aria-hidden="true"><i></i><i></i></div>
-
-					<details class="home-profile-announcement">
-						<summary>
-							<Icon is:inline name="material-symbols:favorite-rounded" />
-							<span>今日公告</span>
-						</summary>
-						<div class="home-profile-announcement-panel">
-							<strong>{announcementConfig.title}</strong>
-							<p>{announcementConfig.content}</p>
-							{announcementConfig.link?.enable !== false && announcementConfig.link && (
-								<a
-									href={announcementConfig.link.url}
-									target={announcementConfig.link.external ? "_blank" : undefined}
-									rel={announcementConfig.link.external ? "noopener noreferrer" : undefined}
-								>
-									{announcementConfig.link.text}
-								</a>
-							)}
-						</div>
-					</details>
-
-					<div class="home-profile-content">
-						<div class="home-profile-avatar-stage">
-							<div class="home-profile-avatar-wrap">
-								<ImageWrapper
-									src={profileAvatar}
-									alt={`${profileConfig.name} 的头像`}
-									class="home-profile-avatar"
-									loading="eager"
-									widths={[160, 240, 320]}
-									sizes="(max-width: 640px) 7rem, 10rem"
-								/>
-								<span class="home-profile-avatar-badge" aria-hidden="true">
-									<Icon is:inline name="material-symbols:local-florist-rounded" />
-								</span>
-								<span class="home-profile-avatar-particles" aria-hidden="true">
-									{avatarParticles.map((particle) => (
-										<i style={`--particle-x:${particle.x};--particle-y:${particle.y};--particle-delay:${particle.delay};--particle-scale:${particle.scale};--particle-rotation:${particle.rotation}`}></i>
-									))}
-								</span>
-								<button
-									type="button"
-									class="home-profile-avatar-hit"
-									data-home-avatar-trigger
-									data-responses={JSON.stringify(avatarResponses)}
-									aria-label={`和 ${profileConfig.name} 打个招呼`}
-									aria-describedby="home-profile-avatar-feedback"
-									title="点击和我打个招呼"
-								></button>
-							</div>
-							<p
-								id="home-profile-avatar-feedback"
-								class="home-profile-avatar-feedback"
-								data-home-avatar-feedback
-								aria-live="polite"
-								hidden
-							></p>
-						</div>
-
-						<div class="home-profile-terminal">
-							<header>
-								<span class="home-profile-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-								<code>{profileHandle}-profile.exe</code>
-							</header>
-							<p class="home-profile-path">{profilePath}</p>
-							<h2 id="home-profile-title">
-								<span>profile@{profileHandle}:~$</span>
-								<span
-									class="home-profile-command"
-									data-home-profile-terminal
-									data-lines={JSON.stringify(profileTerminalLines)}
-								></span>
-								<i aria-hidden="true"></i>
-							</h2>
-							<p class="home-profile-bio">{profileConfig.bio}</p>
-							<div class="home-profile-links" aria-label="个人社交链接">
-								{profileConfig.links.map((link) => (
-									<a
-										href={link.url}
-										target={link.url.startsWith("http") ? "_blank" : undefined}
-										rel={link.url.startsWith("http") ? "noopener noreferrer" : undefined}
-									>
-										<Icon is:inline name={link.icon} />
-										<span>{link.name}</span>
-									</a>
-								))}
-							</div>
-						</div>
-					</div>
-
-					<a class="home-profile-continue home-scene-next" href="#home-navigation" data-home-navigation-trigger>
-						<span>向下探索</span>
-						<Icon is:inline name="material-symbols:keyboard-double-arrow-down-rounded" />
-					</a>
-				</section>
 			</div>
 		</div>
 	</section>
 
-	<div class="home-sections">
-		<section
-			id="home-navigation"
-			class="home-section home-navigation home-scroll-scene"
-			aria-labelledby="home-navigation-title"
-			data-home-scroll-scene
-		>
-			<div class="home-section-heading">
-				<div>
-					<p class="home-section-eyebrow">EXPLORE</p>
-					<h2 id="home-navigation-title">从这里开始</h2>
-				</div>
-				<p>没有说明书，也没有示例清单。选一个方向，直接进入我的世界。</p>
-			</div>
+	<section
+		id="home-capabilities"
+		class="home-capability-page home-scroll-scene"
+		aria-labelledby="home-capabilities-title"
+		data-home-profile-scene
+		data-home-scroll-scene
+		data-home-page
+		data-home-section-tone="light"
+	>
+		<HomeProfileMatrix embedded />
 
-			<nav class="home-nav-grid" aria-label="首页快捷导航">
-				{navigationItems.map((item, index) => (
-					<a class="home-nav-card" href={item.href}>
-						<ImageWrapper
-							src={cardImages[index]}
-							alt=""
-							class="home-nav-image"
-							loading="lazy"
-							layout="full-width"
-							widths={[480, 750, 1024]}
-							sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 33vw"
-						/>
-						<div class="home-nav-shade" aria-hidden="true"></div>
-						<div class="home-nav-topline">
-							<span class="home-nav-icon">
-								<Icon is:inline name={item.icon} />
-							</span>
-							<span class="home-nav-index">{String(index + 1).padStart(2, "0")}</span>
-						</div>
-						<div class="home-nav-copy">
-							<h3>{item.name}</h3>
-							<p>{item.description}</p>
-						</div>
-						<span class="home-nav-arrow" aria-hidden="true">
-							<Icon is:inline name="material-symbols:arrow-forward-rounded" />
-						</span>
+		<details class="home-profile-announcement">
+			<summary>
+				<Icon is:inline name="material-symbols:favorite-rounded" />
+				<span>今日公告</span>
+			</summary>
+			<div class="home-profile-announcement-panel">
+				<strong>{announcementConfig.title}</strong>
+				<p>{announcementConfig.content}</p>
+				{announcementConfig.link?.enable !== false && announcementConfig.link && (
+					<a
+						href={announcementConfig.link.url}
+						target={announcementConfig.link.external ? "_blank" : undefined}
+						rel={announcementConfig.link.external ? "noopener noreferrer" : undefined}
+					>
+						{announcementConfig.link.text}
 					</a>
-				))}
-			</nav>
-			<a class="home-scene-next home-section-next" href="#home-overview" aria-label="向下探索站点一览">
-				<span>向下探索</span>
-				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
-			</a>
-		</section>
+				)}
+			</div>
+		</details>
+	</section>
 
+	<HomeEditorialPanels panels={editorialPanels} />
+
+	<div class="home-sections">
 		<section
 			id="home-overview"
 			class="home-section home-overview home-scroll-scene"
 			aria-labelledby="home-overview-title"
 			data-home-scroll-scene
+			data-home-page
+			data-home-section-tone="light"
 		>
 			<div class="home-section-heading">
 				<div>
@@ -680,7 +378,28 @@ const avatarParticles = [
 				<div class="home-overview-illustration-shade"></div>
 				<span class="home-overview-illustration-index">片段 01</span>
 			</div>
-			<div class="home-overview-grid" data-home-scroll-stop>
+			<a class="home-scene-next home-section-next" href="#home-dashboard" aria-label="向下探索站点数据">
+				<span>向下探索</span>
+				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
+			</a>
+		</section>
+
+		<section
+			id="home-dashboard"
+			class="home-section home-dashboard home-scroll-scene"
+			aria-labelledby="home-dashboard-title"
+			data-home-scroll-scene
+			data-home-page
+			data-home-section-tone="light"
+		>
+			<div class="home-section-heading home-dashboard-heading">
+				<div>
+					<p class="home-section-eyebrow">SITE DATA · DASHBOARD</p>
+					<h2 id="home-dashboard-title">站点概览</h2>
+				</div>
+				<p>动态、统计、分类与标签均来自当前站点内容集合。</p>
+			</div>
+			<div class="home-overview-grid">
 				<Dynamic
 					class="home-overview-card home-overview-dynamic"
 					widgetConfig={{
@@ -728,6 +447,8 @@ const avatarParticles = [
 			class="home-section home-exhibit home-scroll-scene"
 			aria-labelledby="home-exhibit-title"
 			data-home-scroll-scene
+			data-home-page
+			data-home-section-tone="light"
 		>
 			<div class="home-exhibit-heading">
 				<p>VISUAL MOMENT · 01</p>
@@ -750,19 +471,28 @@ const avatarParticles = [
 					<span>让喜欢的画面，在经过时轻轻停一下。</span>
 				</div>
 			</div>
-			<a class="home-scene-next home-section-next" href="#home-activity" aria-label="向下探索创作活动">
+			<a class="home-scene-next home-section-next" href="#home-activity" aria-label="向下探索 GitHub 提交记录">
 				<span>向下探索</span>
 				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
 			</a>
 		</section>
 
-		<section id="home-activity" class="home-section home-activity home-scroll-scene" aria-label="创作活动" data-home-scroll-scene>
+		<section
+			id="home-activity"
+			class="home-section home-activity home-scroll-scene"
+			aria-label="GitHub 提交记录"
+			data-home-scroll-scene
+			data-home-page
+			data-home-section-tone="light"
+		>
 			<ContributionHeatmap
-				blog={blogActivity}
 				github={githubActivity}
 				githubUsername={githubUsername}
+				eyebrow="GITHUB ACTIVITY"
+				title="GitHub 提交记录"
+				description="把过去一年的代码贡献，整理成一眼可读的时间纹理。"
 			/>
-			<a class="home-scene-next home-section-next" href="#home-ending" aria-label="向下探索首页结语">
+			<a class="home-scene-next home-section-next" href="#home-ending" aria-label="向下探索结束页">
 				<span>向下探索</span>
 				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
 			</a>
@@ -773,28 +503,33 @@ const avatarParticles = [
 			class="home-ending home-scroll-scene"
 			aria-labelledby="home-ending-title"
 			data-home-scroll-scene
+			data-home-page
+			data-home-section-tone="light"
 		>
 			<div class="home-ending-inner">
+				<video
+					class="home-ending-video"
+					data-home-ending-video
+					data-src={endingBackgroundVideo}
+					muted
+					loop
+					playsinline
+					preload="none"
+					aria-hidden="true"
+				></video>
+				<div class="home-ending-midground" aria-hidden="true">
+					<img src={endingMidgroundImage.src} alt="" loading="lazy" decoding="async" />
+				</div>
+				<div class="home-ending-foreground" aria-hidden="true">
+					<img src={endingForegroundImage.src} alt="" loading="lazy" decoding="async" />
+				</div>
+				<div class="home-ending-vignette" aria-hidden="true"></div>
+				<div class="home-ending-copy">
 				<p class="home-ending-eyebrow">写在最后 · A LETTER FOR YOU</p>
 				<h2 id="home-ending-title">
 					<span>期待下一次，</span>
 					<span>在闪光处相见。</span>
 				</h2>
-
-				<div class="home-ending-art">
-					<span class="home-ending-tape home-ending-tape-left" aria-hidden="true"></span>
-					<span class="home-ending-tape home-ending-tape-right" aria-hidden="true"></span>
-					<div class="home-ending-image-mask">
-						<ImageWrapper
-							src={endingImage}
-							alt="JingYue 首页结束插画"
-							class="home-ending-image"
-							loading="lazy"
-							layout="full-width"
-							widths={[750, 1024, 1440, 1920]}
-							sizes="(max-width: 900px) 94vw, 68rem"
-						/>
-					</div>
 				</div>
 
 				<article class="home-ending-letter">
@@ -821,12 +556,16 @@ const avatarParticles = [
 	</div>
 </div>
 
-<script is:inline data-swup-ignore-script>
+<script is:inline>
+	function cleanupHomeLandingBeforeSwap() {
+		const cleanup = window.__fireflyHomeLandingCleanup;
+		if (typeof cleanup !== "function") return;
+		window.__fireflyHomeLandingCleanup = null;
+		cleanup();
+	}
+
 	function initHomeLanding() {
-		if (window.__fireflyHomeLandingCleanup) {
-			window.__fireflyHomeLandingCleanup();
-			window.__fireflyHomeLandingCleanup = null;
-		}
+		cleanupHomeLandingBeforeSwap();
 
 		const root = document.querySelector(".home-landing[data-home-landing]");
 		if (!root) return;
@@ -841,7 +580,7 @@ const avatarParticles = [
 		const days = root.querySelector("[data-home-days]");
 		const quote = root.querySelector("[data-home-quote]");
 		const musicTrigger = root.querySelector("[data-home-music-trigger]");
-		const musicPanel = document.getElementById("music-nav-panel");
+		const musicMiniPanel = document.getElementById("music-mini-panel");
 		const coverSwitcherTrigger = root.querySelector("[data-home-cover-switcher-trigger]");
 		const coverSwitcher = root.querySelector("[data-home-cover-switcher]");
 		const coverOrbit = root.querySelector("[data-home-cover-orbit]");
@@ -870,37 +609,29 @@ const avatarParticles = [
 				document.body.appendChild(element);
 				return { element, placeholder };
 			});
-		const profileTrigger = root.querySelector("[data-home-profile-trigger]");
-		const navigationTrigger = root.querySelector("[data-home-navigation-trigger]");
+		const sceneLinks = Array.from(root.querySelectorAll('a.home-scene-next[href^="#"]'));
 		const coverScene = root.querySelector("[data-home-cover-scene]");
 		const profileScene = root.querySelector("[data-home-profile-scene]");
+		const capabilityMatrix = profileScene?.querySelector(".home-capabilities");
 		const scrollScenes = Array.from(root.querySelectorAll("[data-home-scroll-scene]"));
-		const scrollStops = Array.from(root.querySelectorAll("[data-home-scroll-stop]"));
+		const endingScene = root.querySelector("#home-ending");
+		const endingVideo = root.querySelector("[data-home-ending-video]");
+		const navbar = document.getElementById("navbar");
 		const terminal = root.querySelector("[data-home-terminal]");
-		const profileTerminal = root.querySelector("[data-home-profile-terminal]");
-		const avatarTrigger = root.querySelector("[data-home-avatar-trigger]");
-		const avatarShell = avatarTrigger?.closest(".home-profile-avatar-wrap");
-		const avatarFeedback = root.querySelector("[data-home-avatar-feedback]");
-		const avatarResponseLines = avatarTrigger?.dataset.responses
-			? JSON.parse(avatarTrigger.dataset.responses)
-			: [];
-		const desktopSceneNavigation = window.matchMedia("(min-width: 1024px) and (pointer: fine)");
+		const desktopSceneNavigation = window.matchMedia("(min-width: 1024px)");
 		const timezone = root.dataset.homeTimezone || "Asia/Shanghai";
 		const startDate = root.dataset.homeStartDate || "2025-01-01";
 		const quotes = quote ? JSON.parse(quote.dataset.quotes || "[]") : [];
 		const terminalLines = terminal ? JSON.parse(terminal.dataset.lines || "[]") : [];
-		const profileTerminalLines = profileTerminal
-			? JSON.parse(profileTerminal.dataset.lines || "[]")
-			: [];
 		let animationFrame = 0;
 		let pageScrollAnimation = 0;
+		let pageScrollFallbackTimer = 0;
+		let pageScrollTransitionEndHandler = null;
+		let pageScrollTransitionActive = false;
 		let sceneMetricsFrame = 0;
 		let terminalTimer = 0;
-		let profileTerminalTimer = 0;
-		let avatarReactionTimer = 0;
-		let avatarFeedbackTimer = 0;
 		let sceneWheelQuietTimer = 0;
-		let musicCloseTimer = 0;
+		let sceneLockTimer = 0;
 		let quoteTimer = 0;
 		let coverSwitcherTimer = 0;
 		let coverChangeTimer = 0;
@@ -910,8 +641,10 @@ const avatarParticles = [
 		let exhibitTiltFrame = 0;
 		let wordmarkFrame = 0;
 		let wordmarkReadyFrame = 0;
+		let themeHueFrame = 0;
+		let pendingThemeHue = 0;
+		let themeHueAdjusting = false;
 		let quoteIndex = 0;
-		let avatarResponseIndex = 0;
 		let coverSwitcherOpen = false;
 		const defaultHue = Math.max(0, Math.min(360, Number(root.dataset.homeDefaultHue) || 140));
 		const storedHue = Math.max(
@@ -929,16 +662,38 @@ const avatarParticles = [
 				);
 			});
 		};
-		const applyThemeHue = (value) => {
-			const nextHue = Math.round(Math.max(0, Math.min(360, Number(value) || 0)));
+		pendingThemeHue = storedHue;
+		const normalizeThemeHue = (value) =>
+			Math.round(Math.max(0, Math.min(360, Number(value) || 0)));
+		const previewThemeHue = (value) => {
+			const nextHue = normalizeThemeHue(value);
+			pendingThemeHue = nextHue;
+			themeHueAdjusting = true;
+			document.documentElement.classList.add("is-theme-hue-adjusting");
+			syncThemeControls(nextHue);
+			if (themeHueFrame) return;
+			themeHueFrame = requestAnimationFrame(() => {
+				themeHueFrame = 0;
+				document.documentElement.style.setProperty("--hue", String(pendingThemeHue));
+			});
+		};
+		const applyThemeHue = (value = pendingThemeHue) => {
+			const nextHue = normalizeThemeHue(value);
+			pendingThemeHue = nextHue;
+			if (themeHueFrame) cancelAnimationFrame(themeHueFrame);
+			themeHueFrame = 0;
 			document.documentElement.style.setProperty("--hue", String(nextHue));
 			window.localStorage.setItem("hue", String(nextHue));
 			syncThemeControls(nextHue);
 			window.dispatchEvent(
 				new CustomEvent("firefly:theme-hue-change", { detail: { hue: nextHue } }),
 			);
+			themeHueAdjusting = false;
+			document.documentElement.classList.remove("is-theme-hue-adjusting");
 		};
-		const handleThemeRange = (event) => applyThemeHue(event.currentTarget.valueAsNumber);
+		const handleThemeRange = (event) => previewThemeHue(event.currentTarget.valueAsNumber);
+		const handleThemeRangeCommit = (event) =>
+			applyThemeHue(event.currentTarget.valueAsNumber);
 		const handleThemePreset = (event) =>
 			applyThemeHue(Number(event.currentTarget.dataset.homeCoverThemePreset));
 		const resetThemeHue = () => applyThemeHue(defaultHue);
@@ -950,20 +705,28 @@ const avatarParticles = [
 		let sceneWheelCaptured = false;
 		let sceneGestureQuiet = true;
 		let sceneAnimationDone = true;
+		let sceneLockDone = true;
 		let sceneTransitioning = false;
 		let sceneWheelDelta = 0;
 		let sceneWheelDirection = 0;
-		let nativeEdgeGesture = false;
+		let galleryLocked = false;
 		let activeSceneIndex = 0;
 		let sceneTargets = [];
-		let heroTop = 0;
-		let heroScrollDistance = 1;
+		let sceneRecords = [];
+		let activeSceneId = "";
+		const sectionToneOverrides = new Map();
 		let originalScrollBehavior = "";
+		let originalScrollSnapType = "";
+		let originalOverflowAnchor = "";
+		let originalBodyOverflowAnchor = "";
 		let pageScrollBehaviorLocked = false;
-		const sceneScrollDuration = 440;
-		const sceneWheelThreshold = 32;
-		const sceneWheelQuietDelay = 90;
-		const sceneEdgeTolerance = 32;
+		const sceneScrollDuration = 800;
+		const sceneWheelThreshold = 80;
+		const sceneWheelQuietDelay = 140;
+		const sceneLockDuration = 900;
+		const sceneEdgeTolerance = 48;
+
+		document.documentElement.classList.add("home-page-snap");
 
 		if (
 			document.documentElement.classList.contains("is-page-transitioning") ||
@@ -974,9 +737,6 @@ const avatarParticles = [
 		frame.classList.remove("home-hero-profile-active");
 		coverScene?.removeAttribute("inert");
 		coverScene?.setAttribute("aria-hidden", "false");
-		profileScene?.setAttribute("inert", "");
-		profileScene?.setAttribute("aria-hidden", "true");
-		if (profileTerminal) profileTerminal.textContent = "";
 
 		const playWordmark = () => {
 			if (!wordmark || wordmarkGlyphs.length === 0) return;
@@ -1005,15 +765,6 @@ const avatarParticles = [
 			frame.classList.toggle("home-hero-profile-active", active);
 			coverScene?.toggleAttribute("inert", active);
 			coverScene?.setAttribute("aria-hidden", String(active));
-			profileScene?.toggleAttribute("inert", !active);
-			profileScene?.setAttribute("aria-hidden", String(!active));
-
-			if (active) {
-				startProfileTerminal();
-			} else {
-				if (profileTerminalTimer) window.clearTimeout(profileTerminalTimer);
-				if (profileTerminal) profileTerminal.textContent = "";
-			}
 		};
 
 		const clockFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -1080,30 +831,16 @@ const avatarParticles = [
 		};
 
 		const setMusicDockOpen = (open) => {
-			if (!musicPanel) return;
-			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
-			musicPanel.classList.toggle("float-panel-closed", !open);
-			musicTrigger?.setAttribute("aria-expanded", String(open));
-		};
-
-		const openMusicDock = () => setMusicDockOpen(true);
-		const scheduleMusicDockClose = () => {
-			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
-			musicCloseTimer = window.setTimeout(() => {
-				musicCloseTimer = 0;
-				const triggerFocused = musicTrigger?.matches(":focus-visible");
-				if (
-					musicPanel?.matches(":hover, :focus-within") ||
-					musicTrigger?.matches(":hover, :focus-visible") ||
-					triggerFocused
-				) return;
-				setMusicDockOpen(false);
-			}, 240);
+			window.dispatchEvent(
+				new CustomEvent("jingyue:toggle-music-mini", { detail: { open } }),
+			);
 		};
 
 		const openMusicDockFromClick = (event) => {
 			event.stopPropagation();
-			setMusicDockOpen(true);
+			setMusicDockOpen(
+				musicMiniPanel?.classList.contains("music-mini-panel-closed") ?? true,
+			);
 		};
 
 		const handleMusicDockKeydown = (event) => {
@@ -1111,31 +848,9 @@ const avatarParticles = [
 			setMusicDockOpen(false);
 			musicTrigger?.focus({ preventScroll: true });
 		};
-
-		const showAvatarReaction = () => {
-			if (!avatarShell || !avatarFeedback || avatarResponseLines.length === 0) return;
-			if (avatarReactionTimer) window.clearTimeout(avatarReactionTimer);
-			if (avatarFeedbackTimer) window.clearTimeout(avatarFeedbackTimer);
-
-			avatarShell.classList.remove("is-reacting");
-			avatarFeedback.classList.remove("is-visible");
-			void avatarShell.offsetWidth;
-
-			avatarFeedback.textContent = avatarResponseLines[avatarResponseIndex];
-			avatarResponseIndex = (avatarResponseIndex + 1) % avatarResponseLines.length;
-			avatarFeedback.hidden = false;
-			avatarShell.classList.add("is-reacting");
-			avatarFeedback.classList.add("is-visible");
-
-			avatarReactionTimer = window.setTimeout(() => {
-				avatarReactionTimer = 0;
-				avatarShell.classList.remove("is-reacting");
-			}, 900);
-			avatarFeedbackTimer = window.setTimeout(() => {
-				avatarFeedbackTimer = 0;
-				avatarFeedback.classList.remove("is-visible");
-				avatarFeedback.hidden = true;
-			}, 1_900);
+		const syncMusicDockState = (event) => {
+			const open = Boolean(event.detail?.open);
+			musicTrigger?.setAttribute("aria-expanded", String(open));
 		};
 
 		const pointParticleArrow = (clientX, clientY) => {
@@ -1293,7 +1008,7 @@ const avatarParticles = [
 			const targetId = {
 				navigation: "quick-tools-navigation",
 				search: "quick-tools-search",
-				settings: "quick-tools-settings",
+				settings: "display-settings-switch",
 			}[action];
 			if (targetId) document.getElementById(targetId)?.click();
 		};
@@ -1428,48 +1143,98 @@ const avatarParticles = [
 		const lockPageScrollBehavior = () => {
 			if (!pageScrollBehaviorLocked) {
 				originalScrollBehavior = document.documentElement.style.scrollBehavior;
+				originalScrollSnapType = document.documentElement.style.scrollSnapType;
+				originalOverflowAnchor = document.documentElement.style.overflowAnchor;
+				originalBodyOverflowAnchor = document.body.style.overflowAnchor;
 				pageScrollBehaviorLocked = true;
 			}
 			document.documentElement.style.scrollBehavior = "auto";
+			document.documentElement.style.scrollSnapType = "none";
+			document.documentElement.style.overflowAnchor = "none";
+			document.body.style.overflowAnchor = "none";
+			document.documentElement.classList.add("home-scene-scroll-active");
 		};
 
 		const unlockPageScrollBehavior = () => {
+			document.documentElement.classList.remove("home-scene-scroll-active");
 			if (!pageScrollBehaviorLocked) return;
 			document.documentElement.style.scrollBehavior = originalScrollBehavior;
+			document.documentElement.style.scrollSnapType = originalScrollSnapType;
+			document.documentElement.style.overflowAnchor = originalOverflowAnchor;
+			document.body.style.overflowAnchor = originalBodyOverflowAnchor;
 			pageScrollBehaviorLocked = false;
 		};
 
-		function animatePageScroll(targetY, duration = sceneScrollDuration, onComplete) {
+		// Keep the 800ms movement on the compositor, then sync the real scroll position once.
+		const getVisualScrollPosition = () => {
+			if (!pageScrollTransitionActive) return window.scrollY;
+			try {
+				const matrix = new DOMMatrixReadOnly(window.getComputedStyle(root).transform);
+				return window.scrollY - matrix.m42;
+			} catch {
+				return window.scrollY;
+			}
+		};
+
+		const clearPageScrollVisual = (targetY = getVisualScrollPosition()) => {
 			if (pageScrollAnimation) cancelAnimationFrame(pageScrollAnimation);
+			pageScrollAnimation = 0;
+			if (pageScrollFallbackTimer) window.clearTimeout(pageScrollFallbackTimer);
+			pageScrollFallbackTimer = 0;
+			if (pageScrollTransitionEndHandler) {
+				root.removeEventListener("transitionend", pageScrollTransitionEndHandler);
+				pageScrollTransitionEndHandler = null;
+			}
+
+			root.style.transition = "none";
+			root.style.transform = "none";
+			root.style.willChange = "auto";
+			window.scrollTo(0, Math.max(0, targetY));
+			void root.offsetWidth;
+			root.style.removeProperty("transition");
+			root.style.removeProperty("transform");
+			root.style.removeProperty("will-change");
+			pageScrollTransitionActive = false;
+		};
+
+		function animatePageScroll(targetY, duration = sceneScrollDuration, onComplete) {
+			if (pageScrollTransitionActive) clearPageScrollVisual();
 			lockPageScrollBehavior();
 			const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
 			const destination = Math.min(maxScroll, Math.max(0, targetY));
 			const startY = window.scrollY;
 			const distance = destination - startY;
 			if (reducedMotion.matches || Math.abs(distance) < 2) {
-				window.scrollTo(0, destination);
-				pageScrollAnimation = 0;
+				clearPageScrollVisual(destination);
 				unlockPageScrollBehavior();
 				onComplete?.();
 				return;
 			}
 
-			const startedAt = performance.now();
-			const step = (now) => {
-				const progress = Math.min(1, (now - startedAt) / duration);
-				const eased = 0.5 - Math.cos(Math.PI * progress) / 2;
-				window.scrollTo(0, startY + distance * eased);
-				if (progress < 1) {
-					pageScrollAnimation = requestAnimationFrame(step);
-				} else {
-					window.scrollTo(0, destination);
-					pageScrollAnimation = 0;
-					unlockPageScrollBehavior();
-					onComplete?.();
-				}
+			let completed = false;
+			const finish = () => {
+				if (completed) return;
+				completed = true;
+				clearPageScrollVisual(destination);
+				unlockPageScrollBehavior();
+				onComplete?.();
 			};
+			pageScrollTransitionEndHandler = (event) => {
+				if (event.target === root && event.propertyName === "transform") finish();
+			};
+			root.addEventListener("transitionend", pageScrollTransitionEndHandler);
+			pageScrollTransitionActive = true;
+			root.style.transition = "none";
+			root.style.transform = "translate3d(0, 0, 0)";
+			root.style.willChange = "transform";
+			void root.offsetWidth;
 
-			pageScrollAnimation = requestAnimationFrame(step);
+			pageScrollAnimation = requestAnimationFrame(() => {
+				pageScrollAnimation = 0;
+				root.style.transition = `transform ${duration}ms cubic-bezier(0.65, 0, 0.35, 1)`;
+				root.style.transform = `translate3d(0, ${-distance}px, 0)`;
+			});
+			pageScrollFallbackTimer = window.setTimeout(finish, duration + 160);
 		}
 
 		const getElementPageTop = (element) => {
@@ -1495,33 +1260,82 @@ const avatarParticles = [
 			return closestIndex;
 		};
 
-		const setActiveSceneIndex = (index) => {
+		const applySectionTone = (tone = "light") => {
+			const safeTone = tone === "dark" ? "dark" : "light";
+			root.dataset.homeSectionTone = safeTone;
+			document.body.dataset.homeSectionTone = safeTone;
+			if (navbar) navbar.dataset.homeSectionTone = safeTone;
+		};
+
+		const syncSceneHash = (record) => {
+			if (!record?.id) return;
+			const hash = record.id === "home-hero" ? "" : `#${record.id}`;
+			const nextUrl = `${window.location.pathname}${window.location.search}${hash}`;
+			window.history.replaceState(window.history.state, "", nextUrl);
+		};
+
+		const setActiveSceneIndex = (index, { syncHash = false } = {}) => {
 			activeSceneIndex = Math.max(0, Math.min(sceneTargets.length - 1, index));
+			const record = sceneRecords[activeSceneIndex];
 			root.dataset.homeSceneIndex = String(activeSceneIndex);
+			if (!record) return;
+			root.dataset.homeSceneId = record.id;
+			if (navbar) {
+				navbar.dataset.homeBrand = "avatar";
+			}
+			const resolvedTone = sectionToneOverrides.get(record.id) || record.tone;
+			applySectionTone(resolvedTone);
+			if (record.id !== activeSceneId) {
+				activeSceneId = record.id;
+				window.dispatchEvent(
+					new CustomEvent("firefly:home-scene-change", {
+						detail: { id: record.id, index: activeSceneIndex, tone: resolvedTone },
+					}),
+				);
+			}
+			if (syncHash) syncSceneHash(record);
 		};
 
 		const updateSceneMetrics = () => {
-			heroTop = getElementPageTop(hero);
-			heroScrollDistance = Math.max(hero.offsetHeight - window.innerHeight, 1);
-			const sectionTargets = [
-				heroTop,
-				heroTop + heroScrollDistance,
-				...scrollScenes.map((scene) => getElementPageTop(scene)),
-			];
-			const stopTargets = scrollStops.map(
-				(stop) => Math.max(heroTop, getElementPageTop(stop) - Math.min(56, window.innerHeight * 0.06)),
-			);
-			sceneTargets = [...new Set([...sectionTargets, ...stopTargets])]
-				.sort((a, b) => a - b)
-				.filter((target, index, targets) => index === 0 || target - targets[index - 1] > 24);
+			const records = [
+				{
+					top: getElementPageTop(hero),
+					id: hero.id || "home-hero",
+					tone: hero.dataset.homeSectionTone || "light",
+				},
+				...scrollScenes.map((scene, index) => ({
+					top: getElementPageTop(scene),
+					id: scene.id || `home-section-${index + 1}`,
+					tone:
+						scene === profileScene
+							? document.documentElement.classList.contains("dark")
+								? "dark"
+								: "light"
+							: scene.dataset.homeSectionTone || "light",
+				})),
+			]
+				.sort((a, b) => a.top - b.top)
+				.filter((record, index, all) => index === 0 || record.top - all[index - 1].top > 24);
+			sceneRecords = records;
+			sceneTargets = records.map((record) => record.top);
 			if (!sceneTransitioning) setActiveSceneIndex(getClosestSceneIndex(sceneTargets));
 		};
 
 		const releaseSceneWheelIfReady = () => {
-			if (!sceneAnimationDone || !sceneGestureQuiet) return;
+			if (!sceneAnimationDone || !sceneGestureQuiet || !sceneLockDone) return;
 			sceneWheelCaptured = false;
 			sceneWheelDelta = 0;
 			sceneWheelDirection = 0;
+		};
+
+		const startSceneLock = () => {
+			sceneLockDone = false;
+			if (sceneLockTimer) window.clearTimeout(sceneLockTimer);
+			sceneLockTimer = window.setTimeout(() => {
+				sceneLockTimer = 0;
+				sceneLockDone = true;
+				releaseSceneWheelIfReady();
+			}, sceneLockDuration);
 		};
 
 		const scheduleSceneGestureQuiet = () => {
@@ -1532,7 +1346,6 @@ const avatarParticles = [
 				sceneGestureQuiet = true;
 				sceneWheelDelta = 0;
 				sceneWheelDirection = 0;
-				nativeEdgeGesture = false;
 				releaseSceneWheelIfReady();
 			}, sceneWheelQuietDelay);
 		};
@@ -1549,18 +1362,20 @@ const avatarParticles = [
 		};
 
 		const cancelSceneNavigation = () => {
-			if (pageScrollAnimation) cancelAnimationFrame(pageScrollAnimation);
-			pageScrollAnimation = 0;
+			clearPageScrollVisual();
 			if (sceneWheelQuietTimer) window.clearTimeout(sceneWheelQuietTimer);
 			sceneWheelQuietTimer = 0;
+			if (sceneLockTimer) window.clearTimeout(sceneLockTimer);
+			sceneLockTimer = 0;
 			sceneTransitioning = false;
 			sceneAnimationDone = true;
+			sceneLockDone = true;
 			sceneGestureQuiet = true;
 			sceneWheelCaptured = false;
 			sceneWheelDelta = 0;
 			sceneWheelDirection = 0;
-			nativeEdgeGesture = false;
 			root.classList.remove("is-scene-transitioning");
+			document.documentElement.classList.remove("home-scene-scroll-active");
 			unlockPageScrollBehavior();
 		};
 
@@ -1571,19 +1386,91 @@ const avatarParticles = [
 			sceneWheelCaptured = true;
 			sceneAnimationDone = false;
 			sceneTransitioning = true;
+			startSceneLock();
 			root.classList.add("is-scene-transitioning");
-			setProfileSceneActive(safeIndex > 0);
+			const targetRecord = sceneRecords[safeIndex];
+			const targetScene = targetRecord?.id ? document.getElementById(targetRecord.id) : null;
+			targetScene?.classList.add("is-visible");
+			setProfileSceneActive(false);
 			animatePageScroll(sceneTargets[safeIndex], sceneScrollDuration, () => {
 				sceneTransitioning = false;
 				sceneAnimationDone = true;
 				root.classList.remove("is-scene-transitioning");
+				setActiveSceneIndex(safeIndex, { syncHash: true });
 				render();
 				releaseSceneWheelIfReady();
 			});
 		};
 
+		const isEditableTarget = (target) =>
+			Boolean(
+				target?.closest(
+					'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]',
+				),
+			);
+
+		const isOverlayOpen = () =>
+			document.body.classList.contains("character-model-library-open") ||
+			document.body.classList.contains("home-cover-switcher-open") ||
+			document.documentElement.classList.contains("page-wallpaper-picker-open") ||
+			Boolean(
+				document.querySelector(
+					'dialog[open], [aria-modal="true"].is-open, .float-panel:not(.float-panel-closed):not(.dropdown-content)',
+				),
+			);
+
+		const isExcludedInteraction = (target) =>
+			isEditableTarget(target) ||
+			Boolean(
+				target?.closest(
+					'#navbar, dialog, [role="dialog"], [aria-modal="true"], .dropdown-content, .float-panel, [data-home-cover-switcher], [data-character-model-options], [data-home-native-scroll]',
+				),
+			);
+
+		const isKeyboardControlTarget = (target) =>
+			Boolean(
+				target?.closest(
+					'a[href], button, summary, [tabindex]:not([tabindex="-1"]), [role="button"], [role="link"], [role="menuitem"], [role="option"], [role="tab"], [role="slider"], [role="spinbutton"], [role="checkbox"], [role="radio"], [role="switch"]',
+				),
+			);
+
+		const canScrollableAncestorConsume = (target, direction) => {
+			let current = target;
+			while (current && current !== root && current !== document.body) {
+				const style = window.getComputedStyle(current);
+				if (/(auto|scroll|overlay)/.test(style.overflowY) && current.scrollHeight > current.clientHeight + 1) {
+					const atStart = current.scrollTop <= 1;
+					const atEnd = current.scrollTop + current.clientHeight >= current.scrollHeight - 1;
+					if ((direction < 0 && !atStart) || (direction > 0 && !atEnd)) return true;
+				}
+				current = current.parentElement;
+			}
+			return false;
+		};
+
+		const navigateFromInput = (direction, event) => {
+			updateSceneMetrics();
+			setActiveSceneIndex(getClosestSceneIndex(sceneTargets));
+			const currentRecord = sceneRecords[activeSceneIndex];
+			if (currentRecord?.id === "home-gallery" && galleryLocked) {
+				if (direction > 0) {
+					event.preventDefault();
+					return true;
+				}
+				cancelSceneNavigation();
+			}
+			if (sceneTransitioning || sceneWheelCaptured) {
+				event.preventDefault();
+				return true;
+			}
+			const nextIndex = activeSceneIndex + direction;
+			if (nextIndex < 0 || nextIndex >= sceneTargets.length) return false;
+			event.preventDefault();
+			navigateToScene(nextIndex);
+			return true;
+		};
+
 		const handleHomeWheel = (event) => {
-			if (document.body.classList.contains("character-model-library-open")) return;
 			if (
 				reducedMotion.matches ||
 				!desktopSceneNavigation.matches ||
@@ -1593,37 +1480,36 @@ const avatarParticles = [
 			) return;
 
 			const eventTarget = event.target instanceof Element ? event.target : null;
-			if (
-				coverSwitcherOpen ||
-				eventTarget?.closest("#music-nav-panel, #display-setting, [data-home-cover-switcher], [data-character-model-options], input, textarea, select")
-			) return;
+			if (coverSwitcherOpen || isOverlayOpen() || isExcludedInteraction(eventTarget)) return;
 
 			const deltaY = normalizeWheelDelta(event, event.deltaY);
 			if (Math.abs(deltaY) < 0.1) return;
 			const direction = deltaY > 0 ? 1 : -1;
+			if (canScrollableAncestorConsume(eventTarget, direction)) return;
+
+			updateSceneMetrics();
+			setActiveSceneIndex(getClosestSceneIndex(sceneTargets));
+			if (sceneRecords[activeSceneIndex]?.id === "home-gallery" && galleryLocked && direction < 0) {
+				event.preventDefault();
+				cancelSceneNavigation();
+				navigateToScene(activeSceneIndex - 1);
+				return;
+			}
+			if (sceneRecords[activeSceneIndex]?.id === "home-gallery" && galleryLocked && direction > 0) {
+				event.preventDefault();
+				scheduleSceneGestureQuiet();
+				return;
+			}
 
 			if (sceneTransitioning || sceneWheelCaptured) {
 				event.preventDefault();
 				scheduleSceneGestureQuiet();
 				return;
 			}
-
-			if (sceneWheelDelta === 0 && sceneWheelDirection === 0) updateSceneMetrics();
-			setActiveSceneIndex(getClosestSceneIndex(sceneTargets));
-			// Only the opening storyboard is wheel-snapped. Content sections keep
-			// native scrolling so trackpads and high-resolution wheels stay fluid.
-			const lastSceneIndex = Math.min(2, sceneTargets.length - 1);
-			const beyondLastScene =
-				window.scrollY > (sceneTargets[lastSceneIndex] ?? 0) + sceneEdgeTolerance;
 			if (
-				nativeEdgeGesture ||
-				beyondLastScene ||
-				(activeSceneIndex === lastSceneIndex && direction > 0)
-			) {
-				nativeEdgeGesture = true;
-				scheduleSceneGestureQuiet();
-				return;
-			}
+				(activeSceneIndex === 0 && direction < 0) ||
+				(activeSceneIndex === sceneTargets.length - 1 && direction > 0)
+			) return;
 
 			event.preventDefault();
 			scheduleSceneGestureQuiet();
@@ -1633,27 +1519,55 @@ const avatarParticles = [
 			if (Math.abs(sceneWheelDelta) < sceneWheelThreshold) return;
 
 			sceneWheelDelta = 0;
-			const nextIndex = Math.max(
-				0,
-				Math.min(sceneTargets.length - 1, activeSceneIndex + direction),
-			);
-			if (nextIndex === activeSceneIndex) {
-				sceneWheelCaptured = true;
-				sceneAnimationDone = true;
-				releaseSceneWheelIfReady();
+			const nextIndex = activeSceneIndex + direction;
+			if (nextIndex < 0 || nextIndex >= sceneTargets.length) {
+				sceneWheelDelta = 0;
 				return;
 			}
 			navigateToScene(nextIndex);
 		};
 
-		const showNavigationScene = (event) => {
-			event.preventDefault();
-			navigateToScene(2);
+		const handleHomeKeydown = (event) => {
+			const eventTarget = event.target instanceof Element ? event.target : null;
+			if (
+				event.defaultPrevented ||
+				reducedMotion.matches ||
+				!desktopSceneNavigation.matches ||
+				event.ctrlKey ||
+				event.altKey ||
+				isOverlayOpen() ||
+				isExcludedInteraction(eventTarget) ||
+				isKeyboardControlTarget(eventTarget)
+			) return;
+
+			let direction = 0;
+			if (["ArrowDown", "PageDown"].includes(event.key)) direction = 1;
+			if (["ArrowUp", "PageUp"].includes(event.key)) direction = -1;
+			if (event.key === " " || event.key === "Spacebar") direction = event.shiftKey ? -1 : 1;
+			if (!direction) return;
+			navigateFromInput(direction, event);
 		};
 
-		const showProfileScene = (event) => {
+		const handleSceneLink = (event) => {
+			if (reducedMotion.matches || !desktopSceneNavigation.matches) return;
+			const id = event.currentTarget.hash.slice(1);
+			updateSceneMetrics();
+			const targetIndex = sceneRecords.findIndex((record) => record.id === id);
+			if (targetIndex < 0) return;
 			event.preventDefault();
-			navigateToScene(reducedMotion.matches ? 2 : 1);
+			navigateToScene(targetIndex);
+		};
+
+		const handleGalleryLock = (event) => {
+			galleryLocked = Boolean(event.detail?.locked);
+			root.dataset.homeGalleryLocked = String(galleryLocked);
+		};
+
+		const handleHomeSectionTone = (event) => {
+			const id = event.detail?.id;
+			if (!id) return;
+			sectionToneOverrides.set(id, event.detail?.tone === "dark" ? "dark" : "light");
+			if (id === activeSceneId) applySectionTone(sectionToneOverrides.get(id));
 		};
 
 		const startTerminal = () => {
@@ -1689,59 +1603,62 @@ const avatarParticles = [
 			terminalTimer = window.setTimeout(type, 450);
 		};
 
-		function startProfileTerminal() {
-			if (!profileTerminal || profileTerminalLines.length === 0) return;
-			if (profileTerminalTimer) window.clearTimeout(profileTerminalTimer);
-			if (reducedMotion.matches) {
-				profileTerminal.textContent = profileTerminalLines[0];
-				return;
-			}
-
-			let lineIndex = 0;
-			let characterIndex = 0;
-			let deleting = false;
-			const type = () => {
-				if (!profileSceneActive) return;
-				const line = profileTerminalLines[lineIndex];
-				characterIndex += deleting ? -1 : 1;
-				profileTerminal.textContent = line.slice(0, characterIndex);
-				let delay = deleting ? 38 : 82;
-
-				if (!deleting && characterIndex >= line.length) {
-					deleting = true;
-					delay = 1500;
-				} else if (deleting && characterIndex <= 0) {
-					deleting = false;
-					lineIndex = (lineIndex + 1) % profileTerminalLines.length;
-					delay = 320;
-				}
-
-				profileTerminalTimer = window.setTimeout(type, delay);
-			};
-
-			profileTerminal.textContent = "";
-			profileTerminalTimer = window.setTimeout(type, 520);
-		}
-
 		updateSceneMetrics();
 		sceneMetricsFrame = requestAnimationFrame(() => {
 			sceneMetricsFrame = 0;
 			updateSceneMetrics();
+			const initialId = window.location.hash.slice(1);
+			const initialIndex = initialId
+				? sceneRecords.findIndex((record) => record.id === initialId)
+				: -1;
+			if (initialIndex >= 0) {
+				window.scrollTo({ top: sceneTargets[initialIndex], left: 0, behavior: "auto" });
+				setActiveSceneIndex(initialIndex);
+				setProfileSceneActive(false);
+			}
 		});
 		root.setAttribute("data-home-scenes-ready", "true");
 		let sceneObserver = null;
 		let overviewVideoObserver = null;
+		let endingVideoLoaded = false;
 		const markOverviewVideoPlaying = () => {
 			overviewVideo?.classList.add("is-playing");
+		};
+		const syncEndingVideo = (visible) => {
+			if (!endingVideo || reducedMotion.matches) return;
+			if (!visible) {
+				if (endingVideoLoaded) endingVideo.pause();
+				return;
+			}
+			if (!endingVideoLoaded) {
+				const source = endingVideo.dataset.src;
+				if (!source) return;
+				endingVideo.src = source;
+				endingVideoLoaded = true;
+				endingVideo.load();
+			}
+			endingVideo.play().catch(() => {});
 		};
 		if ("IntersectionObserver" in window) {
 			sceneObserver = new IntersectionObserver(
 				(entries) => {
 					entries.forEach((entry) => {
-						entry.target.classList.toggle("is-visible", entry.isIntersecting);
+						const visibleEnough = entry.isIntersecting && entry.intersectionRatio >= 0.35;
+						entry.target.classList.toggle(
+							"is-visible",
+							visibleEnough,
+						);
+						if (entry.target === profileScene) {
+							capabilityMatrix?.classList.toggle("is-visible", visibleEnough);
+						}
+						if (entry.target === endingScene) syncEndingVideo(visibleEnough);
+						if (entry.intersectionRatio >= 0.6 && !sceneTransitioning) {
+							const index = sceneRecords.findIndex((record) => record.id === entry.target.id);
+							if (index >= 0) setActiveSceneIndex(index);
+						}
 					});
 				},
-				{ threshold: 0.2 },
+				{ threshold: [0, 0.35, 0.6] },
 			);
 			scrollScenes.forEach((scene) => sceneObserver.observe(scene));
 			if (overviewVideo) {
@@ -1759,6 +1676,8 @@ const avatarParticles = [
 			}
 		} else {
 			scrollScenes.forEach((scene) => scene.classList.add("is-visible"));
+			capabilityMatrix?.classList.add("is-visible");
+			syncEndingVideo(true);
 			overviewVideo?.play().catch(() => {});
 		}
 		overviewVideo?.addEventListener("playing", markOverviewVideoPlaying);
@@ -1766,18 +1685,9 @@ const avatarParticles = [
 		updateClock();
 		const clockInterval = window.setInterval(updateClock, 1000);
 		quoteTimer = window.setInterval(showNextQuote, 6000);
-		avatarTrigger?.addEventListener("click", showAvatarReaction);
 		musicTrigger?.addEventListener("click", openMusicDockFromClick);
-		musicTrigger?.addEventListener("pointerenter", openMusicDock);
-		musicTrigger?.addEventListener("pointerleave", scheduleMusicDockClose);
-		musicTrigger?.addEventListener("focus", openMusicDock);
-		musicTrigger?.addEventListener("blur", scheduleMusicDockClose);
 		musicTrigger?.addEventListener("keydown", handleMusicDockKeydown);
-		musicPanel?.addEventListener("pointerenter", openMusicDock);
-		musicPanel?.addEventListener("pointerleave", scheduleMusicDockClose);
-		musicPanel?.addEventListener("focusin", openMusicDock);
-		musicPanel?.addEventListener("focusout", scheduleMusicDockClose);
-		musicPanel?.addEventListener("keydown", handleMusicDockKeydown);
+		window.addEventListener("jingyue:music-mini-state", syncMusicDockState);
 		coverSwitcherTrigger?.addEventListener("click", openCoverSwitcher);
 		coverSwitcherClosers.forEach((closer) => closer.addEventListener("click", closeCoverSwitcher));
 		coverOptions.forEach((option) => option.addEventListener("click", selectCoverIllustration));
@@ -1793,6 +1703,10 @@ const avatarParticles = [
 		);
 		window.dispatchEvent(new CustomEvent("jingyue:request-local-cover-favorites-sync"));
 		themeRange?.addEventListener("input", handleThemeRange);
+		themeRange?.addEventListener("change", handleThemeRangeCommit);
+		themeRange?.addEventListener("pointerup", handleThemeRangeCommit);
+		themeRange?.addEventListener("pointercancel", handleThemeRangeCommit);
+		themeRange?.addEventListener("blur", handleThemeRangeCommit);
 		themePresets.forEach((preset) => preset.addEventListener("click", handleThemePreset));
 		themeReset?.addEventListener("click", resetThemeHue);
 		coverSwitcher?.addEventListener("keydown", handleCoverSwitcherKeydown);
@@ -1805,32 +1719,27 @@ const avatarParticles = [
 			exhibitTilt.addEventListener("pointercancel", resetExhibitTilt);
 		});
 		window.addEventListener("jingyue:local-cover-state-change", handleLocalCoverState);
-		profileTrigger?.addEventListener("click", showProfileScene);
-		navigationTrigger?.addEventListener("click", showNavigationScene);
+		sceneLinks.forEach((link) => link.addEventListener("click", handleSceneLink));
 		window.addEventListener("wheel", handleHomeWheel, { passive: false });
+		window.addEventListener("keydown", handleHomeKeydown);
+		window.addEventListener("firefly:home-gallery-lock", handleGalleryLock);
+		window.addEventListener("firefly:home-section-tone", handleHomeSectionTone);
+		window.__fireflyHomeGoToScene = (target = 0) => {
+			updateSceneMetrics();
+			const index = typeof target === "string"
+				? sceneRecords.findIndex((record) => record.id === target.replace(/^#/, ""))
+				: Number(target);
+			navigateToScene(index >= 0 ? index : 0);
+		};
 		playWordmark();
 		startTerminal();
 
 		const render = () => {
 			animationFrame = 0;
 			if (sceneTransitioning) return;
-			if (reducedMotion.matches) {
-				setProfileSceneActive(false);
-				return;
-			}
-
-			const profileSceneEnd = sceneTargets[2] ?? heroTop + hero.offsetHeight;
-			if (window.scrollY >= profileSceneEnd - 1) {
-				setProfileSceneActive(false);
-				return;
-			}
-
-			const progress = Math.min(
-				1,
-				Math.max(0, (window.scrollY - heroTop) / heroScrollDistance),
-			);
-			if (!profileSceneActive && progress >= 0.12) setProfileSceneActive(true);
-			if (profileSceneActive && progress <= 0.035) setProfileSceneActive(false);
+			const closestIndex = getClosestSceneIndex(sceneTargets);
+			setActiveSceneIndex(closestIndex);
+			setProfileSceneActive(false);
 		};
 
 		const scheduleRender = () => {
@@ -1868,28 +1777,30 @@ const avatarParticles = [
 				render();
 			});
 		};
+		const handleThemeChange = () => {
+			updateSceneMetrics();
+			render();
+		};
+		const themeClassObserver = new MutationObserver(handleThemeChange);
+		themeClassObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
 
 		window.addEventListener("scroll", scheduleRender, { passive: true });
 		window.addEventListener("resize", handleViewportResize);
+		window.addEventListener("theme-change", handleThemeChange);
 		reducedMotion.addEventListener("change", handleMotionPreference);
 		render();
 
 		window.__fireflyHomeLandingCleanup = () => {
 			window.removeEventListener("scroll", scheduleRender);
 			window.removeEventListener("resize", handleViewportResize);
+			window.removeEventListener("theme-change", handleThemeChange);
 			reducedMotion.removeEventListener("change", handleMotionPreference);
-			avatarTrigger?.removeEventListener("click", showAvatarReaction);
 			musicTrigger?.removeEventListener("click", openMusicDockFromClick);
-			musicTrigger?.removeEventListener("pointerenter", openMusicDock);
-			musicTrigger?.removeEventListener("pointerleave", scheduleMusicDockClose);
-			musicTrigger?.removeEventListener("focus", openMusicDock);
-			musicTrigger?.removeEventListener("blur", scheduleMusicDockClose);
 			musicTrigger?.removeEventListener("keydown", handleMusicDockKeydown);
-			musicPanel?.removeEventListener("pointerenter", openMusicDock);
-			musicPanel?.removeEventListener("pointerleave", scheduleMusicDockClose);
-			musicPanel?.removeEventListener("focusin", openMusicDock);
-			musicPanel?.removeEventListener("focusout", scheduleMusicDockClose);
-			musicPanel?.removeEventListener("keydown", handleMusicDockKeydown);
+			window.removeEventListener("jingyue:music-mini-state", syncMusicDockState);
 			coverSwitcherTrigger?.removeEventListener("click", openCoverSwitcher);
 			coverSwitcherClosers.forEach((closer) => closer.removeEventListener("click", closeCoverSwitcher));
 			coverOptions.forEach((option) => option.removeEventListener("click", selectCoverIllustration));
@@ -1904,6 +1815,15 @@ const avatarParticles = [
 				selectBuiltInCoverFromHistory,
 			);
 			themeRange?.removeEventListener("input", handleThemeRange);
+			themeRange?.removeEventListener("change", handleThemeRangeCommit);
+			themeRange?.removeEventListener("pointerup", handleThemeRangeCommit);
+			themeRange?.removeEventListener("pointercancel", handleThemeRangeCommit);
+			themeRange?.removeEventListener("blur", handleThemeRangeCommit);
+			if (themeHueFrame) cancelAnimationFrame(themeHueFrame);
+			themeHueFrame = 0;
+			if (themeHueAdjusting) {
+				document.documentElement.classList.remove("is-theme-hue-adjusting");
+			}
 			themePresets.forEach((preset) => preset.removeEventListener("click", handleThemePreset));
 			themeReset?.removeEventListener("click", resetThemeHue);
 			homeQuickTools.forEach((tool) => {
@@ -1922,38 +1842,48 @@ const avatarParticles = [
 			});
 			overviewVideo?.removeEventListener("playing", markOverviewVideoPlaying);
 			overviewVideo?.pause();
+			endingVideo?.pause();
 			window.removeEventListener("jingyue:local-cover-state-change", handleLocalCoverState);
-			profileTrigger?.removeEventListener("click", showProfileScene);
-			navigationTrigger?.removeEventListener("click", showNavigationScene);
+			sceneLinks.forEach((link) => link.removeEventListener("click", handleSceneLink));
 			window.removeEventListener("wheel", handleHomeWheel);
+			window.removeEventListener("keydown", handleHomeKeydown);
+			window.removeEventListener("firefly:home-gallery-lock", handleGalleryLock);
+			window.removeEventListener("firefly:home-section-tone", handleHomeSectionTone);
 			sceneObserver?.disconnect();
 			overviewVideoObserver?.disconnect();
+			themeClassObserver.disconnect();
 			root.removeAttribute("data-home-scenes-ready");
 			root.removeAttribute("data-home-scene-index");
+			root.removeAttribute("data-home-scene-id");
+			root.removeAttribute("data-home-gallery-locked");
 			root.classList.remove("is-scene-transitioning");
+			document.documentElement.classList.remove("home-page-snap");
+			document.documentElement.classList.remove("home-scene-scroll-active");
+			document.body.removeAttribute("data-home-section-tone");
+			navbar?.removeAttribute("data-home-section-tone");
+			navbar?.removeAttribute("data-home-brand");
+			delete window.__fireflyHomeGoToScene;
 			setMusicDockOpen(false);
 			if (coverSwitcherOpen) setCoverSwitcherOpen(false, false);
 			document.body.classList.remove("home-cover-switcher-open");
 			window.clearInterval(clockInterval);
 			if (quoteTimer) window.clearInterval(quoteTimer);
 			if (terminalTimer) window.clearTimeout(terminalTimer);
-			if (profileTerminalTimer) window.clearTimeout(profileTerminalTimer);
-			if (avatarReactionTimer) window.clearTimeout(avatarReactionTimer);
-			if (avatarFeedbackTimer) window.clearTimeout(avatarFeedbackTimer);
 			if (sceneWheelQuietTimer) window.clearTimeout(sceneWheelQuietTimer);
-			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
+			if (sceneLockTimer) window.clearTimeout(sceneLockTimer);
 			if (coverSwitcherTimer) window.clearTimeout(coverSwitcherTimer);
 			if (coverChangeTimer) window.clearTimeout(coverChangeTimer);
 			if (particleArrowFrame) cancelAnimationFrame(particleArrowFrame);
 			if (exhibitTiltFrame) cancelAnimationFrame(exhibitTiltFrame);
 			if (animationFrame) cancelAnimationFrame(animationFrame);
-			if (pageScrollAnimation) cancelAnimationFrame(pageScrollAnimation);
+			clearPageScrollVisual();
 			if (sceneMetricsFrame) cancelAnimationFrame(sceneMetricsFrame);
 			if (wordmarkFrame) cancelAnimationFrame(wordmarkFrame);
 			if (wordmarkReadyFrame) cancelAnimationFrame(wordmarkReadyFrame);
 			unlockPageScrollBehavior();
 			viewportElements.forEach(({ element, placeholder }) => {
-				placeholder.before(element);
+				if (placeholder.isConnected) placeholder.before(element);
+				else element.remove();
 				placeholder.remove();
 			});
 		};
@@ -1962,6 +1892,8 @@ const avatarParticles = [
 	initHomeLanding();
 	if (!window.__fireflyHomeLandingBound) {
 		window.__fireflyHomeLandingBound = true;
+		document.addEventListener("swup:willReplaceContent", cleanupHomeLandingBeforeSwap);
+		document.addEventListener("astro:before-swap", cleanupHomeLandingBeforeSwap);
 		document.addEventListener("swup:contentReplaced", initHomeLanding);
 		document.addEventListener("astro:page-load", initHomeLanding);
 	}
@@ -1969,6 +1901,7 @@ const avatarParticles = [
 	function bindHomeLandingSwup() {
 		if (window.__fireflyHomeLandingSwupBound || !window.swup?.hooks) return;
 		window.__fireflyHomeLandingSwupBound = true;
+		window.swup.hooks.on("visit:start", cleanupHomeLandingBeforeSwap);
 		window.swup.hooks.on("content:replace", initHomeLanding);
 	}
 
@@ -1990,7 +1923,8 @@ const avatarParticles = [
 		color: var(--deep-text);
 	}
 
-	.home-landing.has-local-wallpaper {
+	.home-landing.has-local-wallpaper,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing {
 		background: color-mix(in oklch, var(--page-bg) 34%, transparent);
 	}
 
@@ -2001,9 +1935,66 @@ const avatarParticles = [
 
 	:global(body.home-landing-active:has(#wallpaper-wrapper) #navbar[data-transparent-mode] > div) {
 		border-color: rgba(255, 255, 255, 0.24) !important;
-		background: color-mix(in oklch, var(--card-bg) 38%, transparent) !important;
+		background: color-mix(
+			in oklch,
+			var(--card-bg) calc(var(--navbar-surface-opacity, var(--opacity-55)) * 100%),
+			transparent
+		) !important;
 		box-shadow: 0 0.5rem 1.8rem rgba(18, 32, 46, 0.08) !important;
 		backdrop-filter: blur(0.9rem) saturate(1.04) !important;
+	}
+
+	@media (min-width: 1024px) {
+		:global(body.home-landing-active:has(#wallpaper-wrapper) #navbar[data-transparent-mode][data-is-home="true"] > div),
+		:global(body.home-landing-active #navbar[data-is-home="true"] > div) {
+			width: min(94vw, 1320px) !important;
+			margin-inline: auto !important;
+			padding-inline: 0 !important;
+			border: 0 !important;
+			border-radius: 0 !important;
+			background: transparent !important;
+			box-shadow: none !important;
+			backdrop-filter: none !important;
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"] > div > div) {
+			grid-template-columns: auto minmax(0, 1fr) auto;
+			gap: 0.8rem;
+			max-width: none;
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"] > div > div > a),
+		:global(body.home-landing-active #navbar[data-is-home="true"] > div > div > .navbar-main-menu:nth-child(2)),
+		:global(body.home-landing-active #navbar[data-is-home="true"] > div > div > div:nth-child(3)) {
+			min-height: 3.35rem;
+			border: 1px solid rgb(255 255 255 / 0.24);
+			border-radius: 999px;
+			background: color-mix(
+				in oklch,
+				var(--card-bg) calc(var(--navbar-surface-opacity, var(--opacity-55)) * 100%),
+				transparent
+			);
+			box-shadow: 0 0.65rem 1.8rem
+				color-mix(
+					in srgb,
+					rgb(6 15 22 / 0.13) calc(var(--navbar-surface-opacity, 0.72) * 100%),
+					transparent
+				);
+			backdrop-filter: blur(
+				calc(0.95rem * var(--navbar-surface-opacity, 0.72))
+			);
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"] > div > div > div:nth-child(2)) {
+			width: fit-content;
+			justify-self: center;
+			padding-inline: 0.5rem;
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"] > div > div > div:nth-child(3)) {
+			align-items: center;
+			padding-inline: 0.35rem;
+		}
 	}
 
 	.home-music-edge {
@@ -2070,22 +2061,6 @@ const avatarParticles = [
 
 	:global(body.home-landing-active #music-player-switch) {
 		display: none !important;
-	}
-
-	:global(body.home-landing-active #music-nav-panel) {
-		position: fixed !important;
-		left: -0.75rem !important;
-		right: auto !important;
-		top: clamp(5.75rem, 14vh, 8.25rem) !important;
-		z-index: 95 !important;
-		width: min(24rem, calc(100vw - 4.5rem)) !important;
-		transform: translate3d(0, 0, 0);
-		transform-origin: left top;
-	}
-
-	:global(body.home-landing-active #music-nav-panel.float-panel-closed) {
-		opacity: 0;
-		transform: translate3d(-0.75rem, 0, 0);
 	}
 
 	:global(body.home-cover-switcher-open) {
@@ -2948,8 +2923,26 @@ const avatarParticles = [
 
 	.home-hero {
 		position: relative;
-		height: 150dvh;
+		height: 100vh;
+		height: 100svh;
 		background: linear-gradient(180deg, #f3eff1, #eceff2);
+	}
+
+	.home-scroll-scene.home-capability-page {
+		position: relative;
+		display: block;
+		width: 100%;
+		height: 100vh;
+		height: 100svh;
+		min-height: 100vh;
+		min-height: 100svh;
+		overflow: hidden;
+		padding: 0;
+		background: #fafafa;
+	}
+
+	:global(html.dark) .home-capability-page {
+		background: #050506;
 	}
 
 	.home-hero-sticky {
@@ -2975,7 +2968,7 @@ const avatarParticles = [
 		overflow: hidden;
 		opacity: 0;
 		background: #eceff2;
-		transform: scale(1.018);
+		transform: none;
 		transform-origin: center;
 		isolation: isolate;
 		pointer-events: none;
@@ -3021,7 +3014,13 @@ const avatarParticles = [
 	}
 
 	.home-landing:not(.has-local-wallpaper) :global(.home-hero-cover-image.is-active) {
-		opacity: var(--home-background-opacity, 0.82);
+		opacity: var(--home-background-opacity, 1);
+	}
+
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"]))
+		.home-landing:not(.has-local-wallpaper)
+		:global(.home-hero-cover-image.is-active) {
+		opacity: 0;
 	}
 
 	.home-landing:not(.has-local-wallpaper) :global(.home-hero-image img) {
@@ -3036,7 +3035,7 @@ const avatarParticles = [
 
 	.home-profile-reveal :global(.home-hero-profile-image) {
 		z-index: 0;
-		opacity: var(--home-background-opacity, 0.82);
+		opacity: var(--home-background-opacity, 1);
 	}
 
 	.home-hero-profile-active :global(.home-hero-cover-image) {
@@ -3044,7 +3043,7 @@ const avatarParticles = [
 	}
 
 	.home-hero-profile-active :global(.home-hero-profile-image) {
-		opacity: var(--home-background-opacity, 0.82);
+		opacity: var(--home-background-opacity, 1);
 	}
 
 	:global(.home-hero-image-mobile) {
@@ -3076,23 +3075,6 @@ const avatarParticles = [
 		opacity: 0;
 	}
 
-	.home-hero-grid {
-		position: absolute;
-		inset: 0;
-		z-index: -1;
-		background-image:
-			linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-		background-size: clamp(3rem, 7vw, 6.5rem) clamp(3rem, 7vw, 6.5rem);
-		mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.72), transparent 78%);
-		opacity: 1;
-		transition: opacity 680ms ease;
-	}
-
-	.home-hero-profile-active .home-hero-grid {
-		opacity: 0.18;
-	}
-
 	.home-hero-motes {
 		position: absolute;
 		inset: 0;
@@ -3101,8 +3083,7 @@ const avatarParticles = [
 		pointer-events: none;
 	}
 
-	.home-cover-scene,
-	.home-profile-scene {
+	.home-cover-scene {
 		position: absolute;
 		inset: 0;
 		z-index: 1;
@@ -3138,13 +3119,18 @@ const avatarParticles = [
 		position: absolute;
 		left: clamp(1.35rem, 8vw, 8rem);
 		top: 50%;
-		max-width: min(42rem, calc(100% - 2.7rem));
+		z-index: 3;
+		display: grid;
+		justify-items: start;
+		width: min(42rem, calc(100% - 2.7rem));
+		max-width: calc(100% - 2.7rem);
 		color: white;
+		text-align: left;
 		transform: translateY(-50%);
 	}
 
 	.home-hero-eyebrow {
-		margin: 0 0 1rem;
+		margin: 0 0 0.55rem;
 		font-size: clamp(0.68rem, 1vw, 0.78rem);
 		font-weight: 800;
 		letter-spacing: 0.3em;
@@ -3152,17 +3138,17 @@ const avatarParticles = [
 	}
 
 	.home-hero-title {
-		width: clamp(20rem, 36vw, 34rem);
+		width: clamp(23rem, 41vw, 39rem);
 		max-width: 100%;
 		margin: 0;
 		line-height: 0;
 	}
 
 	.home-hero-subtitle {
-		margin: 1.4rem 0 0;
-		font-size: clamp(1rem, 2vw, 1.35rem);
-		font-weight: 600;
-		letter-spacing: 0.08em;
+		margin: 0 0 0.25rem;
+		font-size: clamp(0.88rem, 1.45vw, 1.15rem);
+		font-weight: 750;
+		letter-spacing: 0.06em;
 		text-shadow: 0 0.3rem 1.2rem rgba(0, 0, 0, 0.4);
 	}
 
@@ -3172,7 +3158,7 @@ const avatarParticles = [
 		gap: 0.42rem;
 		width: max-content;
 		max-width: 100%;
-		margin-top: 1.25rem;
+		margin: 0.75rem 0 0;
 		border: 1px solid rgba(255, 255, 255, 0.24);
 		border-radius: 0.85rem;
 		background: rgba(7, 14, 18, 0.32);
@@ -3241,9 +3227,9 @@ const avatarParticles = [
 	.home-hero-status {
 		position: absolute;
 		right: clamp(2rem, 7vw, 7rem);
-		top: clamp(8.5rem, 22vh, 13rem);
+		top: clamp(6rem, 12vh, 8rem);
 		z-index: 2;
-		width: min(24rem, 31vw);
+		width: min(19rem, 25vw);
 		padding: 0;
 		color: white;
 		text-align: right;
@@ -3268,7 +3254,7 @@ const avatarParticles = [
 	.home-clock-time {
 		display: block;
 		margin-top: 0.2rem;
-		font-size: clamp(2.7rem, 5vw, 4.5rem);
+		font-size: clamp(2.25rem, 3.6vw, 3.4rem);
 		font-weight: 850;
 		font-variant-numeric: tabular-nums;
 		letter-spacing: -0.065em;
@@ -3322,67 +3308,6 @@ const avatarParticles = [
 	.home-clock-quote p.is-changing {
 		opacity: 0;
 		transform: translateY(0.2rem);
-	}
-
-	.home-hero-tools {
-		position: absolute;
-		right: clamp(0.85rem, 2vw, 1.5rem);
-		bottom: clamp(4.2rem, 8vh, 6rem);
-		z-index: 5;
-		display: flex;
-		flex-direction: column;
-		gap: 0.55rem;
-	}
-
-	.home-hero-tools button,
-	.home-hero-tools a {
-		display: grid;
-		place-items: center;
-		width: 2.7rem;
-		height: 2.7rem;
-		border: 1px solid rgba(255, 255, 255, 0.34);
-		border-radius: 0.85rem;
-		background: rgba(10, 18, 22, 0.22);
-		box-shadow: 0 0.65rem 1.6rem rgba(0, 0, 0, 0.14);
-		color: white;
-		cursor: pointer;
-		backdrop-filter: blur(0.8rem);
-		transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
-	}
-
-	.home-hero-tools button:hover,
-	.home-hero-tools button:focus-visible,
-	.home-hero-tools a:hover,
-	.home-hero-tools a:focus-visible {
-		border-color: color-mix(in oklch, var(--primary) 68%, white);
-		background: rgba(255, 255, 255, 0.24);
-		color: color-mix(in oklch, var(--primary) 48%, white);
-		outline: none;
-	}
-
-	.home-hero-tools :global(svg) {
-		width: 1.25rem;
-		height: 1.25rem;
-	}
-
-	.home-profile-scene {
-		opacity: 0;
-		visibility: hidden;
-		color: #152238;
-		transform: translateY(1.75rem);
-		pointer-events: none;
-		transition:
-			opacity 360ms ease,
-			transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1),
-			visibility 0s linear 620ms;
-	}
-
-	.home-hero-profile-active .home-profile-scene {
-		opacity: 1;
-		visibility: visible;
-		transform: translateY(0);
-		pointer-events: auto;
-		transition-delay: 100ms, 100ms, 0s;
 	}
 
 	.home-scene-indicator {
@@ -3604,6 +3529,7 @@ const avatarParticles = [
 		position: absolute;
 		left: 50%;
 		top: 52%;
+		z-index: 3;
 		display: grid;
 		align-items: center;
 		grid-template-columns: 9.5rem minmax(26rem, 34rem);
@@ -3951,6 +3877,7 @@ const avatarParticles = [
 		position: absolute;
 		left: 50%;
 		bottom: 1.5rem;
+		z-index: 6;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.45rem;
@@ -4042,15 +3969,37 @@ const avatarParticles = [
 	}
 
 	.home-landing.has-local-wallpaper .home-hero,
-	.home-landing.has-local-wallpaper .home-hero-frame {
-		background: color-mix(in oklch, var(--page-bg) 24%, transparent);
+	.home-landing.has-local-wallpaper .home-hero-frame,
+	.home-landing.has-local-wallpaper .home-profile-reveal,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing .home-hero,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing .home-hero-frame,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing .home-profile-reveal {
+		background: transparent;
 	}
 
-	.home-landing.has-local-wallpaper :global(.home-hero-image) {
+	.home-landing.has-local-wallpaper .home-hero-wash,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing .home-hero-wash {
+		background: transparent;
+		opacity: 1;
+	}
+
+	:global(html[data-has-local-wallpaper="true"][data-wallpaper-mode="fullscreen"]) .home-landing .home-hero-wash,
+	:global(html[data-has-local-wallpaper="true"][data-wallpaper-mode="banner"]) .home-landing .home-hero-wash {
+		background: rgb(7 13 19 / var(--wallpaper-veil-opacity, 0.2));
+	}
+
+	.home-landing.has-local-wallpaper .home-profile-wash,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing .home-profile-wash {
+		background: transparent;
+	}
+
+	.home-landing.has-local-wallpaper :global(.home-hero-image),
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing :global(.home-hero-image) {
 		opacity: 0;
 	}
 
-	.home-landing.has-local-wallpaper .home-sections {
+	.home-landing.has-local-wallpaper .home-sections,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-landing .home-sections {
 		background:
 			radial-gradient(circle at 10% 12%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 25rem),
 			radial-gradient(circle at 88% 56%, color-mix(in oklch, var(--primary) 9%, transparent), transparent 27rem),
@@ -4071,8 +4020,8 @@ const avatarParticles = [
 		opacity: 0.42;
 		transform: translateY(2rem) scale(0.985);
 		transition:
-			opacity 560ms ease,
-			transform 680ms cubic-bezier(0.22, 0.61, 0.36, 1);
+			opacity 800ms cubic-bezier(0.22, 0.61, 0.36, 1),
+			transform 800ms cubic-bezier(0.22, 0.61, 0.36, 1);
 	}
 
 	.home-landing[data-home-scenes-ready="true"] .home-scroll-scene.is-visible {
@@ -4081,9 +4030,10 @@ const avatarParticles = [
 	}
 
 	.home-landing.is-scene-transitioning .home-scroll-scene {
-		opacity: 1;
-		transform: none;
-		transition: none;
+		opacity: 1 !important;
+		transform: none !important;
+		transition: none !important;
+		will-change: auto;
 	}
 
 	.home-landing.is-scene-transitioning .home-hero-motes i {
@@ -4094,8 +4044,7 @@ const avatarParticles = [
 		backdrop-filter: none;
 	}
 
-	.home-landing.is-scene-transitioning .home-cover-scene,
-	.home-landing.is-scene-transitioning .home-profile-scene {
+	.home-landing.is-scene-transitioning .home-cover-scene {
 		will-change: opacity, transform;
 	}
 
@@ -4829,7 +4778,7 @@ const avatarParticles = [
 
 	@media (min-width: 1024px) and (pointer: fine) {
 		.home-hero {
-			height: 200dvh;
+			height: 100dvh;
 		}
 	}
 
@@ -5026,8 +4975,9 @@ const avatarParticles = [
 		}
 
 		.home-hero-content {
-			top: 57%;
-			max-width: min(34rem, calc(100% - 2.7rem));
+			top: 51%;
+			width: min(38rem, calc(100% - 16rem));
+			max-width: calc(100% - 2.7rem);
 		}
 
 		.home-hero-status {
@@ -5120,12 +5070,6 @@ const avatarParticles = [
 			display: none;
 		}
 
-		:global(body.home-landing-active #music-nav-panel) {
-			left: 0.75rem !important;
-			top: 7.8rem !important;
-			width: calc(100vw - 1.5rem) !important;
-		}
-
 		.home-cover-switcher-dialog {
 			width: calc(100vw - 1rem);
 			max-height: calc(100dvh - 1rem);
@@ -5190,20 +5134,23 @@ const avatarParticles = [
 
 		.home-hero-content {
 			left: 1.25rem;
-			top: 63%;
+			top: 57%;
+			width: calc(100% - 2.5rem);
 			max-width: calc(100% - 2.5rem);
+			transform: translateY(-50%);
 		}
 
 		.home-hero-title {
-			width: min(100%, 27rem);
+			width: min(100%, 25rem);
 		}
 
 		.home-hero-subtitle {
-			margin-top: 0.8rem;
+			max-width: 21rem;
+			margin-bottom: 0.15rem;
 		}
 
 		.home-hero-terminal {
-			margin-top: 0.9rem;
+			margin-top: 0.55rem;
 			padding: 0.55rem 0.65rem;
 			font-size: 0.64rem;
 		}
@@ -5354,18 +5301,6 @@ const avatarParticles = [
 			bottom: 0.85rem;
 		}
 
-		.home-hero-tools {
-			right: 0.75rem;
-			bottom: 3.8rem;
-			gap: 0.45rem;
-		}
-
-		.home-hero-tools button,
-		.home-hero-tools a {
-			width: 2.5rem;
-			height: 2.5rem;
-		}
-
 		.home-hero-corner-left,
 		.home-hero-corner-right {
 			display: none;
@@ -5471,6 +5406,19 @@ const avatarParticles = [
 		}
 	}
 
+	@media (max-width: 1023px) {
+		:global(body.home-landing-active .floating-controls-container) {
+			right: 0 !important;
+		}
+
+		:global(body.home-landing-active #back-to-top-btn) {
+			width: 44px !important;
+			height: 44px !important;
+			padding: 0.25rem !important;
+			border-radius: 1rem 0 0 1rem !important;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.home-landing[data-home-scenes-ready="true"] .home-scroll-scene {
 			transition: none !important;
@@ -5504,7 +5452,6 @@ const avatarParticles = [
 		}
 
 		.home-cover-scene,
-		.home-profile-scene,
 		.home-profile-reveal,
 		.home-scroll-scene,
 		.home-music-edge,
@@ -5514,7 +5461,6 @@ const avatarParticles = [
 		:global(.home-hero-image),
 		.home-hero-wash,
 		.home-profile-wash,
-		.home-hero-grid,
 		.home-hero-action,
 		.home-nav-card,
 		:global(.home-nav-image img),
@@ -5579,7 +5525,7 @@ const avatarParticles = [
 			display: none;
 		}
 
-		:global(body.home-landing-active #music-nav-panel) {
+		:global(body.home-landing-active #music-mini-panel) {
 			transition: none !important;
 		}
 
@@ -5588,6 +5534,626 @@ const avatarParticles = [
 		.home-nav-card:hover :global(.home-nav-image img),
 		.home-nav-card:focus-visible :global(.home-nav-image img) {
 			transform: none;
+		}
+	}
+
+	:global(html.home-page-snap) {
+		scroll-snap-type: y proximity;
+		scroll-padding-top: 0;
+	}
+
+	:global(html.home-page-snap.home-scene-scroll-active) {
+		scroll-snap-type: none !important;
+	}
+
+	:global(html.home-page-snap body.home-landing-active) {
+		overflow-x: clip;
+	}
+
+	:global(html.home-page-snap .home-landing [data-home-page]) {
+		scroll-snap-align: start;
+		scroll-snap-stop: always;
+	}
+
+	:global(body.home-landing-active #main-grid > .footer) {
+		scroll-snap-align: end;
+	}
+
+	.home-hero {
+		height: 100vh;
+		height: 100svh;
+	}
+
+	:global(body.home-landing-active #navbar[data-home-section-tone]) {
+		transition: color 240ms ease;
+	}
+
+	:global(body.home-landing-active #navbar[data-home-section-tone] > div > div > a),
+	:global(body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-main-menu:nth-child(2)),
+	:global(body.home-landing-active #navbar[data-home-section-tone] > div > div > div:nth-child(3)) {
+		transition:
+			border-color 240ms ease,
+			background-color 240ms ease,
+			box-shadow 240ms ease,
+			color 240ms ease;
+	}
+
+	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-brand-shell > a),
+	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-main-menu:nth-child(2)),
+	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > div:nth-child(3)) {
+		border-color: color-mix(
+			in srgb,
+			rgb(255 255 255 / 18%) calc(var(--navbar-surface-opacity, 0.72) * 100%),
+			transparent
+		) !important;
+		background: color-mix(
+			in srgb,
+			rgb(7 7 8) calc(var(--navbar-surface-opacity, 0.72) * 100%),
+			transparent
+		) !important;
+		box-shadow: 0 0.65rem 1.8rem
+			color-mix(
+				in srgb,
+				rgb(0 0 0 / 28%) calc(var(--navbar-surface-opacity, 0.72) * 100%),
+				transparent
+			) !important;
+		color: #fff !important;
+		backdrop-filter: blur(
+			calc(1rem * var(--navbar-surface-opacity, 0.72))
+		) !important;
+	}
+
+	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] :is(a, button, svg):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *)),
+	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] :is(a, button):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *) *) {
+		color: #fff !important;
+	}
+
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] > div > div > .navbar-brand-shell > a),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] > div > div > .navbar-main-menu:nth-child(2)),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] > div > div > div:nth-child(3)) {
+		border-color: color-mix(
+			in srgb,
+			rgb(18 24 30 / 12%) calc(var(--navbar-surface-opacity, 0.72) * 100%),
+			transparent
+		) !important;
+		background: color-mix(
+			in srgb,
+			rgb(255 255 255) calc(var(--navbar-surface-opacity, 0.72) * 100%),
+			transparent
+		) !important;
+		box-shadow: 0 0.65rem 1.8rem
+			color-mix(
+				in srgb,
+				rgb(20 31 42 / 12%) calc(var(--navbar-surface-opacity, 0.72) * 100%),
+				transparent
+			) !important;
+		color: #111820 !important;
+		backdrop-filter: blur(
+			calc(1rem * var(--navbar-surface-opacity, 0.72))
+		) !important;
+	}
+
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] :is(a, button):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *)),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] :is(a, button):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *) *) {
+		color: #111820 !important;
+	}
+
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-brand-shell > a),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-main-menu:nth-child(2)),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > div:nth-child(3)) {
+		border-color: rgb(18 24 30 / 9%) !important;
+		background: rgb(255 255 255 / 94%) !important;
+		box-shadow: 0 0.55rem 1.5rem rgb(20 31 42 / 12%) !important;
+		color: #111820 !important;
+		backdrop-filter: blur(1rem) !important;
+	}
+
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] :is(a, button, svg):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *)),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] :is(a, button):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *) *) {
+		color: #111820 !important;
+		text-shadow: none !important;
+	}
+
+	@keyframes home-navbar-avatar-float {
+		0%,
+		100% {
+			transform: translate3d(0, 0, 0) rotate(0deg);
+		}
+
+		38% {
+			transform: translate3d(0, -0.16rem, 0) rotate(-1.5deg);
+		}
+
+		68% {
+			transform: translate3d(0, 0.06rem, 0) rotate(1deg);
+		}
+	}
+
+	@media (min-width: 1024px) {
+		:global(html:not(.dark) body.home-landing-active #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-brand-shell > .navbar-brand),
+		:global(html:not(.dark) body.home-landing-active #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-main-menu:nth-child(2)),
+		:global(html:not(.dark) body.home-landing-active #navbar[data-is-home="true"][data-home-section-tone] > div > div > div:nth-child(3)) {
+			border-color: rgb(18 24 30 / 9%) !important;
+			background: rgb(255 255 255 / 94%) !important;
+			box-shadow: 0 0.55rem 1.5rem rgb(20 31 42 / 12%) !important;
+			color: #111820 !important;
+			backdrop-filter: blur(1rem) !important;
+		}
+
+		:global(html:not(.dark) body.home-landing-active #navbar[data-is-home="true"][data-home-section-tone] :is(a, button, svg):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *)),
+		:global(html:not(.dark) body.home-landing-active #navbar[data-is-home="true"][data-home-section-tone] :is(a, button):not(.navbar-profile-card *):not(#music-nav-panel *):not(#music-mini-panel *) *) {
+			color: #111820 !important;
+			text-shadow: none !important;
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand-shell > .navbar-brand) {
+			width: auto;
+			min-width: max-content;
+			height: 2.75rem;
+			min-height: 2.75rem;
+			padding-inline: 0.85rem !important;
+			border-radius: 999px !important;
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"][data-home-brand="avatar"] .navbar-brand__default) {
+			opacity: 1;
+			transform: none;
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"][data-home-brand="avatar"] .navbar-brand__profile) {
+			opacity: 0;
+			pointer-events: none;
+			transform: translateY(0.35rem) scale(0.82);
+		}
+
+		:global(body.home-landing-active #navbar[data-is-home="true"][data-home-section-tone] > div > div > div:nth-child(3)) {
+			box-shadow: 0 0.55rem 1.5rem rgb(20 31 42 / 12%) !important;
+		}
+
+		:global(html.home-page-snap) {
+			scroll-snap-type: y mandatory;
+		}
+
+		.home-hero {
+			height: 100vh;
+			height: 100svh;
+		}
+
+		:global(.home-landing .home-scroll-scene:not(.home-ending)) {
+			box-sizing: border-box;
+			height: 100vh;
+			height: 100svh;
+			min-height: 100vh;
+			min-height: 100svh;
+			overflow: hidden;
+		}
+
+		.home-dashboard-heading {
+			margin-bottom: 1rem;
+		}
+
+		.home-dashboard .home-overview-grid {
+			align-items: stretch;
+			max-height: calc(100svh - 13rem);
+		}
+
+		.home-overview-illustration {
+			min-height: clamp(22rem, 58svh, 38rem);
+			margin-bottom: 0;
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.home-hero {
+			height: auto;
+			min-height: 100vh;
+			min-height: 100svh;
+		}
+
+		.home-hero-sticky {
+			position: relative;
+			height: auto;
+		}
+
+		.home-hero-frame {
+			height: auto;
+			min-height: 0;
+			overflow: visible;
+			padding-top: 100vh;
+			padding-top: 100svh;
+		}
+
+		.home-cover-scene {
+			top: 0;
+			right: 0;
+			bottom: auto;
+			left: 0;
+			height: 100vh;
+			height: 100svh;
+		}
+
+		.home-scroll-scene.home-capability-page {
+			height: auto;
+			min-height: 100vh;
+			min-height: 100svh;
+			overflow: visible;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(body.home-landing-active #navbar[data-is-home="true"] .navbar-brand__avatar) {
+			animation: none !important;
+			transform: none !important;
+			transition: none !important;
+		}
+
+		:global(html.home-page-snap) {
+			scroll-behavior: auto;
+			scroll-snap-type: y proximity;
+		}
+
+		.home-hero {
+			height: 100vh;
+			height: 100svh;
+		}
+
+		.home-hero-sticky {
+			position: sticky;
+			top: 0;
+		}
+	}
+
+	@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+		.home-hero {
+			height: auto;
+		}
+
+		.home-hero-sticky {
+			position: relative;
+		}
+	}
+
+	:global(html.dark body.music-immersive-open.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item) {
+		color: rgb(246 251 255 / 92%) !important;
+		text-shadow: 0 2px 10px rgb(0 0 0 / 78%) !important;
+	}
+
+	:global(html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item) {
+		color: rgb(24 48 60 / 90%) !important;
+		text-shadow: 0 2px 10px rgb(255 255 255 / 88%) !important;
+	}
+
+	/* The portfolio ending is a single viewport scene. The layers reveal in order
+	   while the existing scene scroll controller moves the page into place. */
+	.home-scroll-scene.home-ending {
+		box-sizing: border-box;
+		height: 100svh;
+		min-height: 100svh !important;
+		max-height: 100svh;
+		margin-top: 0 !important;
+		padding: 0 !important;
+		background: #17150f;
+		isolation: isolate;
+	}
+
+	.home-ending-inner {
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		margin: 0;
+		overflow: hidden;
+		isolation: isolate;
+	}
+
+	.home-ending-video,
+	.home-ending-midground,
+	.home-ending-foreground,
+	.home-ending-vignette {
+		position: absolute;
+		inset: 0;
+	}
+
+	.home-ending-video {
+		z-index: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center;
+		background: #24321e;
+		opacity: 0;
+		transform: scale(1.08);
+		filter: saturate(0.9) brightness(0.84);
+		transition:
+			opacity 1s cubic-bezier(0.22, 0.61, 0.36, 1) 90ms,
+			transform 1.4s cubic-bezier(0.22, 0.61, 0.36, 1) 90ms;
+	}
+
+	.home-ending-midground {
+		z-index: 1;
+		opacity: 0;
+		transform: scale(1.07);
+		transition:
+			opacity 1s cubic-bezier(0.22, 0.61, 0.36, 1) 170ms,
+			transform 1.35s cubic-bezier(0.22, 0.61, 0.36, 1) 170ms;
+	}
+
+	.home-ending-midground img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center;
+	}
+
+	.home-ending-foreground {
+		z-index: 3;
+		inset: auto 0 0;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		height: clamp(44vh, 62vh, 70vh);
+		opacity: 0;
+		transform: translate3d(0, 3.5rem, 0) scale(0.96);
+		transition:
+			opacity 1s cubic-bezier(0.22, 0.61, 0.36, 1) 290ms,
+			transform 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 290ms;
+		pointer-events: none;
+	}
+
+	.home-ending-foreground img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		object-position: center bottom;
+	}
+
+	.home-ending-vignette {
+		z-index: 4;
+		background:
+			linear-gradient(180deg, rgb(10 10 8 / 26%), transparent 30%, transparent 68%, rgb(8 8 6 / 42%)),
+			radial-gradient(circle at 50% 45%, transparent 35%, rgb(8 8 6 / 24%) 100%);
+		pointer-events: none;
+	}
+
+	.home-ending-copy {
+		position: absolute;
+		z-index: 6;
+		top: clamp(5.8rem, 14vh, 9rem);
+		left: 50%;
+		width: min(90vw, 78rem);
+		transform: translate3d(-50%, 2.25rem, 0);
+		opacity: 0;
+		text-align: center;
+		transition:
+			opacity 850ms cubic-bezier(0.22, 0.61, 0.36, 1) 420ms,
+			transform 950ms cubic-bezier(0.22, 0.61, 0.36, 1) 420ms;
+		pointer-events: none;
+	}
+
+	.home-ending-copy .home-ending-eyebrow {
+		margin: 0 0 0.8rem;
+		color: rgb(255 248 235 / 88%);
+		text-shadow: 0 0.15rem 1rem rgb(0 0 0 / 45%);
+	}
+
+	.home-ending-copy h2 {
+		color: #11100e;
+		text-shadow:
+			0 1px 0 rgb(255 255 255 / 42%),
+			0 0 1.8rem rgb(255 240 202 / 30%);
+	}
+
+	.home-ending-inner > .home-ending-art {
+		display: none;
+	}
+
+	.home-ending-letter {
+		position: absolute;
+		z-index: 8;
+		right: clamp(1rem, 4vw, 4.5rem);
+		bottom: clamp(1rem, 3.5vh, 2.8rem);
+		width: min(26rem, calc(100% - 2rem));
+		margin: 0;
+		opacity: 0;
+		transform: translate3d(0, 2rem, 0);
+		background: rgb(255 249 244 / 78%);
+		box-shadow: 0 1.8rem 5rem rgb(8 8 6 / 30%);
+		transition:
+			opacity 850ms cubic-bezier(0.22, 0.61, 0.36, 1) 590ms,
+			transform 950ms cubic-bezier(0.22, 0.61, 0.36, 1) 590ms,
+			box-shadow 260ms ease;
+	}
+
+	.home-ending-letter-body {
+		padding: clamp(1.1rem, 2.2vw, 1.65rem);
+	}
+
+	.home-ending-letter h3 {
+		font-size: clamp(1.9rem, 3vw, 2.7rem);
+	}
+
+	.home-ending-letter-copy {
+		font-size: 0.78rem;
+		line-height: 1.6;
+	}
+
+	.home-ending.is-visible .home-ending-video,
+	.home-ending.is-visible .home-ending-midground,
+	.home-ending.is-visible .home-ending-foreground,
+	.home-ending.is-visible .home-ending-copy,
+	.home-ending.is-visible .home-ending-letter {
+		opacity: 1;
+	}
+
+	.home-ending.is-visible .home-ending-video,
+	.home-ending.is-visible .home-ending-midground {
+		transform: scale(1);
+	}
+
+	.home-ending.is-visible .home-ending-foreground {
+		transform: translate3d(0, 0, 0) scale(1);
+	}
+
+	.home-ending.is-visible .home-ending-copy,
+	.home-ending.is-visible .home-ending-letter {
+		transform: translate3d(-50%, 0, 0);
+	}
+
+	.home-ending.is-visible .home-ending-letter {
+		transform: translate3d(0, 0, 0);
+	}
+
+	/* OLED dark theme: keep the ending letter and home controls consistently
+	   black with white type, even while the scene itself uses a light section tone. */
+	:global(html.dark) .home-ending-letter {
+		background: #000 !important;
+		border-color: rgb(255 255 255 / 18%);
+		box-shadow:
+			0 1.8rem 5rem rgb(0 0 0 / 58%),
+			inset 0 1px 0 rgb(255 255 255 / 8%);
+		color: #fff;
+	}
+
+	:global(html.dark) .home-ending-letter :is(p, h3, strong, span, a) {
+		color: #fff !important;
+	}
+
+	:global(html.dark) .home-ending-letter .home-ending-letter-meta,
+	:global(html.dark) .home-ending-letter .home-ending-letter-signoff span {
+		color: rgb(255 255 255 / 66%) !important;
+	}
+
+	:global(html.dark) .home-ending-letter .home-ending-letter-link {
+		border-color: rgb(255 255 255 / 28%);
+		background: #000;
+		color: #fff !important;
+	}
+
+	:global(html.dark) .home-ending-letter .home-ending-letter-link:hover,
+	:global(html.dark) .home-ending-letter .home-ending-letter-link:focus-visible {
+		border-color: rgb(255 255 255 / 64%);
+		background: #1a1a1a;
+		box-shadow: 0 0.65rem 1.5rem rgb(0 0 0 / 44%);
+	}
+
+	:global(html.dark) .home-ending-letter .home-ending-letter-link:focus-visible {
+		outline-color: rgb(255 255 255 / 72%);
+	}
+
+	:global(html.dark) .home-ending-letter-glow {
+		background: radial-gradient(circle, rgb(255 255 255 / 12%), transparent 70%);
+		mix-blend-mode: screen;
+	}
+
+	:global(html.dark) .home-ending-copy .home-ending-eyebrow,
+	:global(html.dark) .home-ending-copy h2 {
+		color: #fff !important;
+		text-shadow: 0 0 1.8rem rgb(255 255 255 / 18%);
+	}
+
+	/* The active home scene advertises a light tone for its artwork. In dark
+	   mode the navigation surface must still follow the global black/white
+	   contract. */
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-brand-shell > a),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-main-menu),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-actions) {
+		border-color: rgb(255 255 255 / 18%) !important;
+		background: #000 !important;
+		box-shadow:
+			0 0.65rem 1.8rem rgb(0 0 0 / 48%),
+			inset 0 1px 0 rgb(255 255 255 / 8%) !important;
+		color: #fff !important;
+		backdrop-filter: blur(1rem) !important;
+	}
+
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-brand__layer),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-main-menu .navbar-menu-item),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-actions :is(a, button, svg)) {
+		color: #fff !important;
+		text-shadow: none !important;
+	}
+
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-main-menu .navbar-menu-item:hover),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-main-menu .navbar-menu-item:focus-visible),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-actions:has(#search-switch:hover)),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-actions:has(#search-switch:focus-visible)) {
+		background: #1a1a1a !important;
+		border-color: rgb(255 255 255 / 28%) !important;
+		color: #fff !important;
+	}
+
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"]) {
+		background: #1a1a1a !important;
+		border-color: rgb(255 255 255 / 34%) !important;
+		color: #fff !important;
+	}
+
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] .navbar-main-menu .navbar-hover-indicator) {
+		background: #2a2a2a !important;
+		box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), 0 0.24rem 0.75rem rgb(0 0 0 / 34%);
+	}
+
+	@media (max-width: 640px) {
+		.home-ending-copy {
+			top: 4.8rem;
+			width: calc(100% - 1.25rem);
+		}
+
+		.home-ending-copy .home-ending-eyebrow {
+			font-size: 0.52rem;
+		}
+
+		.home-ending-copy h2 {
+			font-size: clamp(2.55rem, 13vw, 4.2rem);
+			line-height: 0.88;
+		}
+
+		.home-ending-foreground {
+			height: 50vh;
+			justify-content: flex-end;
+			padding-right: 0.25rem;
+			box-sizing: border-box;
+		}
+
+		.home-ending-foreground img {
+			width: 92%;
+		}
+
+		.home-ending-letter {
+			right: auto;
+			left: 0.65rem;
+			bottom: 0.65rem;
+			width: min(17rem, calc(100% - 5.1rem));
+		}
+
+		.home-ending-letter-body {
+			padding: 1rem 1.1rem;
+		}
+
+		.home-ending-letter-copy,
+		.home-ending-letter-signoff {
+			display: none;
+		}
+
+		.home-ending-letter-link {
+			margin-top: 0.9rem;
+			font-size: 0.64rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-ending-video {
+			display: none;
+		}
+
+		.home-ending-midground,
+		.home-ending-foreground,
+		.home-ending-copy,
+		.home-ending-letter {
+			opacity: 1;
+			transform: none;
+			transition: none;
 		}
 	}
 </style>

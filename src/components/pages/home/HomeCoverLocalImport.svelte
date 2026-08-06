@@ -1,7 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
-import { WALLPAPER_FULLSCREEN } from "@/constants/constants";
 import {
 	activateLocalWallpaperHistory,
 	getLocalWallpaper,
@@ -14,7 +13,6 @@ import {
 	removeLocalWallpaperHistory,
 	saveLocalWallpaper,
 } from "@/utils/local-wallpaper";
-import { setWallpaperMode } from "@/utils/setting-utils";
 
 const BUILT_IN_COVER_EVENT = "jingyue:select-built-in-cover";
 const BUILT_IN_COVER_USED_EVENT = "jingyue:built-in-cover-used";
@@ -131,7 +129,6 @@ async function applyLocalFile(file: File, successMessage: string) {
 	fileName = record.name;
 	fileType = record.type;
 	publishLocalCoverState(true);
-	setWallpaperMode(WALLPAPER_FULLSCREEN);
 	message = successMessage;
 }
 
@@ -245,7 +242,6 @@ async function activateHistory(id: string) {
 		fileName = record.name;
 		fileType = record.type;
 		publishLocalCoverState(true);
-		setWallpaperMode(WALLPAPER_FULLSCREEN);
 		message = `已重新应用 ${record.name}。`;
 	} catch (reason) {
 		error = reason instanceof Error ? reason.message : "无法应用这条历史媒体。";

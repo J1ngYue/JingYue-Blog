@@ -11,6 +11,8 @@ import MusicManager from "@components/features/MusicManager.astro";
 import RainEffect from "@components/features/RainEffect.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import SnowEffect from "@components/features/SnowEffect.astro";
+import SiteAvatarManager from "@components/features/SiteAvatarManager.astro";
+import SiteProfileCoverManager from "@components/features/SiteProfileCoverManager.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
 
 import {
@@ -25,10 +27,16 @@ import {
 	BANNER_HEIGHT_EXTEND,
 	BANNER_HEIGHT_HOME,
 	PAGE_WIDTH,
+	WALLPAPER_NONE,
 } from "@/constants/constants";
 import { defaultFavicons } from "@/constants/icon";
 import type { Favicon } from "@/types/config";
 import { isHomePage } from "@/utils/layout-utils";
+import {
+	ADMIN_PAGE_WALLPAPERS,
+	PAGE_WALLPAPER_DEFAULT_KEY,
+	SYSTEM_DEFAULT_WALLPAPER,
+} from "@/utils/page-wallpaper";
 import { url } from "@/utils/url-utils";
 
 import "@/styles/main.css";
@@ -46,6 +54,7 @@ interface Props {
 	homeLanding?: boolean;
 	articleHub?: boolean;
 	contentOnly?: boolean;
+	plainContent?: boolean;
 }
 
 let {
@@ -57,6 +66,7 @@ let {
 	homeLanding = false,
 	articleHub = false,
 	contentOnly = false,
+	plainContent = false,
 } = Astro.props;
 
 // apply a class to the body element to decide the height of the banner, only used for initial page load
@@ -75,7 +85,11 @@ const navbarTransparentMode =
 const shouldShowTopHighlight =
 	navbarTransparentMode === "full" || navbarTransparentMode === "semifull";
 
-const enableBanner = backgroundWallpaper.mode === "banner";
+// 首页保留配置中的壁纸，其他页面默认使用纯色；用户保存过显示设置时由客户端覆盖。
+const pageDefaultWallpaperMode = isHomePageCheck
+	? backgroundWallpaper.mode
+	: WALLPAPER_NONE;
+const enableBanner = pageDefaultWallpaperMode === "banner";
 
 let pageTitle: string;
 if (title) {
@@ -104,9 +118,19 @@ const siteLang = lang.replace("_", "-");
 ---
 
 <!doctype html>
-<html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]" data-wallpaper-mode={backgroundWallpaper.mode}>
+<html
+  lang={siteLang}
+  class="bg-(--page-bg) text-[16px]"
+  data-wallpaper-mode={pageDefaultWallpaperMode}
+  style={`--wallpaper-veil-opacity: ${backgroundWallpaper.common?.dimOpacity ?? 0.2};`}
+>
   <head>
     <meta charset="UTF-8" />
+    <link
+      rel="stylesheet"
+      href={url("/styles/compact-music-player.css")}
+      data-swup-persist-style
+    />
     {analyticsConfig?.googleAnalyticsId && (
             <GoogleAnalytics analyticsId={analyticsConfig.googleAnalyticsId} />
     )}
@@ -257,13 +281,16 @@ const siteLang = lang.replace("_", "-");
         PAGE_WIDTH,
         configHue,
         defaultMode: siteConfig.themeColor.defaultMode ?? "light",
-        defaultWallpaperMode: backgroundWallpaper.mode,
+        defaultWallpaperMode: pageDefaultWallpaperMode,
         isWallpaperSwitchable:
           backgroundWallpaper.switchable ?? true,
         darkTheme: expressiveCodeConfig.darkTheme,
         lightTheme: expressiveCodeConfig.lightTheme,
         baseUrl: import.meta.env.BASE_URL,
-        cardTransparentOpacity: backgroundWallpaper.overlay?.cardOpacity ?? 0.6,
+        cardTransparentOpacity: backgroundWallpaper.overlay?.cardOpacity ?? 0.65,
+        adminPageWallpapers: ADMIN_PAGE_WALLPAPERS,
+        defaultWallpaperPreferenceKey: PAGE_WALLPAPER_DEFAULT_KEY,
+        systemDefaultWallpaper: SYSTEM_DEFAULT_WALLPAPER,
         homeLanding,
       }}
     >
@@ -310,7 +337,7 @@ const siteLang = lang.replace("_", "-");
       const hue = localStorage.getItem("hue") || configHue;
       document.documentElement.style.setProperty("--hue", hue);
 
-      // 设置卡片透明度（全屏透明模式下使用），优先使用用户自定义值
+      // 设置卡片透明度（横幅与全屏透明模式共用），优先使用用户自定义值
       const storedCardOpacity = localStorage.getItem("overlayCardOpacity");
       const parsedCardOpacity = storedCardOpacity === null ? NaN : Number.parseFloat(storedCardOpacity);
       const resolvedCardOpacity = Number.isFinite(parsedCardOpacity)
@@ -323,8 +350,51 @@ const siteLang = lang.replace("_", "-");
         : Number.parseFloat(storedNavbarOpacity);
       const resolvedNavbarOpacity = Number.isFinite(parsedNavbarOpacity)
         ? Math.min(1, Math.max(0, parsedNavbarOpacity))
-        : 0.55;
+        : 0;
       document.documentElement.style.setProperty("--navbar-surface-opacity", String(resolvedNavbarOpacity));
+      function resolveInitialWallpaperPage(pathname) {
+        const path = (`/${pathname}`).replace(/\/{2,}/g, "/").replace(/\/$/, "") || "/";
+        if (["/archive", "/categories", "/tags", "/posts", "/search"].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return "articles";
+        if (path === "/dynamic" || path.startsWith("/dynamic/")) return "updates";
+        if (["/social", "/friends", "/guestbook"].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return "social";
+        if (["/mine", "/gallery", "/anime", "/bangumi"].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return "profile";
+        if (["/about", "/sponsor"].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return "about";
+        if (path === "/links" || path.startsWith("/links/")) return "links";
+        return "home";
+      }
+      let storedPageWallpapers = {};
+      let storedDefaultWallpaper = "";
+      let storedFavoriteWallpapers = {};
+      try {
+        storedPageWallpapers = JSON.parse(localStorage.getItem("fireflyPageWallpapersV1") || "{}");
+        storedDefaultWallpaper = localStorage.getItem(defaultWallpaperPreferenceKey) || "";
+        storedFavoriteWallpapers = JSON.parse(localStorage.getItem("fireflyLocalCoverFavorites") || "{}");
+      } catch {
+        storedPageWallpapers = {};
+        storedDefaultWallpaper = "";
+        storedFavoriteWallpapers = {};
+      }
+      const isWallpaperChoice = (value) =>
+        typeof value === "string" && (/^wallpaper-\d+$/.test(value) || value.startsWith("local:history:"));
+      const initialWallpaperPage = resolveInitialWallpaperPage(window.location.pathname);
+      const initialWallpaperChoice =
+        (isWallpaperChoice(storedPageWallpapers[initialWallpaperPage])
+          ? storedPageWallpapers[initialWallpaperPage]
+          : "") ||
+        (isWallpaperChoice(storedDefaultWallpaper) ? storedDefaultWallpaper : "") ||
+        adminPageWallpapers[initialWallpaperPage] ||
+        systemDefaultWallpaper;
+      const initialWallpaperIndex = initialWallpaperChoice.startsWith("wallpaper-")
+        ? Math.max(0, Number(initialWallpaperChoice.slice("wallpaper-".length)) - 1)
+        : -1;
+      const initialWallpaperIsLocal =
+        initialWallpaperChoice.startsWith("local:") ||
+        Boolean(storedFavoriteWallpapers[String(initialWallpaperIndex)]);
+      document.documentElement.setAttribute("data-page-wallpaper", initialWallpaperChoice);
+      document.documentElement.setAttribute(
+        "data-has-local-wallpaper",
+        initialWallpaperIsLocal ? "true" : "false"
+      );
 
       // calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
       // 使用更准确的窗口高度计算
@@ -370,9 +440,18 @@ const siteLang = lang.replace("_", "-");
       let wallpaperMode = isWallpaperSwitchable
         ? localStorage.getItem("wallpaperMode") || defaultWallpaperMode
         : defaultWallpaperMode;
-      if (wallpaperMode === WALLPAPER_BANNER) {
-        wallpaperMode = WALLPAPER_FULLSCREEN;
+      if (wallpaperMode === WALLPAPER_FULLSCREEN) {
+        wallpaperMode = WALLPAPER_BANNER;
         localStorage.setItem("wallpaperMode", wallpaperMode);
+      }
+      if (
+        wallpaperMode !== WALLPAPER_BANNER &&
+        wallpaperMode !== WALLPAPER_OVERLAY &&
+        wallpaperMode !== WALLPAPER_NONE
+      ) {
+        wallpaperMode = defaultWallpaperMode === WALLPAPER_FULLSCREEN
+          ? WALLPAPER_BANNER
+          : defaultWallpaperMode;
       }
 
       // 设置data-wallpaper-mode属性
@@ -438,6 +517,7 @@ const siteLang = lang.replace("_", "-");
           } else if (wallpaperMode === WALLPAPER_OVERLAY) {
             // 全屏壁纸透明模式：切换为 overlay 显示
             if (wallpaperWrapper) {
+              wallpaperWrapper.classList.remove("wallpaper-fullscreen");
               wallpaperWrapper.classList.add("wallpaper-overlay");
               wallpaperWrapper.style.display = "block";
               wallpaperWrapper.classList.remove("hidden", "opacity-0", "mobile-hide-banner");
@@ -464,14 +544,19 @@ const siteLang = lang.replace("_", "-");
           } else if (wallpaperMode === WALLPAPER_NONE) {
             // 纯色背景：隐藏壁纸
             if (wallpaperWrapper) {
-              wallpaperWrapper.style.display = "none";
+              wallpaperWrapper.style.setProperty("display", "none", "important");
               wallpaperWrapper.classList.add("hidden", "opacity-0");
+              wallpaperWrapper.classList.remove("opacity-100", "mobile-hide-banner");
             }
           } else {
             // banner模式：以 banner 方式显示
             if (wallpaperWrapper) {
               wallpaperWrapper.classList.remove("wallpaper-overlay");
               wallpaperWrapper.classList.remove("wallpaper-fullscreen");
+              wallpaperWrapper.style.removeProperty("position");
+              wallpaperWrapper.style.removeProperty("inset");
+              wallpaperWrapper.style.removeProperty("height");
+              wallpaperWrapper.style.setProperty("top", "0");
               const isMobile = window.innerWidth < 1024;
               // 移动端非首页时隐藏banner（初始状态直接隐藏，不需要动画）
               // 桌面端始终显示banner
@@ -479,8 +564,9 @@ const siteLang = lang.replace("_", "-");
                 wallpaperWrapper.style.display = "none";
                 wallpaperWrapper.classList.add("mobile-hide-banner");
               } else {
-                wallpaperWrapper.style.display = "block";
-                wallpaperWrapper.classList.remove("mobile-hide-banner");
+                wallpaperWrapper.style.setProperty("display", "block", "important");
+                wallpaperWrapper.classList.remove("hidden", "opacity-0", "mobile-hide-banner");
+                wallpaperWrapper.classList.add("opacity-100");
               }
             }
           }
@@ -515,9 +601,11 @@ const siteLang = lang.replace("_", "-");
               mainContentWrapper.style.zIndex = "";
               mainContentWrapper.style.setProperty(
                 "top",
-                wallpaperMode === WALLPAPER_BANNER || wallpaperMode === WALLPAPER_FULLSCREEN
-                  ? "calc(100dvh - 3.5rem)"
-                  : "0",
+                wallpaperMode === WALLPAPER_BANNER
+                  ? "calc(var(--banner-height) - 3.5rem)"
+                  : wallpaperMode === WALLPAPER_FULLSCREEN
+                    ? "calc(100dvh - 3.5rem)"
+                    : "5.5rem",
                 "important",
               );
               mainContentWrapper.style.setProperty("margin-top", "0", "important");
@@ -627,6 +715,7 @@ const siteLang = lang.replace("_", "-");
         "home-landing-active": homeLanding,
 		"article-hub-active": articleHub,
 		"content-only-active": contentOnly,
+		"plain-content-active": plainContent,
         "enable-banner": enableBanner,
         "sticky-navbar": siteConfig.navbar.stickyNavbar ?? false,
         "enable-card-border": siteConfig.card?.border,
@@ -640,6 +729,8 @@ const siteLang = lang.replace("_", "-");
     <!-- 页面顶部渐变高光效果 - 只在full和semifull模式下显示 -->
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
+    <SiteAvatarManager />
+    <SiteProfileCoverManager />
     <LayoutStabilityAgent />
     <MusicManager />
     <MusicLibraryDialog />
@@ -668,21 +759,21 @@ const siteLang = lang.replace("_", "-");
 
   @layer components {
     .enable-banner #wallpaper-wrapper {
-      height: var(--banner-height-home);
-      transform: translateY(var(--banner-height-extend));
+      height: var(--banner-height);
+      transform: none;
     }
 
     .enable-banner #banner {
-      height: var(--banner-height-home);
-      transform: translateY(0);
+      height: 100%;
+      transform: none;
     }
 
     .enable-banner #main-grid {
-      transform: translateY(var(--banner-height-extend));
+      transform: none;
     }
 
     .enable-banner #top-row {
-      height: calc(var(--banner-height-home) - 4.5rem);
+      height: var(--banner-height);
       @apply transition-all duration-300;
     }
 
@@ -709,19 +800,19 @@ const siteLang = lang.replace("_", "-");
 
   @layer utilities {
     .enable-banner #sidebar-sticky {
-      top: calc(1rem - var(--banner-height-extend)) !important;
+      top: 1rem !important;
     }
     .enable-banner #left-sidebar-sticky {
-      top: calc(1rem - var(--banner-height-extend)) !important;
+      top: 1rem !important;
     }
     .enable-banner #right-sidebar-sticky {
-      top: calc(1rem - var(--banner-height-extend)) !important;
+      top: 1rem !important;
     }
 
     body.enable-banner.sticky-navbar #sidebar-sticky,
     body.enable-banner.sticky-navbar #left-sidebar-sticky,
     body.enable-banner.sticky-navbar #right-sidebar-sticky {
-      top: calc(5.5rem - var(--banner-height-extend)) !important;
+      top: 5.5rem !important;
     }
 
     .navbar-hidden {
@@ -882,12 +973,6 @@ function disableAnimation() {
     "theme-mode-panel",
     "scheme-switch",
   ]);
-  setClickOutsideToClose("search-panel", [
-    "search-panel",
-    "search-bar",
-    "search-switch",
-  ]);
-
   function initCustomScrollbar() {
     // 只处理katex元素的滚动条，使用浏览器原生滚动条
     const katexElements = document.querySelectorAll(
@@ -1079,6 +1164,7 @@ function disableAnimation() {
     });
     window.swup.hooks.on("content:replace", () => {
       syncHomeLandingLayout();
+      initWallpaperMode();
       const isHome = pathsEqual(window.location.pathname, url("/"));
       const currentMode = document.documentElement.getAttribute("data-wallpaper-mode");
       const isMobileForBanner = window.innerWidth < 1024;
@@ -1487,7 +1573,6 @@ function disableAnimation() {
   document.addEventListener("password:decrypted", () => {
     setTimeout(scheduleContentOverflowEnhancements, 200);
   });
-  let backToTopBtn = document.getElementById("back-to-top-btn");
   let toc = document.getElementById("toc-wrapper");
   let navbar = document.getElementById("navbar-wrapper");
   const sidebarStickyState: Record<
@@ -1515,16 +1600,6 @@ function disableAnimation() {
 
     // 使用批量DOM操作优化性能
     const operations: (() => void)[] = [];
-
-    if (backToTopBtn) {
-      operations.push(() => {
-        if (scrollTop > bannerHeight) {
-          backToTopBtn.classList.remove("hide");
-        } else {
-          backToTopBtn.classList.add("hide");
-        }
-      });
-    }
 
     if (bannerEnabled && toc) {
       operations.push(() => {
@@ -1658,12 +1733,13 @@ function disableAnimation() {
   // 更新主网格的网格列数
   function applyContentOnlyMainLayout() {
     const carrier = document.getElementById("content-only-layout-carrier");
+    const plainCarrier = document.getElementById("plain-content-layout-carrier");
     const mainContent = document.getElementById("main-content-wrapper") as HTMLElement | null;
     if (!mainContent || carrier?.getAttribute("data-content-only") !== "true") return;
 
     const mode = document.documentElement.getAttribute("data-wallpaper-mode");
     const isMobile = window.innerWidth < 1024;
-    const hasCover = mode === "banner" || mode === "fullscreen";
+    const isPlainContent = plainCarrier?.getAttribute("data-plain-content") === "true";
 
     mainContent.classList.remove("mobile-main-no-banner");
     mainContent.classList.add("no-banner-layout");
@@ -1672,7 +1748,13 @@ function disableAnimation() {
     mainContent.style.marginTop = "0";
     mainContent.style.setProperty(
       "top",
-      isMobile ? "5.5rem" : hasCover ? "calc(100dvh - 3.5rem)" : "5.5rem",
+      isMobile
+        ? "5.5rem"
+        : mode === "banner"
+          ? "calc(var(--banner-height) - 3.5rem)"
+          : mode === "fullscreen" && !isPlainContent
+            ? "calc(100dvh - 3.5rem)"
+            : "5.5rem",
       "important",
     );
     mainContent.style.visibility = "visible";
@@ -1692,6 +1774,10 @@ function disableAnimation() {
 	  "content-only-active",
 	  contentOnlyCarrier?.getAttribute("data-content-only") === "true",
 	);
+	const plainContentCarrier = document.getElementById("plain-content-layout-carrier");
+	const isPlainContent =
+	  plainContentCarrier?.getAttribute("data-plain-content") === "true";
+	document.body.classList.toggle("plain-content-active", isPlainContent);
 
     const wallpaper = document.getElementById("wallpaper-wrapper") as HTMLElement | null;
     const mainContent = document.getElementById("main-content-wrapper") as HTMLElement | null;
@@ -1705,9 +1791,44 @@ function disableAnimation() {
       if (mainContent) {
         mainContent.classList.remove("mobile-main-no-banner");
         mainContent.classList.add("no-banner-layout");
-        mainContent.style.position = "relative";
+        mainContent.style.position = isHomeLanding ? "relative" : "";
         mainContent.style.zIndex = "30";
-        mainContent.style.setProperty("top", "0", "important");
+        mainContent.style.setProperty("top", isHomeLanding ? "0" : "5.5rem", "important");
+        mainContent.style.setProperty("margin-top", "0", "important");
+        mainContent.style.visibility = "visible";
+      }
+      wallpaper?.setAttribute("data-home-layout-overridden", "true");
+      mainContent?.setAttribute("data-home-layout-overridden", "true");
+      return;
+    }
+
+    if (isPlainContent) {
+      const currentMode = document.documentElement.getAttribute("data-wallpaper-mode");
+      if (wallpaper) {
+        wallpaper.style.removeProperty("position");
+        wallpaper.style.removeProperty("inset");
+        wallpaper.style.removeProperty("height");
+        if (currentMode === "none") {
+          wallpaper.style.setProperty("display", "none", "important");
+          wallpaper.classList.add("hidden", "opacity-0");
+          wallpaper.classList.remove("opacity-100");
+        } else {
+          wallpaper.style.setProperty("display", "block", "important");
+          wallpaper.classList.remove("hidden", "opacity-0");
+          wallpaper.classList.add("opacity-100");
+        }
+      }
+      if (mainContent) {
+        mainContent.classList.remove("mobile-main-no-banner");
+        mainContent.classList.toggle("no-banner-layout", currentMode !== "banner");
+        mainContent.style.zIndex = "30";
+        mainContent.style.setProperty(
+          "top",
+          currentMode === "banner"
+            ? "calc(var(--banner-height) - 3.5rem)"
+            : "5.5rem",
+          "important",
+        );
         mainContent.style.setProperty("margin-top", "0", "important");
         mainContent.style.visibility = "visible";
       }
@@ -1719,6 +1840,9 @@ function disableAnimation() {
     if (wallpaper?.getAttribute("data-home-layout-overridden") === "true") {
       const currentMode = document.documentElement.getAttribute("data-wallpaper-mode");
       wallpaper.style.removeProperty("display");
+      wallpaper.style.removeProperty("position");
+      wallpaper.style.removeProperty("inset");
+      wallpaper.style.removeProperty("height");
       if (currentMode === "none") {
         wallpaper.classList.add("hidden", "opacity-0");
         wallpaper.classList.remove("opacity-100");

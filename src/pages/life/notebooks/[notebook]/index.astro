@@ -1,0 +1,40 @@
+---
+import { getCollection } from "astro:content";
+import NotebookCollection from "@/components/pages/record/NotebookCollection.astro";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import { notebookDefinitions } from "@/config/notebookConfig";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+export function getStaticPaths() {
+	return notebookDefinitions.map((notebook) => ({
+		params: { notebook: notebook.slug },
+		props: { notebook },
+	}));
+}
+
+const { notebook } = Astro.props;
+const notes = (await getCollection("notebooks")).filter(
+	(note) => !note.data.draft && note.data.notebook === notebook.slug,
+);
+const latest = [...notes].sort(
+	(a, b) => b.data.published.getTime() - a.data.published.getTime(),
+)[0];
+---
+
+<MainGridLayout
+	title={notebook.title}
+	bannerTitle="动态"
+	description={notebook.description}
+	articleHub
+	contentOnly
+	plainContent
+>
+	<RecordPageShell
+		title={notebook.title}
+		description={notebook.description}
+		icon="material-symbols:menu-book-rounded"
+		updatedAt={latest?.data.published.toISOString().slice(0, 10)}
+	>
+		<NotebookCollection notebook={notebook} notes={notes} />
+	</RecordPageShell>
+</MainGridLayout>

@@ -1,5 +1,7 @@
 import type { CommentConfig } from "../types/commentConfig";
 
+const walineServerURL = import.meta.env.PUBLIC_WALINE_SERVER_URL?.trim() || "";
+
 export const commentConfig: CommentConfig = {
 	// 评论系统类型: none, twikoo, waline, giscus, disqus, artalk，默认为none，即不启用评论系统
 	type: "none",
@@ -22,8 +24,8 @@ export const commentConfig: CommentConfig = {
 
 	//waline评论系统配置
 	waline: {
-		// waline 后端服务地址
-		serverURL: "https://waline.cuteleaf.cn",
+		// 留言板 Waline 后端地址，建议通过 PUBLIC_WALINE_SERVER_URL 配置自己的服务
+		serverURL: walineServerURL,
 		// 设置 Waline 评论系统语言
 		lang: "zh-CN",
 		// 设置 Waline 评论系统表情地址

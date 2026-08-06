@@ -1,0 +1,54 @@
+---
+import BangumiGrid from "@/components/pages/bangumi/BangumiGrid.svelte";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import { siteConfig } from "@/config";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const username = siteConfig.bangumi?.userId?.trim() || "";
+const fetchConfig = {
+	username,
+	apiUrl: siteConfig.bangumi?.apiUrl || "https://api.bangumi.one",
+	categories: {
+		book: true,
+		anime: false,
+		music: false,
+		game: false,
+		real: false,
+	},
+	categoryOrder: ["book"],
+	pagination: { limit: 50, delay: 50, maxTotal: 1000 },
+};
+const apiOrigin = new URL(fetchConfig.apiUrl).origin;
+---
+
+<MainGridLayout
+	title="书架"
+	bannerTitle="记录"
+	description="正在读、读过和想读的书"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<Fragment slot="head">
+		<link rel="preconnect" href={apiOrigin} crossorigin="anonymous" />
+		<link rel="dns-prefetch" href={apiOrigin} />
+	</Fragment>
+	<RecordPageShell
+		title="我的书架"
+		description="记录阅读历程，分享书中精彩。"
+		icon="material-symbols:book-4"
+	>
+		{username ? (
+			<BangumiGrid
+				client:load
+				initialActiveTab="book"
+				subjectBaseUrl={siteConfig.bangumi?.subjectBaseUrl}
+				fetchConfig={fetchConfig}
+			/>
+		) : (
+			<div class="rounded-2xl border border-(--line-divider) px-5 py-12 text-center text-(--content-meta)">
+				请先在 siteConfig.ts 中配置 Bangumi 用户 ID。
+			</div>
+		)}
+	</RecordPageShell>
+</MainGridLayout>

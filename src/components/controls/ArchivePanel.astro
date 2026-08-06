@@ -22,7 +22,21 @@ for (const post of posts) {
 	grouped.get(year)?.push(post);
 }
 const groups = Array.from(grouped.entries())
-	.map(([year, yearPosts]) => ({ year, posts: yearPosts }))
+	.map(([year, yearPosts]) => {
+		const months = new Map<number, typeof posts>();
+		for (const post of yearPosts) {
+			const month = post.data.published.getMonth() + 1;
+			if (!months.has(month)) months.set(month, []);
+			months.get(month)?.push(post);
+		}
+		return {
+			year,
+			posts: yearPosts,
+			months: Array.from(months.entries())
+				.map(([month, monthPosts]) => ({ month, posts: monthPosts }))
+				.sort((left, right) => right.month - left.month),
+		};
+	})
 	.sort((a, b) => b.year - a.year);
 const availableCategories = Array.from(
 	new Set(
@@ -137,79 +151,67 @@ const foldOnFilter = collapseAllButFirst;
     const collapsed = collapseAllButFirst && groupIndex > 0;
     return (
       <div class="archive-year-block" data-year={group.year} data-count={group.posts.length}>
-        <button
-          class="archive-year-toggle flex flex-row w-full items-center h-15 cursor-pointer rounded-lg
-                 hover:bg-(--btn-plain-bg-hover) transition-colors group/yr"
-          aria-expanded={collapsed ? "false" : "true"}
-        >
-          <div class="w-[15%] md:w-[10%] transition text-2xl font-bold text-right text-75
-                      group-hover/yr:text-(--primary)">
-            {group.year}
-          </div>
-          <div class="w-[15%] md:w-[10%]">
-            <div class="h-3 w-3 bg-none rounded-full outline-(--primary) mx-auto
-                        -outline-offset-2 z-50 outline-3"></div>
-          </div>
-          <div class="w-[70%] md:w-[80%] transition text-left text-50 flex items-center gap-2
-                      group-hover/yr:text-(--primary)">
-            <span class="archive-year-count">{group.posts.length}</span>
-            {" "}
-            <span class="archive-year-count-label">{i18n(group.posts.length === 1 ? I18nKey.postCount : I18nKey.postsCount)}</span>
+        <button class="archive-year-toggle" aria-expanded={collapsed ? "false" : "true"}>
+          <span class="archive-tree-column" aria-hidden="true">
+            <i class="archive-year-node"></i>
+          </span>
+          <span class="archive-year-label">
+            <strong class="archive-year-title">{group.year}年</strong>
+            <span class="archive-year-meta">
+              <span>共</span>
+              <span class="archive-year-count">{group.posts.length}</span>
+              <span class="archive-year-count-label">{i18n(group.posts.length === 1 ? I18nKey.postCount : I18nKey.postsCount)}</span>
+            </span>
             <span class="archive-arrow" style={collapsed ? "transform: rotate(-90deg)" : ""}>
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                 <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </span>
-          </div>
+          </span>
         </button>
 
-        <div class="archive-year-content" hidden={collapsed}>
-          {group.posts.map((post) => (
-            <a
-              href={getPostUrlBySlug(post.id)}
-              aria-label={post.data.title}
-              class="archive-post group btn-plain block! h-10 w-full rounded-lg hover:text-[initial]"
-              data-tags={JSON.stringify(post.data.tags || [])}
-              data-category={post.data.category || ""}
-              data-search={`${post.data.title} ${post.data.category || ""} ${(post.data.tags || []).join(" ")} ${post.data.description || ""}`.toLocaleLowerCase()}
-            >
-              <div class="flex flex-row justify-start items-center h-full">
-                {/* date */}
-                <div class="w-[15%] md:w-[10%] transition text-sm text-right text-50">
-                  {formatDate(post.data.published)}
-                </div>
-
-                {/* dot and line */}
-                <div class="w-[15%] md:w-[10%] relative dash-line h-full flex items-center">
-                  <div class="transition-all mx-auto w-1 h-1 rounded-sm group-hover:h-5
-                              bg-[oklch(0.5_0.05_var(--hue))] group-hover:bg-(--primary)
-                              outline-4 z-50 outline-(--card-bg)
-                              group-hover:outline-(--btn-plain-bg-hover)
-                              group-active:outline-(--btn-plain-bg-active)"></div>
-                </div>
-
-                {/* post title */}
-                <div class="w-[70%] md:max-w-[65%] md:w-[65%] text-left font-bold
-                            group-hover:translate-x-1 transition-all group-hover:text-(--primary)
-                            text-75 pr-8 whitespace-nowrap text-ellipsis overflow-hidden flex items-center gap-2">
-                  {post.data.category && (
-                    <span class="shrink-0 inline-block text-xs font-medium px-1.5 py-0.5 rounded-sm
-                                 bg-[oklch(0.95_0.025_var(--hue))] dark:bg-[oklch(0.25_0.025_var(--hue))]
-                                 text-(--primary) group-hover:bg-(--primary) group-hover:text-white!
-                                 transition-colors">
-                      {post.data.category}
+        <div class="archive-year-content archive-months-area" hidden={collapsed}>
+          {group.months.map((monthGroup) => (
+            <section class="archive-month-block" data-archive-month>
+              <header class="archive-month-heading">
+                <span class="archive-tree-column" aria-hidden="true">
+                  <i class="archive-branch archive-month-branch"></i>
+                  <b class="archive-month-node"></b>
+                </span>
+                <h3 class="archive-month-label">
+                  <strong>{monthGroup.month}月</strong>
+                  <small>
+                    <span data-archive-month-count>{monthGroup.posts.length}</span>
+                    <span>篇文章</span>
+                  </small>
+                </h3>
+              </header>
+              <div class="archive-month-posts archive-posts-area">
+                {monthGroup.posts.map((post) => (
+                  <a
+                    href={getPostUrlBySlug(post.id)}
+                    aria-label={post.data.title}
+                    class="archive-post"
+                    data-tags={JSON.stringify(post.data.tags || [])}
+                    data-category={post.data.category || ""}
+                    data-search={`${post.data.title} ${post.data.category || ""} ${(post.data.tags || []).join(" ")} ${post.data.description || ""}`.toLocaleLowerCase()}
+                  >
+                    <span class="archive-tree-column" aria-hidden="true">
+                      <i class="archive-branch archive-post-branch"></i>
+                      <b class="archive-post-node"></b>
                     </span>
-                  )}
-                  <span class="truncate">{post.data.title}</span>
-                </div>
-
-                {/* tag list */}
-                <div class="hidden md:block md:w-[15%] text-left text-sm transition
-                            whitespace-nowrap text-ellipsis overflow-hidden text-30">
-                  {formatTag(post.data.tags || [])}
-                </div>
+                    <span class="archive-post-link">
+                      <time datetime={post.data.published.toISOString()}>{formatDate(post.data.published)}</time>
+                      {post.data.category && (
+                        <span class="archive-post-category">{post.data.category}</span>
+                      )}
+                      <strong>{post.data.title}</strong>
+                      <span class="archive-post-tags">{formatTag(post.data.tags || [])}</span>
+                    </span>
+                  </a>
+                ))}
               </div>
-            </a>
+            </section>
           ))}
         </div>
       </div>
@@ -218,65 +220,414 @@ const foldOnFilter = collapseAllButFirst;
 </archive-panel>
 
 <style>
-  archive-panel {
-    display: block;
-    min-height: var(--archive-stable-height, 42rem);
-    border: 1px solid color-mix(in oklch, var(--primary) 14%, var(--line-divider));
-    background:
-      linear-gradient(135deg, color-mix(in oklch, var(--primary) 4%, transparent), transparent 34%),
-      var(--card-bg);
-    box-shadow: 0 1rem 2.5rem color-mix(in oklch, var(--deep-text) 7%, transparent);
-  }
-  .archive-toolbar {
-    padding-bottom: 1rem;
-    border-bottom: 1px solid color-mix(in oklch, var(--line-divider) 72%, transparent);
-  }
-  .archive-year-block {
-    border-top: 1px solid color-mix(in oklch, var(--line-divider) 58%, transparent);
-    padding-top: 0.5rem;
-  }
-  .archive-year-toggle {
-    min-height: 3.75rem;
-  }
-  .archive-post {
-    height: 3.5rem !important;
-    border-radius: 0.8rem !important;
-  }
-  .archive-post:hover {
-    background: color-mix(in oklch, var(--primary) 7%, transparent);
-  }
-  .archive-arrow {
-    display: inline-flex;
-  }
-  archive-panel [hidden] {
-    display: none !important;
-  }
-  .archive-toolbar [data-archive-reset][hidden] {
-    display: inline-flex !important;
-    visibility: hidden;
-    pointer-events: none;
-  }
-  .archive-search input::placeholder {
-    color: var(--content-meta);
-  }
-  .archive-search:focus-within,
-  .archive-year-filter:focus-within,
-  .archive-category-filter:focus-within {
-    background: var(--btn-regular-bg-hover);
-  }
-  .archive-search:focus-within {
-    background: transparent;
-    border-color: color-mix(in oklch, var(--primary) 44%, var(--line-divider));
-    box-shadow: 0 0 0 0.18rem color-mix(in oklch, var(--primary) 10%, transparent);
-  }
-  @media (max-width: 767px) {
-    archive-panel {
-      padding-inline: 1rem !important;
-    }
-    .archive-result-summary > span:last-child {
-      display: none;
-    }
-  }
+	archive-panel {
+		--archive-ink: oklch(0.1 0 0);
+		--archive-muted: oklch(0.45 0 0);
+		--archive-line: oklch(0.85 0 0);
+		display: block;
+		min-height: var(--archive-stable-height, 42rem);
+		padding: 2rem 2.5rem;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		color: var(--archive-ink);
+	}
+
+	:global(:root.dark) archive-panel {
+		--archive-ink: oklch(0.94 0.01 var(--hue));
+		--archive-muted: oklch(0.72 0.01 var(--hue));
+		--archive-line: oklch(0.4 0.01 var(--hue));
+	}
+
+	.archive-toolbar {
+		padding-bottom: 1rem;
+		border-bottom: 1px solid
+			color-mix(in oklch, var(--archive-line) 72%, transparent);
+	}
+
+	.archive-year-block {
+		position: relative;
+		margin-bottom: 2.5rem;
+	}
+
+	.archive-year-block::before {
+		position: absolute;
+		z-index: 0;
+		top: 1rem;
+		bottom: 1rem;
+		left: 1rem;
+		border-left: 2px dashed var(--archive-line);
+		content: "";
+	}
+
+	.archive-year-toggle {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		width: 100%;
+		min-height: 2.0625rem;
+		padding: 0;
+		cursor: pointer;
+		border: 0;
+		background: transparent;
+		color: var(--archive-ink);
+		text-align: left;
+	}
+
+	.archive-year-toggle:focus-visible {
+		border-radius: 0.5rem;
+		outline: 3px solid color-mix(in oklch, var(--primary) 55%, transparent);
+		outline-offset: 0.2rem;
+	}
+
+	.archive-tree-column {
+		position: relative;
+		display: block;
+		flex: 0 0 2rem;
+		width: 2rem;
+		align-self: stretch;
+	}
+
+	.archive-year-node {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		z-index: 2;
+		width: 0.75rem;
+		height: 0.75rem;
+		border: 2px solid var(--archive-line);
+		border-radius: 50%;
+		background: var(--card-bg);
+		transform: translate(-50%, -50%);
+		transition: border-color 150ms ease, background-color 150ms ease;
+	}
+
+	.archive-year-label {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		gap: 0.6rem;
+		min-width: 0;
+		padding-left: 0.5rem;
+	}
+
+	.archive-year-title {
+		font-size: 1.375rem;
+		font-weight: 700;
+		line-height: 2.0625rem;
+		white-space: nowrap;
+	}
+
+	.archive-year-meta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		color: var(--archive-muted);
+		font-size: 0.75rem;
+		line-height: 1.125rem;
+		white-space: nowrap;
+	}
+
+	.archive-arrow {
+		display: none;
+		margin-left: 0.1rem;
+		color: var(--archive-muted);
+		transition: transform 180ms ease;
+	}
+
+	.archive-months-area {
+		padding-left: 2rem;
+	}
+
+	.archive-month-block {
+		position: relative;
+		margin-bottom: 0.5rem;
+	}
+
+	.archive-month-block::before {
+		position: absolute;
+		z-index: 0;
+		top: 1rem;
+		bottom: 1rem;
+		left: 1rem;
+		border-left: 2px dashed var(--archive-line);
+		content: "";
+	}
+
+	.archive-month-block::after,
+	.archive-year-block::after {
+		position: absolute;
+		z-index: 0;
+		top: 1rem;
+		left: 1rem;
+		height: var(--archive-active-line, 0);
+		border-left: 2px solid var(--archive-ink);
+		content: "";
+		opacity: 0;
+		transition: height 120ms ease, opacity 120ms ease;
+	}
+
+	.archive-month-block.is-tree-active::after,
+	.archive-year-block.is-tree-active::after {
+		opacity: 1;
+	}
+
+	.archive-month-heading {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		min-height: 2rem;
+	}
+
+	.archive-branch {
+		position: absolute;
+		top: 50%;
+		right: 50%;
+		left: -50%;
+		border-top: 2px dashed var(--archive-line);
+		transition: border-color 120ms ease, border-style 120ms ease;
+	}
+
+	.archive-month-node,
+	.archive-post-node {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		z-index: 2;
+		border-radius: 50%;
+		background: var(--archive-line);
+		transform: translate(-50%, -50%);
+		transition: background-color 120ms ease, transform 120ms ease;
+	}
+
+	.archive-month-node {
+		width: 0.5rem;
+		height: 0.5rem;
+	}
+
+	.archive-post-node {
+		width: 0.4rem;
+		height: 0.4rem;
+	}
+
+	.archive-month-label {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+		min-width: 0;
+		margin: 0;
+		padding-left: 0.5rem;
+	}
+
+	.archive-month-label strong {
+		font-size: 1.125rem;
+		font-weight: 700;
+		line-height: 1.7rem;
+		white-space: nowrap;
+	}
+
+	.archive-month-label small {
+		display: inline-flex;
+		gap: 0.25rem;
+		color: var(--archive-muted);
+		font-size: 0.75rem;
+		font-weight: 400;
+		line-height: 1.125rem;
+		white-space: nowrap;
+	}
+
+	.archive-posts-area {
+		padding-left: 2rem;
+	}
+
+	.archive-post {
+		position: relative;
+		display: flex;
+		align-items: center;
+		width: 100%;
+		height: 2.25rem;
+		border-radius: 0.5rem;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.archive-post-link {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		gap: 0.6rem;
+		min-width: 0;
+		height: 100%;
+		overflow: hidden;
+		padding: 0.2rem 0.5rem 0.2rem 0;
+		border-radius: 0.5rem;
+		transition: background-color 150ms ease, color 150ms ease;
+	}
+
+	.archive-post:hover .archive-post-link,
+	.archive-post:focus-visible .archive-post-link {
+		background: color-mix(in srgb, var(--archive-ink) 6%, transparent);
+		color: var(--archive-ink);
+	}
+
+	.archive-post:focus-visible {
+		outline: 0;
+	}
+
+	.archive-post:focus-visible .archive-post-link {
+		box-shadow: inset 0 0 0 2px
+			color-mix(in oklch, var(--primary) 48%, transparent);
+	}
+
+	.archive-post time {
+		flex: 0 0 2.8rem;
+		width: 2.8rem;
+		color: var(--archive-muted);
+		font-size: 0.875rem;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.3125rem;
+		white-space: nowrap;
+	}
+
+	.archive-post-category {
+		flex: 0 0 auto;
+		border: 1px solid var(--archive-line);
+		border-radius: 0.25rem;
+		padding: 0.1rem 0.4rem;
+		color: var(--archive-muted);
+		font-size: 0.75rem;
+		font-weight: 600;
+		line-height: 1.125rem;
+		white-space: nowrap;
+	}
+
+	.archive-post-link > strong {
+		overflow: hidden;
+		min-width: 0;
+		color: inherit;
+		font-size: 0.9rem;
+		font-weight: 500;
+		line-height: 1.35rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.archive-post-tags {
+		display: none;
+	}
+
+	.archive-month-block.is-tree-active .archive-month-branch,
+	.archive-post.is-tree-active .archive-post-branch,
+	.archive-post:has(~ .archive-post.is-tree-active) .archive-post-branch {
+		border-top-color: var(--archive-ink);
+		border-top-style: solid;
+	}
+
+	.archive-month-block.is-tree-active .archive-month-node,
+	.archive-post.is-tree-active .archive-post-node,
+	.archive-post:has(~ .archive-post.is-tree-active) .archive-post-node {
+		background: var(--archive-ink);
+	}
+
+	.archive-year-block.is-tree-active .archive-year-node {
+		border-color: var(--archive-ink);
+		background: var(--archive-ink);
+	}
+
+	.archive-post.is-tree-active .archive-post-node {
+		transform: translate(-50%, -50%) scale(1.15);
+	}
+
+	archive-panel [hidden] {
+		display: none !important;
+	}
+
+	.archive-toolbar [data-archive-reset][hidden] {
+		display: inline-flex !important;
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.archive-search input::placeholder {
+		color: var(--content-meta);
+	}
+
+	.archive-search:focus-within,
+	.archive-year-filter:focus-within,
+	.archive-category-filter:focus-within {
+		background: var(--btn-regular-bg-hover);
+	}
+
+	.archive-search:focus-within {
+		border-color: color-mix(in oklch, var(--primary) 44%, var(--line-divider));
+		background: transparent;
+		box-shadow: 0 0 0 0.18rem
+			color-mix(in oklch, var(--primary) 10%, transparent);
+	}
+
+	@media (max-width: 767px) {
+		archive-panel {
+			padding: 1.5rem 0.4rem;
+		}
+
+		.archive-year-title {
+			font-size: 1.15rem;
+		}
+
+		.archive-months-area,
+		.archive-posts-area {
+			padding-left: 1.3rem;
+		}
+
+		.archive-tree-column {
+			flex-basis: 1.3rem;
+			width: 1.3rem;
+		}
+
+		.archive-year-block::before,
+		.archive-month-block::before,
+		.archive-year-block::after,
+		.archive-month-block::after {
+			left: 0.65rem;
+		}
+
+		.archive-post time {
+			flex-basis: 2.7rem;
+			width: 2.7rem;
+			font-size: 0.76rem;
+		}
+
+		.archive-post-category,
+		.archive-post-tags {
+			display: none;
+		}
+
+		.archive-post-link {
+			gap: 0.4rem;
+		}
+
+		.archive-post-link > strong {
+			font-size: 0.8rem;
+		}
+
+		.archive-result-summary > span:last-child {
+			display: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.archive-arrow,
+		.archive-post-link,
+		.archive-branch,
+		.archive-month-node,
+		.archive-post-node,
+		.archive-year-node,
+		.archive-month-block::after,
+		.archive-year-block::after {
+			transition: none;
+		}
+	}
 </style>
 
 <script is:inline define:vars={{ i18nStrings, tagsBaseUrl, categoriesBaseUrl, searchBaseUrl }}>
@@ -314,6 +665,59 @@ const foldOnFilter = collapseAllButFirst;
       }
 
       this.bindYearToggles();
+      this.bindTreeHighlight();
+    }
+
+    bindTreeHighlight() {
+      const rows = Array.from(this.querySelectorAll(".archive-post"));
+
+      const clear = () => {
+        for (const row of rows) row.classList.remove("is-tree-active");
+        for (const month of this.querySelectorAll(".archive-month-block")) {
+          month.classList.remove("is-tree-active");
+          month.style.removeProperty("--archive-active-line");
+        }
+        for (const year of this.querySelectorAll(".archive-year-block")) {
+          year.classList.remove("is-tree-active");
+          year.style.removeProperty("--archive-active-line");
+        }
+      };
+
+      const activate = (row) => {
+        clear();
+        const month = row.closest(".archive-month-block");
+        const year = row.closest(".archive-year-block");
+        const monthHeader = month?.querySelector(".archive-month-heading");
+        if (!month || !year || !monthHeader) return;
+
+        const rowRect = row.getBoundingClientRect();
+        const monthRect = month.getBoundingClientRect();
+        const yearRect = year.getBoundingClientRect();
+        const monthHeaderRect = monthHeader.getBoundingClientRect();
+        const monthLine = Math.max(
+          0,
+          rowRect.top + rowRect.height / 2 - (monthRect.top + 16),
+        );
+        const yearLine = Math.max(
+          0,
+          monthHeaderRect.top + monthHeaderRect.height / 2 - (yearRect.top + 16),
+        );
+
+        row.classList.add("is-tree-active");
+        month.classList.add("is-tree-active");
+        year.classList.add("is-tree-active");
+        month.style.setProperty("--archive-active-line", `${monthLine}px`);
+        year.style.setProperty("--archive-active-line", `${yearLine}px`);
+      };
+
+      for (const row of rows) {
+        row.addEventListener("pointerenter", () => activate(row));
+        row.addEventListener("focus", () => activate(row));
+      }
+      this.addEventListener("pointerleave", clear);
+      this.addEventListener("focusout", (event) => {
+        if (!this.contains(event.relatedTarget)) clear();
+      });
     }
 
     reserveStableHeight() {
@@ -487,6 +891,15 @@ const foldOnFilter = collapseAllButFirst;
           if (match) visibleCount++;
         }
 
+		for (const monthBlock of block.querySelectorAll("[data-archive-month]")) {
+		  const visibleMonthRows = Array.from(
+			monthBlock.querySelectorAll(".archive-post"),
+		  ).filter((row) => !row.hidden).length;
+		  monthBlock.hidden = visibleMonthRows === 0;
+		  const monthCount = monthBlock.querySelector("[data-archive-month-count]");
+		  if (monthCount) monthCount.textContent = String(visibleMonthRows);
+		}
+
         // 更新每年计数显示
         const countEl = block.querySelector(".archive-year-count");
         const labelEl = block.querySelector(".archive-year-count-label");
@@ -522,6 +935,23 @@ const foldOnFilter = collapseAllButFirst;
 		this.resetButton.hidden =
 			!query && selectedYear === "all" && categories.length === 0;
 	  }
+
+	  const scopeLabel =
+		tags.length > 0
+		  ? "本标签文章"
+		  : categories.length > 0 || uncategorized
+			? "本分类文章"
+			: query || selectedYear !== "all"
+			  ? "筛选结果"
+			  : "全部文章";
+	  const stats = document.querySelector("archive-stats");
+	  if (stats) {
+		stats.dataset.scopeCount = String(totalVisible);
+		stats.dataset.scopeLabel = scopeLabel;
+		if (typeof stats.updateScope === "function") {
+		  stats.updateScope(totalVisible, scopeLabel);
+		}
+	  }
     }
 
     setBlockCollapsed(block, collapsed) {
@@ -550,7 +980,10 @@ const foldOnFilter = collapseAllButFirst;
 
       const primary =
         filters.find((f) => f.isTag) || filters[0] || null;
-      if (!primary) return;
+      if (!primary) {
+		header.classList.add("hidden");
+		return;
+	  }
       const secondary = filters.filter((f) => f !== primary);
 
       const linkEl = header.querySelector("#archive-filter-link");

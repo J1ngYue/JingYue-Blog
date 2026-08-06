@@ -1,0 +1,74 @@
+---
+const skeletonRows = Array.from({ length: 6 });
+---
+
+<section
+	class="guestbook-chat guestbook-chat--fallback"
+	data-guestbook-fallback
+	aria-label="留言板"
+	aria-busy="true"
+>
+	<header class="guestbook-chat__header">
+		<div class="guestbook-chat__channel">
+			<div>
+				<div class="guestbook-chat__title-row">
+					<h2>留言板</h2>
+					<span>· -- 条留言</span>
+					<div class="guestbook-chat__status">
+						<span></span>
+						正在连接留言服务
+					</div>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<div class="guestbook-chat__workspace">
+		<div class="guestbook-chat__conversation">
+			<div class="guestbook-chat__loading" aria-label="正在加载留言">
+				{skeletonRows.map((_, index) => (
+					<div class:list={["guestbook-chat__skeleton", { "is-admin": index % 3 === 2 }]}>
+						<div class="guestbook-chat__skeleton-avatar"></div>
+						<div class="guestbook-chat__skeleton-copy">
+							<div class="guestbook-chat__skeleton-name"></div>
+							<div class="guestbook-chat__skeleton-bubble"></div>
+							<div class="guestbook-chat__skeleton-meta"></div>
+						</div>
+					</div>
+				))}
+			</div>
+			<div class="guestbook-chat__fallback-stalled" role="status">
+				<strong>留言板正在启动</strong>
+				<span>如果长时间没有显示，请检查网络或刷新页面。</span>
+				<button type="button" onclick="window.location.reload()">刷新页面</button>
+			</div>
+
+			<footer class="guestbook-chat__fallback-composer" aria-hidden="true">
+				<div class="guestbook-chat__fallback-editor">
+					<div class="guestbook-chat__fallback-resize-handle"></div>
+					<div class="guestbook-chat__fallback-textarea"></div>
+					<div class="guestbook-chat__fallback-toolbar">
+						<span class="guestbook-chat__fallback-tool"></span>
+						<div>
+							<span class="guestbook-chat__fallback-count"></span>
+							<span class="guestbook-chat__fallback-login"></span>
+							<span class="guestbook-chat__fallback-send"></span>
+						</div>
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</section>
+
+<script>
+	const fallback = document.querySelector("[data-guestbook-fallback]");
+	if (fallback) {
+		const timer = window.setTimeout(() => {
+			fallback.classList.add("is-stalled");
+		}, 5000);
+		window.addEventListener("pagehide", () => window.clearTimeout(timer), {
+			once: true,
+		});
+	}
+</script>

@@ -1,7 +1,14 @@
 ---
 import { Icon } from "astro-icon/components";
+import { backgroundWallpaper, siteConfig } from "@/config";
 import { musicPlayerConfig } from "@/config/musicConfig";
 import { url } from "@/utils/url-utils";
+
+const showThemeColor = !siteConfig.themeColor.fixed;
+const isWallpaperSwitchable = backgroundWallpaper.switchable ?? true;
+const allowLayoutSwitch = siteConfig.postListLayout.allowSwitch;
+const hasDisplaySettings =
+	showThemeColor || isWallpaperSwitchable || allowLayoutSwitch;
 
 const quickLinks = [
 	{
@@ -44,21 +51,6 @@ const quickLinks = [
 ---
 
 <div id="quick-tools-dock" class="quick-tools-dock">
-	{musicPlayerConfig.showInNavbar && (
-		<button
-			type="button"
-			class="quick-tools-music-edge"
-			data-quick-tools-music
-			aria-label="打开音乐播放器"
-			aria-controls="music-nav-panel"
-			aria-expanded="false"
-			data-tooltip="音乐播放器"
-		>
-			<Icon is:inline name="material-symbols:music-note-rounded" />
-			<span>MUSIC</span>
-		</button>
-	)}
-
 	<div
 		id="quick-tools-menu"
 		class="quick-tools-menu"
@@ -98,63 +90,99 @@ const quickLinks = [
 	</div>
 
 	<nav class="quick-tools-rail" aria-label="全局快捷工具栏">
-		<span class="quick-tools-label">TOOLS</span>
-		<a class="quick-tools-button" href={url("/")} data-tooltip="首页" aria-label="返回首页">
-			<Icon is:inline name="material-symbols:home-rounded" />
-		</a>
+		<div class="quick-tools-pinned">
+			<a
+				class="quick-tools-button quick-tools-profile-button"
+				href={url("/about/")}
+				data-tooltip="关于"
+				aria-label="查看关于页面"
+			>
+				<Icon is:inline name="material-symbols:person-outline-rounded" />
+			</a>
+			{musicPlayerConfig.showInNavbar && (
+				<button
+					type="button"
+					class="quick-tools-button quick-tools-music-button"
+					data-quick-tools-music
+					aria-label="打开音乐播放器"
+					aria-controls="music-mini-panel"
+					aria-expanded="false"
+					data-tooltip="音乐播放器"
+				>
+					<Icon is:inline name="material-symbols:music-note-rounded" />
+				</button>
+			)}
+		</div>
+		<div id="quick-tools-actions" class="quick-tools-actions-shell">
+			<div class="quick-tools-actions">
+				{hasDisplaySettings && (
+				<button
+					id="display-settings-switch"
+					class="quick-tools-button"
+					type="button"
+					data-tooltip="显示设置"
+					aria-label="打开显示设置"
+				>
+					<Icon is:inline name="material-symbols:palette-outline" />
+				</button>
+			)}
+				<button
+					id="quick-tools-theme"
+					class="quick-tools-button quick-tools-theme"
+					type="button"
+					data-tooltip="深色模式"
+					aria-label="深色模式"
+				>
+					<span class="quick-tools-theme-icon quick-tools-theme-icon--dark" aria-hidden="true">
+						<Icon is:inline name="material-symbols:dark-mode-outline-rounded" />
+					</span>
+					<span class="quick-tools-theme-icon quick-tools-theme-icon--light" aria-hidden="true">
+						<Icon is:inline name="material-symbols:wb-sunny-outline-rounded" />
+					</span>
+				</button>
+				<button
+					id="quick-tools-navigation"
+					class="quick-tools-button"
+					type="button"
+					data-tooltip="快捷导航"
+					aria-label="打开快捷导航"
+					aria-controls="quick-tools-menu"
+					aria-expanded="false"
+					aria-haspopup="dialog"
+				>
+					<Icon is:inline name="material-symbols:ads-click-rounded" />
+				</button>
+				<button
+					id="quick-tools-wallpaper"
+					class="quick-tools-button"
+					type="button"
+					data-tooltip="切换壁纸"
+					aria-label="切换壁纸"
+				>
+					<Icon is:inline name="material-symbols:wallpaper" />
+				</button>
+			</div>
+		</div>
 		<button
-			id="quick-tools-navigation"
-			class="quick-tools-button"
+			id="quick-tools-collapse"
+			class="quick-tools-button quick-tools-collapse"
 			type="button"
-			data-tooltip="快捷导航"
-			aria-label="打开快捷导航"
-			aria-controls="quick-tools-menu"
-			aria-expanded="false"
-			aria-haspopup="dialog"
+			data-tooltip="收起快捷工具"
+			aria-label="收起快捷工具"
+			aria-controls="quick-tools-actions"
+			aria-expanded="true"
 		>
-			<Icon is:inline name="material-symbols:ads-click-rounded" />
+			<span class="quick-tools-collapse-icon" aria-hidden="true">
+				<Icon is:inline name="material-symbols:keyboard-arrow-up-rounded" />
+			</span>
 		</button>
-		<button
-			id="quick-tools-search"
-			class="quick-tools-button"
-			type="button"
-			data-tooltip="站内搜索"
-			aria-label="打开站内搜索"
-		>
-			<Icon is:inline name="material-symbols:manage-search-rounded" />
-		</button>
-		<button
-			id="quick-tools-settings"
-			class="quick-tools-button"
-			type="button"
-			data-tooltip="显示设置"
-			aria-label="打开显示设置"
-		>
-			<Icon is:inline name="material-symbols:settings-rounded" />
-		</button>
-		<i class="quick-tools-divider" aria-hidden="true"></i>
-		<button
-			id="quick-tools-wallpaper"
-			class="quick-tools-button"
-			type="button"
-			data-tooltip="切换壁纸"
-			aria-label="切换壁纸"
-		>
-			<Icon is:inline name="material-symbols:wallpaper" />
-		</button>
-		<a class="quick-tools-button" href={url("/archive/")} data-tooltip="文章" aria-label="查看文章">
-			<Icon is:inline name="material-symbols:article-outline-rounded" />
-		</a>
-		<a class="quick-tools-button" href={url("/gallery/")} data-tooltip="相册" aria-label="查看相册">
-			<Icon is:inline name="material-symbols:photo-library-outline-rounded" />
-		</a>
-		<a class="quick-tools-button" href={url("/dynamic/")} data-tooltip="动态" aria-label="查看动态">
-			<Icon is:inline name="material-symbols:forum-outline-rounded" />
-		</a>
 	</nav>
 </div>
 
 <script>
+	import { DARK_MODE, LIGHT_MODE } from "@/constants/constants";
+	import { setTheme } from "@/utils/setting-utils";
+
 	function initQuickToolsDock() {
 		const dock = document.getElementById("quick-tools-dock");
 		if (!dock || dock.dataset.bound === "true") return;
@@ -163,30 +191,98 @@ const quickLinks = [
 		const menu = document.getElementById("quick-tools-menu");
 		const navigationButton = document.getElementById("quick-tools-navigation");
 		const closeButton = document.getElementById("quick-tools-menu-close");
-		const searchButton = document.getElementById("quick-tools-search");
-		const settingsButton = document.getElementById("quick-tools-settings");
+		const settingsButton = document.getElementById("display-settings-switch");
+		const settingsPanel = document.getElementById("display-setting");
+		const themeButton = document.getElementById("quick-tools-theme");
 		const wallpaperButton = document.getElementById("quick-tools-wallpaper");
+		const collapseButton = document.getElementById("quick-tools-collapse");
+		const actionsShell = document.getElementById("quick-tools-actions");
 		const musicButton = dock.querySelector<HTMLElement>("[data-quick-tools-music]");
+		const musicMiniPanel = document.getElementById("music-mini-panel");
 		const musicPanel = document.getElementById("music-nav-panel");
-		let musicCloseTimer = 0;
+		const collapsedStorageKey = "jingyue:quick-tools-collapsed";
+
+		const setActionsCollapsed = (collapsed: boolean) => {
+			dock.dataset.collapsed = String(collapsed);
+			actionsShell?.setAttribute("aria-hidden", String(collapsed));
+			if (actionsShell) actionsShell.inert = collapsed;
+			collapseButton?.setAttribute("aria-expanded", String(!collapsed));
+			collapseButton?.setAttribute(
+				"aria-label",
+				collapsed ? "展开快捷工具" : "收起快捷工具",
+			);
+			collapseButton?.setAttribute(
+				"data-tooltip",
+				collapsed ? "展开快捷工具" : "收起快捷工具",
+			);
+		};
+
+		let actionsCollapsed = false;
+		try {
+			actionsCollapsed = localStorage.getItem(collapsedStorageKey) === "true";
+		} catch {}
+		setActionsCollapsed(actionsCollapsed);
+
+		collapseButton?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			actionsCollapsed = !actionsCollapsed;
+			setActionsCollapsed(actionsCollapsed);
+			try {
+				localStorage.setItem(collapsedStorageKey, String(actionsCollapsed));
+			} catch {}
+		});
+		if (musicMiniPanel && musicMiniPanel.parentElement !== document.body) {
+			document.body.appendChild(musicMiniPanel);
+		}
+		if (musicPanel?.dataset.musicImmersive === "true" && musicPanel.parentElement !== document.body) {
+			document.body.appendChild(musicPanel);
+		}
 		let musicLayoutFrame = 0;
+		type FloatingPanelName =
+			| "navigation"
+			| "music"
+			| "immersive"
+			| "settings"
+			| "wallpaper"
+			| "search";
+
+		const requestExclusivePanel = (panel: FloatingPanelName) => {
+			window.dispatchEvent(
+				new CustomEvent("jingyue:floating-panel-open", {
+					detail: { panel },
+				}),
+			);
+		};
+
+		const closeSettingsPanel = () => {
+			settingsPanel?.classList.add("float-panel-closed");
+			settingsButton?.setAttribute("aria-expanded", "false");
+		};
+
+		const closeWallpaperPicker = () => {
+			window.dispatchEvent(new Event("firefly:close-wallpaper-picker"));
+		};
 
 		const syncMusicPanelPosition = () => {
-			if (!musicButton || !musicPanel) return;
+			if (!musicButton || !musicMiniPanel) return;
 			if (musicLayoutFrame) cancelAnimationFrame(musicLayoutFrame);
 			musicLayoutFrame = requestAnimationFrame(() => {
 				musicLayoutFrame = 0;
 				const buttonRect = musicButton.getBoundingClientRect();
-				const viewportLeft = Math.round(Math.max(8, musicButton.offsetWidth + 8));
-				const viewportTop = Math.max(8, Math.round(buttonRect.top));
-				const containingBlock = musicPanel.offsetParent?.getBoundingClientRect();
+				const panelWidth = Math.min(468, Math.max(0, buttonRect.left - 28));
+				const panelHeight = musicMiniPanel.offsetHeight;
+				const viewportLeft = Math.max(8, Math.round(buttonRect.left - panelWidth - 12));
+				const viewportTop = Math.max(
+					8,
+					Math.min(Math.round(buttonRect.top), window.innerHeight - panelHeight - 8),
+				);
+				const containingBlock = musicMiniPanel.offsetParent?.getBoundingClientRect();
 				const left = viewportLeft - (containingBlock?.left ?? 0);
 				const top = viewportTop - (containingBlock?.top ?? 0);
-				const availableWidth = Math.max(0, window.innerWidth - viewportLeft - 12);
-				musicPanel.style.setProperty("left", `${left}px`, "important");
-				musicPanel.style.setProperty("right", "auto", "important");
-				musicPanel.style.setProperty("top", `${top}px`, "important");
-				musicPanel.style.setProperty("width", `${Math.min(384, availableWidth)}px`, "important");
+				musicMiniPanel.style.setProperty("left", `${left}px`, "important");
+				musicMiniPanel.style.setProperty("right", "auto", "important");
+				musicMiniPanel.style.setProperty("top", `${top}px`, "important");
+				musicMiniPanel.style.setProperty("width", `${panelWidth}px`, "important");
 			});
 		};
 
@@ -203,84 +299,154 @@ const quickLinks = [
 		};
 
 		const setMusicOpen = (open: boolean) => {
-			if (!musicPanel) return;
-			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
-			musicPanel.classList.toggle("float-panel-closed", !open);
+			if (!musicMiniPanel) return;
+			musicMiniPanel.classList.toggle("music-mini-panel-closed", !open);
+			musicMiniPanel.setAttribute("aria-hidden", String(!open));
+			musicMiniPanel.toggleAttribute("inert", !open);
 			musicButton?.setAttribute("aria-expanded", String(open));
+			window.dispatchEvent(
+				new CustomEvent("jingyue:music-mini-state", { detail: { open } }),
+			);
 			syncMusicPanelPosition();
 		};
-		const openMusic = () => setMusicOpen(true);
-		const scheduleMusicClose = () => {
-			if (musicCloseTimer) window.clearTimeout(musicCloseTimer);
-			musicCloseTimer = window.setTimeout(() => {
-				musicCloseTimer = 0;
-				if (
-					musicPanel?.matches(":hover, :focus-within") ||
-					musicButton?.matches(":hover, :focus-visible")
-				) {
-					return;
-				}
-				setMusicOpen(false);
-			}, 220);
+		const setImmersiveOpen = (open: boolean) => {
+			if (!musicPanel) return;
+			musicPanel.classList.toggle("float-panel-closed", !open);
+			musicPanel.setAttribute("aria-hidden", String(!open));
+			musicPanel.toggleAttribute("inert", !open);
+			document.body.classList.toggle("music-immersive-open", open);
+			document.documentElement.classList.toggle("music-immersive-open", open);
+			const topRow = document.getElementById("top-row");
+			if (open) topRow?.style.setProperty("z-index", "1060", "important");
+			else topRow?.style.removeProperty("z-index");
+			window.dispatchEvent(
+				new CustomEvent("jingyue:music-overlay-state", { detail: { open } }),
+			);
 		};
-
+		const handleExclusivePanelOpen = (event: Event) => {
+			const panel = (
+				event as CustomEvent<{ panel?: FloatingPanelName }>
+			).detail?.panel;
+			if (!panel) return;
+			if (panel !== "navigation") setMenuOpen(false);
+			if (panel !== "music") setMusicOpen(false);
+			if (panel !== "immersive") setImmersiveOpen(false);
+			if (panel !== "settings") closeSettingsPanel();
+			if (panel !== "wallpaper") closeWallpaperPicker();
+			if (panel !== "search") {
+				window.dispatchEvent(new Event("firefly:close-search"));
+			}
+		};
+		window.addEventListener(
+			"jingyue:floating-panel-open",
+			handleExclusivePanelOpen,
+		);
 		navigationButton?.addEventListener("click", (event) => {
 			const open = dock.dataset.open !== "true";
+			if (open) requestExclusivePanel("navigation");
 			setMenuOpen(open, open && event.detail === 0, !open);
 		});
 		closeButton?.addEventListener("click", () => setMenuOpen(false, false, true));
 		menu?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenuOpen(false)));
 
-		searchButton?.addEventListener("click", (event) => {
+		const syncThemeButton = () => {
+			if (!themeButton) return;
+			const nextTheme = document.documentElement.classList.contains("dark")
+				? "浅色"
+				: "深色";
+			const label = `${nextTheme}模式`;
+			themeButton.setAttribute("aria-label", label);
+			themeButton.dataset.tooltip = label;
+		};
+
+		themeButton?.addEventListener("click", (event) => {
 			event.stopPropagation();
-			setMenuOpen(false);
-			const desktopSearchInput = document.querySelector<HTMLInputElement>(
-				"#search-bar input",
-			);
-			if (desktopSearchInput && window.matchMedia("(min-width: 1024px)").matches) {
-				desktopSearchInput.focus();
-				return;
-			}
-			(document.getElementById("search-switch") as HTMLButtonElement | null)?.click();
+			const nextTheme = document.documentElement.classList.contains("dark")
+				? LIGHT_MODE
+				: DARK_MODE;
+			setTheme(nextTheme);
+			window.dispatchEvent(new CustomEvent("theme-change"));
+			syncThemeButton();
+		});
+		new MutationObserver(syncThemeButton).observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
 		});
 
 		settingsButton?.addEventListener("click", (event) => {
 			event.stopPropagation();
-			setMenuOpen(false);
-			(document.getElementById("display-settings-switch") as HTMLButtonElement | null)?.click();
+			queueMicrotask(() => {
+				const open =
+					settingsPanel &&
+					!settingsPanel.classList.contains("float-panel-closed");
+				settingsButton.setAttribute("aria-expanded", String(Boolean(open)));
+				if (open) requestExclusivePanel("settings");
+			});
 		});
 
 		wallpaperButton?.addEventListener("click", (event) => {
 			event.stopPropagation();
-			setMenuOpen(false);
-			const homeSwitcher = document.querySelector<HTMLButtonElement>(
-				"[data-home-cover-switcher-trigger]",
-			);
-			if (homeSwitcher) {
-				homeSwitcher.click();
+			requestExclusivePanel("wallpaper");
+			window.dispatchEvent(new Event("firefly:open-wallpaper-picker"));
+		});
+		musicButton?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			const open =
+				musicMiniPanel?.classList.contains("music-mini-panel-closed") ??
+				true;
+			if (open) requestExclusivePanel("music");
+			setMusicOpen(open);
+		});
+		window.addEventListener("jingyue:toggle-music-mini", (event) => {
+			const requestedState = (event as CustomEvent<{ open?: boolean }>).detail?.open;
+			const open =
+				typeof requestedState === "boolean"
+					? requestedState
+					: (musicMiniPanel?.classList.contains("music-mini-panel-closed") ?? true);
+			if (open) requestExclusivePanel("music");
+			setMusicOpen(open);
+		});
+		window.addEventListener("jingyue:close-music-mini", () => setMusicOpen(false));
+		window.addEventListener("jingyue:open-immersive-music", () => {
+			requestExclusivePanel("immersive");
+			setImmersiveOpen(true);
+		});
+		document.addEventListener("click", (event) => {
+			const actionButton =
+				event.target instanceof Element
+					? event.target.closest<HTMLButtonElement>("[data-music-page-action]")
+					: null;
+			if (!actionButton) return;
+
+			if (actionButton.dataset.musicPageAction === "library") {
+				setImmersiveOpen(false);
+				setMusicOpen(false);
+				window.dispatchEvent(
+					new CustomEvent("jingyue:open-music-library", {
+						detail: { tab: "queue" },
+					}),
+				);
 				return;
 			}
 
-			const target = new URL("/", window.location.origin);
-			target.searchParams.set("wallpaper", "1");
-			if (window.swup?.navigate) window.swup.navigate(target.href);
-			else window.location.assign(target.href);
+			requestExclusivePanel("immersive");
+			setMusicOpen(false);
+			setImmersiveOpen(true);
 		});
-
-		musicButton?.addEventListener("click", (event) => {
-			event.stopPropagation();
-			setMusicOpen(musicPanel?.classList.contains("float-panel-closed") ?? true);
+		window.addEventListener("jingyue:close-music-player", () => {
+			setImmersiveOpen(false);
+			setMusicOpen(true);
 		});
-		musicButton?.addEventListener("pointerenter", openMusic);
-		musicButton?.addEventListener("pointerleave", scheduleMusicClose);
-		musicButton?.addEventListener("focus", openMusic);
-		musicButton?.addEventListener("blur", scheduleMusicClose);
-		musicPanel?.addEventListener("pointerenter", openMusic);
-		musicPanel?.addEventListener("pointerleave", scheduleMusicClose);
-		musicPanel?.addEventListener("focusin", openMusic);
-		musicPanel?.addEventListener("focusout", scheduleMusicClose);
 		window.addEventListener("resize", syncMusicPanelPosition, { passive: true });
 		window.visualViewport?.addEventListener("resize", syncMusicPanelPosition, { passive: true });
+		const syncMusicPlaying = (event?: Event) => {
+			const eventState = event instanceof CustomEvent ? event.detail?.isPlaying : undefined;
+			const managerState = (
+				window as Window & { __fireflyMusic?: { getState: () => { isPlaying?: boolean } } }
+			).__fireflyMusic?.getState().isPlaying;
+			musicButton?.classList.toggle("is-playing", Boolean(eventState ?? managerState));
+		};
+		window.addEventListener("fm:play-state", syncMusicPlaying);
 
 		document.addEventListener("click", (event) => {
 			if (
@@ -290,13 +456,27 @@ const quickLinks = [
 			) {
 				setMenuOpen(false);
 			}
+			if (
+				musicMiniPanel &&
+				!musicMiniPanel.classList.contains("music-mini-panel-closed") &&
+				event.target instanceof Node &&
+				!musicMiniPanel.contains(event.target) &&
+				!musicPanel?.contains(event.target) &&
+				!musicButton?.contains(event.target)
+			) {
+				setMusicOpen(false);
+			}
 		});
 		document.addEventListener("keydown", (event) => {
 			if (event.key !== "Escape") return;
 			if (dock.dataset.open === "true") setMenuOpen(false, false, true);
 			if (musicPanel && !musicPanel.classList.contains("float-panel-closed")) {
+				setImmersiveOpen(false);
+				setMusicOpen(true);
+			} else if (musicMiniPanel && !musicMiniPanel.classList.contains("music-mini-panel-closed")) {
 				setMusicOpen(false);
 			}
+			closeSettingsPanel();
 		});
 
 		const syncCurrentLink = () => {
@@ -316,6 +496,8 @@ const quickLinks = [
 			window.swup.hooks.on("visit:start", () => {
 				setMenuOpen(false);
 				setMusicOpen(false);
+				setImmersiveOpen(false);
+				closeSettingsPanel();
 			});
 			window.swup.hooks.on("page:view", () => {
 				syncCurrentLink();
@@ -323,6 +505,8 @@ const quickLinks = [
 			});
 		};
 		syncCurrentLink();
+		syncThemeButton();
+		syncMusicPlaying();
 		syncMusicPanelPosition();
 		if (window.swup?.hooks) bindSwup();
 		else document.addEventListener("swup:enable", bindSwup, { once: true });
@@ -332,160 +516,194 @@ const quickLinks = [
 </script>
 
 <style>
+	@keyframes quick-tools-spin {
+		to {
+			transform: rotate(1turn);
+		}
+	}
+
 	.quick-tools-dock {
+		--quick-tools-size: 3.25rem;
+		--quick-tools-gap: 0.55rem;
+		--quick-tools-right: max(1rem, env(safe-area-inset-right));
+		--quick-tools-bottom: max(1rem, env(safe-area-inset-bottom));
 		position: fixed;
 		inset: 0;
 		z-index: 1050;
 		pointer-events: none;
 	}
 
-	.quick-tools-music-edge,
 	.quick-tools-rail {
 		position: fixed;
-		left: 0;
-		z-index: 1;
+		right: var(--quick-tools-right);
+		bottom: var(--quick-tools-bottom);
+		z-index: 3;
+		display: flex;
+		align-items: flex-end;
+		flex-direction: column;
+		gap: var(--quick-tools-gap);
+		width: auto;
+		padding: 0;
 		pointer-events: auto;
-		border: 1px solid rgba(102, 119, 136, 0.16);
-		border-left: 0;
-		border-radius: 0 0.9rem 0.9rem 0;
-		background: rgba(255, 255, 255, 0.72);
-		box-shadow: 0 0.8rem 2rem rgba(43, 58, 73, 0.14);
-		color: #526175;
-		backdrop-filter: blur(0.9rem) saturate(1.1);
 		transition:
-			border-color 180ms ease,
-			background-color 180ms ease,
-			color 180ms ease,
-			opacity 180ms ease,
-			transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+			opacity 220ms ease,
+			transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
-	.quick-tools-music-edge::before,
-	.quick-tools-rail::before {
-		position: absolute;
-		top: 0;
-		left: 100%;
-		width: 1rem;
-		height: 100%;
-		content: "";
-		pointer-events: auto;
-	}
-
-	.quick-tools-music-edge {
-		top: clamp(5.5rem, 14vh, 8.5rem);
+	.quick-tools-pinned,
+	.quick-tools-actions {
 		display: flex;
-		align-items: center;
+		align-items: flex-end;
 		flex-direction: column;
-		gap: 0.5rem;
-		min-width: 3.2rem;
-		padding: 0.85rem 0.7rem;
-		cursor: pointer;
-		opacity: 0;
-		transform: translateX(calc(-100% - 0.2rem));
+		gap: var(--quick-tools-gap);
 	}
 
-	.quick-tools-music-edge:hover,
-	.quick-tools-music-edge:focus-visible,
-	.quick-tools-music-edge[aria-expanded="true"] {
-		border-color: color-mix(in oklch, var(--primary) 42%, transparent);
-		background: rgba(255, 255, 255, 0.94);
-		color: color-mix(in oklch, var(--primary) 70%, #526175);
+	.quick-tools-actions-shell {
+		display: grid;
+		grid-template-rows: 1fr;
 		opacity: 1;
-		transform: translateX(0);
-		outline: none;
+		transform: translateY(0);
+		transition:
+			grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1),
+			opacity 200ms ease,
+			transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 0s;
+		visibility: visible;
 	}
 
-	.quick-tools-music-edge :global(svg) {
-		width: 1.3rem;
-		height: 1.3rem;
+	.quick-tools-actions {
+		min-height: 0;
+		overflow: visible;
 	}
 
-	.quick-tools-music-edge span,
-	.quick-tools-label {
-		font-size: 0.58rem;
-		font-weight: 850;
-		letter-spacing: 0.2em;
-		writing-mode: vertical-rl;
-	}
-
-	.quick-tools-rail {
-		top: clamp(22rem, 61vh, 32rem);
-		display: flex;
-		align-items: center;
-		flex-direction: column;
-		gap: 0.58rem;
-		padding: 0.85rem 0.55rem;
+	.quick-tools-dock[data-collapsed="true"] .quick-tools-actions-shell {
+		grid-template-rows: 0fr;
 		opacity: 0;
-		transform: translate(calc(-100% - 0.2rem), -50%);
+		transform: translateY(0.4rem);
+		visibility: hidden;
 	}
 
-	.quick-tools-rail:hover,
-	.quick-tools-rail:focus-within,
-	.quick-tools-dock[data-open="true"] .quick-tools-rail {
-		opacity: 1;
-		transform: translate(0, -50%);
+	.quick-tools-dock[data-collapsed="true"] .quick-tools-actions {
+		overflow: hidden;
 	}
 
-	.quick-tools-label {
-		margin-bottom: 0.12rem;
-		color: #627084;
+	.quick-tools-collapse-icon {
+		display: grid;
+		transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+		place-items: center;
 	}
 
-	.quick-tools-divider {
-		width: 1.35rem;
-		height: 1px;
-		margin: 0.08rem 0;
-		background: rgba(98, 112, 132, 0.24);
+	.quick-tools-dock[data-collapsed="true"] .quick-tools-collapse-icon {
+		transform: rotate(180deg);
 	}
 
 	.quick-tools-button {
 		position: relative;
 		display: grid;
-		width: 2.15rem;
-		height: 2.15rem;
-		color: #657489;
+		flex: 0 0 auto;
+		width: var(--quick-tools-size);
+		height: var(--quick-tools-size);
+		padding: 0;
 		cursor: pointer;
-		background: transparent;
-		border: 0;
-		border-radius: 0.7rem;
+		border-radius: 0.85rem;
 		place-items: center;
-		transition: background-color 160ms ease, color 160ms ease;
+		transition:
+			border-color 180ms ease,
+			background-color 180ms ease,
+			box-shadow 180ms ease,
+			color 180ms ease,
+			transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.quick-tools-button {
+		border: 2px solid rgb(15 23 42 / 78%);
+		background: rgb(255 255 255 / 96%);
+		box-shadow:
+			0 0.55rem 1.35rem rgb(15 23 42 / 16%),
+			inset 0 0 0 1px rgb(255 255 255 / 72%);
+		color: #111827;
+		backdrop-filter: blur(0.75rem) saturate(1.15);
 	}
 
 	.quick-tools-button :global(svg) {
-		width: 1.1rem;
-		height: 1.1rem;
+		width: 1.65rem;
+		height: 1.65rem;
+	}
+
+	.quick-tools-theme-icon {
+		display: grid;
+		place-items: center;
+	}
+
+	.quick-tools-theme-icon--light {
+		display: none;
+	}
+
+	:global(html.dark) .quick-tools-theme-icon--dark {
+		display: none;
+	}
+
+	:global(html.dark) .quick-tools-theme-icon--light {
+		display: grid;
+	}
+
+	.quick-tools-background-player span {
+		display: grid;
+		place-items: center;
+	}
+
+	.quick-tools-background-player span.hidden {
+		display: none;
+	}
+
+	.quick-tools-music-button.is-playing :global(svg) {
+		animation: quick-tools-spin 6s linear infinite;
 	}
 
 	.quick-tools-button:hover,
 	.quick-tools-button:focus-visible,
 	.quick-tools-dock[data-open="true"] #quick-tools-navigation {
-		background: color-mix(in oklch, var(--primary) 14%, white);
-		color: color-mix(in oklch, var(--primary) 76%, #34445d);
+		border-color: color-mix(in oklch, var(--primary) 58%, #111827);
+		background: #fff;
+		box-shadow:
+			0 0.75rem 1.6rem rgb(15 23 42 / 20%),
+			0 0 0 3px color-mix(in oklch, var(--primary) 18%, transparent);
+		color: color-mix(in oklch, var(--primary) 72%, #111827);
 		outline: none;
+		transform: translateX(-0.16rem);
+	}
+
+	.quick-tools-button:active {
+		transform: translateX(-0.08rem) scale(0.94);
 	}
 
 	.quick-tools-button::after {
 		position: absolute;
 		top: 50%;
-		left: calc(100% + 0.7rem);
-		z-index: 3;
-		padding: 0.42rem 0.62rem;
-		border: 1px solid rgba(105, 124, 143, 0.14);
-		border-radius: 0.6rem;
-		background: rgba(255, 255, 255, 0.94);
-		box-shadow: 0 0.65rem 1.5rem rgba(55, 70, 84, 0.16);
-		color: #4b5c72;
-		content: attr(data-tooltip);
-		font-size: 0.68rem;
+		right: calc(100% + 0.65rem);
+		z-index: 6;
+		padding: 0.44rem 0.65rem;
+		border: 1px solid rgb(15 23 42 / 14%);
+		border-radius: 0.5rem;
+		background: rgb(255 255 255 / 96%);
+		box-shadow: 0 0.65rem 1.5rem rgb(15 23 42 / 18%);
+		color: #111827;
+		font-size: 0.7rem;
 		font-weight: 750;
 		line-height: 1;
 		opacity: 0;
 		pointer-events: none;
-		transform: translate(-0.28rem, -50%);
-		transition: opacity 140ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+		transform: translate(0.28rem, -50%);
+		transition:
+			opacity 140ms ease,
+			transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 140ms;
 		visibility: hidden;
 		white-space: nowrap;
+	}
+
+	.quick-tools-button::after {
+		content: attr(data-tooltip);
 	}
 
 	.quick-tools-button:hover::after,
@@ -497,28 +715,34 @@ const quickLinks = [
 
 	.quick-tools-menu {
 		position: fixed;
-		top: clamp(22rem, 61vh, 32rem);
-		left: 3.8rem;
-		width: min(23rem, calc(100vw - 5rem));
-		max-height: calc(100dvh - 4rem);
+		right: calc(var(--quick-tools-right) + var(--quick-tools-size) + 0.8rem);
+		bottom: var(--quick-tools-bottom);
+		z-index: 2;
+		width: min(23rem, calc(100vw - 5.5rem));
+		max-height: calc(100dvh - 2rem);
 		padding: 0.85rem;
 		overflow-y: auto;
 		pointer-events: none;
-		background: rgb(18 24 36 / 92%);
-		border: 1px solid rgb(255 255 255 / 14%);
-		border-radius: 1.25rem;
-		box-shadow: 0 20px 56px rgb(4 8 16 / 34%);
+		background: rgb(255 255 255 / 96%);
+		border: 1px solid rgb(15 23 42 / 12%);
+		border-radius: 1rem;
+		box-shadow: 0 1.25rem 3.5rem rgb(15 23 42 / 22%);
 		opacity: 0;
-		transform: translate(-0.65rem, -50%) scale(0.97);
-		transform-origin: left center;
-		backdrop-filter: blur(22px) saturate(145%);
-		transition: opacity 180ms ease, transform 180ms ease;
+		transform: translateX(0.65rem) scale(0.97);
+		transform-origin: right bottom;
+		backdrop-filter: blur(1.4rem) saturate(1.45);
+		transition:
+			opacity 180ms ease,
+			transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 180ms;
+		visibility: hidden;
 	}
 
 	.quick-tools-dock[data-open="true"] .quick-tools-menu {
 		pointer-events: auto;
 		opacity: 1;
-		transform: translate(0, -50%) scale(1);
+		transform: translateX(0) scale(1);
+		visibility: visible;
 	}
 
 	.quick-tools-menu__header {
@@ -531,7 +755,7 @@ const quickLinks = [
 
 	.quick-tools-menu__header p {
 		margin: 0;
-		color: #fff;
+		color: #111827;
 		font-size: 0.9rem;
 		font-weight: 800;
 	}
@@ -539,7 +763,7 @@ const quickLinks = [
 	.quick-tools-menu__header span {
 		display: block;
 		margin-top: 0.15rem;
-		color: rgb(255 255 255 / 52%);
+		color: rgb(30 41 59 / 60%);
 		font-size: 0.7rem;
 	}
 
@@ -548,15 +772,17 @@ const quickLinks = [
 		flex: 0 0 auto;
 		width: 2rem;
 		height: 2rem;
-		color: rgb(255 255 255 / 66%);
+		padding: 0;
+		color: rgb(30 41 59 / 68%);
 		cursor: pointer;
-		background: rgb(255 255 255 / 7%);
+		background: rgb(15 23 42 / 6%);
 		border: 0;
 		border-radius: 999px;
 		place-items: center;
 	}
 
 	.quick-tools-menu__header button span {
+		margin: 0;
 		font-size: 1.35rem;
 		font-weight: 400;
 		line-height: 1;
@@ -565,7 +791,7 @@ const quickLinks = [
 
 	.quick-tools-menu__header button:hover,
 	.quick-tools-menu__header button:focus-visible {
-		color: #fff;
+		color: #111827;
 		background: color-mix(in srgb, var(--primary) 30%, transparent);
 		outline: none;
 	}
@@ -582,18 +808,21 @@ const quickLinks = [
 		align-items: center;
 		min-width: 0;
 		padding: 0.7rem;
-		color: rgb(255 255 255 / 76%);
+		color: rgb(30 41 59 / 82%);
 		border: 1px solid transparent;
-		border-radius: 0.8rem;
-		background: rgb(255 255 255 / 5%);
-		transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+		border-radius: 0.75rem;
+		background: rgb(15 23 42 / 4%);
+		transition:
+			background-color 160ms ease,
+			border-color 160ms ease,
+			color 160ms ease;
 	}
 
 	.quick-tools-links a:hover,
 	.quick-tools-links a:focus-visible,
 	.quick-tools-links a[aria-current="page"] {
-		color: #fff;
-		background: color-mix(in srgb, var(--primary) 20%, rgb(255 255 255 / 5%));
+		color: #111827;
+		background: color-mix(in srgb, var(--primary) 14%, rgb(255 255 255 / 76%));
 		border-color: color-mix(in srgb, var(--primary) 38%, transparent);
 		outline: none;
 	}
@@ -616,7 +845,7 @@ const quickLinks = [
 
 	.quick-tools-links small {
 		margin-top: 0.08rem;
-		color: rgb(255 255 255 / 46%);
+		color: rgb(30 41 59 / 52%);
 		font-size: 0.65rem;
 	}
 
@@ -624,73 +853,284 @@ const quickLinks = [
 		display: none !important;
 	}
 
+	:global(#music-mini-panel) {
+		position: fixed !important;
+		z-index: 1048 !important;
+		max-width: min(29.25rem, calc(100vw - 5.5rem));
+		max-height: calc(100dvh - 1rem);
+		overflow: hidden;
+		border-radius: 1rem;
+		background: #f8fbfc;
+		box-shadow: 0 1.6rem 4rem rgb(0 0 0 / 34%);
+		opacity: 1;
+		transform: translate3d(0, 0, 0) scale(1);
+		transform-origin: right bottom;
+		transition:
+			opacity 220ms ease,
+			transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 220ms ease;
+		visibility: visible;
+	}
+
+	:global(html.dark #music-mini-panel) {
+		background: #0b1219;
+	}
+
+	:global(#music-mini-panel.music-mini-panel-closed),
+	:global(body.home-landing-active #music-mini-panel.music-mini-panel-closed) {
+		opacity: 0;
+		pointer-events: none;
+		transform: translate3d(0.6rem, 0.5rem, 0) scale(0.96);
+		visibility: hidden;
+	}
+
 	:global(#music-nav-panel) {
 		position: fixed !important;
-		top: clamp(5.5rem, 14vh, 8.5rem) !important;
-		left: 3.7rem !important;
 		right: auto !important;
 		z-index: 1049 !important;
-		width: min(24rem, calc(100vw - 5rem)) !important;
+		max-height: calc(100dvh - 1rem);
+		overflow-y: auto;
 		transform: translate3d(0, 0, 0);
-		transform-origin: left top;
+		transform-origin: right center;
 	}
 
-	:global(#music-nav-panel.float-panel-closed) {
-		transform: translate3d(-0.75rem, 0, 0);
-	}
-
-	:global(body.home-landing-active #music-nav-panel) {
-		left: 3.7rem !important;
-		top: clamp(5.5rem, 14vh, 8.5rem) !important;
-		width: min(24rem, calc(100vw - 5rem)) !important;
-	}
-
+	:global(#music-nav-panel.float-panel-closed),
 	:global(body.home-landing-active #music-nav-panel.float-panel-closed) {
-		transform: translate3d(-0.75rem, 0, 0);
+		transform: translate3d(0.75rem, 0, 0);
+	}
+
+	:global(html.music-immersive-open),
+	:global(body.music-immersive-open) {
+		overflow: hidden !important;
+		overscroll-behavior: none;
+	}
+
+	:global(body #music-nav-panel[data-music-immersive="true"]) {
+		position: fixed !important;
+		inset: 0 !important;
+		z-index: 1049 !important;
+		width: 100vw !important;
+		height: 100svh !important;
+		max-height: none !important;
+		padding: 0 !important;
+		overflow: hidden !important;
+		border: 0 !important;
+		border-radius: 0 !important;
+		background: transparent !important;
+		box-shadow: none !important;
+		opacity: 1;
+		transform: translate3d(0, 0, 0) scale(1) !important;
+		transform-origin: center !important;
+		transition:
+			opacity 360ms ease,
+			transform 620ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 360ms !important;
+		visibility: visible;
+	}
+
+	:global(body #music-nav-panel[data-music-immersive="true"].float-panel-closed),
+	:global(body.home-landing-active #music-nav-panel[data-music-immersive="true"].float-panel-closed) {
+		opacity: 0 !important;
+		pointer-events: none !important;
+		transform: translate3d(0, 0.5rem, 0) scale(0.988) !important;
+		visibility: hidden !important;
+	}
+
+	:global(body.music-immersive-open #top-row) {
+		z-index: 1060 !important;
+	}
+
+	:global(body.music-immersive-open #navbar) {
+		position: relative !important;
+		z-index: 1060 !important;
+	}
+
+	:global(body.music-immersive-open #navbar > div > div:first-child) {
+		position: relative !important;
+		z-index: 1051 !important;
+	}
+
+	:global(body.music-immersive-open #navbar > div > div:first-child a),
+	:global(body.music-immersive-open #navbar > div > div:first-child button) {
+		color: rgb(244 249 252 / 88%) !important;
+		text-shadow: 0 2px 10px rgb(0 0 0 / 72%);
+	}
+
+	:global(html:not(.dark) body.music-immersive-open #navbar > div > div:first-child a),
+	:global(html:not(.dark) body.music-immersive-open #navbar > div > div:first-child button) {
+		color: rgb(24 48 60 / 88%) !important;
+		text-shadow: 0 2px 10px rgb(255 255 255 / 84%);
+	}
+
+	:global(body.music-immersive-open #navbar .navbar-menu-item.is-active) {
+		background: rgb(255 255 255 / 12%) !important;
+	}
+
+	:global(html:not(.dark) body.music-immersive-open #navbar .navbar-menu-item.is-active) {
+		background: rgb(25 181 196 / 10%) !important;
+	}
+
+	:global(body.music-immersive-open #quick-tools-dock .quick-tools-rail) {
+		opacity: 0;
+		pointer-events: none;
+		transform: translateX(0.75rem);
+	}
+
+	:global(:root.dark) .quick-tools-button {
+		border-color: rgb(255 255 255 / 96%);
+		background: #090909;
+		box-shadow:
+			0 0.55rem 1.35rem rgb(0 0 0 / 24%),
+			inset 0 0 0 1px rgb(0 0 0 / 70%);
+		color: #fff;
+	}
+
+	:global(:root.dark) .quick-tools-button:hover,
+	:global(:root.dark) .quick-tools-button:focus-visible,
+	:global(:root.dark) .quick-tools-dock[data-open="true"] #quick-tools-navigation {
+		border-color: color-mix(in oklch, var(--primary) 58%, white);
+		background: #090909;
+		color: #fff;
+	}
+
+	:global(:root.dark) .quick-tools-button::after {
+		border-color: rgb(255 255 255 / 20%);
+		background: rgb(12 14 18 / 94%);
+		box-shadow: 0 0.65rem 1.5rem rgb(0 0 0 / 28%);
+		color: #fff;
+	}
+
+	:global(:root.dark) .quick-tools-menu {
+		border-color: rgb(255 255 255 / 14%);
+		background: rgb(18 24 36 / 94%);
+		box-shadow: 0 1.25rem 3.5rem rgb(4 8 16 / 36%);
+	}
+
+	:global(:root.dark) .quick-tools-menu__header p {
+		color: #fff;
+	}
+
+	:global(:root.dark) .quick-tools-menu__header span {
+		color: rgb(255 255 255 / 52%);
+	}
+
+	:global(:root.dark) .quick-tools-menu__header button {
+		color: rgb(255 255 255 / 66%);
+		background: rgb(255 255 255 / 7%);
+	}
+
+	:global(:root.dark) .quick-tools-menu__header button:hover,
+	:global(:root.dark) .quick-tools-menu__header button:focus-visible {
+		color: #fff;
+	}
+
+	:global(:root.dark) .quick-tools-links a {
+		color: rgb(255 255 255 / 76%);
+		background: rgb(255 255 255 / 5%);
+	}
+
+	:global(:root.dark) .quick-tools-links a:hover,
+	:global(:root.dark) .quick-tools-links a:focus-visible,
+	:global(:root.dark) .quick-tools-links a[aria-current="page"] {
+		color: #fff;
+		background: color-mix(in srgb, var(--primary) 20%, rgb(255 255 255 / 5%));
+	}
+
+	:global(:root.dark) .quick-tools-links small {
+		color: rgb(255 255 255 / 46%);
+	}
+
+	#quick-tools-dock .quick-tools-pinned .quick-tools-button {
+		border: 2px solid rgb(15 23 42 / 78%);
+		background: rgb(255 255 255 / 96%);
+		box-shadow:
+			0 0.55rem 1.35rem rgb(15 23 42 / 16%),
+			inset 0 0 0 1px rgb(255 255 255 / 72%);
+		color: #111827;
+	}
+
+	#quick-tools-dock .quick-tools-pinned .quick-tools-button:hover,
+	#quick-tools-dock .quick-tools-pinned .quick-tools-button:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 58%, #111827);
+		background: #fff;
+		box-shadow:
+			0 0.75rem 1.6rem rgb(15 23 42 / 20%),
+			0 0 0 3px color-mix(in oklch, var(--primary) 18%, transparent);
+		color: color-mix(in oklch, var(--primary) 72%, #111827);
+	}
+
+	:global(:root.dark) #quick-tools-dock .quick-tools-pinned .quick-tools-button {
+		border-color: rgb(255 255 255 / 96%);
+		background: #090909;
+		box-shadow:
+			0 0.55rem 1.35rem rgb(0 0 0 / 24%),
+			inset 0 0 0 1px rgb(0 0 0 / 70%);
+		color: #fff;
+	}
+
+	:global(:root.dark) #quick-tools-dock .quick-tools-pinned .quick-tools-button:hover,
+	:global(:root.dark) #quick-tools-dock .quick-tools-pinned .quick-tools-button:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 58%, white);
+		background: #090909;
+		color: #fff;
 	}
 
 	@media (max-width: 640px) {
-		.quick-tools-music-edge {
-			top: 5.25rem;
-			min-width: 2.8rem;
-			padding: 0.7rem 0.55rem;
-		}
-
-		.quick-tools-rail {
-			top: 60vh;
-			padding: 0.65rem 0.4rem;
+		.quick-tools-dock {
+			--quick-tools-size: 2.85rem;
+			--quick-tools-gap: 0.38rem;
+			--quick-tools-right: max(0.5rem, env(safe-area-inset-right));
+			--quick-tools-bottom: max(0.5rem, env(safe-area-inset-bottom));
 		}
 
 		.quick-tools-button {
-			width: 2rem;
-			height: 2rem;
+			border-radius: 0.75rem;
+		}
+
+		.quick-tools-button :global(svg) {
+			width: 1.45rem;
+			height: 1.45rem;
+		}
+
+		.quick-tools-button::after {
+			display: none;
 		}
 
 		.quick-tools-menu {
-			top: 60vh;
-			left: 3.2rem;
-			width: min(19rem, calc(100vw - 4rem));
+			right: calc(var(--quick-tools-right) + var(--quick-tools-size) + 0.55rem);
+			width: min(19rem, calc(100vw - 4.5rem));
 		}
 
-		:global(#music-nav-panel) {
-			left: 3.2rem !important;
-			width: calc(100vw - 4rem) !important;
+		.quick-tools-links {
+			grid-template-columns: 1fr;
 		}
+	}
 
-		:global(body.home-landing-active #music-nav-panel) {
-			left: 3.2rem !important;
-			top: 5.25rem !important;
-			width: calc(100vw - 4rem) !important;
+	@media (max-height: 820px) {
+		.quick-tools-dock {
+			--quick-tools-size: 2.75rem;
+			--quick-tools-gap: 0.38rem;
+		}
+	}
+
+	@media (max-height: 560px) {
+		.quick-tools-actions {
+			display: grid;
+			grid-template-columns: repeat(2, var(--quick-tools-size));
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.quick-tools-music-edge,
-		.quick-tools-rail,
+		.quick-tools-actions-shell,
+		.quick-tools-actions,
 		.quick-tools-button,
 		.quick-tools-button::after,
 		.quick-tools-menu {
 			transition: none;
+		}
+
+		.quick-tools-music-button.is-playing :global(svg) {
+			animation: none;
 		}
 	}
 

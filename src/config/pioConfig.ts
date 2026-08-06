@@ -7,6 +7,9 @@ export const characterModelCatalog = [
 		description: "本地 Spine · 可点击互动",
 		type: "spine",
 		preview: "/pio/models/spine/firefly/1310.png",
+		controlInsetTop: 52,
+		runtimeSize: { width: 135, height: 165 },
+		interactionMessages: ["找到我啦。", "今天也一起收集一点微光吧。"],
 	},
 	{
 		id: "snow-miku",
@@ -15,6 +18,9 @@ export const characterModelCatalog = [
 		type: "live2d",
 		live2dIndex: 0,
 		preview: "/pio/models/live2d/snow_miku/textures/texture_00.png",
+		controlInsetTop: 26,
+		runtimeSize: { width: 146, height: 146 },
+		interactionMessages: ["雪花轻轻落下来啦。", "今天也要保持好心情。"],
 	},
 	{
 		id: "totoro",
@@ -23,6 +29,9 @@ export const characterModelCatalog = [
 		type: "sprite",
 		preview: "/pio/models/pets/totoro/spritesheet.webp",
 		sprite: "/pio/models/pets/totoro/spritesheet.webp",
+		controlInsetTop: 4,
+		runtimeSize: { width: 108, height: 117 },
+		interactionMessages: ["要一起去森林里散步吗？", "我会安静地陪着你。"],
 	},
 	{
 		id: "gugugaga",
@@ -31,6 +40,9 @@ export const characterModelCatalog = [
 		type: "sprite",
 		preview: "/pio/models/pets/gugugaga/spritesheet.webp",
 		sprite: "/pio/models/pets/gugugaga/spritesheet.webp",
+		controlInsetTop: 4,
+		runtimeSize: { width: 108, height: 117 },
+		interactionMessages: ["咕咕嘎嘎，今天也很有精神！", "再点一下，我还有别的动作。"],
 	},
 	{
 		id: "feibi",
@@ -39,6 +51,9 @@ export const characterModelCatalog = [
 		type: "sprite",
 		preview: "/pio/models/pets/feibi/spritesheet.webp",
 		sprite: "/pio/models/pets/feibi/spritesheet.webp",
+		controlInsetTop: 4,
+		runtimeSize: { width: 108, height: 117 },
+		interactionMessages: ["菲比啾比来陪你啦。", "别忘了偶尔休息一下。"],
 	},
 	{
 		id: "nailong",
@@ -47,6 +62,9 @@ export const characterModelCatalog = [
 		type: "sprite",
 		preview: "/pio/models/pets/nailong/spritesheet.webp",
 		sprite: "/pio/models/pets/nailong/spritesheet.webp",
+		controlInsetTop: 4,
+		runtimeSize: { width: 108, height: 117 },
+		interactionMessages: ["奶龙今天也元气满满！", "要不要一起继续探索？"],
 	},
 	{
 		id: "chino",
@@ -55,6 +73,9 @@ export const characterModelCatalog = [
 		type: "live2d",
 		live2dIndex: 1,
 		preview: "https://model.hacxy.cn/chino/chino.png",
+		controlInsetTop: 20,
+		runtimeSize: { width: 146, height: 146 },
+		interactionMessages: ["欢迎回来，要喝杯咖啡吗？", "慢慢来，我会陪着你的。"],
 	},
 	{
 		id: "rem",
@@ -63,6 +84,9 @@ export const characterModelCatalog = [
 		type: "live2d",
 		live2dIndex: 2,
 		preview: "https://model.hacxy.cn/rem/rem.png",
+		controlInsetTop: 18,
+		runtimeSize: { width: 146, height: 146 },
+		interactionMessages: ["今天也辛苦了。", "请让我继续陪在你身边。"],
 	},
 	{
 		id: "hiyori",
@@ -71,6 +95,9 @@ export const characterModelCatalog = [
 		type: "live2d",
 		live2dIndex: 3,
 		preview: "https://model.hacxy.cn/Hiyori/Hiyori.2048/texture_00.png",
+		controlInsetTop: 18,
+		runtimeSize: { width: 146, height: 146 },
+		interactionMessages: ["被你发现啦！", "接下来想去哪里看看？"],
 	},
 ] as const;
 
@@ -190,7 +217,7 @@ export const live2dWidgetConfig: Live2DWidgetConfig = {
 	// 显示位置：bottom-left 或 bottom-right
 	position: "bottom-left" as const,
 	// 画布尺寸（px）
-	size: { width: 200, height: 200 },
+	size: { width: 146, height: 146 },
 	// 主题色，用于菜单、状态条等 UI 元素的背景色，默认 'rgba(96,165,250,0.9)'
 	primaryColor: "var(--l2d-msg-bg)",
 	// 入场/退场动画时长（ms）

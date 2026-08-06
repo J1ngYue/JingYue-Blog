@@ -1,8 +1,14 @@
 ---
 import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import DynamicFeed from "@/components/pages/dynamic/DynamicFeed.svelte";
 import DynamicItemTemplate from "@/components/pages/dynamic/DynamicItemTemplate.astro";
-import { commentConfig, dynamicConfig, siteConfig } from "@/config";
+import {
+	commentConfig,
+	dynamicConfig,
+	profileConfig,
+	siteConfig,
+} from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
@@ -30,24 +36,40 @@ const dynamicCount = (await getCollection("dynamic")).length;
 <MainGridLayout title={title} description={description}>
 	<section class="dynamic-page" aria-labelledby="dynamic-page-title">
 		<div>
-			<header class="dynamic-page-header card-base">
-				<div class="dynamic-page-heading">
-					<div class="dynamic-page-icon" aria-hidden="true">
-						<Icon is:inline name="material-symbols:forum-rounded" />
+			<header class="dynamic-editorial-hero">
+				<div class="dynamic-editorial-hero__copy">
+					<p class="dynamic-editorial-hero__eyebrow">MOMENTS · JINGYUE</p>
+					<h1 id="dynamic-page-title">{title}</h1>
+					<p>{description}</p>
+					<div class="dynamic-editorial-hero__count">
+						<span>共记录</span>
+						<strong>{dynamicCount}</strong>
+						<span>条片刻</span>
 					</div>
+				</div>
+				<div class="dynamic-editorial-hero__profile">
+					<a href="/about/" aria-label={`了解 ${profileConfig.name}`}>
+						<ImageWrapper
+							src={profileConfig.avatar || ""}
+							alt={profileConfig.name}
+							widths={[128]}
+							sizes="72px"
+							loading="eager"
+							siteAvatar
+							fadeIn={false}
+						/>
+					</a>
 					<div>
-						<h2 id="dynamic-page-title">{title}</h2>
-						{description && <p>{description}</p>}
+						<strong>{profileConfig.name}</strong>
+						<span>{profileConfig.bio}</span>
 					</div>
 				</div>
-				<div
-					class="dynamic-count"
-					aria-label={`${dynamicCount} ${i18n(I18nKey.dynamic)}`}
-				>
-					<Icon is:inline name="material-symbols:dynamic-feed-rounded" />
-					<strong>{dynamicCount}</strong>
-					<span>{i18n(I18nKey.dynamic)}</span>
+				<div class="dynamic-editorial-hero__orbit" aria-hidden="true">
+					<i></i><i></i><i></i><i></i><i></i><i></i>
 				</div>
+			</header>
+
+			<div class="dynamic-page-header">
 				<div class="dynamic-filter">
 					<label class="dynamic-search">
 						<Icon is:inline name="material-symbols:search-rounded" />
@@ -74,7 +96,7 @@ const dynamicCount = (await getCollection("dynamic")).length;
 						<Icon is:inline name="material-symbols:arrow-drop-down-rounded" />
 					</label>
 				</div>
-			</header>
+			</div>
 
 			<DynamicFeed
 				client:load

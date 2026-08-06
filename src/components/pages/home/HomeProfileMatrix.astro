@@ -1,0 +1,988 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import { profileConfig } from "@/config/profileConfig";
+import { siteConfig } from "@/config/siteConfig";
+import {
+	getCategoryList,
+	getSortedPostsList,
+	getTagList,
+} from "@/utils/content-utils";
+
+interface Props {
+	embedded?: boolean;
+}
+
+const { embedded = false } = Astro.props;
+
+const posts = await getSortedPostsList();
+const categories = await getCategoryList();
+const tags = await getTagList();
+const dynamics = siteConfig.pages.dynamic ? await getCollection("dynamic") : [];
+
+const siteStartDate = siteConfig.siteStartDate || "2025-01-01";
+const runningDays = Math.max(
+	1,
+	Math.ceil(
+		(Date.now() - new Date(siteStartDate).getTime()) / (1000 * 60 * 60 * 24),
+	),
+);
+
+const skills = [
+	{ name: "Astro", icon: "simple-icons:astro" },
+	{ name: "Svelte", icon: "simple-icons:svelte" },
+	{ name: "TypeScript", icon: "simple-icons:typescript" },
+	{ name: "Tailwind CSS", icon: "simple-icons:tailwindcss" },
+	{ name: "Node.js", icon: "simple-icons:nodedotjs" },
+	{ name: "pnpm", icon: "simple-icons:pnpm" },
+	{ name: "Cloudflare", icon: "simple-icons:cloudflare" },
+	{ name: "Git", icon: "simple-icons:git" },
+];
+
+const isExternalLink = (href: string) => /^https?:\/\//.test(href);
+---
+
+<section
+	id={embedded ? undefined : "home-capabilities"}
+	class:list={["home-capabilities", !embedded && "home-scroll-scene"]}
+	aria-labelledby="home-capabilities-title"
+	data-home-scroll-scene={embedded ? undefined : ""}
+	data-home-page={embedded ? undefined : ""}
+	data-home-section-tone={embedded ? undefined : "light"}
+>
+	<div class="home-capabilities__inner">
+		<header class="home-capabilities__header" style="--capability-delay: 60ms">
+			<p>
+				<span>CONTEXT</span>
+				<i aria-hidden="true">/</i>
+				<strong>站点数据</strong>
+			</p>
+			<h2 id="home-capabilities-title">能力矩阵</h2>
+		</header>
+
+		<div class="home-capabilities__matrix">
+			<div
+				class="home-capabilities__row home-capabilities__row--primary"
+				style="--capability-delay: 220ms"
+			>
+				<article class="home-capabilities__card home-capabilities__card--visits">
+					<div class="home-capabilities__art home-capabilities__art--visits" aria-hidden="true">
+						<ImageWrapper
+							src="assets/images/HomeReference/home-data-1.webp"
+							alt=""
+							class="home-capabilities__art-image"
+							position="center"
+							widths={[480, 720]}
+							sizes="(max-width: 760px) 100vw, 34vw"
+						/>
+					</div>
+					<div class="home-capabilities__art-wash" aria-hidden="true"></div>
+					<div class="home-capabilities__card-copy">
+						<p class="home-capabilities__label">VISITS</p>
+						<h3>站点访问</h3>
+						<dl class="home-capabilities__metrics">
+							<div>
+								<dt>运行天数</dt>
+								<dd><strong>{runningDays}</strong><span>天</span></dd>
+							</div>
+							<div>
+								<dt>动态记录</dt>
+								<dd><strong>{dynamics.length}</strong><span>条</span></dd>
+							</div>
+						</dl>
+					</div>
+				</article>
+
+				<a class="home-capabilities__card home-capabilities__card--archive" href="/archive/">
+					<div class="home-capabilities__art home-capabilities__art--archive" aria-hidden="true">
+						<ImageWrapper
+							src="assets/images/HomeReference/home-data-2.webp"
+							alt=""
+							class="home-capabilities__art-image"
+							position="center"
+							widths={[720, 1080, 1440]}
+							sizes="(max-width: 760px) 100vw, 42vw"
+						/>
+					</div>
+					<div class="home-capabilities__art-wash" aria-hidden="true"></div>
+					<div class="home-capabilities__card-copy">
+						<p class="home-capabilities__label">ARCHIVE</p>
+						<h3>文章档案</h3>
+						<dl class="home-capabilities__metrics">
+							<div>
+								<dt>文章</dt>
+								<dd><strong>{posts.length}</strong><span>篇</span></dd>
+							</div>
+							<div>
+								<dt>分类</dt>
+								<dd><strong>{categories.length}</strong><span>个</span></dd>
+							</div>
+							<div>
+								<dt>标签</dt>
+								<dd><strong>{tags.length}</strong><span>个</span></dd>
+							</div>
+						</dl>
+					</div>
+					<span class="home-capabilities__arrow" aria-hidden="true">
+						<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+					</span>
+				</a>
+			</div>
+
+			<section
+				class="home-capabilities__row home-capabilities__card home-capabilities__card--social"
+				aria-labelledby="home-capabilities-social-title"
+				style="--capability-delay: 390ms"
+			>
+				<div class="home-capabilities__art home-capabilities__art--contact" aria-hidden="true">
+					<ImageWrapper
+						src="assets/images/HomeReference/home-data-3.webp"
+						alt=""
+						class="home-capabilities__art-image"
+						position="center"
+						widths={[360, 640]}
+						sizes="(max-width: 760px) 100vw, 24vw"
+					/>
+				</div>
+				<div class="home-capabilities__art-wash" aria-hidden="true"></div>
+				<div class="home-capabilities__section-copy">
+					<p class="home-capabilities__label">CONTACT</p>
+					<h3 id="home-capabilities-social-title">社交联系</h3>
+					<p class="home-capabilities__description">把散落的入口收束在一条缓慢移动的轨道里。</p>
+				</div>
+				<nav class="home-capabilities__marquee" aria-label="个人社交链接">
+					<div class="home-capabilities__marquee-viewport">
+						<div class="home-capabilities__marquee-track home-capabilities__marquee-track--social">
+							<div class="home-capabilities__marquee-group">
+								{
+									profileConfig.links.map((link) => (
+										<a
+											class="home-capabilities__social-pill"
+											href={link.url}
+											target={isExternalLink(link.url) ? "_blank" : undefined}
+											rel={isExternalLink(link.url) ? "noopener noreferrer" : undefined}
+										>
+											<Icon is:inline name={link.icon} />
+											<span>{link.name}</span>
+											<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+										</a>
+									))
+								}
+							</div>
+							<div class="home-capabilities__marquee-group" aria-hidden="true">
+								{
+									profileConfig.links.map((link) => (
+										<span class="home-capabilities__social-pill">
+											<Icon is:inline name={link.icon} />
+											<span>{link.name}</span>
+											<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+										</span>
+									))
+								}
+							</div>
+						</div>
+					</div>
+				</nav>
+			</section>
+
+			<section
+				class="home-capabilities__row home-capabilities__card home-capabilities__card--skills"
+				aria-labelledby="home-capabilities-skills-title"
+				style="--capability-delay: 560ms"
+			>
+				<div class="home-capabilities__art home-capabilities__art--skills" aria-hidden="true">
+					<ImageWrapper
+						src="assets/images/HomeReference/home-data-4.webp"
+						alt=""
+						class="home-capabilities__art-image"
+						position="center"
+						widths={[360, 640]}
+						sizes="(max-width: 760px) 100vw, 18vw"
+					/>
+				</div>
+				<div class="home-capabilities__art-wash" aria-hidden="true"></div>
+				<div class="home-capabilities__section-copy">
+					<p class="home-capabilities__label">SKILLS</p>
+					<h3 id="home-capabilities-skills-title">技能图标</h3>
+					<p class="home-capabilities__description">工程、内容和部署工具在同一条轨道上循环。</p>
+				</div>
+				<div class="home-capabilities__marquee home-capabilities__marquee--skills" aria-label="本站可验证技术栈">
+					<div class="home-capabilities__marquee-viewport">
+						<div class="home-capabilities__marquee-track home-capabilities__marquee-track--skills">
+							<div class="home-capabilities__marquee-group" role="list">
+								{
+									skills.map((skill) => (
+										<div class="home-capabilities__skill" role="listitem">
+											<Icon is:inline name={skill.icon} />
+											<span>{skill.name}</span>
+										</div>
+									))
+								}
+							</div>
+							<div class="home-capabilities__marquee-group" aria-hidden="true">
+								{
+									skills.map((skill) => (
+										<div class="home-capabilities__skill">
+											<Icon is:inline name={skill.icon} />
+											<span>{skill.name}</span>
+										</div>
+									))
+								}
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+</section>
+
+<style>
+	.home-capabilities {
+		--capability-bg: #fafafa;
+		--capability-fg: #09090b;
+		--capability-muted: #52525b;
+		--capability-soft: #71717a;
+		--capability-accent: #385f4e;
+		--capability-card-bg: #fff;
+		--capability-card-border: #18181b;
+		--capability-divider: rgb(9 9 11 / 20%);
+		--capability-pill-border: rgb(9 9 11 / 34%);
+		--capability-pill-hover: rgb(9 9 11 / 5%);
+		--capability-card-shadow: none;
+		--capability-art-opacity: 0.16;
+		--capability-contact-opacity: 0.12;
+		--capability-skills-opacity: 0.13;
+		--capability-art-wash:
+			linear-gradient(180deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 46%)),
+			linear-gradient(90deg, rgb(255 255 255 / 94%) 0 34%, rgb(255 255 255 / 8%) 78%);
+		position: relative;
+		display: block;
+		width: 100%;
+		height: 100svh;
+		min-height: 100svh;
+		box-sizing: border-box;
+		overflow: clip;
+		isolation: isolate;
+		padding: 0;
+		background: var(--capability-bg);
+		color: var(--capability-fg);
+	}
+
+	:global(html.dark) .home-capabilities {
+		--capability-bg: #050506;
+		--capability-fg: #f6f6f3;
+		--capability-muted: rgb(255 255 255 / 56%);
+		--capability-soft: rgb(255 255 255 / 62%);
+		--capability-accent: #a8e5c7;
+		--capability-card-bg: rgb(255 255 255 / 4%);
+		--capability-card-border: rgb(246 246 242 / 28%);
+		--capability-divider: rgb(255 255 255 / 16%);
+		--capability-pill-border: rgb(255 255 255 / 28%);
+		--capability-pill-hover: rgb(168 229 199 / 7%);
+		--capability-card-shadow: 0 1.25rem 3rem rgb(0 0 0 / 24%);
+		--capability-art-opacity: 0.32;
+		--capability-contact-opacity: 0.16;
+		--capability-skills-opacity: 0.18;
+		--capability-art-wash:
+			linear-gradient(180deg, rgb(5 5 6 / 18%), rgb(5 5 6 / 88%)),
+			linear-gradient(90deg, rgb(5 5 6 / 76%), transparent 72%);
+	}
+
+	.home-capabilities__inner {
+		display: grid;
+		width: min(100%, 116rem);
+		height: 100%;
+		box-sizing: border-box;
+		grid-template-rows: auto minmax(0, 1fr);
+		gap: clamp(0.9rem, 2vh, 1.5rem);
+		margin: 0 auto;
+		padding: clamp(5.75rem, 10vh, 7.25rem) clamp(5.5rem, 7vw, 7rem)
+			clamp(1rem, 2.5vh, 2rem);
+	}
+
+	.home-capabilities__header,
+	.home-capabilities__row {
+		opacity: 0;
+		transform: translateY(1.25rem);
+		transition:
+			opacity 560ms ease var(--capability-delay),
+			transform 560ms cubic-bezier(0.22, 0.61, 0.36, 1) var(--capability-delay);
+	}
+
+	.home-capabilities.is-visible .home-capabilities__header,
+	.home-capabilities.is-visible .home-capabilities__row {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	.home-capabilities__header p,
+	.home-capabilities__header h2,
+	.home-capabilities__label,
+	.home-capabilities__card h3,
+	.home-capabilities__metrics,
+	.home-capabilities__metrics dd {
+		margin: 0;
+	}
+
+	.home-capabilities__header p {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		color: var(--capability-muted);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0;
+	}
+
+	.home-capabilities__header p span {
+		color: var(--capability-accent);
+	}
+
+	.home-capabilities__header p i {
+		color: var(--capability-soft);
+		font-style: normal;
+	}
+
+	.home-capabilities__header p strong {
+		font-weight: 700;
+	}
+
+	.home-capabilities__header h2 {
+		margin-top: 0.25rem;
+		font-size: clamp(4rem, 10vh, 7.5rem);
+		font-weight: 900;
+		line-height: 0.92;
+		letter-spacing: 0;
+	}
+
+	.home-capabilities__matrix {
+		display: grid;
+		min-height: 0;
+		grid-template-rows: minmax(0, 1.32fr) minmax(7.5rem, 0.72fr) minmax(7.5rem, 0.72fr);
+		gap: clamp(0.65rem, 1.4vh, 1rem);
+	}
+
+	.home-capabilities__row--primary {
+		display: grid;
+		min-height: 0;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+		gap: clamp(0.65rem, 1vw, 1rem);
+	}
+
+	.home-capabilities__card {
+		position: relative;
+		min-width: 0;
+		min-height: 0;
+		box-sizing: border-box;
+		overflow: hidden;
+		isolation: isolate;
+		border: 2px solid var(--capability-card-border);
+		border-radius: clamp(1.25rem, 1.8vw, 1.875rem);
+		background: var(--capability-card-bg);
+		color: var(--capability-fg);
+		box-shadow: var(--capability-card-shadow);
+	}
+
+	.home-capabilities__card--visits,
+	.home-capabilities__card--archive {
+		display: flex;
+		align-items: flex-end;
+		padding: clamp(1.3rem, 2.2vw, 2rem);
+	}
+
+	.home-capabilities__art {
+		position: absolute;
+		inset: 0;
+		z-index: -3;
+		opacity: var(--capability-art-opacity);
+	}
+
+	.home-capabilities__art :global(.home-capabilities__art-image),
+	.home-capabilities__art :global(picture),
+	.home-capabilities__art :global(img) {
+		width: 100%;
+		height: 100%;
+	}
+
+	.home-capabilities__art :global(img) {
+		object-fit: contain;
+	}
+
+	.home-capabilities__art--visits {
+		inset: 0 0 0 auto;
+		width: 72%;
+	}
+
+	.home-capabilities__art--archive {
+		inset: 0 0 0 auto;
+		width: 52%;
+	}
+
+	.home-capabilities__art--contact {
+		inset: -22% auto -22% 2%;
+		width: 24%;
+		opacity: var(--capability-contact-opacity);
+	}
+
+	.home-capabilities__art--skills {
+		inset: -36% auto -36% 1%;
+		width: 18%;
+		opacity: var(--capability-skills-opacity);
+	}
+
+	.home-capabilities__art-wash {
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+		background: var(--capability-art-wash);
+		pointer-events: none;
+	}
+
+	.home-capabilities__card-copy {
+		position: relative;
+		z-index: 1;
+		width: 100%;
+	}
+
+	.home-capabilities__label {
+		color: var(--capability-accent);
+		font-size: 0.66rem;
+		font-weight: 850;
+		letter-spacing: 0;
+	}
+
+	.home-capabilities__card h3 {
+		margin-top: 0.25rem;
+		font-size: 2.35rem;
+		font-weight: 880;
+		line-height: 1;
+		letter-spacing: 0;
+	}
+
+	.home-capabilities__metrics {
+		display: flex;
+		align-items: end;
+		gap: 0;
+		margin-top: clamp(1rem, 2.2vh, 1.5rem);
+	}
+
+	.home-capabilities__metrics > div {
+		min-width: 0;
+		padding: 0 clamp(0.7rem, 1.3vw, 1.2rem);
+		border-left: 1px solid var(--capability-divider);
+	}
+
+	.home-capabilities__metrics > div:first-child {
+		padding-left: 0;
+		border-left: 0;
+	}
+
+	.home-capabilities__metrics dt {
+		color: var(--capability-muted);
+		font-size: 0.66rem;
+		font-weight: 650;
+		line-height: 1.3;
+	}
+
+	.home-capabilities__metrics dd {
+		display: flex;
+		align-items: baseline;
+		gap: 0.3rem;
+		margin-top: 0.25rem;
+	}
+
+	.home-capabilities__metrics strong {
+		font-size: 1.8rem;
+		font-weight: 900;
+		line-height: 1;
+	}
+
+	.home-capabilities__metrics span {
+		color: var(--capability-muted);
+		font-size: 0.68rem;
+		font-weight: 650;
+	}
+
+	a.home-capabilities__card {
+		cursor: pointer;
+		text-decoration: none;
+		transition:
+			border-color 200ms ease,
+			background-color 200ms ease;
+	}
+
+	a.home-capabilities__card:hover,
+	a.home-capabilities__card:focus-visible {
+		border-color: var(--capability-fg);
+		background-color: var(--capability-pill-hover);
+		outline: none;
+	}
+
+	a.home-capabilities__card:focus-visible {
+		box-shadow: inset 0 0 0 2px var(--capability-fg), var(--capability-card-shadow);
+	}
+
+	.home-capabilities__arrow {
+		position: absolute;
+		top: clamp(1.2rem, 2vw, 1.75rem);
+		right: clamp(1.2rem, 2vw, 1.75rem);
+		display: grid;
+		width: 2.75rem;
+		height: 2.75rem;
+		place-items: center;
+		border: 1px solid var(--capability-pill-border);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--capability-card-bg) 82%, transparent);
+		backdrop-filter: blur(0.75rem);
+	}
+
+	.home-capabilities__arrow :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		transition: transform 180ms ease;
+	}
+
+	.home-capabilities__card--archive:hover .home-capabilities__arrow :global(svg),
+	.home-capabilities__card--archive:focus-visible .home-capabilities__arrow :global(svg) {
+		transform: translate(0.14rem, -0.14rem);
+	}
+
+	.home-capabilities__card--social,
+	.home-capabilities__card--skills {
+		display: grid;
+		grid-template-columns: minmax(9rem, 0.25fr) minmax(0, 1fr);
+		align-items: center;
+		gap: clamp(1rem, 2vw, 2.25rem);
+		padding: clamp(1rem, 1.7vw, 1.5rem) clamp(1.2rem, 2.2vw, 2rem);
+	}
+
+	.home-capabilities__section-copy {
+		min-width: 0;
+	}
+
+	.home-capabilities__section-copy h3 {
+		font-size: 1.75rem;
+	}
+
+	.home-capabilities__description {
+		max-width: 19rem;
+		margin: 0.55rem 0 0;
+		color: var(--capability-muted);
+		font-size: 0.72rem;
+		font-weight: 650;
+		line-height: 1.45;
+	}
+
+	.home-capabilities__marquee {
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	.home-capabilities__marquee-viewport {
+		width: 100%;
+		overflow: hidden;
+		mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+	}
+
+	.home-capabilities__marquee-track {
+		--capability-marquee-gap: 0.75rem;
+		display: flex;
+		width: max-content;
+		align-items: center;
+		gap: var(--capability-marquee-gap);
+		will-change: transform;
+		animation: home-capability-marquee 26s linear infinite;
+	}
+
+	.home-capabilities__marquee-track--skills {
+		animation-direction: reverse;
+		animation-duration: 32s;
+	}
+
+	.home-capabilities__marquee:is(:hover, :focus-within) .home-capabilities__marquee-track {
+		animation-play-state: paused;
+	}
+
+	.home-capabilities__marquee-group {
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: clamp(0.65rem, 1vw, 0.9rem);
+	}
+
+	.home-capabilities__marquee-track--skills .home-capabilities__marquee-group {
+		gap: clamp(1.2rem, 2.5vw, 2.75rem);
+	}
+
+	.home-capabilities__social-pill {
+		display: flex;
+		min-width: clamp(9.75rem, 12vw, 12.5rem);
+		min-height: 3.25rem;
+		box-sizing: border-box;
+		align-items: center;
+		justify-content: center;
+		gap: 0.55rem;
+		border: 1px solid var(--capability-pill-border);
+		border-radius: 999px;
+		padding: 0.5rem 0.8rem;
+		color: var(--capability-fg);
+		font-size: 0.76rem;
+		font-weight: 750;
+		text-decoration: none;
+		transition:
+			border-color 180ms ease,
+			background-color 180ms ease,
+			color 180ms ease;
+	}
+
+	.home-capabilities__social-pill:is(a):hover,
+	.home-capabilities__social-pill:is(a):focus-visible {
+		border-color: var(--capability-accent);
+		background: var(--capability-pill-hover);
+		color: var(--capability-fg);
+		outline: none;
+	}
+
+	.home-capabilities__social-pill:is(a):focus-visible {
+		box-shadow: 0 0 0 2px var(--capability-accent);
+	}
+
+	.home-capabilities__social-pill > :global(svg) {
+		width: 2.5rem;
+		height: 2.5rem;
+	}
+
+	.home-capabilities__social-pill > :global(svg:last-child) {
+		width: 0.8rem;
+		height: 0.8rem;
+		color: var(--capability-soft);
+	}
+
+	.home-capabilities__skill {
+		display: grid;
+		min-width: 6.5rem;
+		min-height: 4.25rem;
+		place-items: center;
+		align-content: center;
+		gap: 0.45rem;
+		padding: 0.25rem 0.4rem;
+		color: var(--capability-fg);
+		text-align: center;
+	}
+
+	.home-capabilities__skill :global(svg) {
+		width: 2.05rem;
+		height: 2.05rem;
+	}
+
+	.home-capabilities__skill span {
+		max-width: 100%;
+		color: var(--capability-soft);
+		font-size: 0.66rem;
+		font-weight: 720;
+		line-height: 1.2;
+		overflow-wrap: normal;
+		white-space: nowrap;
+		word-break: keep-all;
+	}
+
+	.home-capabilities__skill:nth-child(2) :global(svg) {
+		color: #ff5a28;
+	}
+
+	.home-capabilities__skill:nth-child(3) :global(svg) {
+		color: #5b9bd5;
+	}
+
+	.home-capabilities__skill:nth-child(4) :global(svg) {
+		color: #22b8cf;
+	}
+
+	.home-capabilities__skill:nth-child(5) :global(svg) {
+		color: #71b35b;
+	}
+
+	.home-capabilities__skill:nth-child(6) :global(svg),
+	.home-capabilities__skill:nth-child(7) :global(svg) {
+		color: #f59a32;
+	}
+
+	.home-capabilities__skill:nth-child(8) :global(svg) {
+		color: #f0643c;
+	}
+
+	@keyframes home-capability-marquee {
+		to {
+			transform: translate3d(calc(-50% - var(--capability-marquee-gap) / 2), 0, 0);
+		}
+	}
+
+	@media (min-width: 761px) and (max-height: 820px) {
+		.home-capabilities__inner {
+			gap: 0.75rem;
+			padding-top: 5.25rem;
+			padding-bottom: 0.85rem;
+		}
+
+		.home-capabilities__header h2 {
+			font-size: 3.25rem;
+		}
+
+		.home-capabilities__matrix {
+			gap: 0.65rem;
+		}
+
+		.home-capabilities__row--primary {
+			gap: 0.65rem;
+		}
+
+		.home-capabilities__card--visits,
+		.home-capabilities__card--archive {
+			padding: 1.25rem;
+		}
+
+		.home-capabilities__card h3 {
+			font-size: 1.85rem;
+		}
+
+		.home-capabilities__metrics {
+			margin-top: 0.75rem;
+		}
+
+		.home-capabilities__metrics strong {
+			font-size: 1.45rem;
+		}
+
+		.home-capabilities__card--social,
+		.home-capabilities__card--skills {
+			padding: 0.8rem 1.25rem;
+		}
+
+		.home-capabilities__card--skills .home-capabilities__section-copy {
+			padding-left: 4rem;
+		}
+
+		.home-capabilities__section-copy h3 {
+			font-size: 1.45rem;
+		}
+
+		.home-capabilities__social-pill {
+			min-height: 2.8rem;
+		}
+
+		.home-capabilities__skill {
+			min-height: 3.4rem;
+			gap: 0.25rem;
+		}
+
+		.home-capabilities__skill :global(svg) {
+			width: 1.7rem;
+			height: 1.7rem;
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.home-capabilities {
+			height: auto;
+			min-height: 100svh;
+			overflow: visible;
+		}
+
+		.home-capabilities__inner {
+			height: auto;
+			min-height: 100svh;
+			align-content: start;
+			grid-template-rows: auto auto;
+			gap: 1rem;
+			padding: 5.5rem 1.25rem 2rem;
+		}
+
+		.home-capabilities__header h2 {
+			font-size: clamp(3rem, 8vw, 4.5rem);
+		}
+
+		.home-capabilities__matrix {
+			grid-template-rows: auto;
+			gap: 0.75rem;
+		}
+
+		.home-capabilities__row--primary {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0.75rem;
+		}
+
+		.home-capabilities__card--visits,
+		.home-capabilities__card--archive {
+			min-height: 13rem;
+			padding: 1.25rem;
+		}
+
+		.home-capabilities__card--social,
+		.home-capabilities__card--skills {
+			gap: 1rem;
+			padding: 1.25rem;
+		}
+
+		.home-capabilities__card--skills .home-capabilities__section-copy {
+			padding-left: 0;
+		}
+
+		.home-capabilities__section-copy h3 {
+			font-size: 1.55rem;
+		}
+
+		.home-capabilities__social-pill {
+			min-height: 3rem;
+		}
+
+		.home-capabilities__marquee-viewport {
+			overflow-x: auto;
+			mask-image: none;
+			scrollbar-width: none;
+		}
+
+		.home-capabilities__marquee-viewport::-webkit-scrollbar {
+			display: none;
+		}
+
+		.home-capabilities__marquee-track {
+			animation: none;
+		}
+
+		.home-capabilities__marquee-group[aria-hidden="true"] {
+			display: none;
+		}
+
+		.home-capabilities__skill {
+			min-height: 3.5rem;
+		}
+	}
+
+	@media (max-width: 760px) {
+		.home-capabilities {
+			height: auto;
+			min-height: 100svh;
+		}
+
+		.home-capabilities__inner {
+			height: auto;
+			grid-template-rows: auto auto;
+			gap: 1.25rem;
+			padding: 5.5rem 1rem 2rem;
+		}
+
+		.home-capabilities__header h2 {
+			font-size: 3rem;
+		}
+
+		.home-capabilities__matrix {
+			grid-template-rows: auto;
+			gap: 0.75rem;
+		}
+
+		.home-capabilities__row--primary {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.75rem;
+		}
+
+		.home-capabilities__card--visits,
+		.home-capabilities__card--archive {
+			min-height: 13rem;
+			padding: 1.25rem;
+		}
+
+		.home-capabilities__card h3 {
+			font-size: 1.85rem;
+		}
+
+		.home-capabilities__metrics {
+			margin-top: 1rem;
+		}
+
+		.home-capabilities__metrics > div {
+			padding: 0 0.85rem;
+		}
+
+		.home-capabilities__metrics strong {
+			font-size: 1.5rem;
+		}
+
+		.home-capabilities__card--social,
+		.home-capabilities__card--skills {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 1rem;
+			padding: 1.25rem;
+		}
+
+		.home-capabilities__skill {
+			min-height: 3rem;
+			grid-template-columns: 1.6rem minmax(0, 1fr);
+			place-items: center start;
+			gap: 0.65rem;
+			padding: 0.5rem;
+			text-align: left;
+		}
+
+		.home-capabilities__skill :global(svg) {
+			width: 1.65rem;
+			height: 1.65rem;
+		}
+
+		.home-capabilities__skill span {
+			font-size: 0.7rem;
+		}
+	}
+
+	@media (max-width: 390px) {
+		.home-capabilities__metrics dt {
+			font-size: 0.6rem;
+		}
+
+		.home-capabilities__metrics > div {
+			padding: 0 0.6rem;
+		}
+	}
+
+	@media (min-width: 761px) and (max-width: 1023px) and (max-height: 500px) {
+		.home-capabilities__card--skills .home-capabilities__section-copy {
+			padding-left: 5.5rem;
+		}
+
+		.home-capabilities__card--skills .home-capabilities__section-copy h3 {
+			font-size: 1.25rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-capabilities__header,
+		.home-capabilities__row,
+		.home-capabilities.is-visible .home-capabilities__header,
+		.home-capabilities.is-visible .home-capabilities__row {
+			opacity: 1;
+			transform: none;
+			transition: none;
+		}
+
+		a.home-capabilities__card,
+		.home-capabilities__arrow :global(svg),
+		.home-capabilities__social-pill {
+			transition: none;
+		}
+
+		.home-capabilities__marquee-viewport {
+			overflow-x: auto;
+			mask-image: none;
+		}
+
+		.home-capabilities__marquee-track {
+			animation: none;
+			transform: none;
+		}
+
+		.home-capabilities__marquee-group[aria-hidden="true"] {
+			display: none;
+		}
+	}
+</style>

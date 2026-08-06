@@ -1,0 +1,502 @@
+---
+import type { PostForList } from "@/utils/content-utils";
+import type { ActivityCalendar, ActivityLevel } from "@/utils/home-activity";
+
+interface Props {
+	posts: PostForList[];
+	recentActivity: ActivityCalendar;
+	currentYear: number;
+	timezone: string;
+}
+
+interface HeatmapDay {
+	date: string;
+	count: number;
+	level: ActivityLevel;
+	outside: boolean;
+}
+
+interface MonthMarker {
+	column: number;
+	label: string;
+	span: number;
+}
+
+interface YearCalendar {
+	year: number;
+	weeks: HeatmapDay[][];
+	months: MonthMarker[];
+	total: number;
+}
+
+const { posts, recentActivity, currentYear, timezone } = Astro.props;
+const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+	timeZone: timezone,
+	year: "numeric",
+	month: "2-digit",
+	day: "2-digit",
+});
+
+function toDateKey(date: Date): string {
+	const parts = dateFormatter.formatToParts(date);
+	const year = parts.find((part) => part.type === "year")?.value;
+	const month = parts.find((part) => part.type === "month")?.value;
+	const day = parts.find((part) => part.type === "day")?.value;
+	return `${year}-${month}-${day}`;
+}
+
+function addUtcDays(date: Date, amount: number): Date {
+	const next = new Date(date);
+	next.setUTCDate(next.getUTCDate() + amount);
+	return next;
+}
+
+function getLevel(count: number): ActivityLevel {
+	if (count <= 0) return 0;
+	if (count === 1) return 1;
+	if (count === 2) return 2;
+	if (count === 3) return 3;
+	return 4;
+}
+
+const counts = new Map<string, number>();
+for (const post of posts) {
+	const dates = new Set([toDateKey(post.data.published)]);
+	if (post.data.updated) dates.add(toDateKey(post.data.updated));
+	for (const date of dates) {
+		counts.set(date, (counts.get(date) ?? 0) + 1);
+	}
+}
+for (const day of recentActivity.days) {
+	if (day.isOutsideRange || day.count <= 0) continue;
+	counts.set(day.date, Math.max(counts.get(day.date) ?? 0, day.count));
+}
+
+const years = [
+	...new Set([currentYear, ...[...counts.keys()].map(Number.parseFloat)]),
+]
+	.filter(Number.isFinite)
+	.sort((a, b) => b - a);
+
+function buildYearCalendar(year: number): YearCalendar {
+	const yearStart = new Date(Date.UTC(year, 0, 1));
+	const yearEnd = new Date(Date.UTC(year, 11, 31));
+	const gridStart = addUtcDays(yearStart, -yearStart.getUTCDay());
+	const gridEnd = addUtcDays(yearEnd, 6 - yearEnd.getUTCDay());
+	const days: HeatmapDay[] = [];
+	let cursor = gridStart;
+	let total = 0;
+
+	while (cursor <= gridEnd) {
+		const date = cursor.toISOString().slice(0, 10);
+		const outside = cursor < yearStart || cursor > yearEnd;
+		const count = outside ? 0 : (counts.get(date) ?? 0);
+		if (!outside) total += count;
+		days.push({ date, count, level: getLevel(count), outside });
+		cursor = addUtcDays(cursor, 1);
+	}
+
+	const weeks = Array.from({ length: Math.ceil(days.length / 7) }, (_, index) =>
+		days.slice(index * 7, index * 7 + 7),
+	);
+	const starts = Array.from({ length: 12 }, (_, month) => {
+		const firstDay = new Date(Date.UTC(year, month, 1));
+		return {
+			column:
+				Math.floor(
+					(firstDay.getTime() - gridStart.getTime()) /
+						(7 * 24 * 60 * 60 * 1000),
+				) + 1,
+			label: `${month + 1}月`,
+		};
+	});
+	const months = starts.map((marker, index) => ({
+		...marker,
+		span: Math.max(
+			1,
+			(starts[index + 1]?.column ?? weeks.length + 1) - marker.column,
+		),
+	}));
+
+	return { year, weeks, months, total };
+}
+
+const calendars = years.map(buildYearCalendar);
+
+function formatCellLabel(day: HeatmapDay): string {
+	const date = new Intl.DateTimeFormat("zh-CN", {
+		timeZone: "UTC",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	}).format(new Date(`${day.date}T00:00:00Z`));
+	return `${date}，${day.count} 次创作`;
+}
+---
+
+<section class="archive-heatmap" data-archive-heatmap aria-label="年度创作热力图">
+	<div class="archive-heatmap__tabs" role="tablist" aria-label="选择归档年份">
+		{calendars.map((calendar, index) => (
+			<button
+				type="button"
+				role="tab"
+				aria-selected={index === 0 ? "true" : "false"}
+				aria-controls={`archive-heatmap-${calendar.year}`}
+				tabindex={index === 0 ? 0 : -1}
+				class:list={[index === 0 && "is-active"]}
+				data-archive-heatmap-tab={calendar.year}
+			>
+				{calendar.year}
+			</button>
+		))}
+	</div>
+
+	{calendars.map((calendar, index) => (
+		<div
+			id={`archive-heatmap-${calendar.year}`}
+			class="archive-heatmap__panel"
+			role="tabpanel"
+			data-archive-heatmap-panel={calendar.year}
+			hidden={index !== 0}
+		>
+			<div
+				class="archive-heatmap__scroll"
+				role="region"
+				aria-label={`${calendar.year} 年创作热力图，可横向滚动`}
+				tabindex="0"
+			>
+				<div
+					class="archive-heatmap__chart"
+					style={`--archive-week-count: ${calendar.weeks.length}`}
+				>
+					<div class="archive-heatmap__month-spacer" aria-hidden="true"></div>
+					<div class="archive-heatmap__months" aria-hidden="true">
+						{calendar.months.map((month) => (
+							<span
+								style={`grid-column: ${month.column} / span ${month.span}`}
+							>
+								{month.label}
+							</span>
+						))}
+					</div>
+
+					<div class="archive-heatmap__weekdays" aria-hidden="true">
+						<span style="grid-row: 2">一</span>
+						<span style="grid-row: 4">三</span>
+						<span style="grid-row: 6">五</span>
+					</div>
+
+					<div class="archive-heatmap__weeks" role="grid">
+						{calendar.weeks.map((week) => (
+							<div class="archive-heatmap__week" role="row">
+								{week.map((day) => (
+									<button
+										type="button"
+										role="gridcell"
+										class:list={[
+											"archive-heatmap__cell",
+											`level-${day.level}`,
+											day.outside && "is-outside",
+										]}
+										aria-label={formatCellLabel(day)}
+										title={formatCellLabel(day)}
+										disabled={day.outside}
+									></button>
+								))}
+							</div>
+						))}
+					</div>
+				</div>
+			</div>
+
+			<div class="archive-heatmap__footer">
+				<span>{calendar.total} 次创作</span>
+				<div class="archive-heatmap__legend" aria-label="活跃程度图例">
+					<span>少</span>
+					{[0, 1, 2, 3, 4].map((level) => (
+						<i
+							class={`archive-heatmap__cell level-${level}`}
+							aria-hidden="true"
+						></i>
+					))}
+					<span>多</span>
+				</div>
+			</div>
+		</div>
+	))}
+</section>
+
+<script>
+	function initArchiveHeatmap() {
+		const roots = document.querySelectorAll<HTMLElement>(
+			"[data-archive-heatmap]",
+		);
+		for (const root of roots) {
+			if (root.dataset.bound === "true") continue;
+			root.dataset.bound = "true";
+
+			const tabs = Array.from(
+				root.querySelectorAll<HTMLButtonElement>(
+					"[data-archive-heatmap-tab]",
+				),
+			);
+			const panels = root.querySelectorAll<HTMLElement>(
+				"[data-archive-heatmap-panel]",
+			);
+
+			const activate = (tab: HTMLButtonElement) => {
+				const year = tab.dataset.archiveHeatmapTab;
+				for (const current of tabs) {
+					const active = current === tab;
+					current.classList.toggle("is-active", active);
+					current.setAttribute("aria-selected", String(active));
+					current.tabIndex = active ? 0 : -1;
+				}
+				for (const panel of panels) {
+					panel.hidden = panel.dataset.archiveHeatmapPanel !== year;
+				}
+			};
+
+			tabs.forEach((tab, index) => {
+				tab.addEventListener("click", () => activate(tab));
+				tab.addEventListener("keydown", (event) => {
+					if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+					event.preventDefault();
+					const offset = event.key === "ArrowRight" ? 1 : -1;
+					const next = tabs[(index + offset + tabs.length) % tabs.length];
+					activate(next);
+					next.focus();
+				});
+			});
+		}
+	}
+
+	initArchiveHeatmap();
+	document.addEventListener("swup:contentReplaced", initArchiveHeatmap);
+</script>
+
+<style>
+	.archive-heatmap {
+		--archive-cell: 0.875rem;
+		--archive-cell-gap: 0.1875rem;
+		--archive-ink: #171b1e;
+		--archive-muted: #747e84;
+		--archive-empty: #e8eaeb;
+		display: grid;
+		gap: 1rem;
+		padding-top: 0.75rem;
+		color: var(--archive-ink);
+	}
+
+	:global(html.dark) .archive-heatmap {
+		--archive-ink: #f4f6f7;
+		--archive-muted: #9ba5aa;
+		--archive-empty: #31383b;
+	}
+
+	.archive-heatmap__tabs {
+		display: flex;
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		justify-content: flex-end;
+		gap: 0.45rem;
+		overflow-x: auto;
+	}
+
+	.archive-heatmap__tabs button {
+		min-width: 3.25rem;
+		min-height: 1.625rem;
+		padding: 0.15rem 0.65rem;
+		border: 1px solid color-mix(in srgb, var(--archive-ink) 18%, transparent);
+		border-radius: 0.45rem;
+		background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+		color: var(--archive-muted);
+		font-size: 0.75rem;
+		font-weight: 750;
+		cursor: pointer;
+		transition: background-color 160ms ease, color 160ms ease,
+			border-color 160ms ease;
+	}
+
+	.archive-heatmap__tabs button:hover {
+		border-color: color-mix(in srgb, var(--archive-ink) 45%, transparent);
+		color: var(--archive-ink);
+	}
+
+	.archive-heatmap__tabs button.is-active {
+		border-color: var(--archive-ink);
+		background: var(--archive-ink);
+		color: var(--card-bg);
+	}
+
+	.archive-heatmap__tabs button:focus-visible,
+	.archive-heatmap__scroll:focus-visible {
+		outline: 3px solid color-mix(in srgb, var(--primary) 68%, white);
+		outline-offset: 3px;
+	}
+
+	.archive-heatmap__panel[hidden] {
+		display: none;
+	}
+
+	.archive-heatmap__panel {
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	.archive-heatmap__scroll {
+		max-width: 100%;
+		overflow-x: auto;
+		padding: 0 0 0.125rem;
+		scrollbar-color: #9a9a9a transparent;
+		scrollbar-width: auto;
+	}
+
+	.archive-heatmap__scroll::-webkit-scrollbar {
+		height: 0.55rem;
+	}
+
+	.archive-heatmap__scroll::-webkit-scrollbar-thumb {
+		border-radius: 999rem;
+		background: #9a9a9a;
+	}
+
+	.archive-heatmap__chart {
+		display: grid;
+		grid-template-columns: 0.8rem max-content;
+		grid-template-rows: 1.225rem max-content;
+		width: max-content;
+		min-width: 100%;
+	}
+
+	.archive-heatmap__months,
+	.archive-heatmap__weeks {
+		display: grid;
+		grid-template-columns: repeat(
+			var(--archive-week-count),
+			var(--archive-cell)
+		);
+		column-gap: var(--archive-cell-gap);
+	}
+
+	.archive-heatmap__months {
+		color: var(--archive-muted);
+		font-size: 0.65rem;
+		line-height: 0.975rem;
+	}
+
+	.archive-heatmap__months span {
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.archive-heatmap__weekdays,
+	.archive-heatmap__week {
+		display: grid;
+		grid-template-rows: repeat(7, var(--archive-cell));
+		row-gap: var(--archive-cell-gap);
+	}
+
+	.archive-heatmap__weekdays {
+		padding-right: 0.2rem;
+		color: var(--archive-muted);
+		font-size: 0.6rem;
+		line-height: var(--archive-cell);
+		text-align: right;
+	}
+
+	.archive-heatmap__cell {
+		box-sizing: border-box;
+		width: var(--archive-cell);
+		height: var(--archive-cell);
+		border: 1px solid color-mix(in srgb, var(--archive-ink) 4%, transparent);
+		border-radius: 0.2rem;
+		background: var(--archive-empty);
+		padding: 0;
+	}
+
+	button.archive-heatmap__cell:not(:disabled) {
+		cursor: help;
+		transition: filter 150ms ease, outline-color 150ms ease;
+	}
+
+	button.archive-heatmap__cell:not(:disabled):hover,
+	button.archive-heatmap__cell:not(:disabled):focus-visible {
+		filter: brightness(0.9);
+		outline: 2px solid var(--archive-ink);
+		outline-offset: 1px;
+	}
+
+	.archive-heatmap__cell.level-1 {
+		background: #badbc9;
+	}
+
+	.archive-heatmap__cell.level-2 {
+		background: #77bc97;
+	}
+
+	.archive-heatmap__cell.level-3 {
+		background: #2f9662;
+	}
+
+	.archive-heatmap__cell.level-4 {
+		background: #08733e;
+	}
+
+	.archive-heatmap__cell.is-outside {
+		border-color: transparent;
+		background: transparent;
+	}
+
+	.archive-heatmap__footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 0.75rem;
+		color: var(--archive-muted);
+		font-size: 0.6rem;
+		line-height: 0.9rem;
+	}
+
+	.archive-heatmap__footer > span:first-child {
+		visibility: hidden;
+	}
+
+	.archive-heatmap__legend {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.archive-heatmap__legend .archive-heatmap__cell {
+		width: 0.75rem;
+		height: 0.75rem;
+	}
+
+	@media (max-width: 700px) {
+		.archive-heatmap {
+			--archive-cell: 0.82rem;
+			--archive-cell-gap: 0.18rem;
+		}
+
+		.archive-heatmap__tabs {
+			justify-content: flex-start;
+		}
+
+		.archive-heatmap__footer {
+			align-items: flex-end;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.archive-heatmap__tabs button,
+		button.archive-heatmap__cell {
+			transition: none;
+		}
+	}
+</style>

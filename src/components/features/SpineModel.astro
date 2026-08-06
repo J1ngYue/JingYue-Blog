@@ -1,4 +1,5 @@
 ---
+import { Icon } from "astro-icon/components";
 import MessageBox from "@/components/common/PioMessageBox.astro";
 import { characterModelCatalog, spineModelConfig } from "@/config/pioConfig";
 import { url } from "@/utils/url-utils";
@@ -10,11 +11,12 @@ import { url } from "@/utils/url-utils";
   style="position: fixed; left: 9.25rem; top: calc(100dvh - 4.25rem); z-index: 2147483000; pointer-events: none;"
 >
   <div class="character-model-hover-card" data-character-model-hover-card>
-    <strong data-character-model-hover-label>萤火虫</strong>
-    <div class="character-model-hover-actions">
-      <button type="button" data-character-action="switch" title="选择角色">切换模型</button>
-      <button type="button" data-character-action="sleep" aria-pressed="false" title="暂停或唤醒模型">
-        <span data-character-sleep-label>休眠</span>
+    <div class="character-model-hover-actions" role="toolbar" aria-label="宠物操作">
+      <button type="button" data-character-action="switch" aria-label="切换宠物模型" title="切换宠物模型">
+        <Icon is:inline name="material-symbols:view-carousel-outline" />
+      </button>
+      <button type="button" data-character-action="sleep" aria-pressed="false" aria-label="让宠物休眠" title="让宠物休眠">
+        <Icon is:inline name="material-symbols:dark-mode-outline-rounded" />
       </button>
     </div>
   </div>
@@ -26,8 +28,7 @@ import { url } from "@/utils/url-utils";
     title="唤醒宠物"
     hidden
   >
-    <span aria-hidden="true">Zzz</span>
-    <strong>唤醒</strong>
+    <Icon is:inline name="material-symbols:wb-sunny-outline-rounded" />
   </button>
   <button
     type="button"
@@ -104,7 +105,7 @@ import { url } from "@/utils/url-utils";
 <div
   id="sprite-model-container"
   data-character-model-runtime="sprite"
-  style="position: fixed; left: 8px; bottom: 8px; width: 154px; height: 166px; display: none; pointer-events: auto; z-index: 1000;"
+  style="position: fixed; left: 8px; bottom: 8px; width: 108px; height: 117px; display: none; pointer-events: auto; z-index: 1000;"
 >
   <div id="sprite-model" aria-label="像素宠物"></div>
   <div class="sprite-model-reaction" aria-hidden="true">
@@ -132,6 +133,15 @@ import { url } from "@/utils/url-utils";
   const CHARACTER_MODEL_TYPES = Object.fromEntries(
     characterModelCatalog.map((item) => [item.id, item.type]),
   );
+  const CHARACTER_CONTROL_INSETS = Object.fromEntries(
+    characterModelCatalog.map((item) => [item.id, item.controlInsetTop || 0]),
+  );
+  const CHARACTER_RUNTIME_SIZES = Object.fromEntries(
+    characterModelCatalog.map((item) => [item.id, item.runtimeSize]),
+  );
+  const CHARACTER_INTERACTION_MESSAGES = Object.fromEntries(
+    characterModelCatalog.map((item) => [item.id, item.interactionMessages || []]),
+  );
   const CHARACTER_MODELS = Object.keys(CHARACTER_MODEL_LABELS);
 
   function getSelectedCharacterModel() {
@@ -154,8 +164,10 @@ import { url } from "@/utils/url-utils";
   let characterPosition = getStoredCharacterPosition();
   let characterLayoutFrame = 0;
   let suppressCharacterClick = false;
+  let characterClickSuppressTimer = 0;
   let activeCharacterDragCleanup = null;
   let characterInteractionTimer = 0;
+  let spriteInteractionIndex = 0;
   let characterSleeping = localStorage.getItem(CHARACTER_SLEEP_KEY) === "true";
   let characterHoverTimer = 0;
 
@@ -170,8 +182,9 @@ import { url } from "@/utils/url-utils";
 
   function clampCharacterPosition(position, runtime = getActiveCharacterRuntime()) {
     const model = getSelectedCharacterModel();
-    const runtimeWidth = runtime?.offsetWidth || (model === "firefly" ? 135 : model === "totoro" || model === "gugugaga" || model === "feibi" || model === "nailong" ? 154 : 200);
-    const runtimeHeight = runtime?.offsetHeight || (model === "firefly" ? 165 : model === "totoro" || model === "gugugaga" || model === "feibi" || model === "nailong" ? 166 : 200);
+    const configuredSize = CHARACTER_RUNTIME_SIZES[model] || { width: 135, height: 165 };
+    const runtimeWidth = runtime?.offsetWidth || configuredSize.width;
+    const runtimeHeight = runtime?.offsetHeight || configuredSize.height;
     const safeTopSpace = 84;
     return {
       x: Math.min(Math.max(8, position.x), Math.max(8, window.innerWidth - runtimeWidth - 8)),
@@ -180,6 +193,21 @@ import { url } from "@/utils/url-utils";
         Math.max(8, window.innerHeight - runtimeHeight - safeTopSpace),
       ),
     };
+  }
+
+  function applyCharacterRuntimeSize(runtime, model = getSelectedCharacterModel()) {
+    if (!runtime) return;
+    const size = CHARACTER_RUNTIME_SIZES[model];
+    if (!size) return;
+    runtime.style.width = `${size.width}px`;
+    runtime.style.height = `${size.height}px`;
+    if (CHARACTER_MODEL_TYPES[model] === "live2d") {
+      const canvas = runtime.querySelector("canvas");
+      if (canvas) {
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+      }
+    }
   }
 
   function positionCharacterLibrary() {
@@ -201,12 +229,13 @@ import { url } from "@/utils/url-utils";
 
       const runtimeRect = runtime.getBoundingClientRect();
       const cardRect = card.getBoundingClientRect();
-      const gap = 10;
+      const gap = 36;
       const padding = 8;
       const cardWidth = cardRect.width || 190;
       const cardHeight = cardRect.height || 76;
+      const controlInsetTop = CHARACTER_CONTROL_INSETS[getSelectedCharacterModel()] || 0;
       let left = runtimeRect.left + (runtimeRect.width - cardWidth) / 2;
-      let top = runtimeRect.top - cardHeight - gap;
+      let top = runtimeRect.top + controlInsetTop - cardHeight - gap;
 
       if (top < padding) top = runtimeRect.bottom + gap;
       if (top + cardHeight > window.innerHeight - padding) {
@@ -222,6 +251,7 @@ import { url } from "@/utils/url-utils";
 
   function applyCharacterPosition(nextPosition = characterPosition, persist = false) {
     const activeRuntime = getActiveCharacterRuntime();
+    applyCharacterRuntimeSize(activeRuntime);
     characterPosition = clampCharacterPosition(nextPosition, activeRuntime);
     [
       document.getElementById("spine-model-container"),
@@ -247,6 +277,8 @@ import { url } from "@/utils/url-utils";
 
     if (modelType === "sprite") {
       window.clearTimeout(characterInteractionTimer);
+      spriteInteractionIndex = (spriteInteractionIndex + 1) % 3;
+      runtime.dataset.characterReaction = String(spriteInteractionIndex);
       runtime.classList.remove("is-character-interacting");
       void runtime.offsetWidth;
       runtime.classList.add("is-character-interacting");
@@ -263,95 +295,133 @@ import { url } from "@/utils/url-utils";
       );
     }
 
-    if (modelType === "sprite") {
-      const messages = spineModelConfig.interactive.clickMessages || [];
-      const message = messages[Math.floor(Math.random() * messages.length)];
-      if (message) {
-        window.showModelMessage?.(message, {
-          containerId: runtime.id,
-          displayTime: Math.min(2200, spineModelConfig.interactive.messageDisplayTime || 2200),
-        });
-      }
+    const messages = CHARACTER_INTERACTION_MESSAGES[model] || [];
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    if (message) {
+      window.showModelMessage?.(message, {
+        containerId: runtime.id,
+        displayTime: Math.min(2400, spineModelConfig.interactive.messageDisplayTime || 2400),
+      });
     }
   }
 
   function attachCharacterDragHandle(element) {
     if (!element || element.dataset.characterDragReady === "true") return;
     element.dataset.characterDragReady = "true";
+    element.style.pointerEvents = "auto";
     element.style.touchAction = "none";
+    element.style.userSelect = "none";
     element.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || event.isPrimary === false) return;
+      if (characterSleeping) return;
+      if (event.target?.closest?.("button, a, input, select, textarea, [role='button']")) return;
       activeCharacterDragCleanup?.();
+      window.clearTimeout(characterClickSuppressTimer);
+      suppressCharacterClick = false;
+      event.preventDefault();
       const start = { ...characterPosition };
       const startX = event.clientX;
       const startY = event.clientY;
       let moved = false;
       let finished = false;
       const pointerId = event.pointerId;
-      try {
-        element.setPointerCapture?.(pointerId);
-      } catch (_error) {
-        // Window-level listeners below still guarantee a clean drag session.
-      }
 
-      const handleMove = (moveEvent) => {
-        const deltaX = moveEvent.clientX - startX;
-        const deltaY = moveEvent.clientY - startY;
-        if (!moved && Math.hypot(deltaX, deltaY) < 5) return;
-        moved = true;
-        suppressCharacterClick = true;
-        window.clearModelMessage?.();
+      const updateGesture = (pointerEvent, preventDefault = false) => {
+        if (pointerEvent.pointerId !== pointerId) return;
+        const deltaX = pointerEvent.clientX - startX;
+        const deltaY = pointerEvent.clientY - startY;
+        if (!moved && Math.hypot(deltaX, deltaY) < 8) return;
+        if (!moved) {
+          moved = true;
+          suppressCharacterClick = true;
+          element.classList.add("is-character-dragging");
+          document.documentElement.classList.add("is-character-dragging");
+          window.clearModelMessage?.();
+          try {
+            element.setPointerCapture?.(pointerId);
+          } catch (_error) {
+            // Window listeners still finish the gesture if capture is unavailable.
+          }
+        }
         applyCharacterPosition(
           { x: start.x + deltaX, bottom: start.bottom - deltaY },
           false,
         );
-        moveEvent.preventDefault();
+        if (preventDefault) pointerEvent.preventDefault();
       };
 
-      const handleEnd = (endEvent) => {
-        if (endEvent?.pointerId !== undefined && endEvent.pointerId !== pointerId) return;
+      const handleMove = (moveEvent) => updateGesture(moveEvent, true);
+
+      const finishGesture = (shouldInteract) => {
         if (finished) return;
         finished = true;
-        window.removeEventListener("pointermove", handleMove);
-        window.removeEventListener("pointerup", handleEnd);
-        window.removeEventListener("pointercancel", handleEnd);
-        window.removeEventListener("blur", handleEnd);
-        element.removeEventListener("lostpointercapture", handleEnd);
+        window.removeEventListener("pointermove", handleMove, true);
+        window.removeEventListener("pointerup", handleEnd, true);
+        window.removeEventListener("pointercancel", handleCancel, true);
+        window.removeEventListener("blur", handleCancel);
+        element.classList.remove("is-character-dragging");
+        document.documentElement.classList.remove("is-character-dragging");
         try {
-          if (element.hasPointerCapture?.(pointerId)) element.releasePointerCapture(pointerId);
+          if (element.hasPointerCapture?.(pointerId)) {
+            element.releasePointerCapture(pointerId);
+          }
         } catch (_error) {
-          // The pointer may already have been released by the browser.
+          // The browser may already have released capture on cancellation.
         }
         activeCharacterDragCleanup = null;
         if (moved) {
           localStorage.setItem(CHARACTER_POSITION_KEY, JSON.stringify(characterPosition));
-          window.setTimeout(() => {
+          window.clearTimeout(characterClickSuppressTimer);
+          characterClickSuppressTimer = window.setTimeout(() => {
             suppressCharacterClick = false;
           }, 180);
-        } else if (characterSleeping) {
-          setCharacterSleeping(false);
-        } else {
+        } else if (shouldInteract) {
           playCharacterClickFeedback(getActiveCharacterRuntime());
         }
       };
 
-      activeCharacterDragCleanup = () => handleEnd();
-      window.addEventListener("pointermove", handleMove, { passive: false });
-      window.addEventListener("pointerup", handleEnd);
-      window.addEventListener("pointercancel", handleEnd);
-      window.addEventListener("blur", handleEnd);
-      element.addEventListener("lostpointercapture", handleEnd);
-    });
+      const handleEnd = (endEvent) => {
+        if (endEvent?.pointerId !== undefined && endEvent.pointerId !== pointerId) return;
+        updateGesture(endEvent);
+        finishGesture(true);
+      };
+
+      const handleCancel = (cancelEvent) => {
+        if (cancelEvent?.pointerId !== undefined && cancelEvent.pointerId !== pointerId) return;
+        finishGesture(false);
+      };
+
+      activeCharacterDragCleanup = () => finishGesture(false);
+      window.addEventListener("pointermove", handleMove, { capture: true, passive: false });
+      window.addEventListener("pointerup", handleEnd, true);
+      window.addEventListener("pointercancel", handleCancel, true);
+      window.addEventListener("blur", handleCancel);
+    }, true);
   }
 
   function attachCharacterRuntime(runtime) {
     if (!runtime) return;
+    if (!runtime.querySelector(".character-sleep-scene")) {
+      const sleepScene = document.createElement("div");
+      sleepScene.className = "character-sleep-scene";
+      sleepScene.setAttribute("aria-hidden", "true");
+      sleepScene.innerHTML = `
+        <span class="character-sleep-pillow"></span>
+        <span class="character-sleep-blanket"></span>
+        <span class="character-sleep-moon"></span>
+      `;
+      runtime.appendChild(sleepScene);
+    }
+    applyCharacterRuntimeSize(runtime);
     applyCharacterPosition(characterPosition);
-    attachCharacterDragHandle(runtime.querySelector("canvas") || runtime);
+    attachCharacterDragHandle(runtime);
     attachCharacterHoverReveal(runtime);
     runtime.classList.toggle("is-character-sleeping", characterSleeping);
     if (getSelectedCharacterModel() === "firefly" && window.spinePlayerInstance) {
-      if (characterSleeping) window.spinePlayerInstance.pause?.();
+      if (characterSleeping) {
+        if (window.__fireflySpineSleep) window.__fireflySpineSleep();
+        else window.spinePlayerInstance.pause?.();
+      }
       else window.spinePlayerInstance.play?.();
     }
   }
@@ -361,6 +431,7 @@ import { url } from "@/utils/url-utils";
     if (!switcher) return;
     window.clearTimeout(characterHoverTimer);
     if (hovered) {
+      layoutCharacterControls();
       switcher.dataset.petHovered = "true";
       switcher.style.pointerEvents = "auto";
       return;
@@ -386,14 +457,13 @@ import { url } from "@/utils/url-utils";
   function updateCharacterSleepUI() {
     const switcher = document.querySelector("[data-character-model-switcher]");
     const button = switcher?.querySelector("[data-character-action='sleep']");
-    const label = switcher?.querySelector("[data-character-sleep-label]");
     const wakeTab = switcher?.querySelector("[data-character-wake]");
     const sleeping = characterSleeping;
     if (button) {
       button.setAttribute("aria-pressed", String(sleeping));
-      button.setAttribute("title", sleeping ? "唤醒模型" : "暂停或唤醒模型");
+      button.setAttribute("aria-label", "让宠物休眠");
+      button.setAttribute("title", "让宠物休眠");
     }
-    if (label) label.textContent = sleeping ? "唤醒" : "休眠";
     if (wakeTab) wakeTab.hidden = !sleeping;
     if (switcher) {
       switcher.dataset.petSleeping = String(sleeping);
@@ -417,8 +487,14 @@ import { url } from "@/utils/url-utils";
     if (persist) localStorage.setItem(CHARACTER_SLEEP_KEY, String(characterSleeping));
     const player = window.spinePlayerInstance;
     if (getSelectedCharacterModel() === "firefly" && player) {
-      if (characterSleeping) player.pause?.();
-      else player.play?.();
+      if (characterSleeping) {
+        if (window.__fireflySpineSleep) window.__fireflySpineSleep();
+        else player.pause?.();
+      }
+      else {
+        player.play?.();
+        window.__fireflySpineIdle?.();
+      }
     }
     updateCharacterSleepUI();
     window.dispatchEvent(
@@ -431,9 +507,7 @@ import { url } from "@/utils/url-utils";
   function updateCharacterModelUI(model) {
     document.documentElement.dataset.characterModel = model;
     const switcher = document.querySelector("[data-character-model-switcher]");
-    const hoverLabel = switcher?.querySelector("[data-character-model-hover-label]");
     const options = switcher?.querySelectorAll("[data-character-model-option]") || [];
-    if (hoverLabel) hoverLabel.textContent = CHARACTER_MODEL_LABELS[model];
     options.forEach((option) => {
       const active = option.dataset.characterModelOption === model;
       option.setAttribute("aria-checked", String(active));
@@ -453,6 +527,11 @@ import { url } from "@/utils/url-utils";
       const item = characterModelCatalog.find((entry) => entry.id === model);
       sprite.style.backgroundImage = item?.type === "sprite" ? `url('${item.sprite}')` : "none";
       sprite.dataset.spriteModel = item?.type === "sprite" ? item.id : "";
+    }
+    applyCharacterRuntimeSize(spineContainer, "firefly");
+    if (modelType === "sprite") applyCharacterRuntimeSize(spriteContainer, model);
+    if (modelType === "live2d") {
+      applyCharacterRuntimeSize(document.getElementById("firefly-live2d-runtime"), model);
     }
     layoutCharacterControls();
     updateCharacterSleepUI();
@@ -535,7 +614,9 @@ import { url } from "@/utils/url-utils";
     );
     sleepAction?.addEventListener(
       "click",
-      () => setCharacterSleeping(!characterSleeping),
+      () => {
+        if (!characterSleeping) setCharacterSleeping(true);
+      },
       listenerOptions,
     );
     wakeAction?.addEventListener(
@@ -686,6 +767,7 @@ import { url } from "@/utils/url-utils";
   // 消息框功能已移至公共组件 MessageBox.astro
   let isClickProcessing = false; // 防止重复点击的标志
   let lastClickTime = 0; // 记录最后一次点击时间
+  let lastSpineInteraction = "";
 
   // 全局变量，防止重复初始化
   window.spineModelInitialized = window.spineModelInitialized || false;
@@ -746,6 +828,9 @@ import { url } from "@/utils/url-utils";
       }
       window.spinePlayerInstance = null;
     }
+    window.__fireflySpineInteract = null;
+    window.__fireflySpineIdle = null;
+    window.__fireflySpineSleep = null;
 
     // 清理容器内容
     const playerContainer = document.getElementById("spine-player-container");
@@ -881,6 +966,14 @@ import { url } from "@/utils/url-utils";
           const pickRandom = (list) =>
             list[Math.floor(Math.random() * list.length)];
 
+          const pickNextInteraction = (list) => {
+            if (list.length < 2) return list[0];
+            const candidates = list.filter((name) => name !== lastSpineInteraction);
+            const next = pickRandom(candidates);
+            lastSpineInteraction = next;
+            return next;
+          };
+
           const configuredClickAnims =
             spineModelConfig.interactive.clickAnimations ||
             (spineModelConfig.interactive.clickAnimation
@@ -926,7 +1019,7 @@ import { url } from "@/utils/url-utils";
             lastClickTime = currentTime;
 
             if (validClickAnims.length > 0) {
-              const randomClickAnim = pickRandom(validClickAnims);
+              const randomClickAnim = pickNextInteraction(validClickAnims);
               safeSetAnimation(randomClickAnim, false);
               window.setTimeout(() => {
                 if (characterSleeping) return;
@@ -946,6 +1039,22 @@ import { url } from "@/utils/url-utils";
             }, 500);
           };
           window.__fireflySpineInteract = runSpineInteraction;
+          window.__fireflySpineIdle = () => {
+            const randomIdle = validIdleAnims.length > 0
+              ? pickRandom(validIdleAnims)
+              : fallbackIdleAnim;
+            safeSetAnimation(randomIdle, true);
+          };
+          window.__fireflySpineSleep = () => {
+            if (!safeSetAnimation("emoji_2", false)) {
+              player.pause?.();
+              return;
+            }
+            player.play?.();
+            window.setTimeout(() => {
+              if (characterSleeping) player.pause?.();
+            }, 620);
+          };
 
           // 初始动画兜底，防止默认 idle 不存在
           if (!safeSetAnimation("idle", true) && fallbackIdleAnim) {
@@ -986,8 +1095,6 @@ import { url } from "@/utils/url-utils";
               "#spine-player-container canvas"
             );
             if (canvas) {
-              canvas.addEventListener("click", runSpineInteraction);
-
               // 设置待机动画循环（仅在至少两个有效待机动画时启用）
               if (validIdleAnims.length > 1) {
                 setInterval(() => {
@@ -999,6 +1106,7 @@ import { url } from "@/utils/url-utils";
           }
 
           console.log("✅ Spine model setup complete!");
+          setCharacterSleeping(characterSleeping, false);
         },
         error: (_player, reason) => {
           console.error("❌ Spine model loading error:", reason);
@@ -1088,12 +1196,10 @@ import { url } from "@/utils/url-utils";
   .character-model-hover-card {
     position: relative;
     z-index: 10004;
-    display: grid;
-    min-width: 12rem;
-    gap: 0.55rem;
-    padding: 0.7rem;
+    display: inline-flex;
+    padding: 0.38rem;
     border: 1px solid rgba(39, 107, 91, 0.2);
-    border-radius: 1rem;
+    border-radius: 999px;
     background: rgba(250, 253, 252, 0.96);
     box-shadow: 0 0.85rem 2rem rgba(28, 71, 62, 0.2);
     backdrop-filter: blur(1rem);
@@ -1101,31 +1207,36 @@ import { url } from "@/utils/url-utils";
     opacity: 0;
     pointer-events: none;
     transform: translateY(0.35rem);
-    transition: opacity 160ms ease, transform 160ms ease;
-  }
-
-  .character-model-hover-card strong {
-    padding: 0 0.2rem;
-    font-size: 0.8rem;
-    line-height: 1.1;
+    visibility: hidden;
+    transition:
+      opacity 160ms ease,
+      transform 160ms ease,
+      visibility 0s linear 160ms;
   }
 
   .character-model-hover-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: inline-flex;
     gap: 0.35rem;
   }
 
   .character-model-hover-actions button {
-    min-width: 0;
-    padding: 0.42rem 0.45rem;
+    display: inline-grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    padding: 0;
     border: 1px solid rgba(35, 111, 91, 0.18);
-    border-radius: 0.65rem;
+    border-radius: 50%;
     background: rgba(224, 244, 236, 0.75);
     color: #1b725e;
     cursor: pointer;
-    font: 700 0.64rem/1.1 system-ui, sans-serif;
     transition: background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .character-model-hover-actions button :global(svg),
+  .character-model-wake-tab :global(svg) {
+    width: 1.3rem;
+    height: 1.3rem;
   }
 
   .character-model-hover-actions button:hover,
@@ -1139,16 +1250,27 @@ import { url } from "@/utils/url-utils";
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
+    visibility: visible;
+    transition-delay: 0s;
   }
 
   #character-model-switcher[data-library-open="true"] .character-model-hover-card {
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
+  }
+
+  #character-model-switcher[data-pet-speaking="true"] .character-model-hover-card {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.35rem);
+    visibility: hidden;
   }
 
   #character-model-switcher[data-pet-sleeping="true"] .character-model-hover-card {
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
   }
 
   .character-model-wake-tab {
@@ -1156,10 +1278,11 @@ import { url } from "@/utils/url-utils";
     z-index: 10004;
     display: inline-flex;
     align-items: center;
-    gap: 0.38rem;
-    min-height: 2.8rem;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
     margin-inline: auto;
-    padding: 0.58rem 0.82rem;
+    padding: 0;
     border: 1px solid rgba(35, 111, 91, 0.22);
     border-radius: 999px;
     background: rgba(250, 253, 252, 0.96);
@@ -1187,16 +1310,6 @@ import { url } from "@/utils/url-utils";
     display: none !important;
   }
 
-  .character-model-wake-tab span {
-    font: 850 0.72rem/1 system-ui, sans-serif;
-    letter-spacing: -0.04em;
-    animation: character-sleep-text 2.2s ease-in-out infinite;
-  }
-
-  .character-model-wake-tab strong {
-    font: 750 0.72rem/1 system-ui, sans-serif;
-  }
-
   .character-model-wake-tab:hover,
   .character-model-wake-tab:focus-visible {
     border-color: color-mix(in oklch, var(--primary) 55%, rgba(35, 111, 91, 0.22));
@@ -1213,6 +1326,73 @@ import { url } from "@/utils/url-utils";
     transition: filter 220ms ease, opacity 220ms ease;
   }
 
+  #spine-model-container.is-character-sleeping,
+  #sprite-model-container.is-character-sleeping,
+  #firefly-live2d-runtime.is-character-sleeping,
+  #spine-model-container.is-character-sleeping canvas,
+  #sprite-model-container.is-character-sleeping #sprite-model,
+  #firefly-live2d-runtime.is-character-sleeping canvas {
+    cursor: default !important;
+  }
+
+  .character-sleep-scene {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    overflow: visible;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+  }
+
+  .is-character-sleeping > .character-sleep-scene {
+    opacity: 1;
+  }
+
+  .character-sleep-pillow,
+  .character-sleep-blanket,
+  .character-sleep-moon {
+    position: absolute;
+    display: block;
+  }
+
+  .character-sleep-pillow {
+    left: 9%;
+    bottom: 1%;
+    width: 82%;
+    height: 23%;
+    border: 1px solid color-mix(in oklch, var(--primary) 20%, rgba(255, 255, 255, 0.68));
+    border-radius: 50%;
+    background: color-mix(in oklch, var(--primary) 10%, rgba(255, 255, 255, 0.86));
+    box-shadow: 0 0.55rem 1.1rem rgba(27, 71, 61, 0.16);
+    transform: rotate(-3deg);
+  }
+
+  .character-sleep-blanket {
+    left: 24%;
+    bottom: 7%;
+    width: 64%;
+    height: 38%;
+    border: 1px solid color-mix(in oklch, var(--primary) 32%, rgba(255, 255, 255, 0.64));
+    border-radius: 68% 48% 42% 50%;
+    background:
+      radial-gradient(circle at 72% 24%, rgba(255, 255, 255, 0.75) 0 0.16rem, transparent 0.18rem),
+      radial-gradient(circle at 44% 54%, rgba(255, 255, 255, 0.58) 0 0.12rem, transparent 0.14rem),
+      color-mix(in oklch, var(--primary) 32%, rgba(239, 249, 246, 0.92));
+    box-shadow: inset 0 0.35rem 0.8rem rgba(255, 255, 255, 0.24);
+    transform: rotate(-5deg);
+  }
+
+  .character-sleep-moon {
+    top: 7%;
+    right: 9%;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    box-shadow: inset -0.36rem -0.12rem 0 color-mix(in oklch, var(--primary) 56%, #f6cf75);
+    filter: drop-shadow(0 0.2rem 0.35rem color-mix(in oklch, var(--primary) 24%, transparent));
+  }
+
   #sprite-model-container.is-character-sleeping #sprite-model {
     animation: character-sprite-sleep 2.8s ease-in-out infinite;
     transform-origin: 50% 82%;
@@ -1226,6 +1406,18 @@ import { url } from "@/utils/url-utils";
 
   #sprite-model-container.is-character-interacting #sprite-model {
     animation: character-sprite-react 720ms steps(3, end) 1 both;
+  }
+
+  #sprite-model-container[data-character-reaction="1"] #sprite-model {
+    --sprite-reaction-row: 37.5%;
+  }
+
+  #sprite-model-container[data-character-reaction="2"] #sprite-model {
+    --sprite-reaction-row: 50%;
+  }
+
+  #sprite-model-container[data-character-reaction="0"] #sprite-model {
+    --sprite-reaction-row: 25%;
   }
 
   .sprite-model-reaction {
@@ -1270,11 +1462,6 @@ import { url } from "@/utils/url-utils";
   @keyframes character-sprite-sleep {
     0%, 100% { background-position: 28.571429% 62.5%; transform: translateY(0.2rem) rotate(-2deg) scale(0.97); }
     50% { background-position: 28.571429% 62.5%; transform: translateY(0.42rem) rotate(-3deg) scale(0.98, 0.95); }
-  }
-
-  @keyframes character-sleep-text {
-    0%, 100% { opacity: 0.56; transform: translateY(0.08rem); }
-    50% { opacity: 1; transform: translateY(-0.08rem); }
   }
 
   @keyframes character-pet-spark {
@@ -1480,6 +1667,27 @@ import { url } from "@/utils/url-utils";
     filter: drop-shadow(0 0.55rem 0.7rem rgba(19, 54, 47, 0.16));
   }
 
+  #spine-model-container:not(.is-character-sleeping),
+  #spine-model-container:not(.is-character-sleeping) canvas,
+  #sprite-model-container:not(.is-character-sleeping),
+  #sprite-model-container:not(.is-character-sleeping) #sprite-model,
+  #firefly-live2d-runtime:not(.is-character-sleeping),
+  #firefly-live2d-runtime:not(.is-character-sleeping) canvas {
+    cursor: grab !important;
+  }
+
+  #spine-model-container.is-character-dragging,
+  #spine-model-container.is-character-dragging canvas,
+  #sprite-model-container.is-character-dragging,
+  #sprite-model-container.is-character-dragging #sprite-model,
+  #firefly-live2d-runtime.is-character-dragging,
+  #firefly-live2d-runtime.is-character-dragging canvas,
+  html.is-character-dragging,
+  html.is-character-dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
+  }
+
   #sprite-model:active {
     cursor: grabbing;
   }
@@ -1490,8 +1698,8 @@ import { url } from "@/utils/url-utils";
   }
 
   @keyframes character-sprite-react {
-    from { background-position: 0 37.5%; }
-    to { background-position: 42.857143% 37.5%; }
+    from { background-position: 0 var(--sprite-reaction-row, 37.5%); }
+    to { background-position: 42.857143% var(--sprite-reaction-row, 37.5%); }
   }
 
   html.character-model-library-open,
@@ -1550,7 +1758,8 @@ import { url } from "@/utils/url-utils";
 
     #sprite-model,
     #spine-player-container,
-    #firefly-live2d-runtime canvas,
-    .character-model-wake-tab span { animation: none; }
+    #firefly-live2d-runtime canvas {
+      animation: none;
+    }
   }
 </style>

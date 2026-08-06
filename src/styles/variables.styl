@@ -1,12 +1,23 @@
 /* ===== 基础变量定义 ===== */
 :root
   --radius-large: 1rem
+  --radius-medium: 0.5rem
+  --radius-small: 0.25rem
+  --radius-full: 9999px
+  --space-1: 0.25rem
+  --space-2: 0.5rem
+  --space-3: 0.75rem
+  --space-4: 1rem
+  --space-5: 1.25rem
+  --space-6: 1.5rem
+  --space-8: 2rem
+  --control-size: 2.75rem
   --content-delay: 150ms
 
 /* ===== 主题相关变量 ===== */
 :root
   --primary: oklch(0.70 0.14 var(--hue))
-  --page-bg: oklch(0.95 0.01 var(--hue))
+  --page-bg: #fafafa
   --card-bg: white
   --card-bg-transparent: unquote("rgb(255 255 255 / var(--card-transparent-opacity, 0.6))")
   
@@ -68,6 +79,35 @@
   --admonitions-color-important: oklch(0.7 0.14 310)
   --admonitions-color-warning: oklch(0.7 0.14 60)
   --admonitions-color-caution: oklch(0.6 0.2 25)
+
+  /* 聊天式留言板 */
+  --guestbook-panel: var(--card-bg-transparent)
+  --guestbook-surface: var(--card-bg-transparent)
+  --guestbook-editor-bg: var(--card-bg)
+  --guestbook-editor-text: var(--deep-text)
+  --guestbook-editor-muted: var(--content-meta)
+  --guestbook-editor-line: var(--line-divider)
+  --guestbook-editor-hover: var(--btn-regular-bg-hover)
+  --guestbook-focus: var(--primary)
+  --guestbook-send-bg: var(--primary)
+  --guestbook-send-text: white
+  --guestbook-link: var(--primary)
+  --guestbook-overlay: rgb(0 0 0 / 0.5)
+  --guestbook-bubble: var(--primary)
+  --guestbook-bubble-text: white
+  --guestbook-admin-bubble: var(--card-bg)
+  --guestbook-admin-text: var(--deep-text)
+  --guestbook-muted: var(--content-meta)
+  --guestbook-line: var(--line-divider)
+  --guestbook-danger: var(--admonitions-color-caution)
+  --guestbook-success: var(--admonitions-color-tip)
+  --guestbook-avatar-size: 2.625rem
+  --guestbook-chat-height: min(74vh, 47.5rem)
+  --guestbook-chat-min-height: 37.5rem
+  --guestbook-chat-max-width: 90rem
+  --guestbook-sidebar-width: 18rem
+  --guestbook-viewport-offset: 5.5rem
+  --guestbook-mobile-dock-clearance: 6.25rem
   
   /* TOC相关变量 */
   --toc-badge-bg: oklch(0.9 0.045 var(--hue))
@@ -91,24 +131,25 @@
 :root.dark
   --primary: oklch(0.75 0.14 var(--hue))
   --page-bg: oklch(0.16 0.014 var(--hue))
-  --card-bg: oklch(0.23 0.015 var(--hue))
-  --card-bg-transparent: unquote("rgb(23 23 23 / var(--card-transparent-opacity, 0.6))")
+  --card-bg: #000
+  --card-bg-transparent: unquote("rgb(0 0 0 / var(--card-transparent-opacity, 0.72))")
   
-  --btn-content: oklch(0.75 0.1 var(--hue))
-  --btn-regular-bg: oklch(0.33 0.035 var(--hue))
-  --btn-regular-bg-hover: oklch(0.38 0.04 var(--hue))
-  --btn-regular-bg-active: oklch(0.43 0.045 var(--hue))
+  --btn-content: #fff
+  --btn-regular-bg: #000
+  --btn-regular-bg-hover: #1a1a1a
+  --btn-regular-bg-active: #2a2a2a
   
-  --btn-plain-bg-hover: oklch(0.30 0.035 var(--hue))
-  --btn-plain-bg-active: oklch(0.27 0.025 var(--hue))
+  --btn-plain-bg-hover: #151515
+  --btn-plain-bg-active: #222
   
-  --btn-card-bg-hover: oklch(0.3 0.03 var(--hue))
-  --btn-card-bg-active: oklch(0.35 0.035 var(--hue))
+  --btn-card-bg-hover: #151515
+  --btn-card-bg-active: #262626
   
   --line-divider: rgba(255, 255, 255, 0.08)
   --line-color: rgba(255, 255, 255, 0.1)
   --meta-divider: rgba(255, 255, 255, 0.2)
-  --content-meta: rgba(255, 255, 255, 0.6)
+  --content-meta: rgba(255, 255, 255, 0.72)
+  --deep-text: #fff
   
   --muted: oklch(0.25 0.015 var(--hue))
   --selection-bg: oklch(0.40 0.08 var(--hue))
@@ -121,7 +162,7 @@
   --link-hover: oklch(0.40 0.08 var(--hue))
   --link-active: oklch(0.35 0.07 var(--hue))
   
-  --float-panel-bg: oklch(0.19 0.015 var(--hue))
+  --float-panel-bg: #000
   
   --scrollbar-bg: var(--scrollbar-bg-dark)
   --scrollbar-bg-hover: var(--scrollbar-bg-hover-dark)
@@ -135,6 +176,21 @@
   --admonitions-color-important: oklch(0.75 0.14 310)
   --admonitions-color-warning: oklch(0.75 0.14 60)
   --admonitions-color-caution: oklch(0.65 0.2 25)
+
+  --guestbook-panel: var(--card-bg-transparent)
+  --guestbook-surface: var(--card-bg-transparent)
+  --guestbook-editor-bg: var(--card-bg)
+  --guestbook-editor-text: var(--deep-text)
+  --guestbook-editor-muted: var(--content-meta)
+  --guestbook-editor-line: var(--line-divider)
+  --guestbook-editor-hover: var(--btn-regular-bg-hover)
+  --guestbook-focus: var(--primary)
+  --guestbook-send-bg: #000
+  --guestbook-send-text: #fff
+  --guestbook-bubble: #000
+  --guestbook-bubble-text: #fff
+  --guestbook-admin-bubble: #000
+  --guestbook-admin-text: #fff
   
   /* TOC相关变量 - 暗色主题 */
   --toc-badge-bg: var(--btn-regular-bg)

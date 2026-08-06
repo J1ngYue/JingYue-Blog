@@ -2,6 +2,10 @@
 import QRCode from "qrcode";
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
+import {
+	getSiteAvatar,
+	SITE_AVATAR_CHANGE_EVENT,
+} from "@/utils/site-avatar";
 import I18nKey from "../../i18n/i18nKey";
 import { i18n } from "../../i18n/translation";
 
@@ -18,6 +22,8 @@ let showModal = false;
 let posterImage: string | null = null;
 let generating = false;
 let themeColor = "#558e88"; // Default blue
+let runtimeAvatar: string | null = avatar;
+let runtimeAvatarObjectUrl = "";
 
 onMount(() => {
 	// Get theme color from CSS variable
@@ -31,6 +37,28 @@ onMount(() => {
 	if (computedColor) {
 		themeColor = computedColor;
 	}
+
+	const syncAvatar = async () => {
+		try {
+			const record = await getSiteAvatar();
+			if (runtimeAvatarObjectUrl) URL.revokeObjectURL(runtimeAvatarObjectUrl);
+			runtimeAvatarObjectUrl = record
+				? URL.createObjectURL(record.blob)
+				: "";
+			runtimeAvatar = runtimeAvatarObjectUrl || avatar;
+			posterImage = null;
+		} catch {
+			runtimeAvatar = avatar;
+		}
+	};
+	const handleAvatarChange = () => void syncAvatar();
+	window.addEventListener(SITE_AVATAR_CHANGE_EVENT, handleAvatarChange);
+	void syncAvatar();
+
+	return () => {
+		window.removeEventListener(SITE_AVATAR_CHANGE_EVENT, handleAvatarChange);
+		if (runtimeAvatarObjectUrl) URL.revokeObjectURL(runtimeAvatarObjectUrl);
+	};
 });
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
@@ -121,7 +149,7 @@ async function generatePoster() {
 		const [qrImg, coverImg, avatarImg] = await Promise.all([
 			loadImage(qrCodeUrl),
 			coverImage ? loadImage(coverImage) : Promise.resolve(null),
-			avatar ? loadImage(avatar) : Promise.resolve(null),
+			runtimeAvatar ? loadImage(runtimeAvatar) : Promise.resolve(null),
 		]);
 
 		// 2. Setup Canvas for measuring
@@ -385,7 +413,8 @@ async function generatePoster() {
 			ctx.stroke();
 		}
 
-		const authorTextX = padding + (avatar ? 64 * scale + 16 * scale : 0);
+		const authorTextX =
+			padding + (runtimeAvatar ? 64 * scale + 16 * scale : 0);
 		const textCenterY = footerY + 32 * scale;
 
 		ctx.fillStyle = "#9ca3af";

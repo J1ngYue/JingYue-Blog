@@ -1,18 +1,14 @@
 ---
-import { Picture } from "astro:assets";
-import * as path from "node:path";
-import type { ImageMetadata } from "astro";
 import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import DisplaySettings from "@/components/controls/DisplaySettingsIntegrated.svelte";
-import LightDarkSwitch from "@/components/controls/LightDarkSwitch.svelte";
 import Search from "@/components/controls/Search.svelte";
-import MusicPlayer from "@/components/features/MusicPlayer.astro";
+import CompactMusicPlayer from "@/components/features/CompactMusicPlayer.svelte";
+import ImmersiveMusicPlayer from "@/components/features/ImmersiveMusicPlayer.svelte";
 import { backgroundWallpaper, navBarConfig, siteConfig } from "@/config";
 import { musicPlayerConfig } from "@/config/musicConfig";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import { profileConfig } from "@/config/profileConfig";
 import type { NavBarLink } from "@/types/config";
-import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
 import { isHomePage } from "@/utils/layout-utils";
 import { url } from "@/utils/url-utils";
 import DropdownMenu from "./DropdownMenu.astro";
@@ -48,13 +44,8 @@ const isNavbarMenuCentered = navbarMenuAlign === "center";
 
 // 检查是否为首页
 const isHomePageCheck = isHomePage(Astro.url.pathname);
-
-// 检查是否有任何显示设置可用
-const showThemeColor = !siteConfig.themeColor.fixed;
-const isWallpaperSwitchable = backgroundWallpaper.switchable ?? true;
-const allowLayoutSwitch = siteConfig.postListLayout.allowSwitch;
-const hasDisplaySettings =
-	showThemeColor || isWallpaperSwitchable || allowLayoutSwitch;
+const navbarSurfaceStyle =
+	"background:transparent !important;background-image:none !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;filter:none !important;outline:0 !important;";
 
 // 根据 siteConfig.pages 过滤导航栏链接
 const pages = siteConfig.pages;
@@ -80,106 +71,238 @@ let links: NavBarLink[] = navBarConfig.links
 	.map(filterLinks)
 	.filter((link): link is NavBarLink => link !== null);
 
-// 处理导航栏 Logo 图片
-const logoValue = siteConfig.navbar.logo?.value || "";
-const isLocalSrcLogo =
-	siteConfig.navbar.logo?.type === "image" &&
-	logoValue &&
-	!logoValue.startsWith("/") &&
-	!logoValue.startsWith("http");
-let logoImg: ImageMetadata | null = null;
+const normalizeNavPath = (pathname: string) =>
+	pathname.replace(/\/+$/, "") || "/";
+const currentNavPath = normalizeNavPath(Astro.url.pathname);
+const matchesNavPath = (pathname: string) => {
+	const targetPath = normalizeNavPath(pathname);
+	return targetPath === "/"
+		? currentNavPath === "/"
+		: currentNavPath === targetPath ||
+				currentNavPath.startsWith(`${targetPath}/`);
+};
+const activeLinkIndex = links.findIndex(
+	(link) =>
+		!link.external &&
+		(matchesNavPath(link.url) ||
+			link.children?.some(
+				(child) => !child.external && matchesNavPath(child.url),
+			)),
+);
 
-if (isLocalSrcLogo) {
-	const files = import.meta.glob<ImageMetadata>(
-		"../../**/*.{png,jpg,jpeg,webp,avif,gif,svg}",
-		{ import: "default" },
-	);
-	const normalizedPath = path
-		.normalize(path.join("../../", logoValue))
-		.replace(/\\/g, "/");
-	const file = files[normalizedPath];
-	if (file) {
-		logoImg = await file();
-	}
-}
+const navbarProfileLinks = profileConfig.links.map((item) => ({
+	...item,
+	label: item.name.toLowerCase() === "qq" ? "QQ" : item.name,
+	href: item.url.startsWith("/") ? url(item.url) : item.url,
+	isExternal: /^https?:\/\//.test(item.url),
+}));
+
+const navbarProfileTerminalLines = ["whoami", "cat ./about.txt", "ls ./social"];
+const navbarProfileAvatarResponses = [
+	"收到你的问候啦！",
+	"今天也要闪闪发光。",
+	"谢谢你来看我呀。",
+	"愿你此刻有个好心情。",
+];
+const navbarProfileFlowerResponses = [
+	"小花轻轻摇了摇。",
+	"送你一朵今天的小花。",
+	"花花也收到你的问候啦。",
+];
+const navbarProfileAvatarParticles = [
+	{
+		x: "-2.3rem",
+		y: "-2.45rem",
+		delay: "0ms",
+		scale: "0.72",
+		rotation: "-34deg",
+	},
+	{
+		x: "-1.45rem",
+		y: "-3.15rem",
+		delay: "45ms",
+		scale: "0.56",
+		rotation: "18deg",
+	},
+	{
+		x: "-0.4rem",
+		y: "-2.85rem",
+		delay: "90ms",
+		scale: "0.82",
+		rotation: "-12deg",
+	},
+	{
+		x: "0.8rem",
+		y: "-3.2rem",
+		delay: "20ms",
+		scale: "0.62",
+		rotation: "27deg",
+	},
+	{ x: "2rem", y: "-2.5rem", delay: "75ms", scale: "0.76", rotation: "42deg" },
+	{
+		x: "2.45rem",
+		y: "-1.15rem",
+		delay: "115ms",
+		scale: "0.52",
+		rotation: "-20deg",
+	},
+	{
+		x: "-2.55rem",
+		y: "-0.95rem",
+		delay: "130ms",
+		scale: "0.58",
+		rotation: "24deg",
+	},
+];
 ---
 <div id="navbar" class="z-50" style={`--navbar-glass-blur: ${navbarBlur}px;`} data-transparent-mode={navbarTransparentMode} data-enable-blur={String(navbarEnableBlur)} data-is-home={isHomePageCheck} data-full-width={navbarWidthFull}>
     <div class:list={[
         className,
         "overflow-visible! h-18 px-4"
-    ]}>
+    ]} style={navbarSurfaceStyle}>
         <div class="mx-auto h-full w-full max-w-(--page-width) grid grid-cols-[auto_minmax(0,1fr)_auto] items-center">
-            <a href={url('/')} class="btn-plain scale-animation rounded-lg h-13 px-3 md:px-5 font-bold active:scale-95">
-                <div class:list={[
-                    "flex flex-row items-center text-md",
-                    siteConfig.navbar.followTheme ? "text-(--primary)" : "dark:text-white text-black"
-                ]} style="font-family: var(--font-navbar-title, inherit)">
-                                    {siteConfig.navbar.logo?.type === "icon" ? (
-                                        <Icon is:inline name={siteConfig.navbar.logo.value || "material-symbols:home-pin-outline"} class="text-[1.75rem] mb-1 mr-2" />
-                                    ) : siteConfig.navbar.logo?.type === "image" && logoImg ? (
-                                        <Picture
-                                            src={logoImg}
-                                            alt={siteConfig.navbar.logo.alt || siteConfig.title}
-                                            class="h-7 w-7 mb-1 mr-2 object-contain"
-                                            formats={getImageFormats()}
-                                            fallbackFormat={getFallbackFormat()}
-                                            widths={[28, 56]}
-                                            loading="eager"
-                                            fetchpriority="high"
-                                        />
-                                    ) : siteConfig.navbar.logo?.type === "image" ? (
-                                        <img src={url(siteConfig.navbar.logo.value)} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-7 w-7 mb-1 mr-2 object-contain" fetchpriority="high" />
-                                    ) : siteConfig.navbar.logo?.type === "url" ? (
-                                        <img src={siteConfig.navbar.logo.value} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-7 w-7 mb-1 mr-2 object-contain" fetchpriority="high" />
-                                    ) : (
-                                        <Icon is:inline name="material-symbols:home-pin-outline" class="text-[1.75rem] mb-1 mr-2" />
-                                    )}
-                    {navbarTitle}
-                </div>
-            </a>
-            <div class:list={[
-                "hidden lg:flex items-center space-x-1 col-start-2",
+            <div class="navbar-brand-shell">
+                <a href={url('/')} class="navbar-brand btn-plain scale-animation rounded-lg h-13 px-3 md:px-5 font-bold active:scale-95" data-navbar-brand aria-label="返回首页" aria-controls="navbar-profile-card" aria-expanded="false">
+                    <div class:list={[
+                        "navbar-brand__layer navbar-brand__default flex flex-row items-center text-md",
+                        siteConfig.navbar.followTheme ? "text-(--primary)" : "dark:text-white text-black"
+                    ]} style="font-family: var(--font-navbar-title, inherit)" data-navbar-brand-default>
+                        <ImageWrapper
+                            src={profileConfig.avatar || "assets/images/avatar.avif"}
+                            alt={`${profileConfig.name} 的头像`}
+                            class="navbar-brand__mark mr-2"
+                            loading="eager"
+                            fetchpriority="high"
+                            widths={[32, 64]}
+                            sizes="32px"
+                            fadeIn={false}
+                            siteAvatar
+                        />
+                        {navbarTitle}
+                    </div>
+                    <div class="navbar-brand__layer navbar-brand__profile" data-navbar-brand-avatar aria-hidden="true">
+                        <ImageWrapper
+                            src={profileConfig.avatar || "assets/images/avatar.avif"}
+                            alt=""
+                            class="navbar-brand__avatar"
+                            loading="eager"
+                            fetchpriority="high"
+                            widths={[40, 80]}
+                            sizes="40px"
+                            fadeIn={false}
+                            siteAvatar
+                        />
+                    </div>
+                </a>
+
+                <aside id="navbar-profile-card" class="navbar-profile-card" aria-label={`${profileConfig.name} 个人资料`} aria-hidden="true">
+                    <div class="navbar-profile-card__topbar">
+                        <span class="navbar-profile-card__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    </div>
+                    <div class="navbar-profile-card__avatar-wrap" data-navbar-profile-avatar-wrap>
+                        <ImageWrapper
+                            src={profileConfig.avatar || "assets/images/avatar.avif"}
+                            alt={`${profileConfig.name} 的头像`}
+                            class="navbar-profile-card__avatar"
+                            loading="eager"
+                            widths={[96, 192]}
+                            sizes="84px"
+                            fadeIn={false}
+                            siteAvatar
+                        />
+                        <button
+                            type="button"
+                            class="navbar-profile-card__avatar-action"
+                            data-navbar-profile-avatar-action="avatar"
+                            data-responses={JSON.stringify(navbarProfileAvatarResponses)}
+                            aria-label={`和 ${profileConfig.name} 打个招呼`}
+                            aria-describedby="navbar-profile-card-feedback"
+                            title="和头像互动"
+                        ></button>
+                        <button
+                            type="button"
+                            class="navbar-profile-card__flower"
+                            data-navbar-profile-avatar-action="flower"
+                            data-responses={JSON.stringify(navbarProfileFlowerResponses)}
+                            aria-label="和小花互动"
+                            aria-describedby="navbar-profile-card-feedback"
+                            title="和小花互动"
+                        >
+                            <Icon is:inline name="material-symbols:local-florist-rounded" />
+                        </button>
+                        <span class="navbar-profile-card__particles" aria-hidden="true">
+                            {navbarProfileAvatarParticles.map((particle) => (
+                                <i style={`--particle-x:${particle.x};--particle-y:${particle.y};--particle-delay:${particle.delay};--particle-scale:${particle.scale};--particle-rotation:${particle.rotation}`}></i>
+                            ))}
+                        </span>
+                        <span
+                            id="navbar-profile-card-feedback"
+                            class="navbar-profile-card__feedback"
+                            data-navbar-profile-feedback
+                            aria-live="polite"
+                            hidden
+                        ></span>
+                    </div>
+                    <div class="navbar-profile-card__content">
+                        <p class="navbar-profile-card__command">
+                            <span class="navbar-profile-card__prompt">profile@{profileConfig.name.toLowerCase()}:~$</span>
+                            <span
+                                class="navbar-profile-card__command-word"
+                                data-navbar-profile-terminal
+                                data-lines={JSON.stringify(navbarProfileTerminalLines)}
+                            >whoami</span>
+                            <i aria-hidden="true"></i>
+                        </p>
+                        <p class="navbar-profile-card__bio">{profileConfig.bio}</p>
+                        <nav class="navbar-profile-card__links" aria-label="个人链接">
+                            {navbarProfileLinks.map((item) => (
+                                <a
+                                    href={item.href}
+                                    target={item.isExternal ? "_blank" : undefined}
+                                    rel={item.isExternal ? "me noopener noreferrer" : "me"}
+                                >
+                                    <Icon is:inline name={item.icon} />
+                                    <span>{item.label}</span>
+                                </a>
+                            ))}
+                        </nav>
+                    </div>
+                </aside>
+            </div>
+			<div class:list={[
+				"navbar-main-menu hidden lg:flex items-center col-start-2",
                 isNavbarMenuCentered
                     ? "justify-center"
                     : "justify-start pl-2"
             ]}>
-                {links.map((l) => {
-                    return <DropdownMenu link={l} />;
+                <span
+                    class="navbar-hover-indicator"
+                    data-navbar-hover-indicator
+                    aria-hidden="true"
+                ></span>
+                {links.map((l, index) => {
+                    return <DropdownMenu link={l} isActive={index === activeLinkIndex} />;
                 })}
             </div>
-            <div class="flex col-start-3 justify-self-end">
+            <div class="navbar-actions flex col-start-3 justify-self-end">
                 <!--<SearchPanel client:load>-->
                 <Search
                     client:load
                 />
-                {backgroundWallpaper.playerEnable && backgroundWallpaper.mode !== "none" && (
-                    <button
-                        aria-label={i18n(I18nKey.videoPlay)}
-                        class="btn-plain scale-animation rounded-lg h-9 w-9 md:h-11 md:w-11 active:scale-90"
-                        id="bg-player-toggle"
-                        data-i18n-play={i18n(I18nKey.videoPlay)}
-                        data-i18n-pause={i18n(I18nKey.videoPause)}
-                    >
-                        <span class="bg-player-icon-play"><Icon is:inline name="material-symbols:play-arrow-rounded" class="text-[1.5rem]" /></span>
-                        <span class="bg-player-icon-pause hidden"><Icon is:inline name="material-symbols:pause-rounded" class="text-[1.5rem]" /></span>
-                    </button>
-                )}
-                {hasDisplaySettings && (
-                        <button aria-label="显示设置" class="btn-plain scale-animation rounded-lg h-9 w-9 md:h-11 md:w-11 active:scale-90" id="display-settings-switch">
-                            <Icon is:inline name="material-symbols:palette-outline" class="text-[1.25rem]"></Icon>
-                        </button>
-                )}
-                {/* @ts-ignore */}
-                <LightDarkSwitch client:load></LightDarkSwitch>
                 <button aria-label="导航菜单" name="导航菜单" class="btn-plain scale-animation rounded-lg w-9 h-9 md:w-11 md:h-11 active:scale-90 lg:hidden!" id="nav-menu-switch">
                     <Icon is:inline name="material-symbols:menu-rounded" class="text-[1.25rem]"></Icon>
                 </button>
             </div>
         </div>
         {musicPlayerConfig.showInNavbar && (
-            <div id="music-nav-panel" class="float-panel float-panel-closed absolute transition-all right-16 p-2 pt-4.5 w-80 z-50">
-                <MusicPlayer />
-            </div>
+            <>
+                <div id="music-mini-panel" class="music-mini-panel music-mini-panel-closed" aria-hidden="true" inert>
+                    <CompactMusicPlayer client:only="svelte" />
+                </div>
+                <div id="music-nav-panel" data-music-immersive="true" class="float-panel float-panel-closed absolute transition-all right-16 p-2 pt-4.5 w-80 z-50" aria-hidden="true" inert>
+                    <ImmersiveMusicPlayer client:only="svelte" />
+                </div>
+            </>
         )}
         <NavMenuPanel links={links}></NavMenuPanel>
         <DisplaySettings client:load></DisplaySettings>
@@ -187,6 +310,422 @@ if (isLocalSrcLogo) {
 </div>
 
 <script>
+type NavbarProfileWindow = Window & {
+	__fireflyNavbarProfileCardCleanup?: () => void;
+	__fireflyNavbarProfileInitBound?: boolean;
+	__fireflyNavbarProfileInitFrame?: number;
+};
+
+type NavbarHoverWindow = Window & {
+    __fireflyNavbarHoverCleanup?: () => void;
+    __fireflyNavbarHoverInitFrame?: number;
+    __fireflyNavbarHoverLifecycleBound?: boolean;
+};
+
+function initNavbarHoverIndicator() {
+    const hoverWindow = window as NavbarHoverWindow;
+    hoverWindow.__fireflyNavbarHoverCleanup?.();
+
+    const menu = document.querySelector<HTMLElement>("#navbar .navbar-main-menu");
+    const indicator = menu?.querySelector<HTMLElement>("[data-navbar-hover-indicator]");
+    const items = Array.from(
+        menu?.querySelectorAll<HTMLElement>(":scope > .dropdown-container") || [],
+    );
+    if (!menu || !indicator || items.length === 0) return;
+
+    const controller = new AbortController();
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let pointerItem: HTMLElement | null = null;
+    let focusItem: HTMLElement | null = null;
+    let measureFrame = 0;
+    let focusFrame = 0;
+    let transitionFrame = 0;
+
+    const activeItem = () =>
+        items.find(
+            (item) =>
+                item.classList.contains("is-active") ||
+                Boolean(
+                    item.querySelector(
+                        ':scope > .navbar-menu-item[aria-current="page"]',
+                    ),
+                ),
+        ) || null;
+
+    const currentItem = () => focusItem || pointerItem || activeItem();
+
+    const moveIndicator = (item: HTMLElement | null, instant = false) => {
+        if (measureFrame) window.cancelAnimationFrame(measureFrame);
+        measureFrame = window.requestAnimationFrame(() => {
+            measureFrame = 0;
+            if (!item?.isConnected) {
+                indicator.removeAttribute("data-visible");
+                return;
+            }
+
+            const itemRect = item.getBoundingClientRect();
+            const menuRect = menu.getBoundingClientRect();
+            if (itemRect.width <= 0 || itemRect.height <= 0 || menuRect.width <= 0) {
+                indicator.removeAttribute("data-visible");
+                return;
+            }
+
+            const shouldSkipMotion = instant || reducedMotion.matches;
+            indicator.toggleAttribute("data-instant", shouldSkipMotion);
+            indicator.style.width = `${itemRect.width}px`;
+            indicator.style.height = `${itemRect.height}px`;
+            indicator.style.transform = `translate3d(${itemRect.left - menuRect.left}px, ${itemRect.top - menuRect.top}px, 0)`;
+            indicator.setAttribute("data-visible", "true");
+
+            if (shouldSkipMotion) {
+                if (transitionFrame) window.cancelAnimationFrame(transitionFrame);
+                transitionFrame = window.requestAnimationFrame(() => {
+                    transitionFrame = 0;
+                    indicator.removeAttribute("data-instant");
+                });
+            }
+        });
+    };
+
+    const syncIndicator = (instant = false) => {
+        if (pointerItem && !pointerItem.isConnected) pointerItem = null;
+        if (focusItem && !focusItem.isConnected) focusItem = null;
+        moveIndicator(currentItem(), instant);
+    };
+
+    items.forEach((item) => {
+        item.addEventListener(
+            "pointerenter",
+            () => {
+                pointerItem = item;
+                moveIndicator(item);
+            },
+            { signal: controller.signal },
+        );
+    });
+
+    menu.addEventListener(
+        "pointerleave",
+        () => {
+            pointerItem = null;
+            moveIndicator(currentItem());
+        },
+        { signal: controller.signal },
+    );
+    menu.addEventListener(
+        "focusin",
+        (event) => {
+            const target = event.target;
+            focusItem =
+                target instanceof Element
+                    ? target.closest<HTMLElement>(".dropdown-container")
+                    : null;
+            moveIndicator(currentItem());
+        },
+        { signal: controller.signal },
+    );
+    menu.addEventListener(
+        "focusout",
+        () => {
+            if (focusFrame) window.cancelAnimationFrame(focusFrame);
+            focusFrame = window.requestAnimationFrame(() => {
+                focusFrame = 0;
+                if (menu.contains(document.activeElement)) return;
+                focusItem = null;
+                moveIndicator(currentItem());
+            });
+        },
+        { signal: controller.signal },
+    );
+    reducedMotion.addEventListener(
+        "change",
+        () => syncIndicator(true),
+        { signal: controller.signal },
+    );
+
+    const activeObserver = new MutationObserver(() => {
+        if (!pointerItem && !focusItem) syncIndicator();
+    });
+    activeObserver.observe(menu, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: ["class", "aria-current"],
+    });
+
+    const resizeObserver = new ResizeObserver(() => syncIndicator(true));
+    resizeObserver.observe(menu);
+    items.forEach((item) => resizeObserver.observe(item));
+
+    void document.fonts?.ready.then(() => {
+        if (!controller.signal.aborted) syncIndicator(true);
+    });
+    syncIndicator(true);
+
+    hoverWindow.__fireflyNavbarHoverCleanup = () => {
+        controller.abort();
+        activeObserver.disconnect();
+        resizeObserver.disconnect();
+        if (measureFrame) window.cancelAnimationFrame(measureFrame);
+        if (focusFrame) window.cancelAnimationFrame(focusFrame);
+        if (transitionFrame) window.cancelAnimationFrame(transitionFrame);
+    };
+}
+
+function queueNavbarHoverIndicatorInit() {
+    const hoverWindow = window as NavbarHoverWindow;
+    if (hoverWindow.__fireflyNavbarHoverInitFrame) {
+        window.cancelAnimationFrame(hoverWindow.__fireflyNavbarHoverInitFrame);
+    }
+    hoverWindow.__fireflyNavbarHoverInitFrame = window.requestAnimationFrame(() => {
+        hoverWindow.__fireflyNavbarHoverInitFrame = 0;
+        initNavbarHoverIndicator();
+    });
+}
+
+const navbarHoverWindow = window as NavbarHoverWindow;
+if (!navbarHoverWindow.__fireflyNavbarHoverLifecycleBound) {
+    navbarHoverWindow.__fireflyNavbarHoverLifecycleBound = true;
+    document.addEventListener("astro:page-load", queueNavbarHoverIndicatorInit);
+    document.addEventListener("swup:contentReplaced", queueNavbarHoverIndicatorInit);
+    document.addEventListener("swup:content:replaced", queueNavbarHoverIndicatorInit);
+    window.addEventListener("popstate", queueNavbarHoverIndicatorInit);
+}
+queueNavbarHoverIndicatorInit();
+
+function initNavbarProfileCard() {
+    const profileWindow = window as NavbarProfileWindow;
+    profileWindow.__fireflyNavbarProfileCardCleanup?.();
+
+    const navbar = document.getElementById("navbar");
+    const shell = navbar?.querySelector<HTMLElement>(".navbar-brand-shell");
+    const brand = shell?.querySelector<HTMLAnchorElement>("[data-navbar-brand]");
+    const card = shell?.querySelector<HTMLElement>(".navbar-profile-card");
+    const terminal = shell?.querySelector<HTMLElement>("[data-navbar-profile-terminal]");
+    const avatarWrap = shell?.querySelector<HTMLElement>("[data-navbar-profile-avatar-wrap]");
+    const feedback = shell?.querySelector<HTMLElement>("[data-navbar-profile-feedback]");
+    const actions = Array.from(
+        shell?.querySelectorAll<HTMLButtonElement>("[data-navbar-profile-avatar-action]") || [],
+    );
+    if (!navbar || !shell || !brand || !card || !terminal || !avatarWrap || !feedback) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const terminalLines = JSON.parse(terminal.dataset.lines || "[]") as string[];
+    let terminalTimer = 0;
+    let reactionTimer = 0;
+    let feedbackTimer = 0;
+    let focusSyncTimer = 0;
+    let terminalRunning = false;
+    let avatarResponseIndex = 0;
+    let flowerResponseIndex = 0;
+
+    const cardIsOpen = () =>
+        navbar.dataset.homeBrand === "avatar" &&
+        shell.dataset.profileDismissed !== "true" &&
+        (shell.dataset.profileOpen === "true" ||
+            shell.matches(":hover") ||
+            shell.contains(document.activeElement));
+
+    const syncProfileAccessibility = () => {
+        const isOpen = cardIsOpen();
+        brand.setAttribute("aria-expanded", String(isOpen));
+        card.setAttribute("aria-hidden", String(!isOpen));
+    };
+
+    const stopTerminal = () => {
+        terminalRunning = false;
+        if (terminalTimer) window.clearTimeout(terminalTimer);
+        terminalTimer = 0;
+        terminal.textContent = terminalLines[0] || "";
+    };
+
+    const startTerminal = () => {
+        if (terminalRunning || terminalLines.length === 0 || !cardIsOpen()) return;
+        terminalRunning = true;
+        if (terminalTimer) window.clearTimeout(terminalTimer);
+        if (reducedMotion.matches) {
+            terminal.textContent = terminalLines[0];
+            return;
+        }
+
+        let lineIndex = 0;
+        let characterIndex = 0;
+        let deleting = false;
+        const type = () => {
+            if (!terminalRunning || !cardIsOpen()) {
+                stopTerminal();
+                return;
+            }
+
+            const line = terminalLines[lineIndex];
+            characterIndex += deleting ? -1 : 1;
+            terminal.textContent = line.slice(0, characterIndex);
+            let delay = deleting ? 38 : 82;
+
+            if (!deleting && characterIndex >= line.length) {
+                deleting = true;
+                delay = 1500;
+            } else if (deleting && characterIndex <= 0) {
+                deleting = false;
+                lineIndex = (lineIndex + 1) % terminalLines.length;
+                delay = 320;
+            }
+
+            terminalTimer = window.setTimeout(type, delay);
+        };
+
+        terminal.textContent = "";
+        terminalTimer = window.setTimeout(type, 520);
+    };
+
+    const syncTerminal = () => {
+        if (cardIsOpen()) startTerminal();
+        else stopTerminal();
+        syncProfileAccessibility();
+    };
+
+    const handlePointerEnter = () => {
+        if (shell.dataset.profileDismissed === "true") return;
+        startTerminal();
+        syncProfileAccessibility();
+    };
+    const handlePointerLeave = () => {
+        delete shell.dataset.profileDismissed;
+        syncTerminal();
+    };
+    const handleFocusIn = () => {
+        startTerminal();
+        syncProfileAccessibility();
+    };
+    const handleFocusOut = () => {
+        if (focusSyncTimer) window.clearTimeout(focusSyncTimer);
+        focusSyncTimer = window.setTimeout(() => {
+            if (!shell.contains(document.activeElement)) {
+                delete shell.dataset.profileOpen;
+                if (!shell.matches(":hover")) delete shell.dataset.profileDismissed;
+            }
+            syncTerminal();
+        }, 0);
+    };
+
+    const closeProfileCard = (keepDismissed = false) => {
+        delete shell.dataset.profileOpen;
+        if (keepDismissed) shell.dataset.profileDismissed = "true";
+        else delete shell.dataset.profileDismissed;
+        syncTerminal();
+    };
+
+    const handleBrandClick = (event: MouseEvent) => {
+        const target = event.target;
+        if (!(target instanceof Element) || target.closest("[data-navbar-brand]") !== brand) return;
+        if (navbar.dataset.homeBrand !== "avatar") return;
+        event.preventDefault();
+
+        if (shell.dataset.profileOpen === "true") {
+            closeProfileCard(true);
+            brand.blur();
+            return;
+        }
+
+        shell.dataset.profileOpen = "true";
+        delete shell.dataset.profileDismissed;
+        syncTerminal();
+    };
+
+    const handleDocumentPointerDown = (event: PointerEvent) => {
+        if (!shell.contains(event.target as Node)) closeProfileCard();
+    };
+
+    const handleDocumentKeydown = (event: KeyboardEvent) => {
+        if (event.key !== "Escape" || !cardIsOpen()) return;
+        closeProfileCard(true);
+        brand.focus();
+    };
+
+    const showAvatarReaction = (event: Event) => {
+        const action = event.currentTarget as HTMLButtonElement;
+        const reaction = action.dataset.navbarProfileAvatarAction || "avatar";
+        const responses = JSON.parse(action.dataset.responses || "[]") as string[];
+        if (responses.length === 0) return;
+
+        if (reactionTimer) window.clearTimeout(reactionTimer);
+        if (feedbackTimer) window.clearTimeout(feedbackTimer);
+        avatarWrap.classList.remove("is-reacting");
+        feedback.classList.remove("is-visible");
+        void avatarWrap.offsetWidth;
+
+        const responseIndex = reaction === "flower" ? flowerResponseIndex : avatarResponseIndex;
+        feedback.textContent = responses[responseIndex % responses.length];
+        if (reaction === "flower") flowerResponseIndex += 1;
+        else avatarResponseIndex += 1;
+
+        avatarWrap.dataset.reaction = reaction;
+        feedback.hidden = false;
+        avatarWrap.classList.add("is-reacting");
+        feedback.classList.add("is-visible");
+
+        reactionTimer = window.setTimeout(() => {
+            reactionTimer = 0;
+            avatarWrap.classList.remove("is-reacting");
+            delete avatarWrap.dataset.reaction;
+        }, 900);
+        feedbackTimer = window.setTimeout(() => {
+            feedbackTimer = 0;
+            feedback.classList.remove("is-visible");
+            feedback.hidden = true;
+        }, 1900);
+    };
+
+    shell.addEventListener("pointerenter", handlePointerEnter);
+    shell.addEventListener("pointerleave", handlePointerLeave);
+    shell.addEventListener("focusin", handleFocusIn);
+    shell.addEventListener("focusout", handleFocusOut);
+    document.addEventListener("click", handleBrandClick, true);
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    document.addEventListener("keydown", handleDocumentKeydown);
+    actions.forEach((action) => action.addEventListener("click", showAvatarReaction));
+
+    const brandObserver = new MutationObserver(syncTerminal);
+    brandObserver.observe(navbar, { attributes: true, attributeFilter: ["data-home-brand"] });
+
+    profileWindow.__fireflyNavbarProfileCardCleanup = () => {
+        stopTerminal();
+        if (reactionTimer) window.clearTimeout(reactionTimer);
+        if (feedbackTimer) window.clearTimeout(feedbackTimer);
+        if (focusSyncTimer) window.clearTimeout(focusSyncTimer);
+        shell.removeEventListener("pointerenter", handlePointerEnter);
+        shell.removeEventListener("pointerleave", handlePointerLeave);
+        shell.removeEventListener("focusin", handleFocusIn);
+        shell.removeEventListener("focusout", handleFocusOut);
+        document.removeEventListener("click", handleBrandClick, true);
+        document.removeEventListener("pointerdown", handleDocumentPointerDown);
+        document.removeEventListener("keydown", handleDocumentKeydown);
+        actions.forEach((action) => action.removeEventListener("click", showAvatarReaction));
+        brandObserver.disconnect();
+    };
+
+    syncProfileAccessibility();
+}
+
+function queueNavbarProfileCardInit() {
+	const profileWindow = window as NavbarProfileWindow;
+	if (profileWindow.__fireflyNavbarProfileInitFrame) {
+		window.cancelAnimationFrame(profileWindow.__fireflyNavbarProfileInitFrame);
+	}
+	profileWindow.__fireflyNavbarProfileInitFrame = window.requestAnimationFrame(() => {
+		profileWindow.__fireflyNavbarProfileInitFrame = 0;
+		initNavbarProfileCard();
+	});
+}
+
+const navbarProfileWindow = window as NavbarProfileWindow;
+if (!navbarProfileWindow.__fireflyNavbarProfileInitBound) {
+	navbarProfileWindow.__fireflyNavbarProfileInitBound = true;
+	document.addEventListener("astro:page-load", queueNavbarProfileCardInit);
+	document.addEventListener("swup:contentReplaced", queueNavbarProfileCardInit);
+	document.addEventListener("swup:content:replaced", queueNavbarProfileCardInit);
+}
+queueNavbarProfileCardInit();
+
 function loadButtonScript() {
     let settingBtn = document.getElementById("display-settings-switch");
     if (settingBtn) {
@@ -226,6 +765,7 @@ function loadButtonScript() {
             var label = playing ? i18nPause : i18nPlay;
             bgPlayerBtn!.setAttribute("title", label);
             bgPlayerBtn!.setAttribute("aria-label", label);
+			bgPlayerBtn!.setAttribute("data-tooltip", label);
         }
         window.addEventListener("bg-player-state-change", function (e) {
             var ce = e as CustomEvent;
@@ -340,6 +880,62 @@ if (document.readyState === 'loading') {
 } else {
     initSemifullScrollDetection();
 }
+</script>
+
+<script is:inline>
+	(() => {
+		const state = window;
+		const cleanupKey = "__fireflyNavbarProfileInlineCleanup";
+		const lifecycleKey = "__fireflyNavbarProfileInlineLifecycleBound";
+
+		const syncAccessibility = (brand, card, open) => {
+			brand.setAttribute("aria-expanded", String(open));
+			card.setAttribute("aria-hidden", String(!open));
+		};
+
+		const bind = () => {
+			state[cleanupKey]?.();
+
+			const navbar = document.getElementById("navbar");
+			const shell = navbar?.querySelector(".navbar-brand-shell");
+			const brand = shell?.querySelector("[data-navbar-brand]");
+			const card = shell?.querySelector(".navbar-profile-card");
+			if (!(navbar && shell && brand && card)) return;
+
+			const handleClick = (event) => {
+				if (event.defaultPrevented) return;
+				if (navbar.dataset.homeBrand !== "avatar") return;
+				event.preventDefault();
+				if (shell.dataset.profileOpen === "true") {
+					delete shell.dataset.profileOpen;
+					shell.dataset.profileDismissed = "true";
+					brand.blur();
+					syncAccessibility(brand, card, false);
+					return;
+				}
+
+				shell.dataset.profileOpen = "true";
+				delete shell.dataset.profileDismissed;
+				syncAccessibility(brand, card, true);
+			};
+
+			brand.addEventListener("click", handleClick);
+			syncAccessibility(
+				brand,
+				card,
+				shell.dataset.profileOpen === "true" && navbar.dataset.homeBrand === "avatar",
+			);
+			state[cleanupKey] = () => brand.removeEventListener("click", handleClick);
+		};
+
+		if (!state[lifecycleKey]) {
+			state[lifecycleKey] = true;
+			document.addEventListener("astro:page-load", bind);
+			document.addEventListener("swup:contentReplaced", bind);
+			document.addEventListener("swup:content:replaced", bind);
+		}
+		bind();
+	})();
 </script>
 
 {

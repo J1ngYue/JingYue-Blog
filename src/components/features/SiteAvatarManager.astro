@@ -1,0 +1,152 @@
+<script>
+	import {
+		getSiteAvatar,
+		SITE_AVATAR_CHANGE_EVENT,
+	} from "@/utils/site-avatar";
+
+	interface StoredAttribute {
+		present: boolean;
+		value: string;
+	}
+
+	interface AvatarManagerWindow extends Window {
+		__fireflySiteAvatarCleanup?: () => void;
+	}
+
+	const managerWindow = window as AvatarManagerWindow;
+	managerWindow.__fireflySiteAvatarCleanup?.();
+
+	const originalAttributes = new WeakMap<Element, Map<string, StoredAttribute>>();
+	let activeObjectUrl = "";
+	let refreshToken = 0;
+	let avatarObserver: MutationObserver | null = null;
+
+	function rememberAttribute(element: Element, name: string) {
+		let attributes = originalAttributes.get(element);
+		if (!attributes) {
+			attributes = new Map();
+			originalAttributes.set(element, attributes);
+		}
+		if (attributes.has(name)) return;
+		attributes.set(name, {
+			present: element.hasAttribute(name),
+			value: element.getAttribute(name) ?? "",
+		});
+	}
+
+	function setAvatarAttribute(element: Element, name: string, value: string) {
+		rememberAttribute(element, name);
+		element.setAttribute(name, value);
+	}
+
+	function removeAvatarAttribute(element: Element, name: string) {
+		rememberAttribute(element, name);
+		element.removeAttribute(name);
+	}
+
+	function restoreAttribute(element: Element, name: string) {
+		const stored = originalAttributes.get(element)?.get(name);
+		if (!stored) return;
+		if (stored.present) element.setAttribute(name, stored.value);
+		else element.removeAttribute(name);
+	}
+
+	function getAvatarRoots(scope: ParentNode = document) {
+		return Array.from(
+			scope.querySelectorAll<HTMLElement>("[data-site-avatar]"),
+		);
+	}
+
+	function applyAvatarUrlToRoot(root: HTMLElement, url: string) {
+		const images = root.matches("img")
+			? [root as HTMLImageElement]
+			: Array.from(root.querySelectorAll<HTMLImageElement>("img"));
+		const sources = root.matches("source")
+			? [root as HTMLSourceElement]
+			: Array.from(root.querySelectorAll<HTMLSourceElement>("source"));
+
+		for (const source of sources) {
+			setAvatarAttribute(source, "srcset", url);
+			removeAvatarAttribute(source, "type");
+			removeAvatarAttribute(source, "sizes");
+		}
+		for (const image of images) {
+			setAvatarAttribute(image, "src", url);
+			setAvatarAttribute(image, "srcset", url);
+			removeAvatarAttribute(image, "sizes");
+		}
+	}
+
+	function applyAvatarUrl(url: string, scope: ParentNode = document) {
+		for (const root of getAvatarRoots(scope)) {
+			applyAvatarUrlToRoot(root, url);
+		}
+		document.documentElement.dataset.customSiteAvatar = "true";
+	}
+
+	function restoreDefaultAvatar() {
+		for (const root of getAvatarRoots()) {
+			const elements = root.matches("img, source")
+				? [root]
+				: Array.from(root.querySelectorAll("img, source"));
+			for (const element of elements) {
+				restoreAttribute(element, "src");
+				restoreAttribute(element, "srcset");
+				restoreAttribute(element, "type");
+				restoreAttribute(element, "sizes");
+			}
+		}
+		document.documentElement.dataset.customSiteAvatar = "false";
+	}
+
+	async function refreshSiteAvatar() {
+		const token = ++refreshToken;
+		try {
+			const record = await getSiteAvatar();
+			if (token !== refreshToken) return;
+			if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+			activeObjectUrl = record ? URL.createObjectURL(record.blob) : "";
+			if (activeObjectUrl) applyAvatarUrl(activeObjectUrl);
+			else restoreDefaultAvatar();
+		} catch (error) {
+			console.error("Failed to restore the custom site avatar:", error);
+			restoreDefaultAvatar();
+		}
+	}
+
+	const handleAvatarChange = () => void refreshSiteAvatar();
+	const handlePageLoad = () => {
+		if (activeObjectUrl) applyAvatarUrl(activeObjectUrl);
+		else void refreshSiteAvatar();
+	};
+
+	avatarObserver = new MutationObserver((mutations) => {
+		if (!activeObjectUrl) return;
+		for (const mutation of mutations) {
+			for (const node of mutation.addedNodes) {
+				if (!(node instanceof HTMLElement)) continue;
+				if (node.matches("[data-site-avatar]")) {
+					applyAvatarUrlToRoot(node, activeObjectUrl);
+				}
+				applyAvatarUrl(activeObjectUrl, node);
+			}
+		}
+	});
+	avatarObserver.observe(document.body, { childList: true, subtree: true });
+
+	window.addEventListener(SITE_AVATAR_CHANGE_EVENT, handleAvatarChange);
+	document.addEventListener("astro:page-load", handlePageLoad);
+	document.addEventListener("swup:contentReplaced", handlePageLoad);
+	void refreshSiteAvatar();
+
+	managerWindow.__fireflySiteAvatarCleanup = () => {
+		window.removeEventListener(SITE_AVATAR_CHANGE_EVENT, handleAvatarChange);
+		document.removeEventListener("astro:page-load", handlePageLoad);
+		document.removeEventListener("swup:contentReplaced", handlePageLoad);
+		avatarObserver?.disconnect();
+		avatarObserver = null;
+		restoreDefaultAvatar();
+		if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+		activeObjectUrl = "";
+	};
+</script>

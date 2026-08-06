@@ -1,0 +1,163 @@
+---
+import { Icon } from "astro-icon/components";
+import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
+import { getSortedPostsList } from "@/utils/content-utils";
+
+interface Props {
+	title: string;
+	description: string;
+	icon: string;
+	updatedAt?: string;
+}
+
+const { title, description, icon, updatedAt } = Astro.props;
+const posts = await getSortedPostsList();
+---
+
+<div class="record-replica-page onload-animation">
+	<ArchiveReplicaSidebar side="left" posts={posts} />
+
+	<article class="record-page" aria-labelledby="record-page-title">
+		<header class="record-page__header">
+			<div class="record-page__title-row">
+				<Icon is:inline name={icon} aria-hidden="true" />
+				<h1 id="record-page-title">{title}</h1>
+			</div>
+			<p class="record-page__description">{description}</p>
+			{updatedAt && (
+				<p class="record-page__updated">
+					<span>上次更新</span>
+					<time datetime={updatedAt}>{updatedAt}</time>
+				</p>
+			)}
+		</header>
+
+		<div class="record-page__body">
+			<slot />
+		</div>
+	</article>
+
+	<ArchiveReplicaSidebar side="right" posts={posts} />
+</div>
+
+<style>
+	.record-replica-page {
+		--record-ink: #111;
+		--record-muted: #777;
+		display: grid;
+		grid-template-columns: 17.5rem minmax(0, 61rem) 17.5rem;
+		gap: 1rem;
+		width: min(98rem, calc(100vw - 2rem));
+		min-width: 0;
+		margin-left: 50%;
+		color: var(--record-ink);
+		transform: translateX(-50%);
+	}
+
+	:global(html.dark) .record-replica-page {
+		--record-ink: rgb(255 255 255 / 92%);
+		--record-muted: rgb(255 255 255 / 58%);
+	}
+
+	:global(html.dark .record-replica-page .archive-side) {
+		--deep-text: rgb(255 255 255 / 92%);
+		--content-meta: rgb(255 255 255 / 66%);
+	}
+
+	:global(html.dark .record-replica-page .archive-side-card),
+	:global(html.dark .record-replica-page .archive-profile-card),
+	:global(html.dark .record-replica-page .archive-calendar) {
+		border-color: rgb(255 255 255 / 14%) !important;
+		background: rgb(13 22 18 / 92%) !important;
+	}
+
+	:global(body:has(.record-replica-page) #main-column-wrapper) {
+		overflow: visible;
+	}
+
+	.record-page {
+		min-width: 0;
+		padding: 1.5rem 2.25rem 4rem;
+		background: color-mix(in srgb, var(--card-bg) 97%, transparent);
+		backdrop-filter: blur(1.25rem);
+	}
+
+	.record-page__header {
+		margin: 0 0 1.55rem;
+	}
+
+	.record-page__title-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.record-page__title-row :global(svg) {
+		width: 1.9rem;
+		height: 1.9rem;
+		flex: 0 0 auto;
+	}
+
+	.record-page__title-row h1 {
+		margin: 0;
+		font-size: 1.9rem;
+		font-weight: 750;
+		letter-spacing: 0;
+		line-height: 1.25;
+	}
+
+	.record-page__description {
+		margin: 0.8rem 0 0;
+		color: var(--record-muted);
+		font-size: 0.94rem;
+		line-height: 1.6;
+	}
+
+	.record-page__updated {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		margin: 0.35rem 0 0;
+		color: color-mix(in srgb, var(--record-muted) 72%, transparent);
+		font-size: 0.75rem;
+	}
+
+	.record-page__updated time {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.record-page__body {
+		min-width: 0;
+	}
+
+	@media (max-width: 1399px) {
+		.record-replica-page {
+			grid-template-columns: minmax(0, 61rem);
+			width: min(61rem, calc(100vw - 2rem));
+			justify-content: center;
+		}
+
+		.record-replica-page :global(.archive-side) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 700px) {
+		.record-replica-page {
+			width: calc(100vw - 1rem);
+		}
+
+		.record-page {
+			padding: 1.2rem 0.75rem 2.5rem;
+		}
+
+		.record-page__title-row h1 {
+			font-size: 1.55rem;
+		}
+
+		.record-page__title-row :global(svg) {
+			width: 1.6rem;
+			height: 1.6rem;
+		}
+	}
+</style>

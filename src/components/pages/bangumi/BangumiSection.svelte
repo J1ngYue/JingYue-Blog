@@ -161,16 +161,24 @@ function goToPage(page: number) {
       onFilterChange={handleFilterChange}
     />
 
-    <div class="bangumi-masonry grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-      {#each pagedItems as item (item.subject_id)}
+    <div class="bangumi-catalog" class:is-bookshelf={isBook}>
+		<div class="bangumi-masonry">
+      {#each pagedItems as item, index (item.subject_id)}
         <div
           class="bangumi-item"
           data-item-section={sectionId}
           data-item-status={STATUS_MAP[item.type as keyof typeof STATUS_MAP] || "unknown"}
         >
-          <Card item={item} loadImage={isActive} {subjectBaseUrl} />
+          <Card
+				item={item}
+				loadImage={isActive}
+				priority={isActive && index < 6}
+				{subjectBaseUrl}
+				variant={isBook ? "book" : "poster"}
+			/>
         </div>
       {/each}
+		</div>
     </div>
 
     <ClientPagination
@@ -187,3 +195,47 @@ function goToPage(page: number) {
   {/if}
 </div>
 
+<style>
+	.bangumi-section.hidden {
+		display: none;
+	}
+
+	.bangumi-catalog {
+		min-width: 0;
+	}
+
+	.bangumi-catalog.is-bookshelf {
+		border: 2px solid var(--record-ink, #111);
+		border-radius: 1rem;
+		padding: 1rem;
+	}
+
+	.bangumi-catalog .bangumi-masonry {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+		gap: 1.15rem 0.75rem;
+	}
+
+	@media (max-width: 900px) {
+		.bangumi-catalog .bangumi-masonry {
+			grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+		}
+	}
+
+	@media (max-width: 620px) {
+		.bangumi-catalog.is-bookshelf {
+			padding: 0.65rem;
+		}
+
+		.bangumi-catalog .bangumi-masonry {
+			grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+			gap: 0.85rem 0.55rem;
+		}
+	}
+
+	@media (max-width: 390px) {
+		.bangumi-catalog .bangumi-masonry {
+			grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+		}
+	}
+</style>

@@ -1,0 +1,346 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import { notebookDefinitions } from "@/config/notebookConfig";
+
+const notes = (await getCollection("notebooks"))
+	.filter((note) => !note.data.draft)
+	.sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
+const latestNote = notes[0];
+const featuredNotebook = notebookDefinitions.find(
+	(notebook) => notebook.slug === latestNote?.data.notebook,
+);
+
+const noteCounts = new Map<string, number>();
+for (const note of notes) {
+	noteCounts.set(
+		note.data.notebook,
+		(noteCounts.get(note.data.notebook) || 0) + 1,
+	);
+}
+
+const formatDate = (date: Date) =>
+	new Intl.DateTimeFormat("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		timeZone: "Asia/Shanghai",
+	})
+		.format(date)
+		.replaceAll("/", "-");
+---
+
+<section class="notebook-overview" aria-label="笔记本概览">
+	{featuredNotebook && latestNote && (
+		<a class="notebook-featured" href={`/life/notebooks/${featuredNotebook.slug}/`}>
+			<span class="notebook-featured__message">
+				<Icon is:inline name="material-symbols:auto-awesome-rounded" />
+				<span>把每一次复盘，都变成下一次出发的路标</span>
+			</span>
+			<strong>{featuredNotebook.title}</strong>
+		</a>
+	)}
+
+	<div class="notebook-stats" aria-label="笔记本统计">
+		<span><Icon is:inline name="material-symbols:menu-book-rounded" /><strong>{notebookDefinitions.length}</strong> 本</span>
+		<i aria-hidden="true"></i>
+		<span><Icon is:inline name="material-symbols:stylus-note-rounded" /><strong>{notes.length}</strong> 篇</span>
+		<i aria-hidden="true"></i>
+		{latestNote && (
+			<time datetime={latestNote.data.published.toISOString()}>
+				<Icon is:inline name="material-symbols:schedule-rounded" />
+				{formatDate(latestNote.data.published)}
+			</time>
+		)}
+	</div>
+
+	<div class="notebook-grid">
+		{notebookDefinitions.map((notebook) => {
+			const notebookNotes = notes.filter((note) => note.data.notebook === notebook.slug);
+			const latest = notebookNotes[0];
+			const count = noteCounts.get(notebook.slug) || 0;
+			return (
+				<a class="notebook-card" href={`/life/notebooks/${notebook.slug}/`}>
+					<div class="notebook-card__cover">
+						<ImageWrapper
+							src={notebook.cover}
+							alt={`${notebook.title}封面`}
+							widths={[480, 720]}
+							sizes="(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 320px"
+						/>
+						<span aria-hidden="true"><Icon is:inline name="material-symbols:arrow-outward-rounded" /></span>
+					</div>
+					<div class="notebook-card__body">
+						<div class="notebook-card__title">
+							<h2>{notebook.title}</h2>
+							<span>{count} 篇</span>
+						</div>
+						<p>{notebook.description}</p>
+						<footer>
+							<Icon is:inline name="material-symbols:schedule-rounded" />
+							{latest ? formatDate(latest.data.published) : "等待第一篇笔记"}
+						</footer>
+					</div>
+				</a>
+			);
+		})}
+	</div>
+
+	<p class="notebook-footnote">
+		<Icon is:inline name="material-symbols:auto-awesome-rounded" />
+		每一页，都是成长留下的足迹
+	</p>
+</section>
+
+<style>
+	.notebook-overview {
+		--notebook-border: color-mix(in srgb, var(--record-ink) 17%, transparent);
+		min-width: 0;
+	}
+
+	.notebook-featured {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		min-height: 3.25rem;
+		padding: 0.7rem 0.85rem;
+		border-bottom: 1px solid var(--line-divider);
+		color: inherit;
+		transition: color 180ms ease, background-color 180ms ease;
+	}
+
+	.notebook-featured:hover {
+		background: color-mix(in srgb, var(--primary) 6%, transparent);
+		color: var(--primary);
+	}
+
+	.notebook-featured__message,
+	.notebook-stats span,
+	.notebook-stats time,
+	.notebook-card footer,
+	.notebook-footnote {
+		display: flex;
+		align-items: center;
+	}
+
+	.notebook-featured__message {
+		gap: 0.5rem;
+		color: var(--content-meta);
+		font-size: 0.82rem;
+	}
+
+	.notebook-featured__message :global(svg) {
+		width: 1.05rem;
+		height: 1.05rem;
+		color: var(--primary);
+	}
+
+	.notebook-featured strong {
+		flex: 0 0 auto;
+		border-radius: 999px;
+		background: var(--btn-regular-bg);
+		padding: 0.28rem 0.7rem;
+		font-size: 0.72rem;
+	}
+
+	.notebook-stats {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding: 0.9rem 0.85rem 1.4rem;
+		color: var(--content-meta);
+		font-size: 0.78rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.notebook-stats span,
+	.notebook-stats time {
+		gap: 0.3rem;
+	}
+
+	.notebook-stats strong {
+		color: var(--record-ink);
+		font-size: 0.88rem;
+	}
+
+	.notebook-stats i {
+		width: 0.2rem;
+		height: 0.2rem;
+		border-radius: 50%;
+		background: var(--content-meta);
+	}
+
+	.notebook-stats :global(svg) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.notebook-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 1.05rem;
+	}
+
+	.notebook-card {
+		display: block;
+		min-width: 0;
+		overflow: hidden;
+		border: 1px solid var(--notebook-border);
+		border-radius: 0.75rem;
+		background: color-mix(in srgb, var(--card-bg) 96%, transparent);
+		color: inherit;
+		box-shadow: 0 0.45rem 1.25rem rgb(0 0 0 / 5%);
+		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+	}
+
+	.notebook-card:hover {
+		border-color: color-mix(in srgb, var(--primary) 52%, var(--notebook-border));
+		box-shadow: 0 0.75rem 1.75rem color-mix(in srgb, var(--primary) 13%, transparent);
+		transform: translateY(-0.2rem);
+	}
+
+	.notebook-card:focus-visible {
+		outline: 0.16rem solid var(--primary);
+		outline-offset: 0.18rem;
+	}
+
+	.notebook-card__cover {
+		position: relative;
+		height: 0;
+		overflow: hidden;
+		padding-bottom: 55%;
+		background: var(--btn-regular-bg);
+	}
+
+	.notebook-card__cover > :global(div:first-child) {
+		position: absolute;
+		inset: 0;
+	}
+
+	.notebook-card__cover::after {
+		position: absolute;
+		inset: auto 0 0;
+		height: 42%;
+		background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--card-bg) 94%, transparent));
+		content: "";
+	}
+
+	.notebook-card__cover > span {
+		position: absolute;
+		right: 0.65rem;
+		bottom: 0.65rem;
+		z-index: 2;
+		display: grid;
+		width: 2rem;
+		height: 2rem;
+		place-items: center;
+		border: 1px solid rgb(255 255 255 / 54%);
+		border-radius: 50%;
+		background: rgb(255 255 255 / 82%);
+		color: #15202a;
+		backdrop-filter: blur(0.5rem);
+		transition: transform 180ms ease;
+	}
+
+	.notebook-card:hover .notebook-card__cover > span {
+		transform: rotate(-10deg) scale(1.07);
+	}
+
+	.notebook-card__cover :global(svg) {
+		width: 1.05rem;
+		height: 1.05rem;
+	}
+
+	.notebook-card__body {
+		padding: 0.8rem 0.9rem 0.85rem;
+	}
+
+	.notebook-card__title {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.notebook-card h2 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 800;
+	}
+
+	.notebook-card__title > span {
+		flex: 0 0 auto;
+		color: var(--content-meta);
+		font-size: 0.7rem;
+	}
+
+	.notebook-card p {
+		display: -webkit-box;
+		overflow: hidden;
+		min-height: 2.6em;
+		margin: 0.35rem 0 0;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		color: var(--content-meta);
+		font-size: 0.75rem;
+		line-height: 1.45;
+	}
+
+	.notebook-card footer {
+		gap: 0.28rem;
+		margin-top: 0.55rem;
+		color: var(--content-meta);
+		font-size: 0.68rem;
+	}
+
+	.notebook-card footer :global(svg) {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+
+	.notebook-footnote {
+		justify-content: center;
+		gap: 0.45rem;
+		margin: 2rem 0 0;
+		color: var(--content-meta);
+		font-size: 0.76rem;
+	}
+
+	.notebook-footnote :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		color: var(--primary);
+	}
+
+	@media (max-width: 900px) {
+		.notebook-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 600px) {
+		.notebook-featured {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+
+		.notebook-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.notebook-stats {
+			flex-wrap: wrap;
+			padding-right: 0.25rem;
+			padding-left: 0.25rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.notebook-card,
+		.notebook-card__cover > span {
+			transition: none;
+		}
+	}
+</style>

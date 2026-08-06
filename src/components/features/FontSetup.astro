@@ -30,7 +30,7 @@ const selectedIds: string[] =
 // 每个字体的 fallback 由其在 fonts 中的 fallbacks 字段控制
 // 这里只拼接 CSS 变量引用，末尾加系统字体作为最终保底
 const SYSTEM_FONT_STACK =
-	"system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif";
+	'"LXGW WenKai", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const selectedFontVars = selectedIds.filter((v) => v !== "system");
 const bodyFontFamily =
 	selectedFontVars.length > 0
@@ -50,6 +50,17 @@ const navbarTitleFontVar = fontConfig.enable
 	? fontConfig.navbarTitleFont || ""
 	: "";
 ---
+
+<!-- 参考站同款霞鹜文楷；CDN 失败时自动回退到系统字体。 -->
+{fontConfig.enable && (
+  <>
+    <link rel="preconnect" href="https://fontsapi.zeoseven.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fontsapi.zeoseven.com/292/main/result.css"
+    />
+  </>
+)}
 
 <!-- Astro Font API: 自动下载、缓存并生成优化的 @font-face -->
 {Array.from(allCssVars).map((cssVar) => (

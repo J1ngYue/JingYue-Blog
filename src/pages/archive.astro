@@ -1,12 +1,176 @@
 ---
 import ArchivePanel from "@components/controls/ArchivePanel.astro";
-import ArticleHubHeader from "@components/controls/ArticleHubHeader.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { Icon } from "astro-icon/components";
+import ArchiveKnowledgeGraph from "@/components/controls/ArchiveKnowledgeGraph.astro";
+import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
+import ArchiveYearHeatmap from "@/components/controls/ArchiveYearHeatmap.astro";
+import { siteConfig } from "@/config";
+import { buildArchiveKnowledgeGraph } from "@/utils/archive-knowledge-graph";
+import { getSortedPostsList } from "@/utils/content-utils";
+import { getBlogActivityCalendar } from "@/utils/home-activity";
+
+const [sortedPostsList, blogActivity] = await Promise.all([
+	getSortedPostsList(),
+	getBlogActivityCalendar(),
+]);
+const timezone = siteConfig.timezone || "Asia/Shanghai";
+const currentYear = Number(
+	new Intl.DateTimeFormat("en-US", {
+		timeZone: timezone,
+		year: "numeric",
+	}).format(new Date()),
+);
+const knowledgeGraph = buildArchiveKnowledgeGraph(
+	sortedPostsList.map((post) => ({
+		title: post.data.title,
+		tags: post.data.tags,
+	})),
+);
 ---
 
-<MainGridLayout title={i18n(I18nKey.archive)} bannerTitle="文章" articleHub>
-  <ArticleHubHeader active="archive" />
-  <ArchivePanel />
+<MainGridLayout
+	title={i18n(I18nKey.archive)}
+	bannerTitle="文章"
+	description="按时间回看每一次发布与更新"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<div class="archive-replica-page onload-animation">
+		<ArchiveReplicaSidebar side="left" posts={sortedPostsList} />
+
+		<section class="archive-replica-main" aria-labelledby="archive-page-title">
+			<ArchiveYearHeatmap
+				posts={sortedPostsList}
+				recentActivity={blogActivity}
+				currentYear={currentYear}
+				timezone={timezone}
+			/>
+
+			<header class="archive-replica__heading">
+				<Icon is:inline name="material-symbols:schedule-outline-rounded" />
+				<h1 id="archive-page-title">归档</h1>
+			</header>
+
+			<ArchivePanel />
+
+			<div class="archive-replica__knowledge">
+				<ArchiveKnowledgeGraph graph={knowledgeGraph} />
+			</div>
+		</section>
+
+		<ArchiveReplicaSidebar side="right" posts={sortedPostsList} />
+	</div>
 </MainGridLayout>
+
+<style>
+	.archive-replica-page {
+		--archive-page-ink: oklch(0.1 0 0);
+		--archive-page-muted: oklch(0.45 0 0);
+		display: grid;
+		grid-template-columns: 17.5rem minmax(0, 61rem) 17.5rem;
+		gap: 1rem;
+		width: min(98rem, calc(100vw - 2rem));
+		min-width: 0;
+		margin-left: 50%;
+		color: var(--archive-page-ink);
+		transform: translateX(-50%);
+	}
+
+	:global(html.dark) .archive-replica-page {
+		--archive-page-ink: oklch(0.94 0.01 var(--hue));
+		--archive-page-muted: oklch(0.72 0.01 var(--hue));
+	}
+
+	:global(body:has(.archive-replica-page) #main-column-wrapper) {
+		overflow: visible;
+	}
+
+	.archive-replica-main {
+		min-width: 0;
+		padding: 1.5rem 2.25rem 3rem;
+		background: var(--site-card-bg, var(--card-bg));
+		backdrop-filter: blur(1.25rem);
+		transition: background-color 150ms ease;
+	}
+
+	.archive-replica-main :global(.archive-heatmap) {
+		padding-top: 0;
+	}
+
+	.archive-replica__heading {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 1.5rem 0 2rem;
+	}
+
+	.archive-replica__heading :global(svg) {
+		width: 1.875rem;
+		height: 1.875rem;
+	}
+
+	.archive-replica__heading h1 {
+		margin: 0;
+		font-size: 1.875rem;
+		font-weight: 700;
+		letter-spacing: -0.025em;
+		line-height: 2.25rem;
+	}
+
+	.archive-replica__knowledge {
+		margin-top: 3rem;
+		padding-top: 2.5rem;
+		border-top: 1px dashed
+			color-mix(in srgb, var(--archive-page-ink) 16%, transparent);
+	}
+
+	.archive-replica-main :global(archive-panel .archive-toolbar),
+	.archive-replica-main :global(archive-panel .archive-result-summary) {
+		display: none;
+	}
+
+	.archive-replica-main :global(archive-panel #archive-filter-header) {
+		margin-bottom: 1.35rem;
+		padding: 0.75rem 0;
+		border-block: 1px solid
+			color-mix(in srgb, var(--archive-page-ink) 10%, transparent);
+	}
+
+	@media (max-width: 1279px) {
+		.archive-replica-page {
+			grid-template-columns: minmax(0, 61rem);
+			width: min(61rem, calc(100vw - 2rem));
+			justify-content: center;
+		}
+
+		.archive-replica-page :global(.archive-side) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 700px) {
+		.archive-replica-page {
+			width: calc(100vw - 1rem);
+		}
+
+		.archive-replica-main {
+			padding: 1rem 0.65rem 2rem;
+		}
+
+		.archive-replica__heading {
+			margin: 1.25rem 0.4rem 1.5rem;
+		}
+
+		.archive-replica__heading h1 {
+			font-size: 1.55rem;
+		}
+
+		.archive-replica__knowledge {
+			margin-inline: 0.25rem;
+		}
+	}
+</style>

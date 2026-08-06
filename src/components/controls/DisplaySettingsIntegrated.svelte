@@ -1,12 +1,13 @@
 <script lang="ts">
 import {
-	WALLPAPER_FULLSCREEN,
+	WALLPAPER_BANNER,
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
 } from "@constants/constants";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import {
+	applyNavbarOpacityToDocument,
 	getDefaultBannerCarouselEnabled,
 	getDefaultGradientEnabled,
 	getDefaultHue,
@@ -57,6 +58,13 @@ import {
 	setLocalWallpaperBlur,
 	setLocalWallpaperOpacity,
 } from "@/utils/local-wallpaper";
+import {
+	DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
+	getDarkModeSpotlightSettings,
+	resetDarkModeSpotlightSettings,
+	setDarkModeSpotlightSettings,
+	type DarkModeSpotlightSettings,
+} from "@/utils/dark-mode-spotlight";
 
 let hue = $state(getHue());
 let wallpaperMode: WALLPAPER_MODE = $state(backgroundWallpaper.mode);
@@ -97,6 +105,15 @@ let localWallpaperTransparency = $state(
 );
 let navbarTransparency = $state(transparencyPercent(navbarOpacity));
 let overlayCardTransparency = $state(transparencyPercent(overlayCardOpacity));
+let spotlight = $state<DarkModeSpotlightSettings>(
+	getDarkModeSpotlightSettings(),
+);
+let navbarOpacityFrame = 0;
+let pendingNavbarOpacity = navbarOpacity;
+let navbarOpacityAdjusting = false;
+let hueFrame = 0;
+let pendingHue = hue;
+let hueAdjusting = false;
 
 function transparencyPercent(opacity: number) {
 	return Math.round((1 - Math.min(1, Math.max(0, opacity))) * 100);
@@ -107,6 +124,23 @@ function opacityFromTransparencyPercent(transparency: number) {
 		? Math.min(100, Math.max(0, transparency))
 		: 0;
 	return 1 - safeTransparency / 100;
+}
+
+function handleNumberStepperPointerDown(
+	event: PointerEvent,
+	update: (value: number) => void,
+) {
+	const input = event.currentTarget as HTMLInputElement;
+	const rect = input.getBoundingClientRect();
+	const spinnerWidth = Math.min(18, rect.width * 0.35);
+	if (event.clientX < rect.right - spinnerWidth) return;
+
+	event.preventDefault();
+	event.stopPropagation();
+	input.focus({ preventScroll: true });
+	if (event.clientY < rect.top + rect.height / 2) input.stepUp();
+	else input.stepDown();
+	update(input.valueAsNumber);
 }
 
 const isWallpaperSwitchable = backgroundWallpaper.switchable ?? true;
@@ -143,14 +177,36 @@ const isOverlayCardOpacitySwitchable =
 const hasAnyContent = true;
 
 function resetHue() {
-	hue = getDefaultHue();
-	requestAnimationFrame(refreshAllRangeProgress);
+	updateHue(getDefaultHue());
+	commitHue();
 }
 
 function updateHue(value: number) {
 	if (!Number.isFinite(value)) return;
 	hue = Math.round(Math.min(360, Math.max(0, value)));
-	requestAnimationFrame(refreshAllRangeProgress);
+	pendingHue = hue;
+	hueAdjusting = true;
+	document.documentElement.classList.add("is-theme-hue-adjusting");
+	if (hueFrame) return;
+	hueFrame = requestAnimationFrame(() => {
+		hueFrame = 0;
+		document.documentElement.style.setProperty("--hue", String(pendingHue));
+	});
+}
+
+function commitHue() {
+	if (!hueAdjusting && !hueFrame) return;
+	if (hueFrame) cancelAnimationFrame(hueFrame);
+	hueFrame = 0;
+	document.documentElement.style.setProperty("--hue", String(pendingHue));
+	setHue(pendingHue);
+	hueAdjusting = false;
+	document.documentElement.classList.remove("is-theme-hue-adjusting");
+}
+
+function updateAndCommitHue(value: number) {
+	updateHue(value);
+	commitHue();
 }
 
 function resetBackgroundSettings() {
@@ -250,8 +306,28 @@ function updateNavbarOpacity(value: number) {
 	if (!Number.isFinite(value)) return;
 	navbarTransparency = Math.round(Math.min(100, Math.max(0, value)));
 	navbarOpacity = opacityFromTransparencyPercent(navbarTransparency);
-	setNavbarOpacity(navbarOpacity);
-	requestAnimationFrame(refreshAllRangeProgress);
+	pendingNavbarOpacity = navbarOpacity;
+	navbarOpacityAdjusting = true;
+	document.documentElement.classList.add("is-navbar-opacity-adjusting");
+	if (navbarOpacityFrame) return;
+	navbarOpacityFrame = requestAnimationFrame(() => {
+		navbarOpacityFrame = 0;
+		applyNavbarOpacityToDocument(pendingNavbarOpacity);
+	});
+}
+
+function commitNavbarOpacity() {
+	if (!navbarOpacityAdjusting && !navbarOpacityFrame) return;
+	if (navbarOpacityFrame) cancelAnimationFrame(navbarOpacityFrame);
+	navbarOpacityFrame = 0;
+	setNavbarOpacity(pendingNavbarOpacity);
+	navbarOpacityAdjusting = false;
+	document.documentElement.classList.remove("is-navbar-opacity-adjusting");
+}
+
+function updateAndCommitNavbarOpacity(value: number) {
+	updateNavbarOpacity(value);
+	commitNavbarOpacity();
 }
 
 function toggleWavesEnabled() {
@@ -299,6 +375,14 @@ function resetEffectsSettings() {
 	}
 }
 
+function updateSpotlight(patch: Partial<DarkModeSpotlightSettings>) {
+	spotlight = setDarkModeSpotlightSettings(patch);
+}
+
+function resetSpotlight() {
+	spotlight = resetDarkModeSpotlightSettings();
+}
+
 function switchWallpaperMode(newMode: WALLPAPER_MODE) {
 	wallpaperMode = newMode;
 	setWallpaperMode(newMode);
@@ -311,6 +395,7 @@ function switchWallpaperMode(newMode: WALLPAPER_MODE) {
 function checkScreenSize() {
 	isSmallScreen = window.innerWidth < 1200;
 	isMobileWidth = window.innerWidth < 780;
+	requestAnimationFrame(refreshAllRangeProgress);
 	// 低于380px强制网格模式
 	if (window.innerWidth < 380 && currentLayout === "list") {
 		currentLayout = "grid";
@@ -325,11 +410,14 @@ function updateRangeProgress(input: HTMLInputElement) {
 	const min = Number(input.min || 0);
 	const max = Number(input.max || 100);
 	const value = Number(input.value || 0);
-	const progress = ((value - min) * 100) / (max - min || 1);
-	input.style.setProperty(
-		"--range-progress",
-		`${Math.min(100, Math.max(0, progress))}%`,
-	);
+	const progress = Math.min(1, Math.max(0, (value - min) / (max - min || 1)));
+	const thumbSize = input.classList.contains("overlay-slider") ? 16 : 0;
+	const renderedProgress =
+		thumbSize > 0 && input.clientWidth > thumbSize
+			? (thumbSize / 2 + progress * (input.clientWidth - thumbSize)) /
+				input.clientWidth
+			: progress;
+	input.style.setProperty("--range-progress", `${renderedProgress * 100}%`);
 }
 
 function refreshAllRangeProgress() {
@@ -388,7 +476,7 @@ onMount(() => {
 	rainEnabled = getStoredRainEnabled();
 	snowEnabled = getStoredSnowEnabled();
 
-	// 封面与全屏透明模式共享同一组透明度和模糊度
+	// 横幅与全屏透明模式共享同一组透明度和模糊度
 	localWallpaperOpacity = getLocalWallpaperOpacity();
 	localWallpaperBlur = getLocalWallpaperBlur();
 	localWallpaperTransparency = transparencyPercent(localWallpaperOpacity);
@@ -414,6 +502,12 @@ onMount(() => {
 	window.addEventListener("resize", checkScreenSize);
 
 	return () => {
+		if (hueFrame) cancelAnimationFrame(hueFrame);
+		hueFrame = 0;
+		if (navbarOpacityFrame) cancelAnimationFrame(navbarOpacityFrame);
+		navbarOpacityFrame = 0;
+		document.documentElement.classList.remove("is-theme-hue-adjusting");
+		document.documentElement.classList.remove("is-navbar-opacity-adjusting");
 		window.removeEventListener("resize", checkScreenSize);
 	};
 });
@@ -435,6 +529,32 @@ onMount(() => {
 onMount(() => {
 	const panel = document.getElementById("display-setting");
 	if (!panel) return;
+	const syncPanelInteractivity = () => {
+		const closed = panel.classList.contains("float-panel-closed");
+		panel.toggleAttribute("inert", closed);
+		panel.setAttribute("aria-hidden", String(closed));
+	};
+	const panelClassObserver = new MutationObserver(syncPanelInteractivity);
+	const handlePanelWheel = (event: WheelEvent) => {
+		if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY))
+			return;
+
+		const maxScrollTop = panel.scrollHeight - panel.clientHeight;
+		if (maxScrollTop <= 0) return;
+
+		const multiplier =
+			event.deltaMode === WheelEvent.DOM_DELTA_LINE
+				? 16
+				: event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+					? panel.clientHeight
+					: 1;
+		panel.scrollTop = Math.min(
+			maxScrollTop,
+			Math.max(0, panel.scrollTop + event.deltaY * multiplier),
+		);
+		event.preventDefault();
+		event.stopPropagation();
+	};
 	const handleRangeInput = (event: Event) => {
 		const target = event.target;
 		if (target instanceof HTMLInputElement && target.type === "range") {
@@ -442,11 +562,19 @@ onMount(() => {
 		}
 	};
 
+	syncPanelInteractivity();
+	panelClassObserver.observe(panel, {
+		attributes: true,
+		attributeFilter: ["class"],
+	});
 	refreshAllRangeProgress();
 	panel.addEventListener("input", handleRangeInput);
+	panel.addEventListener("wheel", handlePanelWheel, { passive: false });
 
 	return () => {
+		panelClassObserver.disconnect();
 		panel.removeEventListener("input", handleRangeInput);
+		panel.removeEventListener("wheel", handlePanelWheel);
 	};
 });
 
@@ -485,15 +613,25 @@ onMount(() => {
 	};
 });
 
-$effect(() => {
-	if (hue || hue === 0) {
-		setHue(hue);
-	}
+onMount(() => {
+	const handleSpotlightChange = (event: Event) => {
+		const next = (event as CustomEvent<DarkModeSpotlightSettings>).detail;
+		if (!next || typeof next !== "object") return;
+		spotlight = { ...spotlight, ...next };
+	};
+
+	window.addEventListener(DARK_MODE_SPOTLIGHT_CHANGE_EVENT, handleSpotlightChange);
+	return () => {
+		window.removeEventListener(
+			DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
+			handleSpotlightChange,
+		);
+	};
 });
 </script>
 
 {#if hasAnyContent}
-<div id="display-setting" class="float-panel float-panel-closed display-setting-panel transition-all w-80 max-w-[calc(100vw-1.5rem)] px-4 py-2">
+<div id="display-setting" class="float-panel float-panel-closed display-setting-panel transition-all w-80 max-w-[calc(100vw-1.5rem)] px-4 py-2" aria-hidden="true" inert>
     <!-- Theme Color Section -->
     {#if showThemeColor}
     <div class="mt-2 mb-2">
@@ -518,7 +656,10 @@ $effect(() => {
                     step="1"
                     value={hue}
                     aria-label="主题色相数值"
+                    onpointerdown={(event) => handleNumberStepperPointerDown(event, updateAndCommitHue)}
                     oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                    onchange={commitHue}
+                    onblur={commitHue}
                     class="transition bg-(--btn-regular-bg) w-14 h-8 rounded-lg px-1 text-center font-bold text-sm text-(--btn-content) outline-none focus:ring-1 focus:ring-(--primary)"
                 />
             </div>
@@ -530,8 +671,12 @@ $effect(() => {
                 type="range"
                 min="0"
                 max="360"
-                bind:value={hue}
+                value={hue}
                 oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                onchange={commitHue}
+                onpointerup={commitHue}
+                onpointercancel={commitHue}
+                onblur={commitHue}
                 class="slider theme-hue-slider"
                 id="colorSlider"
                 step="1"
@@ -540,13 +685,13 @@ $effect(() => {
     </div>
     {/if}
 
-    <!-- Unified Cover / Fullscreen Wallpaper Section -->
+    <!-- Unified banner / fullscreen wallpaper section -->
     <div class="mt-3 mb-3">
         <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
             before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
             before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
         >
-            封面 / 全屏背景
+            背景显示
             <button aria-label="重置透明度和模糊度" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetBackgroundSettings}>
                 <div class="text-(--btn-content)">
                     <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
@@ -559,13 +704,13 @@ $effect(() => {
                     <button
                         type="button"
                         class="wallpaper-mode-button btn-regular rounded-lg py-2.5 px-1.5 flex flex-col items-center justify-center gap-1 transition-all"
-                        class:opacity-60={wallpaperMode !== WALLPAPER_FULLSCREEN}
-                        class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_FULLSCREEN}
-                        class:wallpaper-mode-active={wallpaperMode === WALLPAPER_FULLSCREEN}
-                        onclick={() => switchWallpaperMode(WALLPAPER_FULLSCREEN)}
+                        class:opacity-60={wallpaperMode !== WALLPAPER_BANNER}
+                        class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_BANNER}
+                        class:wallpaper-mode-active={wallpaperMode === WALLPAPER_BANNER}
+                        onclick={() => switchWallpaperMode(WALLPAPER_BANNER)}
                     >
-                        <Icon icon="material-symbols:wallpaper" class="text-[1.2rem]"></Icon>
-                        <span class="text-[0.68rem] font-medium">封面壁纸</span>
+                        <Icon icon="material-symbols:panorama-outline-rounded" class="text-[1.2rem]"></Icon>
+                        <span class="text-[0.68rem] font-medium">横幅背景</span>
                     </button>
                     <button
                         type="button"
@@ -602,8 +747,9 @@ $effect(() => {
                                 min="0"
                                 max="100"
                                 step="1"
-                                bind:value={localWallpaperTransparency}
+                                value={localWallpaperTransparency}
                                 aria-label="壁纸透明度数值"
+                                onpointerdown={(event) => handleNumberStepperPointerDown(event, updateLocalWallpaperOpacity)}
                                 oninput={(event) => updateLocalWallpaperOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
                                 class="numeric-value-input"
                             />
@@ -616,7 +762,7 @@ $effect(() => {
                         min="0"
                         max="100"
                         step="1"
-                        bind:value={localWallpaperTransparency}
+                        value={localWallpaperTransparency}
                         oninput={(event) => updateLocalWallpaperOpacity(Number((event.currentTarget as HTMLInputElement).value))}
                         class="slider w-full overlay-slider"
                     />
@@ -631,8 +777,9 @@ $effect(() => {
                                 min="0"
                                 max="20"
                                 step="0.5"
-                                bind:value={localWallpaperBlur}
+                                value={localWallpaperBlur}
                                 aria-label="背景模糊数值"
+                                onpointerdown={(event) => handleNumberStepperPointerDown(event, updateLocalWallpaperBlur)}
                                 oninput={(event) => updateLocalWallpaperBlur((event.currentTarget as HTMLInputElement).valueAsNumber)}
                                 class="numeric-value-input"
                             />
@@ -645,7 +792,7 @@ $effect(() => {
                         min="0"
                         max="20"
                         step="0.5"
-                        bind:value={localWallpaperBlur}
+                        value={localWallpaperBlur}
                         oninput={(event) => updateLocalWallpaperBlur(Number((event.currentTarget as HTMLInputElement).value))}
                         class="slider w-full overlay-slider"
                     />
@@ -660,9 +807,11 @@ $effect(() => {
                                 min="0"
                                 max="100"
                                 step="1"
-                                bind:value={navbarTransparency}
+                                value={navbarTransparency}
                                 aria-label="导航栏透明度数值"
-                                oninput={(event) => updateNavbarOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
+								onpointerdown={(event) => handleNumberStepperPointerDown(event, updateAndCommitNavbarOpacity)}
+								oninput={(event) => updateNavbarOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
+								onchange={commitNavbarOpacity}
                                 class="numeric-value-input"
                             />
                             <span>%</span>
@@ -674,8 +823,11 @@ $effect(() => {
                         min="0"
                         max="100"
                         step="1"
-                        bind:value={navbarTransparency}
-                        oninput={(event) => updateNavbarOpacity(Number((event.currentTarget as HTMLInputElement).value))}
+						value={navbarTransparency}
+						oninput={(event) => updateNavbarOpacity(Number((event.currentTarget as HTMLInputElement).value))}
+						onpointerup={commitNavbarOpacity}
+						onpointercancel={commitNavbarOpacity}
+						onchange={commitNavbarOpacity}
                         class="slider w-full overlay-slider"
                     />
                 </div>
@@ -690,8 +842,9 @@ $effect(() => {
                                     min="0"
                                     max="100"
                                     step="1"
-                                    bind:value={overlayCardTransparency}
+                                    value={overlayCardTransparency}
                                     aria-label="卡片透明度数值"
+                                    onpointerdown={(event) => handleNumberStepperPointerDown(event, updateOverlayCardOpacity)}
                                     oninput={(event) => updateOverlayCardOpacity((event.currentTarget as HTMLInputElement).valueAsNumber)}
                                     class="numeric-value-input"
                                 />
@@ -704,14 +857,14 @@ $effect(() => {
                             min="0"
                             max="100"
                             step="1"
-                            bind:value={overlayCardTransparency}
+                            value={overlayCardTransparency}
                             oninput={(event) => updateOverlayCardOpacity(Number((event.currentTarget as HTMLInputElement).value))}
                             class="slider w-full overlay-slider"
                         />
                     </div>
                 {/if}
 
-                {#if wallpaperMode === WALLPAPER_FULLSCREEN && hasWallpaperMotionSettings}
+                {#if wallpaperMode === WALLPAPER_BANNER && hasWallpaperMotionSettings}
                     <div class="wallpaper-motion-settings">
                         <div class="wallpaper-motion-heading">
                             <span>壁纸动态</span>
@@ -774,13 +927,113 @@ $effect(() => {
                 {/if}
 
                 <p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
-                    封面与全屏壁纸共用这一组透明度和模糊度；透明度越高，图层越透明（0% 完全显示，100% 完全透明）。
+                    横幅与全屏透明模式共用这一组显示参数；透明度越高，图层越透明（0% 完全显示，100% 完全透明）。
                 </p>
             {:else}
                 <p class="m-0 px-1 py-2 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
                     纯色背景不使用壁纸透明度和模糊度。
                 </p>
             {/if}
+        </div>
+    </div>
+
+    <!-- Dark mode spotlight section -->
+    <div class="mt-3 mb-3">
+        <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
+            before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
+            before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
+        >
+            深色灯光
+            <button aria-label="恢复深色灯光默认值" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetSpotlight}>
+                <div class="text-(--btn-content)">
+                    <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
+                </div>
+            </button>
+        </div>
+        <div class="wallpaper-settings-shell rounded-xl p-3 space-y-2.5">
+            <button
+                type="button"
+                class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left transition-all relative overflow-hidden"
+                class:bg-(--btn-regular-bg-hover)={spotlight.enabled}
+                class:effect-toggle-active={spotlight.enabled}
+                aria-pressed={spotlight.enabled}
+                onclick={() => updateSpotlight({ enabled: !spotlight.enabled })}
+            >
+                <Icon icon="material-symbols:light-mode-rounded" class="text-[1.25rem] shrink-0"></Icon>
+                <span class="text-sm flex-1">悬挂灯光</span>
+                <span class:toggle-on={spotlight.enabled} class="settings-toggle" aria-hidden="true"><i></i></span>
+            </button>
+            <div class="wallpaper-control-card rounded-lg p-2.5">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-medium text-(--btn-content) opacity-80">灯光颜色</span>
+                    <input
+                        type="color"
+                        value={spotlight.color}
+                        aria-label="灯光颜色"
+                        oninput={(event) => updateSpotlight({ color: (event.currentTarget as HTMLInputElement).value })}
+                        class="h-7 w-12 cursor-pointer rounded-md border-0 bg-transparent p-0"
+                    />
+                </div>
+            </div>
+            <div class="wallpaper-control-card rounded-lg p-2.5">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-medium text-(--btn-content) opacity-80">光束角度</span>
+                    <div class="numeric-value-field">
+                        <input
+                            type="number"
+                            min="16"
+                            max="58"
+                            step="1"
+                            value={spotlight.angle}
+                            aria-label="光束角度数值"
+                            oninput={(event) => updateSpotlight({ angle: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+                            class="numeric-value-input"
+                        />
+                        <span>°</span>
+                    </div>
+                </div>
+                <input
+                    aria-label="当前光束角度"
+                    type="range"
+                    min="16"
+                    max="58"
+                    step="1"
+                    value={spotlight.angle}
+                    oninput={(event) => updateSpotlight({ angle: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+                    class="slider w-full overlay-slider"
+                />
+            </div>
+            <div class="wallpaper-control-card rounded-lg p-2.5">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-medium text-(--btn-content) opacity-80">照射范围</span>
+                    <div class="numeric-value-field">
+                        <input
+                            type="number"
+                            min="40"
+                            max="100"
+                            step="1"
+                            value={spotlight.range}
+                            aria-label="照射范围数值"
+                            oninput={(event) => updateSpotlight({ range: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+                            class="numeric-value-input"
+                        />
+                        <span>%</span>
+                    </div>
+                </div>
+                <input
+                    aria-label="当前照射范围"
+                    type="range"
+                    min="40"
+                    max="100"
+                    step="1"
+                    value={spotlight.range}
+                    oninput={(event) => updateSpotlight({ range: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+                    class="slider w-full overlay-slider"
+                />
+            </div>
+            <p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
+                仅深色模式显示；鼠标移动会带动灯具轻微偏转，设置会自动保存。
+            </p>
         </div>
     </div>
 
@@ -911,7 +1164,9 @@ $effect(() => {
     #display-setting
         position fixed !important
         top 5.75rem
-        right 0.75rem
+        right calc(max(0.5rem, env(safe-area-inset-right)) + 4.75rem)
+        width unquote("min(20rem, calc(100vw - 5.5rem))")
+        max-width calc(100vw - 5.5rem)
         height unquote("min(48rem, calc(100dvh - 6.5rem))")
         max-height calc(100dvh - 6.5rem)
         overflow-x hidden !important
@@ -920,6 +1175,10 @@ $effect(() => {
         scrollbar-gutter stable
         touch-action pan-y
         -webkit-overflow-scrolling touch
+
+        &.float-panel-closed,
+        &.float-panel-closed *
+            pointer-events none !important
 
         &::-webkit-scrollbar
             width 0.45rem
@@ -1090,11 +1349,17 @@ $effect(() => {
 
         input[type="range"]
             -webkit-appearance none
+            appearance none
+            display block
+            width 100%
             height 1.5rem
             border-radius 999px
             background-image unquote("linear-gradient(90deg, var(--primary) 0 var(--range-progress, 50%), hsla(var(--hue), 22%, 28%, 0.18) var(--range-progress, 50%) 100%)")
             transition background-image 0.15s ease-in-out
             cursor pointer
+            pointer-events auto
+            user-select none
+            touch-action none
 
         input[type="range"].theme-hue-slider
             width 100%
@@ -1125,6 +1390,13 @@ $effect(() => {
             height 0.85rem
             cursor pointer
             touch-action none
+            outline none
+
+            &:focus-visible::-webkit-slider-thumb
+                box-shadow unquote("0 0 0 3px hsla(var(--hue), 60%, 50%, 0.22), 0 1px 4px rgba(0, 0, 0, 0.18)")
+
+            &:focus-visible::-moz-range-thumb
+                box-shadow unquote("0 0 0 3px hsla(var(--hue), 60%, 50%, 0.22), 0 1px 4px rgba(0, 0, 0, 0.18)")
 
             /* Input Thumb */
             &::-webkit-slider-thumb

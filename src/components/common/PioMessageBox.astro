@@ -8,6 +8,16 @@
   let currentMessageContainer: HTMLDivElement | null = null;
   let hideMessageTimer: number | null = null;
 
+  function setPetSpeaking(speaking: boolean) {
+    const switcher = document.querySelector<HTMLElement>("[data-character-model-switcher]");
+    if (!switcher) return;
+    if (speaking) {
+      switcher.dataset.petSpeaking = "true";
+    } else {
+      delete switcher.dataset.petSpeaking;
+    }
+  }
+
   // 消息显示函数
   export function showMessage(message: string, options: { containerId?: string; displayTime?: number } = {}) {
     // 防止空消息或重复调用
@@ -117,6 +127,7 @@
     // 添加到页面并保存引用
     document.body.appendChild(messageContainer);
     currentMessageContainer = messageContainer;
+    setPetSpeaking(true);
 
     // 将消息显示在模型头顶居中
     const container = document.getElementById(options.containerId || "model-container");
@@ -171,8 +182,8 @@
       // 在消息框渲染后，进行精确的边界调整
       setTimeout(() => {
         const actualMessageRect = messageContainer.getBoundingClientRect();
-        const actualWidth = actualMessageRect.width;
-        const actualHeight = actualMessageRect.height;
+        const actualWidth = messageContainer.offsetWidth || actualMessageRect.width;
+        const actualHeight = messageContainer.offsetHeight || actualMessageRect.height;
 
         // 重新计算水平位置
         let adjustedX = containerCenterX;
@@ -275,6 +286,7 @@
         // 清除引用
         if (currentMessageContainer === messageContainer) {
           currentMessageContainer = null;
+          setPetSpeaking(false);
         }
       }, 400);
     }, displayTime);
@@ -301,6 +313,7 @@
         msg.parentNode.removeChild(msg);
       }
     });
+    setPetSpeaking(false);
   }
 
   // 将函数暴露到全局作用域

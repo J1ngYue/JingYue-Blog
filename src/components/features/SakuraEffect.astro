@@ -165,40 +165,49 @@ const config = sakuraConfig;
 				this.animationId = null;
 				this.img = null;
 				this.isRunning = false;
+				this.isInitializing = false;
 			}
 
 			// 初始化樱花特效
 			async init() {
-				if (!this.config.enable || this.isRunning) {
-					return;
+				if (!this.config.enable || this.isInitializing) return;
+				if (this.isRunning && this.canvas?.isConnected) return;
+				if (this.isRunning) this.stop();
+				this.isInitializing = true;
+
+				try {
+					// 创建图片对象
+					this.img = new Image();
+					this.img.src = '/assets/images/effects/sakura.png'; // 使用樱花图片
+
+					// 等待图片加载完成
+					await new Promise((resolve, reject) => {
+						if (this.img) {
+							this.img.onload = () => resolve();
+							this.img.onerror = () => reject(new Error('Failed to load sakura image'));
+						}
+					});
+					if (!this.config.enable) return;
+
+					this.createCanvas();
+					this.createSakuraList();
+					this.startAnimation();
+					this.isRunning = true;
+				} finally {
+					this.isInitializing = false;
 				}
-
-				// 创建图片对象
-				this.img = new Image();
-				this.img.src = '/assets/images/effects/sakura.png'; // 使用樱花图片
-
-				// 等待图片加载完成
-				await new Promise((resolve, reject) => {
-					if (this.img) {
-						this.img.onload = () => resolve();
-						this.img.onerror = () => reject(new Error('Failed to load sakura image'));
-					}
-				});
-
-				this.createCanvas();
-				this.createSakuraList();
-				this.startAnimation();
-				this.isRunning = true;
 			}
 
 			// 创建画布
 			createCanvas() {
+				document.getElementById('canvas_sakura')?.remove();
 				this.canvas = document.createElement('canvas');
 				this.canvas.height = windowHeight;
 				this.canvas.width = windowWidth;
-				this.canvas.setAttribute('style', `position: fixed; left: 0; top: 0; pointer-events: none; z-index: ${this.config.zIndex}; transform: translateZ(0);`);
+				this.canvas.setAttribute('style', `position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: ${this.config.zIndex}; transform: translateZ(0);`);
 				this.canvas.setAttribute('id', 'canvas_sakura');
-				document.body.appendChild(this.canvas);
+				this.canvas.setAttribute('aria-hidden', 'true');
+				document.documentElement.appendChild(this.canvas);
 				this.ctx = this.canvas.getContext('2d');
 
 				// 监听窗口大小变化
@@ -280,10 +289,8 @@ const config = sakuraConfig;
 					this.animationId = null;
 				}
 
-				if (this.canvas) {
-					document.body.removeChild(this.canvas);
-					this.canvas = null;
-				}
+				this.canvas?.remove();
+				this.canvas = null;
 
 				if (this._boundHandleResize) {
 					window.removeEventListener('resize', this._boundHandleResize);
@@ -320,8 +327,7 @@ const config = sakuraConfig;
 		}
 
 		// 创建全局樱花管理器实例
-		let globalSakuraManager = null;
-		window.sakuraManager = null;
+		let globalSakuraManager = window.sakuraManager || null;
 
 		// 初始化樱花特效
 		function initSakura(config) {
@@ -336,40 +342,46 @@ const config = sakuraConfig;
 			}
 		}
 
-		// 樱花特效初始化
-		(function() {
-			// 全局标记，确保樱花特效只初始化一次
-			if (window.sakuraInitialized) {
-				return;
+		const syncSakuraEffect = () => {
+			const storedEnabled = localStorage.getItem("sakuraEnabled");
+			const enabled = storedEnabled !== null
+				? storedEnabled === "true"
+				: sakuraConfig.enable;
+			document.documentElement.setAttribute(
+				"data-sakura-enabled",
+				String(enabled),
+			);
+
+			if (!window.sakuraManager) {
+				initSakura(Object.assign({}, sakuraConfig, { enable: enabled }));
 			}
-			
-			// 初始化樱花特效的函数
-			const setupSakura = () => {
-				if (window.sakuraInitialized) return;
-				// 检查用户是否在设置中关闭了樱花特效
-				var storedEnabled = localStorage.getItem("sakuraEnabled");
-				var isEnabled = storedEnabled !== null ? storedEnabled === "true" : sakuraConfig.enable;
-				// 创建管理器并根据用户偏好决定是否启动
-				var cfg = Object.assign({}, sakuraConfig, { enable: isEnabled });
-				initSakura(cfg);
-				window.sakuraInitialized = true;
-			};
-			
-			// 页面加载完成后初始化樱花特效
-			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', setupSakura);
-			} else {
-				setupSakura();
-			}
-		})();
+			const manager = window.sakuraManager;
+			if (!manager) return;
+			manager.config.enable = enabled;
+			if (enabled) manager.init();
+			else manager.stop();
+		};
+
+		window.sakuraInitialized = true;
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', syncSakuraEffect, { once: true });
+		} else {
+			syncSakuraEffect();
+		}
+		document.addEventListener('astro:page-load', syncSakuraEffect);
+		document.addEventListener('swup:contentReplaced', syncSakuraEffect);
 
 		// 监听设置面板的樱花特效切换事件
 		window.addEventListener('sakuraToggle', function(e) {
 			var enabled = e.detail.enabled;
 			var mgr = window.sakuraManager;
+			if (!mgr) {
+				initSakura(Object.assign({}, sakuraConfig, { enable: enabled }));
+				mgr = window.sakuraManager;
+			}
 			if (!mgr) return;
+			mgr.config.enable = enabled;
 			if (enabled && !mgr.getIsRunning()) {
-				mgr.config.enable = true;
 				mgr.init();
 			} else if (!enabled && mgr.getIsRunning()) {
 				mgr.stop();

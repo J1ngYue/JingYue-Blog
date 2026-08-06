@@ -8,9 +8,10 @@ import { url } from "@/utils/url-utils";
 interface Props {
 	link: NavBarLink;
 	class?: string;
+	isActive?: boolean;
 }
 
-const { link, class: className } = Astro.props;
+const { link, class: className, isActive = false } = Astro.props;
 
 // 检查 link 是否存在
 if (!link) {
@@ -20,25 +21,6 @@ if (!link) {
 const processedLink = link;
 
 const hasChildren = processedLink.children && processedLink.children.length > 0;
-const normalizePath = (pathname: string) => {
-	const normalized = pathname.replace(/\/+$/, "");
-	return normalized || "/";
-};
-const currentPath = normalizePath(Astro.url.pathname);
-const matchesCurrentPath = (pathname: string) => {
-	const targetPath = normalizePath(pathname);
-	return targetPath === "/"
-		? currentPath === "/"
-		: currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
-};
-const isActive =
-	!processedLink.external &&
-	(matchesCurrentPath(processedLink.url) ||
-		Boolean(
-			processedLink.children?.some(
-				(child) => !child.external && matchesCurrentPath(child.url),
-			),
-		));
 ---
 
 <div class:list={["dropdown-container", { "is-active": isActive }, className]} data-dropdown>
@@ -46,6 +28,7 @@ const isActive =
 		<button
 			type="button"
 			class:list={["navbar-menu-item dropdown-trigger", { "is-active": isActive }]}
+			aria-current={isActive ? "page" : undefined}
 			aria-expanded="false"
 			aria-haspopup="true"
 			data-dropdown-trigger
@@ -103,12 +86,12 @@ const isActive =
 	}
 
 	.dropdown-container:hover .dropdown-menu,
-	.dropdown-container:focus-within .dropdown-menu {
+	.dropdown-container.is-open .dropdown-menu {
 		@apply opacity-100 visible pointer-events-auto translate-y-0;
 	}
 
 	.dropdown-container:hover .dropdown-arrow,
-	.dropdown-container:focus-within .dropdown-arrow {
+	.dropdown-container.is-open .dropdown-arrow {
 		@apply rotate-180;
 	}
 
@@ -135,6 +118,18 @@ const isActive =
 			const items = dropdown.querySelectorAll('.dropdown-item') as NodeListOf<HTMLElement>;
 			
 			if (!trigger || !menu) return;
+
+			// 鼠标移到新的父级时，清掉键盘/点击遗留的打开状态，避免多个菜单同时展开。
+			dropdown.addEventListener('pointerenter', function() {
+				dropdowns.forEach(otherDropdown => {
+					if (otherDropdown === dropdown) return;
+					const otherTrigger = otherDropdown.querySelector('[data-dropdown-trigger]');
+					const otherMenu = otherDropdown.querySelector('[data-dropdown-menu]');
+					if (otherTrigger && otherMenu) {
+						closeDropdown(otherDropdown, otherTrigger, otherMenu);
+					}
+				});
+			});
 			
 			// 键盘事件处理
 			trigger.addEventListener('keydown', function(e: KeyboardEvent) {
@@ -194,21 +189,31 @@ const isActive =
 		}
 	}
 	
-	function openDropdown(_dropdown: Element, trigger: Element, menu: Element) {
+	function openDropdown(dropdown: Element, trigger: Element, menu: Element) {
+		document.querySelectorAll('[data-dropdown]').forEach(otherDropdown => {
+			if (otherDropdown === dropdown) return;
+			const otherTrigger = otherDropdown.querySelector('[data-dropdown-trigger]');
+			const otherMenu = otherDropdown.querySelector('[data-dropdown-menu]');
+			if (otherTrigger && otherMenu) {
+				closeDropdown(otherDropdown, otherTrigger, otherMenu);
+			}
+		});
+		dropdown.classList.add('is-open');
 		trigger.setAttribute('aria-expanded', 'true');
 		menu.classList.remove('opacity-0', 'invisible', 'pointer-events-none', 'translate-y-[-8px]');
 		menu.classList.add('opacity-100', 'visible', 'pointer-events-auto', 'translate-y-0');
 	}
-	
-	function closeDropdown(_dropdown: Element, trigger: Element, menu: Element) {
+
+	function closeDropdown(dropdown: Element, trigger: Element, menu: Element) {
+		dropdown.classList.remove('is-open');
 		trigger.setAttribute('aria-expanded', 'false');
 		menu.classList.add('opacity-0', 'invisible', 'pointer-events-none', 'translate-y-[-8px]');
 		menu.classList.remove('opacity-100', 'visible', 'pointer-events-auto', 'translate-y-0');
 	}
 
-	function syncNavbarActiveState() {
+	function syncNavbarActiveState(pathname = window.location.pathname) {
 		const normalizePath = (pathname: string) => pathname.replace(/\/+$/, '') || '/';
-		const currentPath = normalizePath(window.location.pathname);
+		const currentPath = normalizePath(pathname);
 		const matchesPath = (pathname: string) => {
 			const targetPath = normalizePath(pathname);
 			return targetPath === '/'
@@ -216,30 +221,67 @@ const isActive =
 				: currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
 		};
 
-		document.querySelectorAll('#navbar .navbar-main-menu > [data-dropdown]').forEach((dropdown) => {
+		const dropdowns = Array.from(
+			document.querySelectorAll('#navbar .navbar-main-menu > [data-dropdown]'),
+		);
+		const activeDropdown = dropdowns.find((dropdown) => {
 			const links = dropdown.querySelectorAll<HTMLAnchorElement>('.navbar-menu-item[href], .dropdown-item[href]');
-			const isActive = Array.from(links).some((link) => {
+			return Array.from(links).some((link) => {
 				const target = new URL(link.href, window.location.href);
 				return target.origin === window.location.origin && matchesPath(target.pathname);
 			});
+		});
+
+		dropdowns.forEach((dropdown) => {
 			const trigger = dropdown.querySelector<HTMLElement>(':scope > .navbar-menu-item');
 
-			dropdown.classList.toggle('is-active', isActive);
-			trigger?.classList.toggle('is-active', isActive);
-			if (trigger instanceof HTMLAnchorElement) {
-				if (isActive) trigger.setAttribute('aria-current', 'page');
-				else trigger.removeAttribute('aria-current');
-			}
+			dropdown.classList.remove('is-active');
+			trigger?.classList.remove('is-active');
+			trigger?.removeAttribute('aria-current');
 		});
+
+		if (!activeDropdown) return;
+
+		const activeTrigger = activeDropdown.querySelector<HTMLElement>(':scope > .navbar-menu-item');
+		activeDropdown.classList.add('is-active');
+		activeTrigger?.classList.add('is-active');
+		activeTrigger?.setAttribute('aria-current', 'page');
 	}
 
-	document.addEventListener('DOMContentLoaded', syncNavbarActiveState);
-	document.addEventListener('astro:page-load', syncNavbarActiveState);
-	document.addEventListener('swup:contentReplaced', syncNavbarActiveState);
+	document.addEventListener('DOMContentLoaded', () => syncNavbarActiveState());
+	document.addEventListener('astro:page-load', () => syncNavbarActiveState());
+	document.addEventListener('swup:contentReplaced', () => syncNavbarActiveState());
+	window.addEventListener('popstate', () => syncNavbarActiveState());
 
+	document.addEventListener('click', (event) => {
+		if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+			return;
+		}
+
+		const target = event.target;
+		const anchor = target instanceof Element ? target.closest<HTMLAnchorElement>('a[href]') : null;
+		if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+
+		const destination = new URL(anchor.href, window.location.href);
+		if (destination.origin !== window.location.origin) return;
+		syncNavbarActiveState(destination.pathname);
+	});
+
+	let navbarSwupBound = false;
 	const bindNavbarSwup = () => {
-		window.swup?.hooks.on('page:view', syncNavbarActiveState);
+		if (navbarSwupBound || !window.swup?.hooks) return;
+		navbarSwupBound = true;
+		window.swup.hooks.on('visit:start', (visit: { to: { url: string } }) => {
+			const destination = new URL(visit.to.url, window.location.href);
+			syncNavbarActiveState(destination.pathname);
+		});
+		window.swup.hooks.on('content:replace', () => syncNavbarActiveState());
+		window.swup.hooks.on('page:view', () => syncNavbarActiveState());
 	};
-	if (window.swup) bindNavbarSwup();
-	else document.addEventListener('swup:enable', bindNavbarSwup, { once: true });
+
+	bindNavbarSwup();
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', bindNavbarSwup, { once: true });
+	}
+	document.addEventListener('swup:enable', bindNavbarSwup);
 </script>

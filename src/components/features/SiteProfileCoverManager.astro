@@ -1,0 +1,155 @@
+<script>
+	import {
+		getSiteProfileCover,
+		SITE_PROFILE_COVER_CHANGE_EVENT,
+	} from "@/utils/site-profile-cover";
+
+	interface StoredAttribute {
+		present: boolean;
+		value: string;
+	}
+
+	interface ProfileCoverManagerWindow extends Window {
+		__fireflySiteProfileCoverCleanup?: () => void;
+	}
+
+	const managerWindow = window as ProfileCoverManagerWindow;
+	managerWindow.__fireflySiteProfileCoverCleanup?.();
+
+	const originalAttributes = new WeakMap<Element, Map<string, StoredAttribute>>();
+	let activeObjectUrl = "";
+	let refreshToken = 0;
+	let coverObserver: MutationObserver | null = null;
+
+	function rememberAttribute(element: Element, name: string) {
+		let attributes = originalAttributes.get(element);
+		if (!attributes) {
+			attributes = new Map();
+			originalAttributes.set(element, attributes);
+		}
+		if (attributes.has(name)) return;
+		attributes.set(name, {
+			present: element.hasAttribute(name),
+			value: element.getAttribute(name) ?? "",
+		});
+	}
+
+	function setCoverAttribute(element: Element, name: string, value: string) {
+		rememberAttribute(element, name);
+		element.setAttribute(name, value);
+	}
+
+	function removeCoverAttribute(element: Element, name: string) {
+		rememberAttribute(element, name);
+		element.removeAttribute(name);
+	}
+
+	function restoreAttribute(element: Element, name: string) {
+		const stored = originalAttributes.get(element)?.get(name);
+		if (!stored) return;
+		if (stored.present) element.setAttribute(name, stored.value);
+		else element.removeAttribute(name);
+	}
+
+	function getCoverRoots(scope: ParentNode = document) {
+		return Array.from(
+			scope.querySelectorAll<HTMLElement>("[data-site-profile-cover]"),
+		);
+	}
+
+	function applyCoverUrlToRoot(root: HTMLElement, url: string) {
+		const images = root.matches("img")
+			? [root as HTMLImageElement]
+			: Array.from(root.querySelectorAll<HTMLImageElement>("img"));
+		const sources = root.matches("source")
+			? [root as HTMLSourceElement]
+			: Array.from(root.querySelectorAll<HTMLSourceElement>("source"));
+
+		for (const source of sources) {
+			setCoverAttribute(source, "srcset", url);
+			removeCoverAttribute(source, "type");
+			removeCoverAttribute(source, "sizes");
+		}
+		for (const image of images) {
+			setCoverAttribute(image, "src", url);
+			setCoverAttribute(image, "srcset", url);
+			removeCoverAttribute(image, "sizes");
+		}
+	}
+
+	function applyCoverUrl(url: string, scope: ParentNode = document) {
+		for (const root of getCoverRoots(scope)) {
+			applyCoverUrlToRoot(root, url);
+		}
+		document.documentElement.dataset.customSiteProfileCover = "true";
+	}
+
+	function restoreDefaultCover() {
+		for (const root of getCoverRoots()) {
+			const elements = root.matches("img, source")
+				? [root]
+				: Array.from(root.querySelectorAll("img, source"));
+			for (const element of elements) {
+				restoreAttribute(element, "src");
+				restoreAttribute(element, "srcset");
+				restoreAttribute(element, "type");
+				restoreAttribute(element, "sizes");
+			}
+		}
+		document.documentElement.dataset.customSiteProfileCover = "false";
+	}
+
+	async function refreshSiteProfileCover() {
+		const token = ++refreshToken;
+		try {
+			const record = await getSiteProfileCover();
+			if (token !== refreshToken) return;
+			if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+			activeObjectUrl = record ? URL.createObjectURL(record.blob) : "";
+			if (activeObjectUrl) applyCoverUrl(activeObjectUrl);
+			else restoreDefaultCover();
+		} catch (error) {
+			console.error("Failed to restore the custom profile cover:", error);
+			restoreDefaultCover();
+		}
+	}
+
+	const handleCoverChange = () => void refreshSiteProfileCover();
+	const handlePageLoad = () => {
+		if (activeObjectUrl) applyCoverUrl(activeObjectUrl);
+		else void refreshSiteProfileCover();
+	};
+
+	coverObserver = new MutationObserver((mutations) => {
+		if (!activeObjectUrl) return;
+		for (const mutation of mutations) {
+			for (const node of mutation.addedNodes) {
+				if (!(node instanceof HTMLElement)) continue;
+				if (node.matches("[data-site-profile-cover]")) {
+					applyCoverUrlToRoot(node, activeObjectUrl);
+				}
+				applyCoverUrl(activeObjectUrl, node);
+			}
+		}
+	});
+	coverObserver.observe(document.body, { childList: true, subtree: true });
+
+	window.addEventListener(SITE_PROFILE_COVER_CHANGE_EVENT, handleCoverChange);
+	document.addEventListener("astro:page-load", handlePageLoad);
+	document.addEventListener("swup:contentReplaced", handlePageLoad);
+	void refreshSiteProfileCover();
+
+	managerWindow.__fireflySiteProfileCoverCleanup = () => {
+		window.removeEventListener(
+			SITE_PROFILE_COVER_CHANGE_EVENT,
+			handleCoverChange,
+		);
+		document.removeEventListener("astro:page-load", handlePageLoad);
+		document.removeEventListener("swup:contentReplaced", handlePageLoad);
+		coverObserver?.disconnect();
+		coverObserver = null;
+		restoreDefaultCover();
+		if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+		activeObjectUrl = "";
+	};
+</script>

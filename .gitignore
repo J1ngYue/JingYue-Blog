@@ -37,3 +37,12 @@ Firefly-docs/
 cache/
 package/
 .obsidian/
+
+# playwright cli
+.playwright-cli/
+
+# debug output
+output/
+
+# cloudflare workers
+.wrangler/

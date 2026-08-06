@@ -43,8 +43,26 @@ const dynamicCollection = defineCollection({
 	}),
 });
 
+const notebooksCollection = defineCollection({
+	loader: glob({
+		pattern: "**/*.{md,mdx}",
+		base: "./src/content/notebooks",
+	}),
+	schema: z.object({
+		title: z.string(),
+		notebook: z.string(),
+		slug: z.string(),
+		published: z.date(),
+		updated: z.date().optional(),
+		description: z.string().optional().default(""),
+		tags: z.array(z.string()).optional().default([]),
+		draft: z.boolean().optional().default(false),
+	}),
+});
+
 export const collections = {
 	dynamic: dynamicCollection,
+	notebooks: notebooksCollection,
 	posts: postsCollection,
 	spec: specCollection,
 };

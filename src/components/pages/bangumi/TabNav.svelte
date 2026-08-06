@@ -15,14 +15,11 @@ const { tabs, activeTab, onTabChange }: Props = $props();
 
 function handleHashChange() {
 	const hash = window.location.hash.replace(/^#/, "");
-	if (hash) {
-		try {
-			const decoded = decodeURIComponent(hash);
-			if (tabs.some((t) => t.id === decoded)) {
-				onTabChange(decoded);
-			}
-		} catch {}
-	}
+	if (!hash) return;
+	try {
+		const decoded = decodeURIComponent(hash);
+		if (tabs.some((tab) => tab.id === decoded)) onTabChange(decoded);
+	} catch {}
 }
 
 $effect(() => {
@@ -39,25 +36,79 @@ function clickTab(tabId: string) {
 }
 </script>
 
-<div class="border-b border-(--line-divider) mb-3">
-  <div class="overflow-x-auto" data-tab-scroll-container>
-    <nav class="flex min-w-max space-x-8" aria-label="Tabs">
-      {#each tabs as tab}
-        <button
-          class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 {tab.id === activeTab
-            ? 'border-(--primary) text-(--primary)'
-            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
-          onclick={() => clickTab(tab.id)}
-          type="button"
-        >
-          {tab.name}
-          {#if tab.count !== undefined}
-            <span class="ml-2 bg-(--btn-regular-bg) text-(--btn-content) py-0.5 px-2 rounded-full text-xs">
-              {tab.count}
-            </span>
-          {/if}
-        </button>
-      {/each}
-    </nav>
-  </div>
-</div>
+<nav class="bangumi-tabs" aria-label="作品分类">
+	{#each tabs as tab}
+		<button
+			class:is-active={tab.id === activeTab}
+			onclick={() => clickTab(tab.id)}
+			type="button"
+			aria-pressed={tab.id === activeTab}
+		>
+			<span>{tab.name}</span>
+			{#if tab.count !== undefined}<small>{tab.count}</small>{/if}
+		</button>
+	{/each}
+</nav>
+
+<style>
+	.bangumi-tabs {
+		display: flex;
+		min-height: 3.2rem;
+		align-items: center;
+		gap: 0.35rem;
+		overflow-x: auto;
+		margin: 0 0 1.35rem;
+		border: 2px solid var(--record-ink, #111);
+		border-radius: 1.1rem;
+		padding: 0.32rem;
+		scrollbar-width: none;
+	}
+
+	.bangumi-tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	button {
+		display: inline-flex;
+		min-height: 2.35rem;
+		flex: 0 0 auto;
+		align-items: center;
+		gap: 0.45rem;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		padding: 0.35rem 0.9rem;
+		color: var(--record-ink, var(--deep-text));
+		font: inherit;
+		font-size: 0.84rem;
+		font-weight: 650;
+		cursor: pointer;
+		transition: background-color 160ms ease, color 160ms ease;
+	}
+
+	button:hover,
+	button:focus-visible {
+		background: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
+		outline: none;
+	}
+
+	button:focus-visible {
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+	}
+
+	button.is-active {
+		background: var(--record-ink, #111);
+		color: var(--card-bg, #fff);
+	}
+
+	small {
+		display: grid;
+		min-width: 1.35rem;
+		height: 1.35rem;
+		place-items: center;
+		border-radius: 999px;
+		background: color-mix(in srgb, currentColor 12%, transparent);
+		font-size: 0.66rem;
+		font-weight: 750;
+	}
+</style>

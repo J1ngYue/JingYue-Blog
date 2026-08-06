@@ -1,0 +1,870 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+interface EditorialPanel {
+	title: string;
+	label: string;
+	description: string;
+	href: string;
+	image: ImageMetadata;
+}
+
+interface Props {
+	panels: EditorialPanel[];
+}
+
+const { panels } = Astro.props;
+---
+
+<section
+	id="home-gallery"
+	class="home-gallery home-scroll-scene"
+	aria-labelledby="home-gallery-title"
+	data-home-scroll-scene
+	data-home-page
+	data-home-section-tone="light"
+	data-home-gallery-state="idle"
+>
+	<h2 id="home-gallery-title" class="home-gallery__sr-only">作品展示</h2>
+
+	<div class="home-gallery__stage">
+		<header class="home-gallery__intro" data-home-gallery-intro aria-hidden="true">
+			<div class="home-gallery__intro-left">
+				<p>作品<br />展示</p>
+			</div>
+			<div class="home-gallery__intro-axis" aria-label="CRYSTALLIZE GALLERY">
+				<span>CRYSTALLIZE</span>
+				<span>GALLERY</span>
+			</div>
+			<div class="home-gallery__intro-right">
+				<p class="home-gallery__intro-copy">
+					Where fleeting visions<br />
+					crystallize into<br />
+					permanence — each<br />
+					frame a frozen breath<br />
+					of time, each work a<br />
+					memory hardened into<br />
+					light.
+				</p>
+			</div>
+		</header>
+
+		<nav class="home-gallery__rail" aria-label="作品分类导航" data-home-gallery-rail inert>
+			{
+				panels.map((panel, index) => (
+					<a
+						class="home-gallery__panel"
+						href={panel.href}
+						style={`--gallery-panel-delay: ${index * 160}ms;`}
+					>
+						<Image
+							class="home-gallery__panel-image"
+							src={panel.image}
+							alt=""
+							loading="lazy"
+							decoding="async"
+							widths={[480, 640, 768, 960]}
+							sizes="(min-width: 1024px) 20vw, 78vw"
+							quality={82}
+						/>
+						<span class="home-gallery__panel-shade" aria-hidden="true"></span>
+						<span class="home-gallery__panel-copy" data-home-gallery-panel-copy>
+							<small>{panel.label}</small>
+							<strong>{panel.title}</strong>
+							<span>{panel.description}</span>
+						</span>
+					</a>
+				))
+			}
+		</nav>
+	</div>
+</section>
+
+<script is:inline>
+	function initializeHomeGallery() {
+		if (typeof window.__fireflyHomeGalleryCleanup === "function") {
+			window.__fireflyHomeGalleryCleanup();
+		}
+
+		const section = document.getElementById("home-gallery");
+		if (!section) return;
+
+		const intro = section.querySelector("[data-home-gallery-intro]");
+		const rail = section.querySelector("[data-home-gallery-rail]");
+		const images = Array.from(section.querySelectorAll(".home-gallery__panel-image"));
+		const panelCopies = Array.from(
+			section.querySelectorAll("[data-home-gallery-panel-copy]"),
+		);
+		const finalPanelCopy = panelCopies.at(-1);
+		if (!intro || !rail || !finalPanelCopy) return;
+
+		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const compactViewport = window.matchMedia("(max-width: 1023px)");
+		const sceneId = section.id;
+		const landing = section.closest("[data-home-landing]");
+		let state = "idle";
+		let activeSceneId = landing?.dataset.homeSceneId || "";
+		let visibleRatio = 0;
+		let holdTimer = 0;
+		let visibilityObserver = null;
+		let preloadObserver = null;
+		let imagesReadyPromise = null;
+		let startRequestId = 0;
+		let pendingStartRequestId = 0;
+		let preparing = false;
+		let disposed = false;
+		const imageWaitCleanups = new Set();
+
+		const clearHoldTimer = () => {
+			if (!holdTimer) return;
+			window.clearTimeout(holdTimer);
+			holdTimer = 0;
+		};
+
+		const announceState = (nextState) => {
+			const locked =
+				preparing || nextState === "intro" || nextState === "transitioning";
+			window.dispatchEvent(
+				new CustomEvent("firefly:home-gallery-lock", {
+					detail: { locked, state: nextState },
+				}),
+			);
+
+			const tone = nextState === "idle" || nextState === "intro" ? "light" : "dark";
+			window.dispatchEvent(
+				new CustomEvent("firefly:home-section-tone", {
+					detail: { id: sceneId, tone },
+				}),
+			);
+		};
+
+		const setState = (nextState) => {
+			if (state === nextState) return;
+			clearHoldTimer();
+			state = nextState;
+			section.dataset.homeGalleryState = nextState;
+			section.dataset.homeSectionTone =
+				nextState === "transitioning" || nextState === "expanded" ? "dark" : "light";
+			section.setAttribute(
+				"aria-busy",
+				String(nextState === "intro" || nextState === "transitioning"),
+			);
+			rail.toggleAttribute("inert", nextState !== "expanded");
+			announceState(nextState);
+		};
+
+		const invalidatePendingStart = () => {
+			startRequestId += 1;
+			pendingStartRequestId = 0;
+			const wasPreparing = preparing;
+			preparing = false;
+			return wasPreparing;
+		};
+
+		const resetToIdle = () => {
+			clearHoldTimer();
+			const wasPreparing = invalidatePendingStart();
+			if (state === "idle" && wasPreparing) announceState("idle");
+			setState("idle");
+		};
+
+		const waitForImageLoad = (image) => {
+			if (image.complete) return Promise.resolve(image.naturalWidth > 0);
+
+			return new Promise((resolve) => {
+				let settled = false;
+				const finish = (loaded) => {
+					if (settled) return;
+					settled = true;
+					image.removeEventListener("load", handleLoad);
+					image.removeEventListener("error", handleError);
+					imageWaitCleanups.delete(cancel);
+					resolve(loaded);
+				};
+				const handleLoad = () => finish(true);
+				const handleError = () => finish(false);
+				const cancel = () => finish(false);
+
+				image.addEventListener("load", handleLoad, { once: true });
+				image.addEventListener("error", handleError, { once: true });
+				imageWaitCleanups.add(cancel);
+
+				if (image.complete) finish(image.naturalWidth > 0);
+			});
+		};
+
+		const settlePanelImage = async (image) => {
+			image.loading = "eager";
+			const loaded = await waitForImageLoad(image);
+			if (!loaded) {
+				if (!disposed) image.dataset.homeGalleryImageFailed = "";
+				return;
+			}
+
+			try {
+				await image.decode();
+			} catch {}
+
+			if (!disposed) image.removeAttribute("data-home-gallery-image-failed");
+		};
+
+		const ensurePanelImagesReady = () => {
+			imagesReadyPromise ??= Promise.allSettled(images.map(settlePanelImage)).then(
+				() => undefined,
+			);
+			return imagesReadyPromise;
+		};
+
+		const tryStart = () => {
+			if (state !== "idle" || activeSceneId !== sceneId || visibleRatio < 0.6) return;
+			if (reducedMotion.matches || compactViewport.matches) {
+				invalidatePendingStart();
+				setState("expanded");
+				return;
+			}
+
+			if (pendingStartRequestId) return;
+			const requestId = ++startRequestId;
+			pendingStartRequestId = requestId;
+			preparing = true;
+			announceState(state);
+
+			void ensurePanelImagesReady().then(() => {
+				if (pendingStartRequestId === requestId) pendingStartRequestId = 0;
+				if (disposed || requestId !== startRequestId) return;
+				if (state !== "idle" || activeSceneId !== sceneId || visibleRatio < 0.6) {
+					preparing = false;
+					announceState(state);
+					return;
+				}
+
+				preparing = false;
+				void section.offsetWidth;
+				setState("intro");
+			});
+		};
+
+		const handleSceneChange = (event) => {
+			activeSceneId = typeof event.detail?.id === "string" ? event.detail.id : "";
+			if (activeSceneId !== sceneId) {
+				if (state !== "expanded" || visibleRatio === 0) resetToIdle();
+				return;
+			}
+			tryStart();
+		};
+
+		const handleIntroEnd = (event) => {
+			if (state !== "intro" || event.target !== intro) return;
+
+			clearHoldTimer();
+			holdTimer = window.setTimeout(() => {
+				holdTimer = 0;
+				if (state === "intro" && activeSceneId === sceneId) setState("transitioning");
+			}, 500);
+		};
+
+		const handleFinalCopyEnd = (event) => {
+			if (
+				state !== "transitioning" ||
+				event.target !== finalPanelCopy ||
+				event.propertyName !== "opacity"
+			) return;
+			setState("expanded");
+		};
+
+		const handleMotionEnvironmentChange = () => {
+			if (
+				(reducedMotion.matches || compactViewport.matches) &&
+				activeSceneId === sceneId &&
+				visibleRatio >= 0.6
+			) {
+				invalidatePendingStart();
+				setState("expanded");
+				return;
+			}
+			tryStart();
+		};
+
+		const preloadPanelImages = () => {
+			preloadObserver?.disconnect();
+			preloadObserver = null;
+			void ensurePanelImagesReady();
+		};
+
+		if ("IntersectionObserver" in window) {
+			visibilityObserver = new IntersectionObserver(
+				([entry]) => {
+					visibleRatio = entry?.intersectionRatio ?? 0;
+					if (!entry?.isIntersecting && activeSceneId !== sceneId && state === "expanded") {
+						resetToIdle();
+					}
+					tryStart();
+				},
+				{ threshold: [0, 0.6, 1] },
+			);
+			visibilityObserver.observe(section);
+
+			preloadObserver = new IntersectionObserver(
+				([entry]) => {
+					if (entry?.isIntersecting) preloadPanelImages();
+				},
+				{ rootMargin: "100% 0px", threshold: 0 },
+			);
+			preloadObserver.observe(section);
+		} else {
+			visibleRatio = 1;
+			preloadPanelImages();
+		}
+
+		window.addEventListener("firefly:home-scene-change", handleSceneChange);
+		intro.addEventListener("animationend", handleIntroEnd);
+		finalPanelCopy.addEventListener("transitionend", handleFinalCopyEnd);
+		reducedMotion.addEventListener("change", handleMotionEnvironmentChange);
+		compactViewport.addEventListener("change", handleMotionEnvironmentChange);
+
+		const cleanup = () => {
+			const wasLocked = preparing || state === "intro" || state === "transitioning";
+			disposed = true;
+			invalidatePendingStart();
+			clearHoldTimer();
+			imageWaitCleanups.forEach((cancel) => cancel());
+			imageWaitCleanups.clear();
+			visibilityObserver?.disconnect();
+			preloadObserver?.disconnect();
+			visibilityObserver = null;
+			preloadObserver = null;
+			window.removeEventListener("firefly:home-scene-change", handleSceneChange);
+			intro.removeEventListener("animationend", handleIntroEnd);
+			finalPanelCopy.removeEventListener("transitionend", handleFinalCopyEnd);
+			reducedMotion.removeEventListener("change", handleMotionEnvironmentChange);
+			compactViewport.removeEventListener("change", handleMotionEnvironmentChange);
+			document.removeEventListener("astro:before-swap", cleanup);
+			if (wasLocked) {
+				window.dispatchEvent(
+					new CustomEvent("firefly:home-gallery-lock", {
+						detail: { locked: false, state: "idle" },
+					}),
+				);
+			}
+			if (window.__fireflyHomeGalleryCleanup === cleanup) {
+				window.__fireflyHomeGalleryCleanup = null;
+			}
+		};
+
+		document.addEventListener("astro:before-swap", cleanup, { once: true });
+		window.__fireflyHomeGalleryCleanup = cleanup;
+	}
+
+	if (typeof window.__fireflyHomeGalleryInitializer === "function") {
+		document.removeEventListener("astro:page-load", window.__fireflyHomeGalleryInitializer);
+		document.removeEventListener("swup:contentReplaced", window.__fireflyHomeGalleryInitializer);
+	}
+	window.__fireflyHomeGalleryInitializer = initializeHomeGallery;
+	document.addEventListener("astro:page-load", initializeHomeGallery);
+	document.addEventListener("swup:contentReplaced", initializeHomeGallery);
+	initializeHomeGallery();
+</script>
+
+<style>
+	.home-gallery {
+		position: relative;
+		isolation: isolate;
+		width: 100%;
+		max-width: 100%;
+		min-height: 100svh;
+		overflow: hidden;
+		background: #fff;
+		transition: background-color 320ms ease;
+	}
+
+	.home-gallery[data-home-gallery-state="transitioning"],
+	.home-gallery[data-home-gallery-state="expanded"] {
+		background: #101317;
+	}
+
+	.home-gallery__sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	.home-gallery__stage {
+		position: relative;
+		width: 100%;
+		min-height: 100svh;
+		overflow: hidden;
+		background: #101317;
+	}
+
+	.home-gallery__intro {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 18vw minmax(0, 1fr);
+		min-height: 100svh;
+		overflow: hidden;
+		background: #fff;
+		opacity: 0;
+		pointer-events: none;
+		will-change: opacity, transform, filter;
+	}
+
+	.home-gallery[data-home-gallery-state="intro"] .home-gallery__intro {
+		animation: home-gallery-intro 800ms linear both;
+	}
+
+	.home-gallery[data-home-gallery-state="transitioning"] .home-gallery__intro {
+		opacity: 0;
+		transition: opacity 420ms ease;
+	}
+
+	.home-gallery[data-home-gallery-state="expanded"] .home-gallery__intro {
+		visibility: hidden;
+	}
+
+	.home-gallery__intro-left,
+	.home-gallery__intro-right {
+		position: relative;
+		z-index: 3;
+		display: flex;
+		box-sizing: border-box;
+		min-width: 0;
+		background: #fff;
+		color: #000;
+		opacity: 1;
+		will-change: opacity, transform;
+	}
+
+	.home-gallery[data-home-gallery-state="intro"] .home-gallery__intro-left {
+		animation: home-gallery-intro-left 260ms cubic-bezier(0.22, 0.74, 0.18, 1) 540ms both;
+	}
+
+	.home-gallery[data-home-gallery-state="intro"] .home-gallery__intro-right {
+		animation: home-gallery-intro-right 260ms cubic-bezier(0.22, 0.74, 0.18, 1) 540ms both;
+	}
+
+	.home-gallery__intro-left {
+		align-items: center;
+		justify-content: flex-end;
+		padding: clamp(2rem, 4vw, 5rem);
+		padding-right: clamp(5rem, 7vw, 8.5rem);
+	}
+
+	.home-gallery__intro-left p {
+		margin: 0;
+		font-size: clamp(3.25rem, 3.75vw, 4.75rem);
+		font-weight: 450;
+		line-height: 1.08;
+		letter-spacing: 0;
+		text-align: center;
+	}
+
+	.home-gallery__intro-axis {
+		position: relative;
+		z-index: 2;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 0;
+		flex-direction: column;
+		gap: clamp(1.5rem, 3.5vh, 2.5rem);
+		background: #000;
+		color: #fff;
+		transform-origin: center;
+		will-change: transform;
+	}
+
+	.home-gallery[data-home-gallery-state="intro"] .home-gallery__intro-axis {
+		animation: home-gallery-intro-pillar 700ms cubic-bezier(0.65, 0, 0.35, 1) 60ms both;
+	}
+
+	.home-gallery__intro-axis span {
+		font-size: clamp(1.15rem, 1.4vw, 1.65rem);
+		font-weight: 500;
+		letter-spacing: 0;
+		line-height: 1.05;
+		writing-mode: vertical-rl;
+		text-orientation: upright;
+		will-change: opacity;
+	}
+
+	.home-gallery[data-home-gallery-state="intro"] .home-gallery__intro-axis span {
+		animation: home-gallery-intro-axis-copy 220ms ease-out 540ms both;
+	}
+
+	.home-gallery__intro-right {
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		padding: clamp(3rem, 5.5vw, 7rem);
+	}
+
+	.home-gallery__intro-right p {
+		margin: 0;
+		letter-spacing: 0;
+	}
+
+	.home-gallery__intro-copy {
+		max-width: 18rem;
+		color: #666;
+		font-size: clamp(0.82rem, 0.9vw, 1rem);
+		font-weight: 450;
+		line-height: 1.55;
+	}
+
+	.home-gallery[data-home-gallery-state="idle"] .home-gallery__intro {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	.home-gallery[data-home-gallery-state="idle"] .home-gallery__intro-left {
+		opacity: 0;
+		transform: translate3d(-0.75rem, 0, 0);
+	}
+
+	.home-gallery[data-home-gallery-state="idle"] .home-gallery__intro-right {
+		opacity: 0;
+		transform: translate3d(0.75rem, 0, 0);
+	}
+
+	.home-gallery[data-home-gallery-state="idle"] .home-gallery__intro-axis {
+		transform: scaleX(0.006);
+	}
+
+	.home-gallery[data-home-gallery-state="idle"] .home-gallery__intro-axis span {
+		opacity: 0;
+	}
+
+	.home-gallery__rail {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		width: 100%;
+		min-height: 100svh;
+		overflow: hidden;
+		background: #101317;
+		visibility: visible;
+		contain: layout paint;
+		transform: translateZ(0);
+	}
+
+	.home-gallery__panel {
+		position: relative;
+		display: block;
+		min-width: 0;
+		min-height: 100svh;
+		overflow: hidden;
+		background: #15191e;
+		color: #fff;
+		opacity: 1;
+		transform: translate3d(0, 105%, 0);
+		backface-visibility: hidden;
+		contain: layout paint;
+		will-change: transform;
+	}
+
+	.home-gallery__panel:nth-child(even) {
+		transform: translate3d(0, -105%, 0);
+	}
+
+	.home-gallery[data-home-gallery-state="transitioning"] .home-gallery__panel {
+		transform: translate3d(0, 0, 0);
+		transition: transform 650ms cubic-bezier(0.2, 0.75, 0.2, 1);
+		transition-delay: var(--gallery-panel-delay);
+	}
+
+	.home-gallery[data-home-gallery-state="expanded"] .home-gallery__panel {
+		opacity: 1;
+		transform: none;
+	}
+
+	.home-gallery__panel + .home-gallery__panel {
+		border-left: 1px solid rgb(255 255 255 / 0.12);
+	}
+
+	.home-gallery__panel-image {
+		position: absolute;
+		inset: 0;
+		display: block;
+		width: 100%;
+		height: 100%;
+		background: #15191e;
+		object-fit: cover;
+		object-position: center;
+		transform: scale(1.08);
+		backface-visibility: hidden;
+		will-change: transform;
+		user-select: none;
+		-webkit-user-drag: none;
+	}
+
+	.home-gallery__panel-image[data-home-gallery-image-failed] {
+		opacity: 0;
+	}
+
+	.home-gallery[data-home-gallery-state="transitioning"] .home-gallery__panel-image {
+		transform: scale(1);
+		transition: transform 650ms cubic-bezier(0.2, 0.75, 0.2, 1);
+		transition-delay: var(--gallery-panel-delay);
+	}
+
+	.home-gallery__panel-shade {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		background:
+			linear-gradient(180deg, rgb(8 10 12 / 0.08) 25%, rgb(8 10 12 / 0.82) 100%),
+			linear-gradient(90deg, rgb(8 10 12 / 0.24), transparent 45%);
+	}
+
+	.home-gallery__panel-copy {
+		position: absolute;
+		right: 1.25rem;
+		bottom: 2rem;
+		left: 1.25rem;
+		z-index: 2;
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.45rem;
+		color: #fff;
+		opacity: 0;
+		transform: translate3d(0, 1rem, 0);
+		will-change: opacity, transform;
+	}
+
+	.home-gallery[data-home-gallery-state="transitioning"] .home-gallery__panel-copy {
+		opacity: 1;
+		transform: translate3d(0, 0, 0);
+		transition:
+			opacity 210ms ease-out,
+			transform 210ms ease-out;
+		transition-delay: calc(var(--gallery-panel-delay) + 800ms);
+	}
+
+	.home-gallery[data-home-gallery-state="expanded"] .home-gallery__panel-copy {
+		opacity: 1;
+		transform: none;
+		will-change: auto;
+	}
+
+	.home-gallery__panel-copy small,
+	.home-gallery__panel-copy strong,
+	.home-gallery__panel-copy > span {
+		max-width: 100%;
+		letter-spacing: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.home-gallery__panel-copy small {
+		font-size: 0.68rem;
+		font-weight: 800;
+		line-height: 1.25;
+	}
+
+	.home-gallery__panel-copy strong {
+		font-size: 2rem;
+		font-weight: 900;
+		line-height: 1.05;
+	}
+
+	.home-gallery__panel-copy > span {
+		font-size: 0.78rem;
+		font-weight: 650;
+		line-height: 1.45;
+	}
+
+	@media (min-width: 1024px) {
+		.home-gallery__panel:first-child .home-gallery__panel-copy {
+			left: clamp(5.75rem, 6.5vw, 7.5rem);
+		}
+	}
+
+	.home-gallery[data-home-gallery-state="expanded"] .home-gallery__panel-image {
+		transform: scale(1);
+		transition: transform 420ms ease;
+	}
+
+	.home-gallery[data-home-gallery-state="expanded"] .home-gallery__panel:hover .home-gallery__panel-image {
+		transform: scale(1.025);
+	}
+
+	.home-gallery__panel:focus-visible {
+		z-index: 3;
+		outline: 3px solid #fff;
+		outline-offset: -3px;
+	}
+
+	@media (max-width: 1279px) and (min-width: 1024px) {
+		.home-gallery__intro-left,
+		.home-gallery__intro-right {
+			padding: 2.5rem;
+		}
+
+		.home-gallery__intro-left p {
+			font-size: 3.25rem;
+		}
+
+		.home-gallery__intro-copy {
+			font-size: 0.82rem;
+		}
+
+		.home-gallery__panel-copy {
+			right: 0.9rem;
+			left: 0.9rem;
+		}
+
+		.home-gallery__panel-copy strong {
+			font-size: 1.55rem;
+		}
+	}
+
+	@media (min-width: 1280px) and (max-height: 820px) {
+		.home-gallery__panel:first-child .home-gallery__panel-copy {
+			left: 7rem;
+		}
+	}
+
+	@media (min-width: 1024px) and (max-width: 1279px) and (max-height: 820px) {
+		.home-gallery__panel:first-child .home-gallery__panel-copy {
+			bottom: 8rem;
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.home-gallery,
+		.home-gallery__stage {
+			min-height: 100svh;
+		}
+
+		.home-gallery__intro {
+			display: none;
+		}
+
+		.home-gallery__rail {
+			position: relative;
+			display: flex;
+			box-sizing: border-box;
+			gap: 0.75rem;
+			min-height: 100svh;
+			padding: 0.75rem;
+			overflow-x: auto;
+			overflow-y: hidden;
+			scroll-snap-type: x proximity;
+			touch-action: auto;
+		}
+
+		.home-gallery__panel,
+		.home-gallery__panel:nth-child(even) {
+			flex: 0 0 min(46vw, 30rem);
+			min-height: calc(100svh - 1.5rem);
+			border: 0;
+			border-radius: 4px;
+			clip-path: inset(0);
+			opacity: 1;
+			transform: none;
+			scroll-snap-align: center;
+		}
+
+		.home-gallery__panel + .home-gallery__panel {
+			border-left: 0;
+		}
+
+		.home-gallery__panel-copy {
+			right: 1.1rem;
+			bottom: 1.5rem;
+			left: 1.1rem;
+		}
+
+		.home-gallery__panel-copy strong {
+			font-size: 1.8rem;
+		}
+	}
+
+	@media (max-width: 680px) {
+		.home-gallery__panel,
+		.home-gallery__panel:nth-child(even) {
+			flex-basis: min(84vw, 26rem);
+		}
+	}
+
+	@media (max-width: 1023px) and (max-height: 500px) {
+		.home-gallery__panel:first-child .home-gallery__panel-copy {
+			left: 7.5rem;
+		}
+	}
+
+	@keyframes home-gallery-intro {
+		0% {
+			opacity: 1;
+			filter: blur(0);
+			transform: scale(1);
+		}
+		100% {
+			opacity: 1;
+			filter: blur(0);
+			transform: scale(1);
+		}
+	}
+
+	@keyframes home-gallery-intro-pillar {
+		from {
+			transform: scaleX(0.006);
+		}
+		to {
+			transform: scaleX(1);
+		}
+	}
+
+	@keyframes home-gallery-intro-axis-copy {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes home-gallery-intro-left {
+		from {
+			opacity: 0;
+			transform: translate3d(-0.75rem, 0, 0);
+		}
+		to {
+			opacity: 1;
+			transform: translate3d(0, 0, 0);
+		}
+	}
+
+	@keyframes home-gallery-intro-right {
+		from {
+			opacity: 0;
+			transform: translate3d(0.75rem, 0, 0);
+		}
+		to {
+			opacity: 1;
+			transform: translate3d(0, 0, 0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-gallery,
+		.home-gallery__intro,
+		.home-gallery__panel,
+		.home-gallery__panel-copy,
+		.home-gallery__panel-image {
+			transition: none !important;
+			animation: none !important;
+		}
+	}
+</style>

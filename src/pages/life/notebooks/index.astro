@@ -1,0 +1,22 @@
+---
+import NotebookIndex from "@/components/pages/record/NotebookIndex.astro";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+---
+
+<MainGridLayout
+	title="笔记本"
+	bannerTitle="动态"
+	description="成长日记、学习复盘、灵感随笔"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<RecordPageShell
+		title="笔记本"
+		description="成长日记、学习复盘、灵感随笔"
+		icon="material-symbols:menu-book-rounded"
+	>
+		<NotebookIndex />
+	</RecordPageShell>
+</MainGridLayout>

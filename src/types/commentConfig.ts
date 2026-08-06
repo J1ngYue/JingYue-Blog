@@ -26,6 +26,8 @@ export type CommentConfig = {
 		emoji: string[];
 		login?: "enable" | "force" | "disable";
 		visitorCount?: boolean; // 是否统计访问量，true 启用访问量，false 关闭
+		/** 可选的图片上传接口；不配置时以内联图片发送小图。 */
+		imageUploadURL?: string;
 	};
 	artalk?: {
 		// 后端程序 API 地址

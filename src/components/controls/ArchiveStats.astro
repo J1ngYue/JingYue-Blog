@@ -1,0 +1,278 @@
+---
+import type { ActivityCalendar } from "@/utils/home-activity";
+
+interface Props {
+	totalPosts: number;
+	currentYearPosts: number;
+	annualPostGoal: number;
+	currentYear: number;
+	githubActivity: ActivityCalendar;
+}
+
+const {
+	totalPosts,
+	currentYearPosts,
+	annualPostGoal,
+	currentYear,
+	githubActivity,
+} = Astro.props;
+const annualProgress =
+	annualPostGoal > 0
+		? Math.round((currentYearPosts / annualPostGoal) * 100)
+		: null;
+const githubYearTotal = githubActivity.available
+	? githubActivity.days.reduce(
+			(total, day) =>
+				!day.isOutsideRange && day.date.startsWith(`${currentYear}-`)
+					? total + day.count
+					: total,
+			0,
+		)
+	: null;
+---
+
+<archive-stats
+	data-scope-count={totalPosts}
+	data-scope-label="全部文章"
+>
+	<section class="archive-stats" aria-labelledby="archive-stats-title">
+		<h2 id="archive-stats-title" class="sr-only">归档动态统计</h2>
+		<div class="archive-stats__grid">
+			<div class="archive-stats__metric" data-archive-scope-metric>
+				<strong
+					class="archive-stats__value"
+					data-archive-stat-value
+					data-target={totalPosts}
+				>{totalPosts}</strong>
+				<span class="archive-stats__label" data-archive-scope-label>全部文章</span>
+			</div>
+			<div class="archive-stats__metric">
+				<strong
+					class="archive-stats__value"
+					data-archive-stat-value={annualProgress !== null ? "" : undefined}
+					data-target={annualProgress ?? undefined}
+					data-suffix={annualProgress !== null ? "%" : undefined}
+				>{annualProgress !== null ? `${annualProgress}%` : "--"}</strong>
+				<span class="archive-stats__label">年进度</span>
+				{annualPostGoal > 0 && (
+					<span class="archive-stats__note">年度目标 {annualPostGoal}</span>
+				)}
+			</div>
+			<div class="archive-stats__metric">
+				<strong
+					class="archive-stats__value"
+					data-archive-stat-value={githubYearTotal !== null ? "" : undefined}
+					data-target={githubYearTotal ?? undefined}
+				>{githubYearTotal ?? "--"}</strong>
+				<span class="archive-stats__label">本年 GitHub 贡献</span>
+				<span class="archive-stats__note">{currentYear} 年公开记录</span>
+			</div>
+		</div>
+		<p class="sr-only" aria-live="polite" data-archive-stats-live></p>
+	</section>
+</archive-stats>
+
+<script is:inline>
+	class ArchiveStatsElement extends HTMLElement {
+		connectedCallback() {
+			if (this.dataset.initialized === "true") return;
+			this.dataset.initialized = "true";
+			this.valueFrames = new Map();
+			this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+			this.hasAnimated = false;
+			this.scopeValue = this.querySelector("[data-archive-scope-metric] [data-archive-stat-value]");
+			this.scopeLabel = this.querySelector("[data-archive-scope-label]");
+			this.liveRegion = this.querySelector("[data-archive-stats-live]");
+
+			const reveal = () => {
+				if (this.hasAnimated) return;
+				this.hasAnimated = true;
+				this.querySelectorAll("[data-archive-stat-value][data-target]").forEach((element) => {
+					const suffix = element.dataset.suffix || "";
+					element.textContent = `0${suffix}`;
+					this.animateValue(element, Number(element.dataset.target), suffix, 760);
+				});
+			};
+
+			if ("IntersectionObserver" in window && !this.reducedMotion) {
+				this.observer = new IntersectionObserver(
+					(entries) => {
+						if (!entries.some((entry) => entry.isIntersecting)) return;
+						reveal();
+						this.observer?.disconnect();
+					},
+					{ threshold: 0.25 },
+				);
+				this.observer.observe(this);
+			} else {
+				reveal();
+			}
+
+			this.updateScope(
+				Number(this.dataset.scopeCount || 0),
+				this.dataset.scopeLabel || "全部文章",
+				false,
+			);
+		}
+
+		disconnectedCallback() {
+			this.observer?.disconnect();
+			for (const frame of this.valueFrames?.values() || []) cancelAnimationFrame(frame);
+			this.valueFrames?.clear();
+		}
+
+		animateValue(element, target, suffix = "", duration = 320) {
+			if (!element || !Number.isFinite(target)) return;
+			const previousFrame = this.valueFrames?.get(element);
+			if (previousFrame) cancelAnimationFrame(previousFrame);
+			if (this.reducedMotion) {
+				element.textContent = `${Math.max(0, Math.round(target))}${suffix}`;
+				return;
+			}
+
+			const startValue = Number.parseInt(element.textContent || "0", 10) || 0;
+			const startedAt = performance.now();
+			const frame = (now) => {
+				const progress = Math.min(1, (now - startedAt) / duration);
+				const eased = 1 - (1 - progress) ** 3;
+				const value = Math.round(startValue + (target - startValue) * eased);
+				element.textContent = `${Math.max(0, value)}${suffix}`;
+				if (progress < 1) {
+					const frameId = requestAnimationFrame(frame);
+					this.valueFrames.set(element, frameId);
+				} else {
+					this.valueFrames.delete(element);
+				}
+			};
+			const frameId = requestAnimationFrame(frame);
+			this.valueFrames.set(element, frameId);
+		}
+
+		updateScope(count, label, animate = true) {
+			const normalizedCount = Math.max(0, Number(count) || 0);
+			this.dataset.scopeCount = String(normalizedCount);
+			this.dataset.scopeLabel = label || "全部文章";
+			if (this.scopeLabel) this.scopeLabel.textContent = this.dataset.scopeLabel;
+			if (this.scopeValue) {
+				this.scopeValue.dataset.target = String(normalizedCount);
+				if (animate && this.hasAnimated) this.animateValue(this.scopeValue, normalizedCount);
+				else this.scopeValue.textContent = String(normalizedCount);
+			}
+			if (this.liveRegion) {
+				this.liveRegion.textContent = `${this.dataset.scopeLabel} ${normalizedCount} 篇`;
+			}
+		}
+	}
+
+	if (!customElements.get("archive-stats")) {
+		customElements.define("archive-stats", ArchiveStatsElement);
+	}
+</script>
+
+<style>
+	archive-stats {
+		--archive-stats-ink: var(--deep-text);
+		display: block;
+	}
+
+	:global(:root.dark) archive-stats {
+		--archive-stats-ink: oklch(0.92 0.01 var(--hue));
+	}
+
+	.archive-stats {
+		margin: 1.2rem 0 1.6rem;
+		border-block: 1px solid color-mix(in oklch, var(--line-divider) 72%, transparent);
+		padding: 1.3rem 0.25rem;
+		color: var(--archive-stats-ink);
+	}
+
+	.archive-stats__grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 8.5rem));
+		gap: 1.5rem;
+		width: fit-content;
+		max-width: 100%;
+	}
+
+	.archive-stats__metric {
+		position: relative;
+		min-width: 0;
+		padding-right: 1.5rem;
+	}
+
+	.archive-stats__metric:not(:last-child)::after {
+		position: absolute;
+		top: 0.2rem;
+		right: 0;
+		width: 1px;
+		height: 3.9rem;
+		background: color-mix(in oklch, var(--line-divider) 76%, transparent);
+		content: "";
+	}
+
+	.archive-stats__value {
+		display: block;
+		min-width: 3ch;
+		min-height: 2.35rem;
+		font-size: 2.15rem;
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.08;
+	}
+
+	.archive-stats__label,
+	.archive-stats__note {
+		display: block;
+		overflow-wrap: anywhere;
+	}
+
+	.archive-stats__label {
+		margin-top: 0.5rem;
+		color: color-mix(in oklch, var(--archive-stats-ink) 66%, transparent);
+		font-size: 0.82rem;
+		line-height: 1.35;
+	}
+
+	.archive-stats__note {
+		margin-top: 0.18rem;
+		color: color-mix(in oklch, var(--archive-stats-ink) 44%, transparent);
+		font-size: 0.7rem;
+		line-height: 1.35;
+	}
+
+	@media (max-width: 640px) {
+		.archive-stats {
+			margin-block: 1rem 1.25rem;
+			padding-right: 2.85rem;
+			padding-left: 0;
+		}
+
+		.archive-stats__grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 0.65rem;
+			width: 100%;
+		}
+
+		.archive-stats__metric {
+			padding-right: 0.65rem;
+		}
+
+		.archive-stats__value {
+			font-size: 1.45rem;
+		}
+
+		.archive-stats__label {
+			font-size: 0.72rem;
+		}
+
+		.archive-stats__note {
+			font-size: 0.63rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.archive-stats__value {
+			transition: none;
+		}
+	}
+</style>

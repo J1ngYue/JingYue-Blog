@@ -1,0 +1,54 @@
+---
+import BangumiGrid from "@/components/pages/bangumi/BangumiGrid.svelte";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import { siteConfig } from "@/config";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const username = siteConfig.bangumi?.userId?.trim() || "";
+const fetchConfig = {
+	username,
+	apiUrl: siteConfig.bangumi?.apiUrl || "https://api.bangumi.one",
+	categories: {
+		book: false,
+		anime: true,
+		music: false,
+		game: true,
+		real: true,
+	},
+	categoryOrder: ["anime", "real", "game"],
+	pagination: { limit: 50, delay: 50, maxTotal: 1000 },
+};
+const apiOrigin = new URL(fetchConfig.apiUrl).origin;
+---
+
+<MainGridLayout
+	title="影视与游戏"
+	bannerTitle="记录"
+	description="看过的作品与玩过的世界"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<Fragment slot="head">
+		<link rel="preconnect" href={apiOrigin} crossorigin="anonymous" />
+		<link rel="dns-prefetch" href={apiOrigin} />
+	</Fragment>
+	<RecordPageShell
+		title="影视与游戏"
+		description="记录看过的影视作品和玩过的游戏。"
+		icon="material-symbols:movie"
+	>
+		{username ? (
+			<BangumiGrid
+				client:load
+				initialActiveTab="anime"
+				subjectBaseUrl={siteConfig.bangumi?.subjectBaseUrl}
+				fetchConfig={fetchConfig}
+			/>
+		) : (
+			<div class="rounded-2xl border border-(--line-divider) px-5 py-12 text-center text-(--content-meta)">
+				请先在 siteConfig.ts 中配置 Bangumi 用户 ID。
+			</div>
+		)}
+	</RecordPageShell>
+</MainGridLayout>

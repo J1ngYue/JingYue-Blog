@@ -1,0 +1,459 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { Icon } from "astro-icon/components";
+import {
+	notebookDefinitions,
+	type NotebookDefinition,
+} from "@/config/notebookConfig";
+
+interface Props {
+	notebook: NotebookDefinition;
+	notes: CollectionEntry<"notebooks">[];
+}
+
+const { notebook, notes } = Astro.props;
+const sortedNotes = [...notes].sort(
+	(a, b) => b.data.published.getTime() - a.data.published.getTime(),
+);
+const currentYear =
+	sortedNotes[0]?.data.published.getFullYear() || new Date().getFullYear();
+const activity = Array.from({ length: 12 }, (_, month) => ({
+	month,
+	count: sortedNotes.filter(
+		(note) =>
+			note.data.published.getFullYear() === currentYear &&
+			note.data.published.getMonth() === month,
+	).length,
+}));
+
+const groups = new Map<string, CollectionEntry<"notebooks">[]>();
+for (const note of sortedNotes) {
+	const key = `${note.data.published.getFullYear()}-${note.data.published.getMonth()}`;
+	groups.set(key, [...(groups.get(key) || []), note]);
+}
+const groupedNotes = Array.from(groups.entries()).map(([key, entries]) => {
+	const [year, month] = key.split("-").map(Number);
+	return { year, month, entries };
+});
+
+const formatDate = (date: Date) =>
+	new Intl.DateTimeFormat("zh-CN", {
+		month: "2-digit",
+		day: "2-digit",
+		timeZone: "Asia/Shanghai",
+	})
+		.format(date)
+		.replace("/", "-");
+---
+
+<div class="notebook-collection">
+	<nav class="notebook-breadcrumb" aria-label="面包屑">
+		<a href="/life/notebooks/">笔记本</a>
+		<Icon is:inline name="material-symbols:chevron-right-rounded" />
+		<span aria-current="page">{notebook.title}</span>
+	</nav>
+
+	<nav class="notebook-switcher" aria-label="切换笔记本">
+		{notebookDefinitions.map((item) => (
+			<a
+				href={`/life/notebooks/${item.slug}/`}
+				class:list={[item.slug === notebook.slug && "is-active"]}
+				aria-current={item.slug === notebook.slug ? "page" : undefined}
+			>
+				{item.title}
+			</a>
+		))}
+	</nav>
+
+	<section class="notebook-activity" aria-labelledby="notebook-activity-title">
+		<header>
+			<div>
+				<p>NOTEBOOK ACTIVITY</p>
+				<h2 id="notebook-activity-title">{currentYear} 年笔记足迹</h2>
+			</div>
+			<span>{sortedNotes.length} 篇</span>
+		</header>
+		<div class="notebook-activity__months" role="list" aria-label={`${currentYear} 年每月笔记数量`}>
+			{activity.map((item) => (
+				<div
+					role="listitem"
+					class:list={["notebook-activity__month", item.count > 0 && "has-notes"]}
+					style={`--activity-level: ${Math.min(1, 0.28 + item.count * 0.24)}`}
+					aria-label={`${item.month + 1} 月，${item.count} 篇笔记`}
+				>
+					<i aria-hidden="true"></i>
+					<span>{item.month + 1}月</span>
+				</div>
+			))}
+		</div>
+	</section>
+
+	<div class="notebook-timeline">
+		{groupedNotes.length > 0 ? (
+			groupedNotes.map((group, index) => (
+				<section class="notebook-timeline__group">
+					<header>
+						{index === 0 || groupedNotes[index - 1]?.year !== group.year ? (
+							<strong>{group.year} 年</strong>
+						) : (
+							<span aria-hidden="true"></span>
+						)}
+						<h2>{group.month + 1} 月</h2>
+						<small>{group.entries.length} 篇</small>
+					</header>
+					<div>
+						{group.entries.map((note) => (
+							<a
+								class="notebook-timeline__entry"
+								href={`/life/notebooks/${notebook.slug}/${note.data.slug}/`}
+							>
+								<time datetime={note.data.published.toISOString()}>{formatDate(note.data.published)}</time>
+								<span class="notebook-timeline__type">笔记</span>
+								<span class="notebook-timeline__content">
+									<strong>{note.data.title}</strong>
+									<small>{note.data.description}</small>
+								</span>
+								<Icon is:inline name="material-symbols:arrow-forward-rounded" />
+							</a>
+						))}
+					</div>
+				</section>
+			))
+		) : (
+			<div class="notebook-empty">
+				<Icon is:inline name="material-symbols:edit-note-rounded" />
+				<h2>还没有笔记</h2>
+				<p>下一次灵感到来时，就从这里写下第一句。</p>
+			</div>
+		)}
+	</div>
+</div>
+
+<style>
+	.notebook-collection {
+		--timeline-line: color-mix(in srgb, var(--record-ink) 19%, transparent);
+		min-width: 0;
+	}
+
+	.notebook-breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		margin-bottom: 0.9rem;
+		color: var(--content-meta);
+		font-size: 0.76rem;
+	}
+
+	.notebook-breadcrumb a {
+		color: inherit;
+		transition: color 150ms ease;
+	}
+
+	.notebook-breadcrumb a:hover {
+		color: var(--primary);
+	}
+
+	.notebook-breadcrumb :global(svg) {
+		width: 0.95rem;
+		height: 0.95rem;
+	}
+
+	.notebook-switcher {
+		display: flex;
+		gap: 0.45rem;
+		overflow-x: auto;
+		padding: 0.2rem 0 0.8rem;
+		scrollbar-width: thin;
+	}
+
+	.notebook-switcher a {
+		flex: 0 0 auto;
+		border: 1px solid var(--line-divider);
+		border-radius: 999px;
+		padding: 0.42rem 0.75rem;
+		color: var(--content-meta);
+		font-size: 0.74rem;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+	}
+
+	.notebook-switcher a:hover,
+	.notebook-switcher a:focus-visible {
+		border-color: color-mix(in srgb, var(--primary) 55%, var(--line-divider));
+		color: var(--primary);
+	}
+
+	.notebook-switcher a:focus-visible {
+		outline: 0.12rem solid var(--primary);
+		outline-offset: 0.12rem;
+	}
+
+	.notebook-switcher a.is-active {
+		border-color: var(--record-ink);
+		background: var(--record-ink);
+		color: var(--card-bg);
+	}
+
+	.notebook-activity {
+		margin-top: 0.5rem;
+		border: 1px solid var(--line-divider);
+		border-radius: 0.75rem;
+		padding: 1rem;
+		background: color-mix(in srgb, var(--card-bg) 95%, transparent);
+	}
+
+	.notebook-activity header {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.notebook-activity header p {
+		margin: 0;
+		color: var(--primary);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 0.62rem;
+		font-weight: 750;
+		letter-spacing: 0.15em;
+	}
+
+	.notebook-activity header h2 {
+		margin: 0.25rem 0 0;
+		font-size: 1rem;
+		font-weight: 800;
+	}
+
+	.notebook-activity header > span {
+		border-radius: 999px;
+		background: var(--btn-regular-bg);
+		padding: 0.3rem 0.65rem;
+		color: var(--content-meta);
+		font-size: 0.7rem;
+	}
+
+	.notebook-activity__months {
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: 0.4rem;
+		margin-top: 0.9rem;
+	}
+
+	.notebook-activity__month {
+		display: grid;
+		gap: 0.35rem;
+		text-align: center;
+	}
+
+	.notebook-activity__month i {
+		display: block;
+		min-height: 2.3rem;
+		border: 1px solid var(--line-divider);
+		border-radius: 0.4rem;
+		background: var(--btn-regular-bg);
+	}
+
+	.notebook-activity__month.has-notes i {
+		border-color: color-mix(in srgb, var(--primary) 45%, var(--line-divider));
+		background: color-mix(in srgb, var(--primary) calc(var(--activity-level) * 100%), var(--btn-regular-bg));
+		box-shadow: 0 0.35rem 0.85rem color-mix(in srgb, var(--primary) 14%, transparent);
+	}
+
+	.notebook-activity__month span {
+		color: var(--content-meta);
+		font-size: 0.6rem;
+	}
+
+	.notebook-timeline {
+		position: relative;
+		margin-top: 2rem;
+		padding-left: 1rem;
+	}
+
+	.notebook-timeline::before {
+		position: absolute;
+		top: 0.55rem;
+		bottom: 0.5rem;
+		left: 0.2rem;
+		border-left: 1px dashed var(--timeline-line);
+		content: "";
+	}
+
+	.notebook-timeline__group {
+		position: relative;
+		padding: 0 0 1.7rem 1rem;
+	}
+
+	.notebook-timeline__group::before {
+		position: absolute;
+		top: 0.45rem;
+		left: -1.18rem;
+		width: 0.68rem;
+		height: 0.68rem;
+		border: 0.16rem solid var(--card-bg);
+		border-radius: 50%;
+		background: var(--record-ink);
+		box-shadow: 0 0 0 1px var(--record-ink);
+		content: "";
+	}
+
+	.notebook-timeline__group > header {
+		display: flex;
+		align-items: baseline;
+		gap: 0.55rem;
+		margin-bottom: 0.55rem;
+	}
+
+	.notebook-timeline__group > header strong {
+		font-size: 1.2rem;
+		font-weight: 850;
+	}
+
+	.notebook-timeline__group > header h2 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 800;
+	}
+
+	.notebook-timeline__group > header small {
+		color: var(--content-meta);
+		font-size: 0.68rem;
+	}
+
+	.notebook-timeline__group > div {
+		display: grid;
+		gap: 0.25rem;
+	}
+
+	.notebook-timeline__entry {
+		position: relative;
+		display: grid;
+		grid-template-columns: 3.4rem 2.5rem minmax(0, 1fr) 1.25rem;
+		align-items: center;
+		gap: 0.65rem;
+		min-height: 3.4rem;
+		border-radius: 0.5rem;
+		padding: 0.35rem 0.5rem;
+		color: inherit;
+		transition: background-color 150ms ease, transform 150ms ease;
+	}
+
+	.notebook-timeline__entry::before {
+		position: absolute;
+		top: 50%;
+		right: calc(100% + 0.55rem);
+		width: 1.25rem;
+		border-top: 1px dashed var(--timeline-line);
+		content: "";
+	}
+
+	.notebook-timeline__entry:hover {
+		background: var(--btn-plain-bg-hover);
+		transform: translateX(0.15rem);
+	}
+
+	.notebook-timeline__entry:focus-visible {
+		outline: 0.12rem solid var(--primary);
+		outline-offset: 0.12rem;
+	}
+
+	.notebook-timeline__entry time {
+		color: var(--content-meta);
+		font-size: 0.72rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.notebook-timeline__type {
+		border: 1px solid var(--line-divider);
+		border-radius: 0.35rem;
+		padding: 0.2rem 0.35rem;
+		color: var(--content-meta);
+		font-size: 0.66rem;
+		text-align: center;
+	}
+
+	.notebook-timeline__content {
+		display: grid;
+		min-width: 0;
+	}
+
+	.notebook-timeline__content strong {
+		overflow: hidden;
+		font-size: 0.82rem;
+		font-weight: 650;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.notebook-timeline__content small {
+		overflow: hidden;
+		margin-top: 0.15rem;
+		color: var(--content-meta);
+		font-size: 0.68rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.notebook-timeline__entry :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		color: var(--content-meta);
+	}
+
+	.notebook-empty {
+		display: grid;
+		min-height: 16rem;
+		place-items: center;
+		align-content: center;
+		border: 1px dashed var(--line-divider);
+		border-radius: 0.75rem;
+		color: var(--content-meta);
+		text-align: center;
+	}
+
+	.notebook-empty :global(svg) {
+		width: 2rem;
+		height: 2rem;
+		color: var(--primary);
+	}
+
+	.notebook-empty h2 {
+		margin: 0.5rem 0 0;
+		color: var(--record-ink);
+		font-size: 1rem;
+	}
+
+	.notebook-empty p {
+		margin: 0.25rem 0 0;
+		font-size: 0.75rem;
+	}
+
+	@media (max-width: 700px) {
+		.notebook-activity__months {
+			grid-template-columns: repeat(6, minmax(0, 1fr));
+			row-gap: 0.65rem;
+		}
+
+		.notebook-timeline {
+			padding-left: 0.6rem;
+		}
+
+		.notebook-timeline__entry {
+			grid-template-columns: 3.1rem 2.3rem minmax(0, 1fr);
+			gap: 0.4rem;
+		}
+
+		.notebook-timeline__entry > :global(svg) {
+			display: none;
+		}
+
+		.notebook-timeline__content small {
+			display: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.notebook-timeline__entry {
+			transition: none;
+		}
+	}
+</style>

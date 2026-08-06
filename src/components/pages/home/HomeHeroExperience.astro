@@ -1,0 +1,975 @@
+---
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import { homeHeroExperience } from "@/config/homeHeroExperience";
+
+interface Props {
+	avatar: string;
+}
+
+const { avatar } = Astro.props;
+const dialoguePayload = JSON.stringify(homeHeroExperience.dialogue);
+const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
+---
+
+<div
+	class="home-hero-experience"
+	data-home-hero-experience
+	data-dialogue={dialoguePayload}
+	data-work-hours={workHoursPayload}
+>
+	<div class="home-camera-hud" aria-hidden="true">
+		<div class="home-camera-params">
+			<strong>{homeHeroExperience.hud.mode}</strong>
+			<span>{homeHeroExperience.hud.shutter}</span>
+			<span>OPEN</span>
+			<span>{homeHeroExperience.hud.exposure}</span>
+		</div>
+		<div class="home-camera-rec"><i></i> LIVE</div>
+	</div>
+
+	<aside class="home-hero-mode-panel" aria-label="封面状态">
+		<span>{homeHeroExperience.hud.panel}</span>
+		<strong>JINGYUE</strong>
+		<small data-hero-work-mode>ONLINE</small>
+	</aside>
+
+	<button
+		type="button"
+		class="home-dialogue-launch is-hidden"
+		data-dialogue-launch
+		aria-expanded="false"
+		aria-controls="home-hero-dialogue"
+	>
+		<span class="home-dialogue-launch-avatar" data-work-avatar>
+			<ImageWrapper
+				src={avatar}
+				alt=""
+				loading="eager"
+				widths={[72, 112, 144]}
+				sizes="3.25rem"
+				fadeIn={false}
+				siteAvatar
+			/>
+			<i aria-hidden="true"></i>
+		</span>
+		<span>
+			<strong>和 JingYue 聊聊</strong>
+			<small data-hero-work-label>正在读取状态</small>
+		</span>
+		<Icon is:inline name="material-symbols:chat-bubble-outline-rounded" />
+	</button>
+
+	<section
+		id="home-hero-dialogue"
+		class="home-hero-dialogue"
+		data-hero-dialogue
+		aria-label="与 JingYue 对话"
+		aria-hidden="true"
+	>
+		<header class="home-hero-dialogue__header">
+			<div class="home-hero-dialogue__speaker">
+				<strong data-dialogue-name>JingYue</strong>
+				<Icon is:inline name="material-symbols:auto-awesome-rounded" />
+			</div>
+			<div class="home-hero-dialogue__controls">
+				<button
+					type="button"
+					data-dialogue-action="back"
+					aria-label="返回上一句"
+					aria-disabled="true"
+					title="已经是第一句"
+					disabled
+				>
+					<Icon is:inline name="material-symbols:undo-rounded" />
+					<span>Back</span>
+				</button>
+				<button type="button" data-dialogue-action="auto" aria-label="自动播放对话" aria-pressed="false" title="自动">
+					<Icon is:inline name="material-symbols:play-arrow-rounded" />
+					<span>Auto</span>
+				</button>
+				<button type="button" data-dialogue-action="hide" aria-label="收起对话" title="收起">
+					<Icon is:inline name="material-symbols:close-rounded" />
+					<span>Hide</span>
+				</button>
+			</div>
+		</header>
+
+		<div class="home-hero-dialogue__body" data-dialogue-body tabindex="0">
+			<p class="home-hero-dialogue__text" data-dialogue-text aria-live="polite"></p>
+			<div class="home-hero-dialogue__menu" data-dialogue-menu hidden></div>
+		</div>
+
+		<footer class="home-hero-dialogue__footer">
+			<span data-dialogue-progress></span>
+			<button type="button" data-dialogue-advance>
+				<span data-dialogue-advance-label>下一句</span>
+				<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" />
+			</button>
+		</footer>
+	</section>
+</div>
+
+<script>
+	interface DialogueLine {
+		speaker: "host" | "visitor";
+		text: string;
+	}
+
+	interface DialogueTopic {
+		title: string;
+		lines: DialogueLine[];
+	}
+
+	interface DialogueConfig {
+		enabled?: boolean;
+		hostName: string;
+		visitorName: string;
+		menuTitle: string;
+		typingSpeed: number;
+		autoDelay: number;
+		intro: DialogueLine[];
+		topics: DialogueTopic[];
+	}
+
+	interface WorkHours {
+		start: number;
+		end: number;
+		weekdays: number[];
+	}
+
+	interface DialogueView {
+		sequence: DialogueLine[];
+		index: number;
+		topicIndex: number | null;
+		mode: "lines" | "menu";
+	}
+
+	interface ExperienceState {
+		root: HTMLElement;
+		panel: HTMLElement;
+		launch: HTMLButtonElement;
+		body: HTMLElement;
+		text: HTMLElement;
+		menu: HTMLElement;
+		name: HTMLElement;
+		progress: HTMLElement;
+		advanceLabel: HTMLElement;
+		advanceButton: HTMLButtonElement;
+		backButton: HTMLButtonElement;
+		autoButton: HTMLButtonElement;
+		config: DialogueConfig;
+		workHours: WorkHours;
+		sequence: DialogueLine[];
+		index: number;
+		topicIndex: number | null;
+		mode: "lines" | "menu";
+		history: DialogueView[];
+		typing: boolean;
+		auto: boolean;
+		typeTimer: number;
+		autoTimer: number;
+		openTimer: number;
+		statusTimer: number;
+		coverActive: boolean;
+		resumeWhenCoverReturns: boolean;
+		cleanup: Array<() => void>;
+	}
+
+	const experienceStates = new WeakMap<HTMLElement, ExperienceState>();
+
+	function listen(
+		state: ExperienceState,
+		target: EventTarget,
+		type: string,
+		handler: EventListener,
+		options?: AddEventListenerOptions,
+	) {
+		target.addEventListener(type, handler, options);
+		state.cleanup.push(() => target.removeEventListener(type, handler, options));
+	}
+
+	function clearDialogueTimers(state: ExperienceState) {
+		if (state.typeTimer) window.clearTimeout(state.typeTimer);
+		if (state.autoTimer) window.clearTimeout(state.autoTimer);
+		state.typeTimer = 0;
+		state.autoTimer = 0;
+	}
+
+	function updateDialogueProgress(state: ExperienceState) {
+		if (state.mode === "menu") {
+			state.progress.textContent = state.config.menuTitle;
+			return;
+		}
+		state.progress.textContent = `${Math.min(state.index + 1, state.sequence.length)} / ${state.sequence.length}`;
+	}
+
+	function updateSpeaker(state: ExperienceState, line: DialogueLine) {
+		state.name.textContent = line.speaker === "visitor"
+			? state.config.visitorName
+			: state.config.hostName;
+		state.panel.toggleAttribute("data-visitor-speaking", line.speaker === "visitor");
+	}
+
+	function updateDialogueControls(state: ExperienceState) {
+		const canGoBack = state.history.length > 0;
+		const menuVisible = state.mode === "menu";
+
+		state.backButton.disabled = !canGoBack;
+		state.backButton.setAttribute("aria-disabled", String(!canGoBack));
+		state.backButton.setAttribute(
+			"aria-label",
+			canGoBack ? "返回上一句" : "已经是第一句，无法返回",
+		);
+		state.backButton.title = canGoBack ? "返回上一句" : "已经是第一句";
+
+		state.advanceButton.disabled = menuVisible;
+		state.advanceButton.setAttribute("aria-disabled", String(menuVisible));
+		state.advanceLabel.textContent = menuVisible
+			? "请选择话题"
+			: state.typing
+				? "显示完整内容"
+				: state.index >= state.sequence.length - 1
+					? "选择话题"
+					: "下一句";
+	}
+
+	function captureDialogueView(state: ExperienceState): DialogueView {
+		return {
+			sequence: state.sequence,
+			index: state.index,
+			topicIndex: state.topicIndex,
+			mode: state.mode,
+		};
+	}
+
+	function restoreDialogueView(state: ExperienceState, view: DialogueView) {
+		state.sequence = view.sequence;
+		state.index = view.index;
+		state.topicIndex = view.topicIndex;
+		state.mode = view.mode;
+		if (view.mode === "menu") showTopicMenu(state);
+		else typeLine(state);
+	}
+
+	function finishTyping(state: ExperienceState) {
+		if (!state.typing) return false;
+		if (state.typeTimer) window.clearTimeout(state.typeTimer);
+		state.typeTimer = 0;
+		state.typing = false;
+		state.text.textContent = state.sequence[state.index]?.text ?? "";
+		updateDialogueControls(state);
+		scheduleAuto(state);
+		return true;
+	}
+
+	function typeLine(state: ExperienceState) {
+		clearDialogueTimers(state);
+		const line = state.sequence[state.index];
+		if (!line) {
+			showTopicMenu(state);
+			return;
+		}
+
+		state.mode = "lines";
+		state.menu.hidden = true;
+		state.text.hidden = false;
+		state.text.textContent = "";
+		state.typing = true;
+		updateSpeaker(state, line);
+		updateDialogueProgress(state);
+		updateDialogueControls(state);
+		let cursor = 0;
+
+		const step = () => {
+			if (!state.typing) return;
+			cursor += 1;
+			state.text.textContent = line.text.slice(0, cursor);
+			if (cursor >= line.text.length) {
+				state.typing = false;
+				state.typeTimer = 0;
+				updateDialogueControls(state);
+				scheduleAuto(state);
+				return;
+			}
+			state.typeTimer = window.setTimeout(step, Math.max(18, state.config.typingSpeed));
+		};
+
+		step();
+	}
+
+	function scheduleAuto(state: ExperienceState) {
+		if (!state.auto || state.mode !== "lines" || state.typing) return;
+		if (state.autoTimer) window.clearTimeout(state.autoTimer);
+		state.autoTimer = window.setTimeout(() => {
+			state.autoTimer = 0;
+			advanceDialogue(state);
+		}, state.config.autoDelay);
+	}
+
+	function showTopicMenu(state: ExperienceState) {
+		clearDialogueTimers(state);
+		state.mode = "menu";
+		state.text.hidden = true;
+		state.menu.hidden = false;
+		state.menu.replaceChildren();
+		state.name.textContent = state.config.hostName;
+		state.panel.removeAttribute("data-visitor-speaking");
+		updateDialogueProgress(state);
+		updateDialogueControls(state);
+
+		for (const [index, topic] of state.config.topics.entries()) {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.className = "home-hero-dialogue__topic";
+			button.innerHTML = `<span>${String(index + 1).padStart(2, "0")}</span><strong>${topic.title}</strong><i aria-hidden="true">→</i>`;
+			button.addEventListener("click", (event) => {
+				event.stopPropagation();
+				state.history.push(captureDialogueView(state));
+				state.topicIndex = index;
+				state.sequence = topic.lines;
+				state.index = 0;
+				typeLine(state);
+			});
+			state.menu.append(button);
+		}
+	}
+
+	function advanceDialogue(state: ExperienceState) {
+		if (finishTyping(state)) return;
+		if (state.mode === "menu") return;
+		state.history.push(captureDialogueView(state));
+		if (state.index < state.sequence.length - 1) {
+			state.index += 1;
+			typeLine(state);
+			return;
+		}
+		showTopicMenu(state);
+	}
+
+	function backDialogue(state: ExperienceState) {
+		setAuto(state, false);
+		clearDialogueTimers(state);
+		const previous = state.history.pop();
+		if (!previous) {
+			updateDialogueControls(state);
+			return;
+		}
+		restoreDialogueView(state, previous);
+	}
+
+	function setDialogueOpen(state: ExperienceState, open: boolean) {
+		if (open && !state.coverActive) return;
+		state.panel.classList.toggle("is-open", open);
+		state.panel.setAttribute("aria-hidden", String(!open));
+		state.launch.classList.toggle("is-hidden", open || !state.coverActive);
+		state.launch.setAttribute("aria-expanded", String(open));
+		if (open && !state.text.textContent && state.menu.childElementCount === 0) {
+			state.sequence = state.config.intro;
+			state.index = 0;
+			typeLine(state);
+		}
+		if (open) {
+			updateDialogueControls(state);
+			scheduleAuto(state);
+		} else {
+			finishTyping(state);
+			clearDialogueTimers(state);
+			updateDialogueControls(state);
+		}
+	}
+
+	function setCoverActive(state: ExperienceState, active: boolean) {
+		if (state.coverActive === active) return;
+		state.coverActive = active;
+		state.root.toggleAttribute("data-cover-inactive", !active);
+
+		if (!active) {
+			state.resumeWhenCoverReturns =
+				state.panel.classList.contains("is-open");
+			if (state.openTimer) {
+				window.clearTimeout(state.openTimer);
+				state.openTimer = 0;
+			}
+			setDialogueOpen(state, false);
+			state.launch.classList.add("is-hidden");
+			return;
+		}
+
+		if (state.resumeWhenCoverReturns) {
+			state.openTimer = window.setTimeout(() => {
+				state.openTimer = 0;
+				if (state.coverActive) setDialogueOpen(state, true);
+			}, 180);
+			return;
+		}
+
+		state.launch.classList.remove("is-hidden");
+	}
+
+	function setAuto(state: ExperienceState, active: boolean) {
+		state.auto = active;
+		state.autoButton.setAttribute("aria-pressed", String(active));
+		state.autoButton.setAttribute(
+			"aria-label",
+			active ? "停止自动播放对话" : "自动播放对话",
+		);
+		state.autoButton.title = active ? "停止自动播放" : "自动播放";
+		state.autoButton.classList.toggle("is-active", active);
+		if (active) {
+			scheduleAuto(state);
+			return;
+		}
+		if (state.autoTimer) window.clearTimeout(state.autoTimer);
+		state.autoTimer = 0;
+	}
+
+	function toggleAuto(state: ExperienceState) {
+		setAuto(state, !state.auto);
+	}
+
+	function updateWorkStatus(state: ExperienceState) {
+		const now = new Date();
+		const active = state.workHours.weekdays.includes(now.getDay()) &&
+			now.getHours() >= state.workHours.start &&
+			now.getHours() < state.workHours.end;
+		const label = active ? "创作中" : "休息中";
+		state.root.toggleAttribute("data-off-work", !active);
+		state.root.querySelectorAll<HTMLElement>("[data-hero-work-label]").forEach((item) => {
+			item.textContent = label;
+		});
+		const mode = state.root.querySelector<HTMLElement>("[data-hero-work-mode]");
+		if (mode) mode.textContent = active ? "WORKING" : "OFF WORK";
+	}
+
+	function initHeroExperience() {
+		document.querySelectorAll<HTMLElement>("[data-home-hero-experience]").forEach((root) => {
+			if (experienceStates.has(root)) return;
+			const panel = root.querySelector<HTMLElement>("[data-hero-dialogue]");
+			const launch = root.querySelector<HTMLButtonElement>("[data-dialogue-launch]");
+			const body = root.querySelector<HTMLElement>("[data-dialogue-body]");
+			const text = root.querySelector<HTMLElement>("[data-dialogue-text]");
+			const menu = root.querySelector<HTMLElement>("[data-dialogue-menu]");
+			const name = root.querySelector<HTMLElement>("[data-dialogue-name]");
+			const progress = root.querySelector<HTMLElement>("[data-dialogue-progress]");
+			const advanceLabel = root.querySelector<HTMLElement>("[data-dialogue-advance-label]");
+			const advanceButton = root.querySelector<HTMLButtonElement>("[data-dialogue-advance]");
+			const backButton = root.querySelector<HTMLButtonElement>('[data-dialogue-action="back"]');
+			const autoButton = root.querySelector<HTMLButtonElement>('[data-dialogue-action="auto"]');
+			if (
+				!panel ||
+				!launch ||
+				!body ||
+				!text ||
+				!menu ||
+				!name ||
+				!progress ||
+				!advanceLabel ||
+				!advanceButton ||
+				!backButton ||
+				!autoButton
+			) return;
+
+			let config: DialogueConfig;
+			let workHours: WorkHours;
+			try {
+				config = JSON.parse(root.dataset.dialogue || "{}");
+				workHours = JSON.parse(root.dataset.workHours || "{}");
+			} catch {
+				return;
+			}
+
+			const state: ExperienceState = {
+				root,
+				panel,
+				launch,
+				body,
+				text,
+				menu,
+				name,
+				progress,
+				advanceLabel,
+				advanceButton,
+				backButton,
+				autoButton,
+				config,
+				workHours,
+				sequence: config.intro,
+				index: 0,
+				topicIndex: null,
+				mode: "lines",
+				history: [],
+				typing: false,
+				auto: false,
+				typeTimer: 0,
+				autoTimer: 0,
+				openTimer: 0,
+				statusTimer: 0,
+				coverActive: true,
+				resumeWhenCoverReturns: false,
+				cleanup: [],
+			};
+			experienceStates.set(root, state);
+
+			const frame = root.closest<HTMLElement>("[data-home-hero-frame]");
+			state.coverActive =
+				!frame?.classList.contains("home-hero-profile-active");
+			state.root.toggleAttribute(
+				"data-cover-inactive",
+				!state.coverActive,
+			);
+			if (frame) {
+				const sceneObserver = new MutationObserver(() => {
+					setCoverActive(
+						state,
+						!frame.classList.contains("home-hero-profile-active"),
+					);
+				});
+				sceneObserver.observe(frame, {
+					attributes: true,
+					attributeFilter: ["class"],
+				});
+				state.cleanup.push(() => sceneObserver.disconnect());
+			}
+
+			listen(state, launch, "click", () => setDialogueOpen(state, true));
+			listen(state, body, "click", ((event: MouseEvent) => {
+				if ((event.target as Element).closest("button")) return;
+				advanceDialogue(state);
+			}) as EventListener);
+			listen(state, body, "keydown", ((event: KeyboardEvent) => {
+				if (event.target !== body) return;
+				if (event.key === "Enter" || event.key === " ") {
+					event.preventDefault();
+					advanceDialogue(state);
+				}
+			}) as EventListener);
+			listen(state, advanceButton, "click", () => advanceDialogue(state));
+			listen(state, backButton, "click", () => backDialogue(state));
+			listen(state, autoButton, "click", () => toggleAuto(state));
+			const hide = root.querySelector<HTMLButtonElement>('[data-dialogue-action="hide"]');
+			if (hide) listen(state, hide, "click", () => setDialogueOpen(state, false));
+
+			updateWorkStatus(state);
+			state.statusTimer = window.setInterval(() => updateWorkStatus(state), 60_000);
+			const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+			if (config.enabled !== false && state.coverActive) {
+				state.openTimer = window.setTimeout(() => {
+					state.openTimer = 0;
+					if (state.coverActive) setDialogueOpen(state, true);
+				}, reducedMotion ? 0 : 650);
+			}
+		});
+	}
+
+	function destroyHeroExperience() {
+		document.querySelectorAll<HTMLElement>("[data-home-hero-experience]").forEach((root) => {
+			const state = experienceStates.get(root);
+			if (!state) return;
+			clearDialogueTimers(state);
+			if (state.openTimer) window.clearTimeout(state.openTimer);
+			if (state.statusTimer) window.clearInterval(state.statusTimer);
+			state.cleanup.forEach((cleanup) => cleanup());
+			experienceStates.delete(root);
+		});
+	}
+
+	initHeroExperience();
+	document.addEventListener("astro:page-load", initHeroExperience);
+	document.addEventListener("swup:contentReplaced", initHeroExperience);
+	document.addEventListener("swup:willReplaceContent", destroyHeroExperience);
+</script>
+
+<style>
+	.home-hero-experience {
+		position: absolute;
+		inset: 0;
+		z-index: 8;
+		pointer-events: none;
+		color: #fff;
+	}
+
+	.home-camera-hud {
+		position: absolute;
+		inset: clamp(1rem, 2vw, 2rem);
+		pointer-events: none;
+		color: rgb(255 255 255 / 0.68);
+		font: 700 0.62rem/1.35 var(--font-monospace, monospace);
+		letter-spacing: 0.13em;
+		text-transform: uppercase;
+	}
+
+	.home-camera-params {
+		position: absolute;
+		top: clamp(4.6rem, 8vh, 6rem);
+		left: clamp(0.8rem, 3vw, 3rem);
+		display: grid;
+		gap: 0.08rem;
+	}
+
+	.home-camera-params strong { color: rgb(210 255 238 / 0.92); }
+
+	.home-camera-rec {
+		position: absolute;
+		top: clamp(4.6rem, 8vh, 6rem);
+		right: clamp(0.8rem, 3vw, 3rem);
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.home-camera-rec i {
+		width: 0.42rem;
+		height: 0.42rem;
+		border-radius: 50%;
+		background: #ff6b7a;
+		box-shadow: 0 0 0.7rem #ff6b7a;
+		animation: hero-rec-pulse 1.8s ease-in-out infinite;
+	}
+
+	.home-hero-mode-panel {
+		position: absolute;
+		right: clamp(1.3rem, 3vw, 3rem);
+		top: 48%;
+		display: grid;
+		justify-items: center;
+		gap: 0.55rem;
+		transform: translateY(-50%);
+		font-size: 0.58rem;
+		letter-spacing: 0.22em;
+		text-transform: uppercase;
+		opacity: 0.72;
+	}
+
+	.home-hero-mode-panel span { font-weight: 800; }
+	.home-hero-mode-panel strong,
+	.home-hero-mode-panel small { writing-mode: vertical-rl; }
+	.home-hero-mode-panel strong { font-size: 0.72rem; letter-spacing: 0.35em; }
+	.home-hero-mode-panel small { color: rgb(210 255 238 / 0.9); }
+
+	.home-dialogue-launch {
+		position: absolute;
+		right: clamp(4.5rem, 7vw, 7rem);
+		bottom: clamp(5.7rem, 10vh, 8rem);
+		display: flex;
+		align-items: center;
+		gap: 0.72rem;
+		min-width: 13.5rem;
+		padding: 0.58rem 0.72rem;
+		border: 1px solid rgb(255 255 255 / 0.32);
+		border-radius: 999px;
+		background: rgb(15 24 32 / 0.58);
+		box-shadow: 0 1rem 2.5rem rgb(4 12 20 / 0.2);
+		backdrop-filter: blur(16px) saturate(1.2);
+		color: inherit;
+		pointer-events: auto;
+		cursor: pointer;
+		transition: opacity 180ms ease, border-color 180ms ease, background 180ms ease;
+	}
+
+	.home-dialogue-launch:hover,
+	.home-dialogue-launch:focus-visible {
+		border-color: rgb(190 255 232 / 0.72);
+		background: rgb(15 40 36 / 0.72);
+	}
+
+	.home-dialogue-launch.is-hidden {
+		opacity: 0;
+		visibility: hidden;
+	}
+
+	.home-dialogue-launch-avatar {
+		position: relative;
+		display: grid;
+		place-items: center;
+		flex: 0 0 auto;
+		overflow: hidden;
+		border-radius: 50%;
+		background: rgb(255 255 255 / 0.16);
+	}
+
+	.home-dialogue-launch-avatar { width: 2.7rem; height: 2.7rem; }
+	.home-dialogue-launch-avatar :global(img) { width: 100%; height: 100%; object-fit: cover; }
+
+	.home-dialogue-launch-avatar i {
+		position: absolute;
+		right: 0.1rem;
+		bottom: 0.1rem;
+		width: 0.55rem;
+		height: 0.55rem;
+		border: 2px solid rgb(17 29 35 / 0.9);
+		border-radius: 50%;
+		background: #5ce0aa;
+	}
+
+	[data-off-work] .home-dialogue-launch-avatar :global(img) {
+		filter: saturate(0.7) brightness(0.82);
+	}
+
+	[data-off-work] .home-dialogue-launch-avatar i { background: #a8b3bd; box-shadow: none; }
+
+	.home-dialogue-launch > span:nth-child(2) { display: grid; text-align: left; }
+	.home-dialogue-launch strong { font-size: 0.78rem; }
+	.home-dialogue-launch small { color: rgb(255 255 255 / 0.65); font-size: 0.66rem; }
+	.home-dialogue-launch > :global(svg) { margin-left: auto; font-size: 1.15rem; }
+
+	.home-hero-dialogue {
+		position: absolute;
+		left: 50%;
+		bottom: clamp(4.4rem, 6.5vh, 5.8rem);
+		width: min(92vw, 82rem);
+		min-height: clamp(12rem, 22vh, 16rem);
+		border: 3px solid rgb(3 7 10 / 0.96);
+		border-radius: 1.15rem;
+		background:
+			linear-gradient(118deg, rgb(19 23 28 / 0.96), rgb(24 29 35 / 0.93)),
+			radial-gradient(circle at 22% 0%, hsl(var(--hue) 70% 65% / 0.16), transparent 44%);
+		box-shadow:
+			0 1.7rem 5rem rgb(0 0 0 / 0.48),
+			inset 0 1px 0 rgb(255 255 255 / 0.08);
+		backdrop-filter: blur(24px) saturate(1.08);
+		overflow: visible;
+		pointer-events: auto;
+		opacity: 0;
+		visibility: hidden;
+		transform: translate(-50%, 1.5rem) scale(0.985);
+		transition:
+			opacity 360ms ease,
+			transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 360ms ease;
+	}
+
+	.home-hero-dialogue.is-open {
+		opacity: 1;
+		visibility: visible;
+		transform: translate(-50%, 0) scale(1);
+	}
+
+	.home-hero-experience[data-cover-inactive] .home-dialogue-launch,
+	.home-hero-experience[data-cover-inactive] .home-hero-dialogue {
+		pointer-events: none;
+		opacity: 0;
+		visibility: hidden;
+	}
+
+	.home-hero-dialogue__header,
+	.home-hero-dialogue__footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.home-hero-dialogue__header {
+		position: relative;
+		z-index: 2;
+		height: 0;
+	}
+
+	.home-hero-dialogue__footer {
+		min-height: 3.1rem;
+		padding: 0.55rem 1.65rem 0.85rem;
+		color: rgb(255 255 255 / 0.58);
+		font-size: 0.72rem;
+	}
+	.home-hero-dialogue__footer > span { display: none; }
+
+	.home-hero-dialogue__speaker {
+		position: absolute;
+		top: -1.55rem;
+		left: 2.5rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		min-height: 3.15rem;
+		padding: 0.65rem 1rem;
+		border: 3px solid rgb(3 7 10 / 0.98);
+		border-radius: 0.9rem;
+		background: rgb(17 21 26 / 0.98);
+		box-shadow:
+			0 0.8rem 1.8rem rgb(0 0 0 / 0.32),
+			inset 0 1px 0 rgb(255 255 255 / 0.08);
+	}
+	.home-hero-dialogue__speaker strong {
+		font-size: clamp(1rem, 1.2vw, 1.22rem);
+		font-weight: 850;
+		letter-spacing: 0.04em;
+	}
+	.home-hero-dialogue__speaker > :global(svg) {
+		color: hsl(var(--hue) 78% 72%);
+		font-size: 1.2rem;
+		filter: drop-shadow(0 0 0.55rem hsl(var(--hue) 78% 68% / 0.56));
+	}
+
+	.home-hero-dialogue__controls {
+		position: absolute;
+		top: -1.18rem;
+		right: 1.9rem;
+		display: flex;
+		gap: 0.42rem;
+	}
+	.home-hero-dialogue__controls button,
+	.home-hero-dialogue__footer button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		min-height: 2.15rem;
+		padding: 0.38rem 0.74rem;
+		border: 2px solid rgb(3 7 10 / 0.92);
+		border-radius: 999px;
+		background: rgb(17 21 26 / 0.96);
+		color: inherit;
+		font-size: 0.72rem;
+		font-weight: 750;
+		cursor: pointer;
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			box-shadow 160ms ease,
+			color 160ms ease,
+			transform 160ms ease;
+	}
+
+	.home-hero-dialogue__controls button:hover,
+	.home-hero-dialogue__controls button:focus,
+	.home-hero-dialogue__controls button:focus-visible,
+	.home-hero-dialogue__controls button.is-active,
+	.home-hero-dialogue__footer button:hover,
+	.home-hero-dialogue__footer button:focus-visible {
+		border-color: #fff;
+		background: #fff;
+		box-shadow:
+			0 0 0 0.16rem hsl(var(--hue) 72% 68% / 0.36),
+			0 0.45rem 1.2rem rgb(0 0 0 / 0.26);
+		color: #0b0f14;
+		transform: translateY(-1px);
+	}
+
+	.home-hero-dialogue__controls button:disabled,
+	.home-hero-dialogue__controls button[aria-disabled="true"],
+	.home-hero-dialogue__footer button:disabled,
+	.home-hero-dialogue__footer button[aria-disabled="true"] {
+		border-color: rgb(255 255 255 / 0.16);
+		background: rgb(17 21 26 / 0.96);
+		box-shadow: none;
+		color: rgb(255 255 255 / 0.48);
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.home-hero-dialogue__body {
+		min-height: clamp(8.5rem, 15vh, 11.5rem);
+		padding: 3.25rem 2.6rem 1.1rem;
+		cursor: pointer;
+		outline: none;
+	}
+
+	.home-hero-dialogue__body:focus-visible { box-shadow: inset 0 0 0 2px hsl(var(--hue) 70% 70% / 0.55); }
+	.home-hero-dialogue__text {
+		max-width: 68rem;
+		margin: 0;
+		color: rgb(255 255 255 / 0.96);
+		font-size: clamp(1.08rem, 1.5vw, 1.48rem);
+		font-weight: 760;
+		line-height: 1.7;
+		letter-spacing: 0.015em;
+	}
+
+	.home-hero-dialogue__menu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.85rem; }
+	.home-hero-dialogue__menu[hidden] { display: none; }
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic) {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: 0.75rem;
+		min-height: 4.65rem;
+		padding: 0.95rem 1.1rem;
+		border: 1px solid rgb(255 255 255 / 0.13);
+		border-radius: 1rem;
+		background: rgb(255 255 255 / 0.055);
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
+	}
+
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic:hover),
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic:focus-visible) {
+		border-color: hsl(var(--hue) 70% 75% / 0.62);
+		background: hsl(var(--hue) 65% 55% / 0.14);
+		box-shadow: 0 0.7rem 1.8rem rgb(0 0 0 / 0.18);
+		transform: translateY(-2px);
+	}
+
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic span) { color: hsl(var(--hue) 75% 78%); font: 750 0.72rem var(--font-monospace, monospace); }
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic strong) { font-size: clamp(0.9rem, 1vw, 1rem); }
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic i) { font-size: 1.2rem; font-style: normal; }
+
+	.home-hero-dialogue__footer button {
+		margin-left: auto;
+		border: 0;
+		background: transparent;
+		font-size: 0.85rem;
+	}
+
+	:global(.home-hero-frame:has(.home-hero-dialogue.is-open) .home-hero-action) {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	@keyframes hero-rec-pulse {
+		0%, 100% { opacity: 0.45; transform: scale(0.82); }
+		50% { opacity: 1; transform: scale(1); }
+	}
+
+	@media (max-width: 900px) {
+		.home-camera-params,
+		.home-hero-mode-panel { display: none; }
+		.home-camera-hud { inset: 0.75rem; }
+		.home-dialogue-launch { right: 4.5rem; bottom: 5.6rem; min-width: 0; padding-right: 0.9rem; }
+		.home-dialogue-launch > span:nth-child(2) { display: none; }
+		.home-hero-dialogue {
+			bottom: 4.5rem;
+			width: calc(100vw - 1rem);
+			min-height: 13rem;
+		}
+		.home-hero-dialogue__controls span { display: none; }
+		.home-hero-dialogue__menu { grid-template-columns: 1fr; }
+		.home-hero-dialogue__menu :global(.home-hero-dialogue__topic) {
+			min-height: 3.85rem;
+			padding: 0.78rem 1rem;
+		}
+		.home-hero-dialogue__body {
+			min-height: 9rem;
+			padding: 2.8rem 1.15rem 0.8rem;
+		}
+		.home-hero-dialogue__text {
+			font-size: clamp(1rem, 4vw, 1.18rem);
+		}
+	}
+
+	@media (max-width: 520px) {
+		.home-hero-dialogue__speaker {
+			top: -1.22rem;
+			left: 0.8rem;
+			min-height: 2.65rem;
+			padding: 0.48rem 0.72rem;
+		}
+
+		.home-hero-dialogue__controls {
+			top: -1rem;
+			right: 0.45rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-camera-rec i { animation: none; }
+		.home-dialogue-launch,
+		.home-hero-dialogue { transition: none; }
+	}
+</style>

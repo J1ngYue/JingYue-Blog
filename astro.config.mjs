@@ -24,7 +24,14 @@ import remarkAdmonitionToBlockquoteCallout from "remark-admonition-to-blockquote
 import remarkDirective from "remark-directive"; /* Handle directives */
 import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
-import { expressiveCodeConfig, fontConfig, fontsList, mermaidConfig, plantumlConfig, siteConfig } from "./src/config";
+import {
+	expressiveCodeConfig,
+	fontConfig,
+	fontsList,
+	mermaidConfig,
+	plantumlConfig,
+	siteConfig,
+} from "./src/config";
 import { collectUsedFontCssVars } from "./src/utils/fontHelper";
 import I18nKey from "./src/i18n/i18nKey";
 import { i18n } from "./src/i18n/translation";
@@ -48,7 +55,23 @@ if (process.env.NODE_ENV === "development") {
 	setMaxListeners(20);
 }
 
-const adapter = process.env.CF_WORKERS
+const isCloudflareWorkersBuild = Boolean(process.env.CF_WORKERS);
+
+const homeActivityRouteMode = {
+	name: "firefly:home-activity-route-mode",
+	hooks: {
+		"astro:route:setup": ({ route }) => {
+			if (route.component === "src/pages/api/home-activity.json.ts") {
+				route.prerender = !isCloudflareWorkersBuild;
+			}
+			if (route.component === "src/pages/api/bilibili-hot.json.ts") {
+				route.prerender = !isCloudflareWorkersBuild;
+			}
+		},
+	},
+};
+
+const adapter = isCloudflareWorkersBuild
 	? cloudflare({
 			prerenderEnvironment: "node",
 		})
@@ -75,13 +98,26 @@ export default defineConfig({
 			.map((f) => {
 				let provider;
 				switch (f.provider) {
-					case "google": provider = fontProviders.google(); break;
-					case "fontsource": provider = fontProviders.fontsource(); break;
-					case "local": provider = fontProviders.local(); break;
-					case "bunny": provider = fontProviders.bunny(); break;
-					case "fontshare": provider = fontProviders.fontshare(); break;
-					case "npm": provider = fontProviders.npm(); break;
-					default: provider = f.provider;
+					case "google":
+						provider = fontProviders.google();
+						break;
+					case "fontsource":
+						provider = fontProviders.fontsource();
+						break;
+					case "local":
+						provider = fontProviders.local();
+						break;
+					case "bunny":
+						provider = fontProviders.bunny();
+						break;
+					case "fontshare":
+						provider = fontProviders.fontshare();
+						break;
+					case "npm":
+						provider = fontProviders.npm();
+						break;
+					default:
+						provider = f.provider;
 				}
 				return { ...f, provider };
 			});
@@ -96,6 +132,7 @@ export default defineConfig({
 	},
 
 	integrations: [
+		homeActivityRouteMode,
 		swup({
 			theme: false,
 			animationClass: "transition-swup-", // see https://swup.js.org/options/#animationselector
@@ -113,7 +150,10 @@ export default defineConfig({
 			cache: true,
 			preload: true,
 			accessibility: true,
-			updateHead: true,
+			updateHead: {
+				awaitAssets: true,
+				persistTags: "link[data-swup-persist-style]",
+			},
 			updateBodyClass: false,
 			globalInstance: true,
 			// 滚动相关配置优化
@@ -234,7 +274,8 @@ export default defineConfig({
 	markdown: {
 		processor: unified({
 			remarkPlugins: [
-				...(siteConfig.post.rehypeCallouts.enablePythonMarkdownAdmonitions !== false
+				...(siteConfig.post.rehypeCallouts.enablePythonMarkdownAdmonitions !==
+				false
 					? [remarkAdmonitionToBlockquoteCallout]
 					: []),
 				remarkMath,

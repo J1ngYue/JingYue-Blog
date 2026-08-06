@@ -133,14 +133,19 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 	tipObserver.observe(document.body, { childList: true, subtree: true });
 
 	// 菜单动作映射
-	let currentModelIndex = 0;
+	const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
+	const CHARACTER_SLEEP_KEY = "fireflyCharacterSleeping";
+	let currentModelIndex = Number.isInteger((window as any).__fireflyLive2DModelIndex)
+		? (window as any).__fireflyLive2DModelIndex
+		: -1;
+	let requestedModelIndex = getLive2DModelIndex();
+	let modelSwitchVersion = 0;
 	let widget: any = (window as any).__fireflyLive2DWidget || null;
 	let widgetRoot: HTMLElement | null =
 		document.getElementById("firefly-live2d-runtime") as HTMLElement | null;
 	let widgetInitializing = false;
-	const CHARACTER_MODEL_KEY = "fireflyCharacterModel";
-	const CHARACTER_SLEEP_KEY = "fireflyCharacterSleeping";
 	let characterSleeping = localStorage.getItem(CHARACTER_SLEEP_KEY) === "true";
+	let interactionResetTimer = 0;
 
 	function getLive2DModelIds() {
 		return JSON.parse(
@@ -177,6 +182,22 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 		if (widgetRoot) {
 			widgetRoot.classList.toggle("is-character-sleeping", characterSleeping);
 		}
+		if (widget?.l2d) {
+			window.clearTimeout(interactionResetTimer);
+			if (characterSleeping) {
+				const sleepParams = Object.fromEntries(
+					(widget.l2d.getParams?.() || []).flatMap((param: any) => {
+						const id = String(param.id || "").toLowerCase().replaceAll("_", "");
+						if (id.includes("eyelopen")) return [[param.id, param.min ?? 0]];
+						if (id.includes("anglez")) return [[param.id, Math.max(param.min ?? -30, -10)]];
+						return [];
+					}),
+				);
+				widget.l2d.setParams?.(sleepParams);
+			} else {
+				widget.l2d.setParams?.({});
+			}
+		}
 	}
 
 	function playLive2DInteraction() {
@@ -184,7 +205,7 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 		const motions = widget.l2d?.getMotions?.() || {};
 		const availableMotions = Object.entries(motions).flatMap(
 			([group, files]) =>
-				Array.isArray(files)
+				Array.isArray(files) && !group.toLowerCase().includes("idle")
 					? files.map((_file, index) => ({ group, index }))
 					: [],
 		);
@@ -200,23 +221,57 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 				expressions[Math.floor(Math.random() * expressions.length)],
 			);
 		}
+
+		const params = widget.l2d?.getParams?.() || [];
+		const reactionParams = Object.fromEntries(
+			params.flatMap((param: any) => {
+				const id = String(param.id || "").toLowerCase().replaceAll("_", "");
+				if (id.includes("anglez")) return [[param.id, Math.min(param.max ?? 30, 12)]];
+				if (id.includes("mouthopen")) return [[param.id, Math.min(param.max ?? 1, 0.55)]];
+				if (id.includes("mouthform")) return [[param.id, Math.min(param.max ?? 1, 0.8)]];
+				return [];
+			}),
+		);
+		if (Object.keys(reactionParams).length > 0) {
+			widget.l2d.setParams?.(reactionParams);
+			window.clearTimeout(interactionResetTimer);
+			interactionResetTimer = window.setTimeout(() => {
+				if (!characterSleeping) widget?.l2d?.setParams?.({});
+			}, 900);
+		}
+	}
+
+	async function switchWidgetModel(targetIndex: number) {
+		if (!widget || targetIndex < 0) return;
+		requestedModelIndex = targetIndex;
+		const version = ++modelSwitchVersion;
+		await widget.switchModel(targetIndex);
+		if (version !== modelSwitchVersion) {
+			if (targetIndex !== requestedModelIndex) {
+				void switchWidgetModel(requestedModelIndex);
+			}
+			return;
+		}
+		currentModelIndex = targetIndex;
+		(window as any).__fireflyLive2DModelIndex = currentModelIndex;
+		syncCharacterSleepState();
 	}
 	const menuActions: Record<string, (widget: any) => void> = {
 		home: () => (window.location.href = "/"),
 		scrollToTop: () => window.scrollTo({ top: 0, behavior: "smooth" }),
 		sleep: (widget) => widget.sleep(),
 		github: () => window.open("https://github.com/J1ngYue", "_blank"),
-		switchModel: async (widget) => {
+		switchModel: async (_widget) => {
 			const container = document.getElementById("l2d-widget-container");
 			const models = JSON.parse(container?.dataset.models || "[]");
-			currentModelIndex = (currentModelIndex + 1) % models.length;
-			await widget.switchModel(currentModelIndex);
-			const model = getLive2DModelIds()[currentModelIndex];
+			const targetIndex = (Math.max(requestedModelIndex, 0) + 1) % models.length;
+			await switchWidgetModel(targetIndex);
+			const model = getLive2DModelIds()[targetIndex];
 			if (model) {
 				localStorage.setItem(CHARACTER_MODEL_KEY, model);
 				window.dispatchEvent(
 					new CustomEvent("firefly:character-model-change", {
-						detail: { model, live2dIndex: currentModelIndex },
+						detail: { model, live2dIndex: targetIndex },
 					}),
 				);
 			}
@@ -224,6 +279,7 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 	};
 
 	async function initWidget(initialModelIndex = getLive2DModelIndex()) {
+		requestedModelIndex = initialModelIndex;
 		const container = document.getElementById("l2d-widget-container");
 		if (!container || widgetInitializing) return;
 		if (widget) {
@@ -232,8 +288,9 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 				(widget.l2d?.getCanvas?.()?.parentElement as HTMLElement | null);
 			syncWidgetVisibility();
 			if (currentModelIndex !== initialModelIndex) {
-				currentModelIndex = initialModelIndex;
-				await widget.switchModel(initialModelIndex);
+				await switchWidgetModel(initialModelIndex);
+			} else {
+				syncCharacterSleepState();
 			}
 			return;
 		}
@@ -335,16 +392,21 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 				);
 			}
 			currentModelIndex = 0;
+			(window as any).__fireflyLive2DModelIndex = currentModelIndex;
 			syncWidgetVisibility();
-			if (initialModelIndex !== 0) {
-				let initialSwitchPending = true;
-				widget.l2d?.on?.("loaded", () => {
-					if (!initialSwitchPending) return;
-					initialSwitchPending = false;
-					currentModelIndex = initialModelIndex;
-					widget.switchModel(initialModelIndex);
-				});
-			}
+			let initialLoadPending = true;
+			widget.l2d?.on?.("loaded", () => {
+				if (!initialLoadPending) return;
+				initialLoadPending = false;
+				const targetIndex = requestedModelIndex;
+				if (targetIndex !== 0) {
+					void switchWidgetModel(targetIndex);
+				} else {
+					currentModelIndex = 0;
+					(window as any).__fireflyLive2DModelIndex = currentModelIndex;
+					syncCharacterSleepState();
+				}
+			});
 		} catch (e) {
 			console.error("Failed to initialize Live2D widget:", e);
 		} finally {

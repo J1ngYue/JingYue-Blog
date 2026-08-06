@@ -1,0 +1,946 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import { profileConfig } from "@/config/profileConfig";
+import { siteConfig } from "@/config/siteConfig";
+import {
+	getCategoryList,
+	getSortedPostsList,
+	getTagList,
+} from "@/utils/content-utils";
+import {
+	getPostUrlBySlug,
+	getTagUrl,
+	url,
+} from "@/utils/url-utils";
+
+const posts = await getSortedPostsList();
+const categories = await getCategoryList();
+const tags = await getTagList();
+const dynamics = siteConfig.pages.dynamic ? await getCollection("dynamic") : [];
+
+const latestPost = [...posts].sort(
+	(a, b) => b.data.published.getTime() - a.data.published.getTime(),
+)[0];
+const pinnedPost = posts.find((post) => post.data.pinned) || latestPost;
+const topCategories = categories.slice(0, 4);
+const topTags = [...tags]
+	.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+	.slice(0, 7);
+
+const siteStartDate = siteConfig.siteStartDate || "2025-01-01";
+const runningDays = Math.max(
+	1,
+	Math.ceil(
+		(Date.now() - new Date(siteStartDate).getTime()) /
+			(1000 * 60 * 60 * 24),
+	),
+);
+
+const formatDate = (date?: Date) =>
+	date
+		? new Intl.DateTimeFormat("zh-CN", {
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+			}).format(date)
+		: "持续更新";
+
+const bilibiliUid = siteConfig.anime?.bilibili?.uid;
+const socialLinks = [
+	...profileConfig.links.map((item) => ({
+		...item,
+		label: item.name.toLowerCase() === "qq" ? "QQ" : item.name,
+	})),
+	...(bilibiliUid
+		? [
+				{
+					name: "Bilibili",
+					label: "Bilibili",
+					icon: "fa7-brands:bilibili",
+					url: `https://space.bilibili.com/${bilibiliUid}`,
+				},
+			]
+		: []),
+];
+
+const skills = [
+	{ name: "Astro", icon: "simple-icons:astro" },
+	{ name: "Svelte", icon: "simple-icons:svelte" },
+	{ name: "TypeScript", icon: "simple-icons:typescript" },
+	{ name: "Tailwind CSS", icon: "simple-icons:tailwindcss" },
+	{ name: "Node.js", icon: "simple-icons:nodedotjs" },
+	{ name: "Python", icon: "simple-icons:python" },
+	{ name: "Git", icon: "simple-icons:git" },
+	{ name: "Docker", icon: "simple-icons:docker" },
+	{ name: "Markdown", icon: "simple-icons:markdown" },
+];
+
+const resolveHref = (href: string) => (href.startsWith("/") ? url(href) : href);
+const isExternalHref = (href: string) => /^https?:\/\//.test(href);
+---
+
+<section class="mine-map onload-animation" aria-labelledby="mine-map-title">
+	<header class="mine-map-heading">
+		<div class="mine-map-heading__eyebrow">
+			<span>CONTEXT</span>
+			<strong>站点数据</strong>
+		</div>
+		<h2 id="mine-map-title">能力矩阵</h2>
+		<p>从内容归档到技术栈，把这个博客的组成、更新与入口收进一张地图。</p>
+	</header>
+
+	<div class="mine-map-grid">
+		<article class="mine-map-card mine-map-card--visits">
+			<ImageWrapper
+				src="assets/images/DesktopWallpaper/d2.avif"
+				alt=""
+				class="mine-map-art"
+				position="center 32%"
+				widths={[640, 960]}
+				sizes="(max-width: 760px) 100vw, 38vw"
+			/>
+			<div class="mine-map-art-wash" aria-hidden="true"></div>
+			<div class="mine-map-card__copy">
+				<p>VISITS</p>
+				<h3>站点足迹</h3>
+				<div class="mine-map-statline">
+					<strong data-matrix-running-days>{runningDays}</strong>
+					<span>天稳定运行</span>
+					<i aria-hidden="true"></i>
+					<span>{dynamics.length} 条动态</span>
+				</div>
+			</div>
+		</article>
+
+		<a class="mine-map-card mine-map-card--archive" href={url("/archive/")}>
+			<ImageWrapper
+				src="assets/images/DesktopWallpaper/d3.avif"
+				alt=""
+				class="mine-map-art"
+				position="center 36%"
+				widths={[800, 1280]}
+				sizes="(max-width: 760px) 100vw, 58vw"
+			/>
+			<div class="mine-map-art-wash" aria-hidden="true"></div>
+			<div class="mine-map-card__copy">
+				<p>ARCHIVE</p>
+				<h3>文章档案</h3>
+				<div class="mine-map-statline">
+					<strong>{posts.length}</strong>
+					<span>篇文章</span>
+					<i aria-hidden="true"></i>
+					<span>{categories.length} 个分类</span>
+					<i aria-hidden="true"></i>
+					<span>{tags.length} 个标签</span>
+				</div>
+			</div>
+			<span class="mine-map-arrow" aria-hidden="true">
+				<Icon is:inline name="fa7-solid:arrow-right" />
+			</span>
+		</a>
+
+		{
+			pinnedPost && (
+				<a class="mine-map-card mine-map-card--post mine-map-card--pinned" href={getPostUrlBySlug(pinnedPost.id)}>
+					<div class="mine-map-card__label">
+						<Icon is:inline name="fa7-solid:thumbtack" />
+						置顶文章
+					</div>
+					<div class="mine-map-post-meta">
+						<span>{pinnedPost.data.category || "文章"}</span>
+						<time datetime={pinnedPost.data.published.toISOString()}>{formatDate(pinnedPost.data.published)}</time>
+					</div>
+					<h3>{pinnedPost.data.title}</h3>
+					<p>{pinnedPost.data.description || "从这里开始阅读这篇置顶内容。"}</p>
+					<span class="mine-map-post-link">
+						开始阅读
+						<Icon is:inline name="fa7-solid:arrow-right" />
+					</span>
+				</a>
+			)
+		}
+
+		{
+			latestPost && (
+				<a class="mine-map-card mine-map-card--post mine-map-card--latest" href={getPostUrlBySlug(latestPost.id)}>
+					<div class="mine-map-card__label">
+						<Icon is:inline name="fa7-solid:clock-rotate-left" />
+						最新更新
+					</div>
+					<div class="mine-map-post-meta">
+						<span>{latestPost.data.category || "文章"}</span>
+						<time datetime={latestPost.data.published.toISOString()}>{formatDate(latestPost.data.published)}</time>
+					</div>
+					<h3>{latestPost.data.title}</h3>
+					<p>{latestPost.data.description || "看看最近更新了什么。"}</p>
+				</a>
+			)
+		}
+
+		<section class="mine-map-card mine-map-card--index" aria-labelledby="mine-categories-title">
+			<div class="mine-map-card__label">
+				<span>CATEGORIES</span>
+				<h3 id="mine-categories-title">分类索引</h3>
+			</div>
+			<div class="mine-map-category-list">
+				{
+					topCategories.map((category) => (
+						<a href={category.url}>
+							<span>{category.name}</span>
+							<strong>{category.count}</strong>
+						</a>
+					))
+				}
+				<a class="mine-map-more-link" href={url("/categories/")}>
+					查看全部
+					<span>{categories.length} 个分类</span>
+				</a>
+			</div>
+		</section>
+
+		<section class="mine-map-card mine-map-card--index" aria-labelledby="mine-tags-title">
+			<div class="mine-map-card__label">
+				<span>TAGS</span>
+				<h3 id="mine-tags-title">标签索引</h3>
+			</div>
+			<div class="mine-map-tag-list">
+				{
+					topTags.map((tag) => (
+						<a href={getTagUrl(tag.name)}>
+							#{tag.name}
+							<small>{tag.count}</small>
+						</a>
+					))
+				}
+			</div>
+			<a class="mine-map-inline-link" href={url("/tags/")}>
+				浏览全部标签
+				<Icon is:inline name="fa7-solid:arrow-up-right-from-square" />
+			</a>
+		</section>
+
+		<section class="mine-map-card mine-map-card--subscribe" aria-labelledby="mine-contact-title">
+			<div class="mine-map-card__label">
+				<span>SUBSCRIBE</span>
+				<h3 id="mine-contact-title">订阅与联系</h3>
+			</div>
+			<p>订阅内容更新，或者沿着熟悉的入口找到屏幕后的我。</p>
+			<div class="mine-map-social-list">
+				{
+					socialLinks.map((item) => (
+						<a
+							href={resolveHref(item.url)}
+							target={isExternalHref(item.url) ? "_blank" : undefined}
+							rel={isExternalHref(item.url) ? "noopener noreferrer" : undefined}
+							aria-label={`通过 ${item.label} 联系我`}
+							title={item.label}
+						>
+							<Icon is:inline name={item.icon} />
+							<span>{item.label}</span>
+						</a>
+					))
+				}
+			</div>
+		</section>
+
+		<section class="mine-map-card mine-map-card--skills" aria-labelledby="mine-skills-title">
+			<div class="mine-map-skills-copy">
+				<p>SKILLS</p>
+				<h3 id="mine-skills-title">技能图标</h3>
+				<span>构建、内容与部署工具，在同一条创作轨道上循环。</span>
+			</div>
+			<div class="mine-map-skills-list" role="list" aria-label="当前技术栈">
+				{
+					skills.map((skill) => (
+						<div class="mine-map-skill" role="listitem" title={skill.name}>
+							<Icon is:inline name={skill.icon} />
+							<span>{skill.name}</span>
+						</div>
+					))
+				}
+			</div>
+		</section>
+	</div>
+</section>
+
+<script is:inline define:vars={{ siteStartDate }}>
+	function updateCapabilityRunningDays() {
+		const start = new Date(siteStartDate);
+		const now = new Date();
+		const days = Math.max(
+			1,
+			Math.ceil(Math.abs(now.getTime() - start.getTime()) / 86400000),
+		);
+		document.querySelectorAll("[data-matrix-running-days]").forEach((node) => {
+			node.textContent = String(days);
+		});
+	}
+
+	updateCapabilityRunningDays();
+	document.addEventListener("swup:contentReplaced", updateCapabilityRunningDays);
+</script>
+
+<style>
+	.mine-map {
+		--mine-ink: rgb(18 35 29 / 94%);
+		--mine-ink-strong: rgb(11 27 22 / 98%);
+		--mine-muted: rgb(18 35 29 / 62%);
+		--mine-soft: rgb(18 35 29 / 44%);
+		--mine-surface: color-mix(in oklch, var(--card-bg) 95%, white);
+		--mine-surface-soft: color-mix(in oklch, var(--card-bg) 88%, var(--primary) 5%);
+		position: relative;
+		isolation: isolate;
+		padding: clamp(1.25rem, 3.4vw, 3rem);
+		overflow: hidden;
+		border: 1px solid color-mix(in oklch, var(--primary) 24%, var(--line-divider));
+		border-radius: clamp(1.45rem, 2.8vw, 2.25rem);
+		background:
+			radial-gradient(circle at 92% 0%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 28rem),
+			linear-gradient(145deg, var(--mine-surface), var(--mine-surface-soft));
+		box-shadow: 0 1.25rem 4rem color-mix(in oklch, var(--primary) 8%, transparent);
+		color: var(--mine-ink);
+	}
+
+	.mine-map::before {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background-image:
+			linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px),
+			linear-gradient(90deg, color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px);
+		background-size: 2.25rem 2.25rem;
+		content: "";
+		mask-image: linear-gradient(to bottom, black, transparent 74%);
+		pointer-events: none;
+	}
+
+	.mine-map-heading {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.78fr);
+		align-items: end;
+		gap: 0.7rem 2.5rem;
+		margin-bottom: clamp(1.5rem, 3.5vw, 2.8rem);
+	}
+
+	.mine-map-heading__eyebrow {
+		grid-column: 1 / -1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+
+	.mine-map-heading__eyebrow span {
+		color: var(--primary);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.24em;
+	}
+
+	.mine-map-heading__eyebrow strong {
+		color: var(--mine-muted);
+		font-size: 1.02rem;
+		font-weight: 900;
+		letter-spacing: -0.025em;
+	}
+
+	.mine-map-heading h2,
+	.mine-map-heading p {
+		margin: 0;
+	}
+
+	.mine-map-heading h2 {
+		color: var(--mine-ink-strong);
+		font-size: clamp(3.3rem, 8vw, 7rem);
+		font-weight: 950;
+		line-height: 0.88;
+		letter-spacing: -0.07em;
+	}
+
+	.mine-map-heading > p {
+		align-self: center;
+		color: var(--mine-muted);
+		font-size: clamp(0.86rem, 1.1vw, 1rem);
+		line-height: 1.75;
+		text-wrap: balance;
+	}
+
+	.mine-map-grid {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.mine-map-card {
+		position: relative;
+		isolation: isolate;
+		min-width: 0;
+		overflow: hidden;
+		border: 1px solid color-mix(in oklch, var(--primary) 27%, var(--line-divider));
+		border-radius: clamp(1rem, 1.8vw, 1.4rem);
+		background: color-mix(in oklch, var(--mine-surface) 91%, transparent);
+		color: var(--mine-ink);
+		box-shadow: 0 0.8rem 2rem color-mix(in oklch, var(--primary) 6%, transparent);
+		backdrop-filter: blur(16px) saturate(115%);
+		transition:
+			border-color 190ms ease,
+			box-shadow 190ms ease,
+			transform 190ms ease;
+	}
+
+	a.mine-map-card {
+		cursor: pointer;
+	}
+
+	a.mine-map-card:hover,
+	a.mine-map-card:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 68%, var(--line-divider));
+		outline: none;
+		box-shadow: 0 1rem 2.6rem color-mix(in oklch, var(--primary) 13%, transparent);
+		transform: translateY(-2px);
+	}
+
+	.mine-map-card--visits {
+		grid-column: span 2;
+		min-height: 15rem;
+	}
+
+	.mine-map-card--archive {
+		grid-column: span 4;
+		min-height: 15rem;
+	}
+
+	.mine-map-art {
+		position: absolute;
+		inset: 0;
+		z-index: -3;
+		opacity: 0.2;
+	}
+
+	.mine-map-art :global(img),
+	.mine-map-art :global(picture) {
+		width: 100%;
+		height: 100%;
+	}
+
+	.mine-map-art-wash {
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+		background:
+			linear-gradient(90deg, var(--mine-surface) 5%, color-mix(in oklch, var(--mine-surface) 78%, transparent) 64%, transparent),
+			linear-gradient(0deg, color-mix(in oklch, var(--mine-surface) 85%, transparent), transparent 70%);
+		pointer-events: none;
+	}
+
+	.mine-map-card__copy {
+		position: absolute;
+		right: clamp(1.15rem, 2.6vw, 2rem);
+		bottom: clamp(1.15rem, 2.6vw, 2rem);
+		left: clamp(1.15rem, 2.6vw, 2rem);
+	}
+
+	.mine-map-card__copy p,
+	.mine-map-card__copy h3 {
+		margin: 0;
+	}
+
+	.mine-map-card__copy p {
+		color: var(--primary);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.17em;
+	}
+
+	.mine-map-card__copy h3 {
+		margin-top: 0.25rem;
+		color: var(--mine-ink-strong);
+		font-size: clamp(1.85rem, 3.5vw, 3.2rem);
+		font-weight: 950;
+		line-height: 1;
+		letter-spacing: -0.055em;
+	}
+
+	.mine-map-statline {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.42rem;
+		margin-top: 0.62rem;
+		color: var(--mine-muted);
+		font-size: 0.8rem;
+		font-weight: 760;
+	}
+
+	.mine-map-statline strong {
+		color: var(--primary);
+		font-size: 1.18rem;
+	}
+
+	.mine-map-statline i {
+		width: 0.25rem;
+		height: 0.25rem;
+		border-radius: 999px;
+		background: var(--primary);
+	}
+
+	.mine-map-arrow {
+		position: absolute;
+		top: 1.15rem;
+		right: 1.15rem;
+		display: grid;
+		width: 2.75rem;
+		height: 2.75rem;
+		place-items: center;
+		border: 1px solid color-mix(in oklch, var(--primary) 27%, var(--line-divider));
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--mine-surface) 84%, transparent);
+		color: var(--primary);
+		backdrop-filter: blur(12px);
+	}
+
+	.mine-map-arrow :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		transition: transform 170ms ease;
+	}
+
+	.mine-map-card--archive:hover .mine-map-arrow :global(svg),
+	.mine-map-card--archive:focus-visible .mine-map-arrow :global(svg) {
+		transform: translateX(0.18rem);
+	}
+
+	.mine-map-card--post {
+		display: flex;
+		min-height: 15rem;
+		flex-direction: column;
+		padding: clamp(1.25rem, 2.7vw, 2rem);
+	}
+
+	.mine-map-card--pinned {
+		grid-column: span 4;
+	}
+
+	.mine-map-card--latest {
+		grid-column: span 2;
+		background:
+			radial-gradient(circle at 90% 10%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 14rem),
+			color-mix(in oklch, var(--mine-surface) 91%, transparent);
+	}
+
+	.mine-map-card__label {
+		display: flex;
+		align-items: center;
+		gap: 0.48rem;
+		color: var(--mine-ink-strong);
+		font-size: clamp(1.3rem, 2.6vw, 2.35rem);
+		font-weight: 950;
+		letter-spacing: -0.045em;
+	}
+
+	.mine-map-card__label > :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		color: var(--primary);
+	}
+
+	.mine-map-card__label > span {
+		color: var(--primary);
+		font-size: 0.68rem;
+		letter-spacing: 0.17em;
+	}
+
+	.mine-map-card__label h3 {
+		margin: 0.22rem 0 0;
+		font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+		line-height: 1;
+	}
+
+	.mine-map-post-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: auto;
+		padding-top: 1.5rem;
+		color: var(--mine-soft);
+		font-size: 0.7rem;
+		font-weight: 760;
+	}
+
+	.mine-map-post-meta span::after {
+		margin-left: 0.4rem;
+		content: "/";
+	}
+
+	.mine-map-card--post > h3 {
+		margin: 0.55rem 0 0;
+		color: var(--mine-ink-strong);
+		font-size: clamp(1.35rem, 2.5vw, 2.15rem);
+		font-weight: 950;
+		line-height: 1.16;
+		letter-spacing: -0.035em;
+	}
+
+	.mine-map-card--post > p {
+		display: -webkit-box;
+		margin: 0.62rem 0 0;
+		overflow: hidden;
+		color: var(--mine-muted);
+		font-size: 0.8rem;
+		line-height: 1.65;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	.mine-map-post-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.42rem;
+		margin-top: 1rem;
+		color: var(--primary);
+		font-size: 0.75rem;
+		font-weight: 850;
+	}
+
+	.mine-map-post-link :global(svg) {
+		width: 0.75rem;
+		height: 0.75rem;
+	}
+
+	.mine-map-card--index,
+	.mine-map-card--subscribe {
+		grid-column: span 2;
+		min-height: 17rem;
+		padding: clamp(1.2rem, 2.6vw, 1.85rem);
+	}
+
+	.mine-map-category-list {
+		display: grid;
+		gap: 0;
+		margin-top: 1.3rem;
+	}
+
+	.mine-map-category-list a {
+		display: flex;
+		min-height: 2rem;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		border-bottom: 1px solid color-mix(in oklch, var(--primary) 13%, var(--line-divider));
+		color: var(--mine-muted);
+		font-size: 0.76rem;
+		font-weight: 760;
+		transition: color 170ms ease;
+	}
+
+	.mine-map-category-list a:hover,
+	.mine-map-category-list a:focus-visible {
+		outline: none;
+		color: var(--primary);
+	}
+
+	.mine-map-category-list strong {
+		color: var(--mine-ink-strong);
+	}
+
+	.mine-map-category-list .mine-map-more-link {
+		border-bottom: 0;
+		color: var(--primary);
+	}
+
+	.mine-map-more-link > span {
+		color: var(--mine-soft);
+	}
+
+	.mine-map-tag-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 1.35rem;
+	}
+
+	.mine-map-tag-list a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.32rem;
+		padding: 0.48rem 0.68rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 22%, var(--line-divider));
+		border-radius: 999px;
+		color: var(--mine-muted);
+		font-size: 0.72rem;
+		font-weight: 820;
+		transition:
+			border-color 170ms ease,
+			color 170ms ease,
+			background-color 170ms ease;
+	}
+
+	.mine-map-tag-list a:hover,
+	.mine-map-tag-list a:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 65%, var(--line-divider));
+		outline: none;
+		background: color-mix(in oklch, var(--primary) 10%, transparent);
+		color: var(--primary);
+	}
+
+	.mine-map-tag-list small {
+		color: var(--mine-soft);
+		font-size: 0.62rem;
+	}
+
+	.mine-map-inline-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 1rem;
+		color: var(--primary);
+		font-size: 0.74rem;
+		font-weight: 850;
+	}
+
+	.mine-map-inline-link :global(svg) {
+		width: 0.72rem;
+		height: 0.72rem;
+	}
+
+	.mine-map-card--subscribe {
+		background:
+			radial-gradient(circle at 88% 82%, color-mix(in oklch, var(--primary) 18%, transparent), transparent 12rem),
+			color-mix(in oklch, var(--mine-surface) 91%, transparent);
+	}
+
+	.mine-map-card--subscribe > p {
+		margin: 1.25rem 0 0;
+		color: var(--mine-muted);
+		font-size: 0.78rem;
+		line-height: 1.65;
+	}
+
+	.mine-map-social-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+		margin-top: 1.35rem;
+	}
+
+	.mine-map-social-list a {
+		display: inline-flex;
+		min-height: 2.55rem;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.62rem 0.8rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 25%, var(--line-divider));
+		border-radius: 999px;
+		color: var(--mine-muted);
+		font-size: 0.7rem;
+		font-weight: 820;
+		transition:
+			border-color 170ms ease,
+			color 170ms ease,
+			background-color 170ms ease;
+	}
+
+	.mine-map-social-list a:hover,
+	.mine-map-social-list a:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 68%, var(--line-divider));
+		outline: none;
+		background: color-mix(in oklch, var(--primary) 11%, transparent);
+		color: var(--primary);
+	}
+
+	.mine-map-social-list :global(svg) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.mine-map-card--skills {
+		grid-column: 1 / -1;
+		display: grid;
+		grid-template-columns: minmax(13rem, 0.42fr) minmax(0, 1fr);
+		align-items: center;
+		gap: 1.4rem;
+		min-height: 12rem;
+		padding: clamp(1.2rem, 2.8vw, 2rem);
+	}
+
+	.mine-map-skills-copy p,
+	.mine-map-skills-copy h3,
+	.mine-map-skills-copy span {
+		margin: 0;
+	}
+
+	.mine-map-skills-copy p {
+		color: var(--primary);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.17em;
+	}
+
+	.mine-map-skills-copy h3 {
+		margin-top: 0.22rem;
+		color: var(--mine-ink-strong);
+		font-size: clamp(1.7rem, 3vw, 2.6rem);
+		font-weight: 950;
+		line-height: 1;
+		letter-spacing: -0.045em;
+	}
+
+	.mine-map-skills-copy span {
+		display: block;
+		margin-top: 0.55rem;
+		color: var(--mine-muted);
+		font-size: 0.75rem;
+		line-height: 1.55;
+	}
+
+	.mine-map-skills-list {
+		display: flex;
+		min-width: 0;
+		align-items: center;
+		justify-content: space-between;
+		gap: clamp(0.55rem, 1.35vw, 1rem);
+	}
+
+	.mine-map-skill {
+		display: grid;
+		min-width: 3.7rem;
+		place-items: center;
+		gap: 0.45rem;
+		color: var(--mine-muted);
+		text-align: center;
+		transition:
+			color 170ms ease,
+			transform 170ms ease;
+	}
+
+	.mine-map-skill:hover {
+		color: var(--primary);
+		transform: translateY(-2px);
+	}
+
+	.mine-map-skill :global(svg) {
+		width: clamp(1.65rem, 2.7vw, 2.5rem);
+		height: clamp(1.65rem, 2.7vw, 2.5rem);
+	}
+
+	.mine-map-skill span {
+		font-size: 0.61rem;
+		font-weight: 760;
+		white-space: nowrap;
+	}
+
+	:global(.dark) .mine-map {
+		--mine-ink: rgb(255 255 255 / 86%);
+		--mine-ink-strong: rgb(255 255 255 / 94%);
+		--mine-muted: rgb(255 255 255 / 61%);
+		--mine-soft: rgb(255 255 255 / 42%);
+		--mine-surface: color-mix(in oklch, var(--card-bg) 94%, #10221c);
+		--mine-surface-soft: color-mix(in oklch, var(--card-bg) 88%, #173329);
+	}
+
+	@media (max-width: 920px) {
+		.mine-map-heading {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.mine-map-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.mine-map-card--visits,
+		.mine-map-card--archive,
+		.mine-map-card--pinned,
+		.mine-map-card--latest,
+		.mine-map-card--index,
+		.mine-map-card--subscribe {
+			grid-column: span 1;
+		}
+
+		.mine-map-card--archive,
+		.mine-map-card--skills {
+			grid-column: 1 / -1;
+		}
+
+		.mine-map-card--skills {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.mine-map-skills-list {
+			justify-content: flex-start;
+			overflow-x: auto;
+			overscroll-behavior-inline: contain;
+			scrollbar-width: none;
+		}
+
+		.mine-map-skills-list::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
+	@media (max-width: 600px) {
+		.mine-map {
+			padding: 1rem;
+			border-radius: 1.35rem;
+		}
+
+		.mine-map-heading {
+			gap: 0.65rem;
+			margin-bottom: 1.25rem;
+		}
+
+		.mine-map-heading h2 {
+			font-size: clamp(3.1rem, 18vw, 4.5rem);
+		}
+
+		.mine-map-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.mine-map-card--visits,
+		.mine-map-card--archive,
+		.mine-map-card--pinned,
+		.mine-map-card--latest,
+		.mine-map-card--index,
+		.mine-map-card--subscribe,
+		.mine-map-card--skills {
+			grid-column: 1;
+		}
+
+		.mine-map-card--visits,
+		.mine-map-card--archive {
+			min-height: 13.5rem;
+		}
+
+		.mine-map-card--post,
+		.mine-map-card--index,
+		.mine-map-card--subscribe {
+			min-height: 0;
+		}
+
+		.mine-map-card--skills {
+			min-height: 0;
+			padding: 1.25rem;
+		}
+
+		.mine-map-social-list a span {
+			display: none;
+		}
+
+		.mine-map-social-list a {
+			width: 2.65rem;
+			padding: 0;
+			justify-content: center;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.mine-map-card,
+		.mine-map-arrow :global(svg),
+		.mine-map-skill,
+		.mine-map-tag-list a,
+		.mine-map-social-list a {
+			transition: none;
+		}
+	}
+</style>

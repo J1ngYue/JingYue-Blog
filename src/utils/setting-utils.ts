@@ -1,5 +1,4 @@
 import {
-	BANNER_HEIGHT_EXTEND,
 	DARK_MODE,
 	DEFAULT_THEME,
 	LIGHT_MODE,
@@ -441,17 +440,36 @@ function preserveImmersiveHomeLayout(): boolean {
 	return true;
 }
 
+function resetWallpaperWrapperLayout(wallpaperWrapper: HTMLElement) {
+	for (const property of [
+		"position",
+		"inset",
+		"right",
+		"bottom",
+		"left",
+		"height",
+		"min-height",
+		"max-height",
+		"opacity",
+		"z-index",
+		"transform",
+	]) {
+		wallpaperWrapper.style.removeProperty(property);
+	}
+}
+
 function showBannerMode(animate = false) {
 	// 显示 wallpaper-wrapper 并切换为 banner 模式
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
 	const immersiveHomeLanding = preserveImmersiveHomeLayout();
 	if (wallpaperWrapper && !immersiveHomeLanding) {
+		resetWallpaperWrapperLayout(wallpaperWrapper);
 		// 移除 overlay 和全屏壁纸模式类
 		wallpaperWrapper.classList.remove("wallpaper-overlay");
 		wallpaperWrapper.classList.remove("wallpaper-fullscreen");
 
-		// 恢复 banner 模式的 top 定位
-		wallpaperWrapper.style.top = `-${BANNER_HEIGHT_EXTEND}vh`;
+		// 横幅始终从页面顶部开始，不继承全屏模式留下的 fixed/inset。
+		wallpaperWrapper.style.top = "0";
 
 		// 检查当前是否为首页
 		const isHomePage = checkIsHomePage(window.location.pathname);
@@ -542,6 +560,7 @@ function showFullscreenMode(animate = false) {
 	const isHomePage = checkIsHomePage(window.location.pathname);
 	const immersiveHomeLanding = preserveImmersiveHomeLayout();
 	if (wallpaperWrapper && !immersiveHomeLanding) {
+		resetWallpaperWrapperLayout(wallpaperWrapper);
 		// 移除 overlay 模式类
 		wallpaperWrapper.classList.remove("wallpaper-overlay");
 		// 添加全屏壁纸模式类
@@ -616,6 +635,7 @@ function showOverlayMode() {
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
 	const immersiveHomeLanding = preserveImmersiveHomeLayout();
 	if (wallpaperWrapper && !immersiveHomeLanding) {
+		resetWallpaperWrapperLayout(wallpaperWrapper);
 		// 添加 overlay 模式类，移除全屏壁纸模式类
 		wallpaperWrapper.classList.remove("wallpaper-fullscreen");
 		wallpaperWrapper.classList.add("wallpaper-overlay");
@@ -649,9 +669,12 @@ function hideAllWallpapers() {
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
 
 	if (wallpaperWrapper) {
-		wallpaperWrapper.style.display = "none";
+		resetWallpaperWrapperLayout(wallpaperWrapper);
+		wallpaperWrapper.style.setProperty("display", "none", "important");
 		wallpaperWrapper.classList.add("hidden");
 		wallpaperWrapper.classList.add("opacity-0");
+		wallpaperWrapper.classList.remove("opacity-100");
+		wallpaperWrapper.classList.remove("mobile-hide-banner");
 		wallpaperWrapper.classList.remove("wallpaper-overlay");
 		wallpaperWrapper.classList.remove("wallpaper-fullscreen");
 	}
@@ -921,6 +944,15 @@ export function initWallpaperMode(): void {
 	applyWallpaperModeToDocument(storedMode, false);
 }
 
+function getDefaultWallpaperModeForCurrentPage(): WALLPAPER_MODE {
+	if (typeof window !== "undefined" && !checkIsHomePage(window.location.pathname)) {
+		return WALLPAPER_NONE;
+	}
+	return backgroundWallpaper.mode === WALLPAPER_FULLSCREEN
+		? WALLPAPER_BANNER
+		: backgroundWallpaper.mode;
+}
+
 export function getStoredWallpaperMode(): WALLPAPER_MODE {
 	// 检查是否在浏览器环境中
 	if (
@@ -933,17 +965,24 @@ export function getStoredWallpaperMode(): WALLPAPER_MODE {
 	const isSwitchable = backgroundWallpaper.switchable ?? true;
 	if (!isSwitchable) {
 		localStorage.removeItem("wallpaperMode");
-		return backgroundWallpaper.mode;
+		return getDefaultWallpaperModeForCurrentPage();
 	}
 
 	const storedMode = localStorage.getItem(
 		"wallpaperMode",
 	) as WALLPAPER_MODE | null;
-	if (storedMode === WALLPAPER_BANNER) {
-		localStorage.setItem("wallpaperMode", WALLPAPER_FULLSCREEN);
-		return WALLPAPER_FULLSCREEN;
+	if (storedMode === WALLPAPER_FULLSCREEN) {
+		localStorage.setItem("wallpaperMode", WALLPAPER_BANNER);
+		return WALLPAPER_BANNER;
 	}
-	return storedMode || backgroundWallpaper.mode;
+	if (
+		storedMode === WALLPAPER_BANNER ||
+		storedMode === WALLPAPER_OVERLAY ||
+		storedMode === WALLPAPER_NONE
+	) {
+		return storedMode;
+	}
+	return getDefaultWallpaperModeForCurrentPage();
 }
 
 // Overlay settings functions
@@ -952,7 +991,7 @@ function clampNumber(value: number, min: number, max: number): number {
 }
 
 export function getDefaultOverlayOpacity(): number {
-	return backgroundWallpaper.overlay?.opacity ?? 0.8;
+	return backgroundWallpaper.overlay?.opacity ?? 1;
 }
 
 export function getDefaultOverlayBlur(): number {
@@ -960,11 +999,11 @@ export function getDefaultOverlayBlur(): number {
 }
 
 export function getDefaultOverlayCardOpacity(): number {
-	return backgroundWallpaper.overlay?.cardOpacity ?? 0.6;
+	return backgroundWallpaper.overlay?.cardOpacity ?? 0.65;
 }
 
 export function getDefaultNavbarOpacity(): number {
-	return 0.55;
+	return 0;
 }
 
 export function getStoredOverlayOpacity(): number {
@@ -1084,6 +1123,9 @@ export function applyNavbarOpacityToDocument(navbarOpacity: number): void {
 		"--navbar-surface-opacity",
 		String(safeNavbarOpacity),
 	);
+	document
+		.getElementById("navbar")
+		?.style.setProperty("--navbar-surface-opacity", String(safeNavbarOpacity));
 }
 
 export function setOverlayOpacity(opacity: number): void {

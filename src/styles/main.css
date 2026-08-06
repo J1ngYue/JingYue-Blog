@@ -9,6 +9,8 @@
 @import './anime-bangumi.css';
 @import './tags.css';
 @import './categories.css';
+@import './privacy-modal.css';
+@import './guestbook-chat.css';
 
 @plugin '@tailwindcss/typography';
 
@@ -18,7 +20,8 @@
 /* Tailwind v4 配置 - 从 tailwind.config.cjs 迁移 */
 @theme {
   --font-sans:
-    'Roboto', 'sans-serif', ui-sans-serif, system-ui, sans-serif,
+    'LXGW WenKai', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
@@ -50,6 +53,13 @@
 /* 确保平滑滚动 */
 html {
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+body {
+    line-height: 1.5;
 }
 
 /* 页面顶部渐变高光效果 */
@@ -138,6 +148,13 @@ html {
         transition: none !important;
         animation: none !important;
     }
+
+    /* 色相滑块拖动期间避免数百个依赖 --hue 的元素同时补间。 */
+    .is-theme-hue-adjusting *,
+    .is-theme-hue-adjusting *::before,
+    .is-theme-hue-adjusting *::after {
+        transition-duration: 0s !important;
+    }
     
     /* 在主题切换时禁用代码块的复杂效果以提升性能 */
     /* 使用 View Transitions 时也需要禁用代码块动画，因为它们太多了 */
@@ -203,11 +220,27 @@ html {
         backdrop-filter: none !important;
     }
     
+    :root {
+        --site-card-bg: var(--card-bg);
+    }
+
+    html[data-wallpaper-mode="banner"],
+    html[data-wallpaper-mode="fullscreen"],
+    html[data-wallpaper-mode="overlay"] {
+        --site-card-bg: var(--card-bg-transparent);
+    }
+
+    html[data-wallpaper-mode="none"] {
+        --site-card-bg: var(--card-bg);
+    }
+
     .card-base {
         @apply rounded-(--radius-large) overflow-hidden bg-(--card-bg) transition-colors duration-150;
+        background-color: var(--site-card-bg) !important;
     }
     .card-base-transparent {
         @apply rounded-(--radius-large) overflow-hidden bg-(--card-bg-transparent) transition-colors duration-150;
+        background-color: var(--site-card-bg) !important;
     }
 
     /* LQIP 占位渐变 */
@@ -275,6 +308,15 @@ html {
 
     .wallpaper-transparent .bg-\(--card-bg\) {
         background-color: var(--card-bg-transparent) !important;
+    }
+
+    html[data-wallpaper-mode="banner"] .btn-card,
+    html[data-wallpaper-mode="fullscreen"] .btn-card,
+    html[data-wallpaper-mode="overlay"] .btn-card,
+    html[data-wallpaper-mode="banner"] .bg-\(--card-bg\),
+    html[data-wallpaper-mode="fullscreen"] .bg-\(--card-bg\),
+    html[data-wallpaper-mode="overlay"] .bg-\(--card-bg\) {
+        background-color: var(--site-card-bg) !important;
     }
 
     h1, h2, h3, h4, h5, h6, p, a, span, li, ul, ol, blockquote, code, pre, table, th, td, strong {

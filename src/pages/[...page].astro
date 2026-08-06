@@ -7,10 +7,7 @@ import { siteConfig } from "@/config";
 import { githubUsername } from "@/config/profileConfig";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
-import {
-	getBlogActivityCalendar,
-	getGithubActivityCalendar,
-} from "@/utils/home-activity";
+import { getGithubActivityCalendar } from "@/utils/home-activity";
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
 	// 使用配置中的文章数量
@@ -23,20 +20,14 @@ const { page } = Astro.props;
 
 const len = page.data.length;
 const isLandingPage = page.currentPage === 1;
-const activityData = isLandingPage
-	? await Promise.all([
-			getBlogActivityCalendar(),
-			getGithubActivityCalendar(githubUsername),
-		])
+const githubActivity = isLandingPage
+	? await getGithubActivityCalendar(githubUsername)
 	: null;
 ---
 
 <MainGridLayout homeLanding={isLandingPage}>
-  {isLandingPage && activityData ? (
-    <HomeLanding
-      blogActivity={activityData[0]}
-      githubActivity={activityData[1]}
-    />
+  {isLandingPage && githubActivity ? (
+    <HomeLanding githubActivity={githubActivity} />
   ) : (
     <>
       <PostPage page={page} />

@@ -1,0 +1,703 @@
+---
+import { Icon } from "astro-icon/components";
+import type { ArchiveKnowledgeGraphData } from "@/utils/archive-knowledge-graph";
+
+interface Props {
+	graph: ArchiveKnowledgeGraphData;
+}
+
+const { graph } = Astro.props;
+const featuredTags = graph.nodes.slice(0, 7);
+const accessibleLabel = `知识图谱，共 ${graph.nodes.length} 个标签、${graph.links.length} 条关联。节点大小表示包含该标签的文章数量。`;
+---
+
+<section id="knowledge-graph" class="archive-knowledge" data-archive-knowledge-graph data-graph={JSON.stringify(graph)}>
+	<header class="archive-knowledge__header">
+		<div>
+			<span class="archive-knowledge__eyebrow">KNOWLEDGE GRAPH</span>
+			<h2>
+				<Icon is:inline name="material-symbols:share" />
+				知识图谱
+			</h2>
+			<p>根据文章标签的共同出现关系自动生成，点击节点即可筛选对应文章。</p>
+		</div>
+
+		<div class="archive-knowledge__controls" aria-label="图谱视图控制">
+			<button type="button" data-graph-action="out" aria-label="缩小图谱" title="缩小">
+				<Icon is:inline name="material-symbols:zoom-out-rounded" />
+			</button>
+			<button type="button" data-graph-action="reset" aria-label="重置图谱视图" title="重置视图">
+				<Icon is:inline name="material-symbols:center-focus-strong-rounded" />
+			</button>
+			<button type="button" data-graph-action="in" aria-label="放大图谱" title="放大">
+				<Icon is:inline name="material-symbols:zoom-in-rounded" />
+			</button>
+		</div>
+	</header>
+
+	<div
+		class="archive-knowledge__surface"
+		data-graph-surface
+		data-state={graph.nodes.length === 0 ? "empty" : "loading"}
+	>
+		{
+			graph.nodes.length > 0 ? (
+				<svg
+					data-graph-svg
+					role="img"
+					tabindex="0"
+					aria-label={accessibleLabel}
+				>
+					<g data-graph-viewport></g>
+				</svg>
+			) : (
+				<div class="archive-knowledge__empty">
+					<Icon is:inline name="material-symbols:share" />
+					<p>文章添加标签后，知识图谱会自动出现在这里。</p>
+				</div>
+			)
+		}
+
+		<div class="archive-knowledge__status" data-graph-status aria-live="polite">
+			{graph.nodes.length === 0 ? "暂无标签关系" : "正在生成知识图谱…"}
+		</div>
+
+		<div class="archive-knowledge__tooltip" data-graph-tooltip role="tooltip" hidden>
+			<strong data-tooltip-title></strong>
+			<span data-tooltip-meta></span>
+			<small data-tooltip-posts></small>
+		</div>
+	</div>
+
+	<footer class="archive-knowledge__footer">
+		<p>
+			<strong>{graph.nodes.length}</strong> 个标签
+			<span aria-hidden="true">·</span>
+			<strong>{graph.links.length}</strong> 条关联
+		</p>
+		<nav aria-label="热门标签">
+			{featuredTags.map((tag) => (
+				<a href={tag.url} data-no-swup>#{tag.name}<span>{tag.value}</span></a>
+			))}
+		</nav>
+	</footer>
+</section>
+
+<script>
+	import type {
+		D3DragEvent,
+		SimulationLinkDatum,
+		SimulationNodeDatum,
+	} from "d3";
+	import type {
+		ArchiveKnowledgeGraphData,
+		ArchiveKnowledgeGraphLink,
+		ArchiveKnowledgeGraphNode,
+	} from "@/utils/archive-knowledge-graph";
+
+	type GraphNode = ArchiveKnowledgeGraphNode & SimulationNodeDatum;
+	type GraphLink = ArchiveKnowledgeGraphLink &
+		SimulationLinkDatum<GraphNode>;
+
+	const graphColors = [
+		"#16a085",
+		"#3b82f6",
+		"#e05a54",
+		"#d69b2d",
+		"#8b5cf6",
+		"#db4b83",
+	];
+	const graphWindow = window as Window & {
+		__archiveKnowledgeCleanup?: () => void;
+		__archiveKnowledgeEventsBound?: boolean;
+	};
+
+	function nodeRadius(node: GraphNode): number {
+		return 8 + Math.sqrt(node.value) * 5;
+	}
+
+	async function mountKnowledgeGraph(root: HTMLElement) {
+		const surface = root.querySelector<HTMLElement>("[data-graph-surface]");
+		const svgElement = root.querySelector<SVGSVGElement>("[data-graph-svg]");
+		const viewportElement =
+			root.querySelector<SVGGElement>("[data-graph-viewport]");
+		const status = root.querySelector<HTMLElement>("[data-graph-status]");
+		const tooltip = root.querySelector<HTMLElement>("[data-graph-tooltip]");
+		if (!surface || !svgElement || !viewportElement || !tooltip) return () => {};
+
+		const graph = JSON.parse(
+			root.dataset.graph ?? '{"nodes":[],"links":[]}',
+		) as ArchiveKnowledgeGraphData;
+		const nodes: GraphNode[] = graph.nodes.map((node) => ({ ...node }));
+		const links: GraphLink[] = graph.links.map((link) => ({ ...link }));
+		const d3 = await import("d3");
+		const svg = d3.select(svgElement);
+		const viewport = d3.select(viewportElement);
+		viewport.selectAll("*").remove();
+
+		const linkSelection = viewport
+			.append("g")
+			.attr("class", "archive-knowledge__links")
+			.selectAll<SVGLineElement, GraphLink>("line")
+			.data(links)
+			.join("line")
+			.attr("stroke-width", (link) => Math.min(3, 0.8 + link.value * 0.45));
+
+		const nodeSelection = viewport
+			.append("g")
+			.attr("class", "archive-knowledge__nodes")
+			.selectAll<SVGAElement, GraphNode>("a")
+			.data(nodes)
+			.join("a")
+			.attr("href", (node) => node.url)
+			.attr("data-no-swup", "")
+			.attr(
+				"aria-label",
+				(node) => `${node.name}，${node.value} 篇文章，点击筛选`,
+			)
+			.style(
+				"--graph-node-color",
+				(node) => graphColors[node.group % graphColors.length],
+			);
+
+		nodeSelection
+			.append("circle")
+			.attr("r", nodeRadius)
+			.attr("tabindex", -1);
+
+		nodeSelection
+			.append("text")
+			.attr("text-anchor", "middle")
+			.attr("dy", (node) => nodeRadius(node) + 15)
+			.attr("font-size", (node) => Math.min(17, 10 + node.value * 1.25))
+			.text((node) => node.name);
+
+		nodeSelection
+			.append("title")
+			.text((node) => `${node.name} · ${node.value} 篇文章`);
+
+		let width = 0;
+		let height = 0;
+		const linkForce = d3
+			.forceLink<GraphNode, GraphLink>(links)
+			.id((node) => node.id)
+			.distance((link) => Math.max(72, 118 - link.value * 10))
+			.strength((link) => Math.min(0.9, 0.35 + link.value * 0.14));
+		const simulation = d3
+			.forceSimulation<GraphNode>(nodes)
+			.force("link", linkForce)
+			.force("charge", d3.forceManyBody().strength(-190))
+			.force("collide", d3.forceCollide<GraphNode>().radius((node) => nodeRadius(node) + 22))
+			.force("x", d3.forceX<GraphNode>().strength(0.045))
+			.force("y", d3.forceY<GraphNode>().strength(0.045));
+
+		const render = () => {
+			linkSelection
+				.attr("x1", (link) => (link.source as GraphNode).x ?? 0)
+				.attr("y1", (link) => (link.source as GraphNode).y ?? 0)
+				.attr("x2", (link) => (link.target as GraphNode).x ?? 0)
+				.attr("y2", (link) => (link.target as GraphNode).y ?? 0);
+			nodeSelection.attr(
+				"transform",
+				(node) => `translate(${node.x ?? 0},${node.y ?? 0})`,
+			);
+		};
+		simulation.on("tick", render);
+
+		const showTooltip = (
+			node: GraphNode,
+			clientX?: number,
+			clientY?: number,
+		) => {
+			const title = tooltip.querySelector<HTMLElement>("[data-tooltip-title]");
+			const meta = tooltip.querySelector<HTMLElement>("[data-tooltip-meta]");
+			const posts = tooltip.querySelector<HTMLElement>("[data-tooltip-posts]");
+			if (title) title.textContent = node.name;
+			if (meta) meta.textContent = `${node.value} 篇文章`;
+			if (posts) posts.textContent = node.posts.slice(0, 3).join(" · ");
+
+			const bounds = surface.getBoundingClientRect();
+			const x = clientX === undefined ? (node.x ?? width / 2) : clientX - bounds.left;
+			const y = clientY === undefined ? (node.y ?? height / 2) : clientY - bounds.top;
+			tooltip.style.left = `${Math.min(bounds.width - 190, Math.max(12, x + 14))}px`;
+			tooltip.style.top = `${Math.min(bounds.height - 88, Math.max(12, y + 14))}px`;
+			tooltip.hidden = false;
+		};
+		const hideTooltip = () => {
+			tooltip.hidden = true;
+		};
+
+		nodeSelection
+			.on("pointerenter", (event, node) =>
+				showTooltip(node, event.clientX, event.clientY),
+			)
+			.on("pointermove", (event, node) =>
+				showTooltip(node, event.clientX, event.clientY),
+			)
+			.on("pointerleave", hideTooltip)
+			.on("focus", (_event, node) => showTooltip(node))
+			.on("blur", hideTooltip);
+
+		const drag = d3
+			.drag<SVGAElement | HTMLAnchorElement, GraphNode>()
+			.on(
+				"start",
+				(
+					event: D3DragEvent<
+						SVGAElement | HTMLAnchorElement,
+						GraphNode,
+						GraphNode
+					>,
+					node,
+				) => {
+					if (!event.active) simulation.alphaTarget(0.2).restart();
+					node.fx = node.x;
+					node.fy = node.y;
+				},
+			)
+			.on(
+				"drag",
+				(
+					event: D3DragEvent<
+						SVGAElement | HTMLAnchorElement,
+						GraphNode,
+						GraphNode
+					>,
+					node,
+				) => {
+					node.fx = event.x;
+					node.fy = event.y;
+				},
+			)
+			.on(
+				"end",
+				(
+					event: D3DragEvent<
+						SVGAElement | HTMLAnchorElement,
+						GraphNode,
+						GraphNode
+					>,
+					node,
+				) => {
+					if (!event.active) simulation.alphaTarget(0);
+					node.fx = null;
+					node.fy = null;
+				},
+			);
+		nodeSelection.call(drag);
+
+		const zoom = d3
+			.zoom<SVGSVGElement, unknown>()
+			.scaleExtent([0.55, 3])
+			.on("zoom", (event) => viewport.attr("transform", event.transform));
+		svg.call(zoom);
+
+		const controlListeners: Array<{
+			button: HTMLButtonElement;
+			listener: () => void;
+		}> = [];
+		root.querySelectorAll<HTMLButtonElement>("[data-graph-action]").forEach(
+			(button) => {
+				const listener = () => {
+					const action = button.dataset.graphAction;
+					if (action === "reset") {
+						svg
+							.transition()
+							.duration(220)
+							.call(zoom.transform, d3.zoomIdentity);
+						simulation.alpha(0.25).restart();
+						return;
+					}
+					svg
+						.transition()
+						.duration(180)
+						.call(zoom.scaleBy, action === "in" ? 1.3 : 0.77);
+				};
+				button.addEventListener("click", listener);
+				controlListeners.push({ button, listener });
+			},
+		);
+
+		const resize = () => {
+			const bounds = surface.getBoundingClientRect();
+			width = Math.max(280, bounds.width);
+			height = Math.max(320, bounds.height);
+			svg.attr("viewBox", `0 0 ${width} ${height}`);
+			simulation
+				.force("center", d3.forceCenter(width / 2, height / 2))
+				.force("x", d3.forceX<GraphNode>(width / 2).strength(0.045))
+				.force("y", d3.forceY<GraphNode>(height / 2).strength(0.045))
+				.alpha(0.35)
+				.restart();
+		};
+		const resizeObserver = new ResizeObserver(resize);
+		resizeObserver.observe(surface);
+		resize();
+
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			simulation.stop();
+			simulation.tick(220);
+			render();
+		}
+
+		surface.dataset.state = "ready";
+		if (status) status.textContent = "知识图谱已加载";
+
+		return () => {
+			simulation.stop();
+			resizeObserver.disconnect();
+			svg.on(".zoom", null);
+			nodeSelection.on(".drag", null);
+			for (const { button, listener } of controlListeners) {
+				button.removeEventListener("click", listener);
+			}
+		};
+	}
+
+	async function initArchiveKnowledgeGraph() {
+		graphWindow.__archiveKnowledgeCleanup?.();
+		const root = document.querySelector<HTMLElement>(
+			"[data-archive-knowledge-graph]",
+		);
+		if (!root || root.dataset.bound === "true") return;
+		root.dataset.bound = "true";
+
+		try {
+			graphWindow.__archiveKnowledgeCleanup =
+				await mountKnowledgeGraph(root);
+		} catch (error) {
+			const surface = root.querySelector<HTMLElement>("[data-graph-surface]");
+			const status = root.querySelector<HTMLElement>("[data-graph-status]");
+			if (surface) surface.dataset.state = "error";
+			if (status) status.textContent = "知识图谱加载失败";
+			console.error("Failed to mount archive knowledge graph", error);
+		}
+	}
+
+	void initArchiveKnowledgeGraph();
+	if (!graphWindow.__archiveKnowledgeEventsBound) {
+		graphWindow.__archiveKnowledgeEventsBound = true;
+		document.addEventListener("swup:contentReplaced", () => {
+			void initArchiveKnowledgeGraph();
+		});
+	}
+</script>
+
+<style>
+	.archive-knowledge {
+		--graph-ink: #171b1e;
+		--graph-muted: #657077;
+		margin-top: clamp(2.7rem, 5vw, 4.4rem);
+	}
+
+	:global(html.dark) .archive-knowledge {
+		--graph-ink: #f4f6f7;
+		--graph-muted: #aab2b6;
+	}
+
+	.archive-knowledge__header {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1.25rem;
+		margin-bottom: 1.1rem;
+	}
+
+	.archive-knowledge__eyebrow {
+		color: var(--graph-muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 0.68rem;
+		font-weight: 750;
+		letter-spacing: 0.16em;
+	}
+
+	.archive-knowledge__header h2 {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		margin: 0.38rem 0 0;
+		color: var(--graph-ink);
+		font-size: clamp(1.75rem, 3vw, 2.3rem);
+		font-weight: 820;
+		letter-spacing: -0.04em;
+	}
+
+	.archive-knowledge__header h2 :global(svg) {
+		width: 1.9rem;
+		height: 1.9rem;
+	}
+
+	.archive-knowledge__header p {
+		margin: 0.5rem 0 0;
+		color: var(--graph-muted);
+		font-size: 0.86rem;
+	}
+
+	.archive-knowledge__controls {
+		display: flex;
+		gap: 0.4rem;
+	}
+
+	.archive-knowledge__controls button {
+		display: grid;
+		width: 2.35rem;
+		height: 2.35rem;
+		place-items: center;
+		border: 1px solid color-mix(in srgb, var(--graph-ink) 18%, transparent);
+		border-radius: 0.55rem;
+		background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+		color: var(--graph-ink);
+		cursor: pointer;
+		transition: border-color 180ms ease, background-color 180ms ease;
+	}
+
+	.archive-knowledge__controls button:hover {
+		border-color: color-mix(in srgb, var(--graph-ink) 48%, transparent);
+		background: color-mix(in srgb, var(--graph-ink) 7%, var(--card-bg));
+	}
+
+	.archive-knowledge__controls button:focus-visible,
+	.archive-knowledge__surface svg:focus-visible,
+	.archive-knowledge__footer a:focus-visible {
+		outline: 3px solid color-mix(in srgb, var(--primary) 70%, white);
+		outline-offset: 3px;
+	}
+
+	.archive-knowledge__controls :global(svg) {
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+
+	.archive-knowledge__surface {
+		position: relative;
+		height: clamp(28rem, 48vw, 37rem);
+		overflow: hidden;
+		border: 1px solid color-mix(in srgb, var(--graph-ink) 14%, transparent);
+		border-radius: 0.8rem;
+		background:
+			radial-gradient(
+				circle at 50% 45%,
+				color-mix(in srgb, var(--primary) 7%, transparent),
+				transparent 48%
+			),
+			color-mix(in srgb, var(--card-bg) 89%, transparent);
+	}
+
+	.archive-knowledge__surface::before {
+		position: absolute;
+		inset: 0;
+		background-image:
+			linear-gradient(
+				color-mix(in srgb, var(--graph-ink) 4%, transparent) 1px,
+				transparent 1px
+			),
+			linear-gradient(
+				90deg,
+				color-mix(in srgb, var(--graph-ink) 4%, transparent) 1px,
+				transparent 1px
+			);
+		background-size: 2rem 2rem;
+		content: "";
+		mask-image: radial-gradient(circle at center, black, transparent 78%);
+		pointer-events: none;
+	}
+
+	.archive-knowledge__surface svg {
+		position: relative;
+		z-index: 1;
+		display: block;
+		width: 100%;
+		height: 100%;
+		cursor: grab;
+		touch-action: none;
+	}
+
+	.archive-knowledge__surface svg:active {
+		cursor: grabbing;
+	}
+
+	.archive-knowledge__surface :global(.archive-knowledge__links line) {
+		stroke: color-mix(in srgb, var(--graph-muted) 38%, transparent);
+	}
+
+	.archive-knowledge__surface :global(.archive-knowledge__nodes a) {
+		color: var(--graph-node-color);
+		cursor: pointer;
+		outline: none;
+	}
+
+	.archive-knowledge__surface :global(.archive-knowledge__nodes circle) {
+		fill: color-mix(in srgb, var(--graph-node-color) 82%, var(--card-bg));
+		stroke: color-mix(in srgb, var(--graph-node-color) 55%, var(--card-bg));
+		stroke-width: 5px;
+		transition: filter 180ms ease, stroke-width 180ms ease;
+	}
+
+	.archive-knowledge__surface :global(.archive-knowledge__nodes text) {
+		fill: color-mix(in srgb, var(--graph-node-color) 78%, var(--graph-ink));
+		font-weight: 760;
+		paint-order: stroke;
+		pointer-events: none;
+		stroke: color-mix(in srgb, var(--card-bg) 88%, transparent);
+		stroke-width: 3px;
+	}
+
+	.archive-knowledge__surface :global(.archive-knowledge__nodes a:hover circle),
+	.archive-knowledge__surface :global(.archive-knowledge__nodes a:focus circle) {
+		filter: saturate(1.2) brightness(1.05);
+		stroke-width: 8px;
+	}
+
+	.archive-knowledge__status {
+		position: absolute;
+		z-index: 3;
+		top: 0.8rem;
+		left: 0.8rem;
+		padding: 0.4rem 0.65rem;
+		border: 1px solid color-mix(in srgb, var(--graph-ink) 12%, transparent);
+		border-radius: 999rem;
+		background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+		color: var(--graph-muted);
+		font-size: 0.7rem;
+		transition: opacity 180ms ease;
+	}
+
+	.archive-knowledge__surface[data-state="ready"] .archive-knowledge__status {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.archive-knowledge__surface[data-state="error"] .archive-knowledge__status {
+		color: #c83a3a;
+	}
+
+	.archive-knowledge__tooltip {
+		position: absolute;
+		z-index: 4;
+		display: grid;
+		width: min(13rem, calc(100% - 1.5rem));
+		gap: 0.18rem;
+		padding: 0.65rem 0.75rem;
+		border: 1px solid color-mix(in srgb, var(--graph-ink) 15%, transparent);
+		border-radius: 0.55rem;
+		background: color-mix(in srgb, var(--card-bg) 96%, transparent);
+		box-shadow: 0 0.65rem 1.8rem
+			color-mix(in srgb, var(--graph-ink) 13%, transparent);
+		color: var(--graph-ink);
+		pointer-events: none;
+	}
+
+	.archive-knowledge__tooltip[hidden] {
+		display: none;
+	}
+
+	.archive-knowledge__tooltip span,
+	.archive-knowledge__tooltip small {
+		color: var(--graph-muted);
+	}
+
+	.archive-knowledge__tooltip small {
+		overflow: hidden;
+		font-size: 0.66rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.archive-knowledge__empty {
+		display: grid;
+		height: 100%;
+		place-content: center;
+		place-items: center;
+		color: var(--graph-muted);
+		text-align: center;
+	}
+
+	.archive-knowledge__empty :global(svg) {
+		width: 3rem;
+		height: 3rem;
+	}
+
+	.archive-knowledge__footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 0.8rem;
+		color: var(--graph-muted);
+		font-size: 0.72rem;
+	}
+
+	.archive-knowledge__footer p {
+		margin: 0;
+	}
+
+	.archive-knowledge__footer nav {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 0.35rem;
+	}
+
+	.archive-knowledge__footer a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.3rem 0.5rem;
+		border-radius: 999rem;
+		background: color-mix(in srgb, var(--graph-ink) 6%, transparent);
+		color: var(--graph-ink);
+		text-decoration: none;
+		transition: background-color 180ms ease;
+	}
+
+	.archive-knowledge__footer a:hover {
+		background: color-mix(in srgb, var(--graph-ink) 12%, transparent);
+	}
+
+	.archive-knowledge__footer a span {
+		color: var(--graph-muted);
+		font-size: 0.62rem;
+	}
+
+	@media (max-width: 700px) {
+		.archive-knowledge__header {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.archive-knowledge__header p {
+			max-width: 18rem;
+		}
+
+		.archive-knowledge__controls {
+			align-self: flex-end;
+		}
+
+		.archive-knowledge__controls button {
+			width: 44px;
+			height: 44px;
+		}
+
+		.archive-knowledge__surface {
+			height: 24rem;
+		}
+
+		.archive-knowledge__footer {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+
+		.archive-knowledge__footer nav {
+			justify-content: flex-start;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.archive-knowledge__controls button,
+		.archive-knowledge__status,
+		.archive-knowledge__surface :global(.archive-knowledge__nodes circle),
+		.archive-knowledge__footer a {
+			transition: none;
+		}
+	}
+</style>

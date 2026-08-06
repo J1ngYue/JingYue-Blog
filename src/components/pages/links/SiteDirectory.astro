@@ -1,0 +1,929 @@
+---
+import { Picture } from "astro:assets";
+import { Icon } from "astro-icon/components";
+import profileAvatar from "@/assets/images/avatar.avif";
+import profileCover from "@/assets/images/cover.avif";
+import {
+	linkDirectoryCategories,
+	linkDirectoryItems,
+} from "@/config/linkDirectory";
+import { profileConfig } from "@/config/profileConfig";
+import { siteConfig } from "@/config/siteConfig";
+import { getSortedPosts } from "@/utils/content-utils";
+import { getPostUrlBySlug, url } from "@/utils/url-utils";
+
+const posts = (await getSortedPosts()).filter(
+	(post) => post.data.draft !== true,
+);
+const recentPosts = posts.slice(0, 5);
+const categoryCounts = new Map(
+	linkDirectoryCategories.map((category) => [
+		category,
+		linkDirectoryItems.filter((item) => item.category === category).length,
+	]),
+);
+
+const getLinkHref = (href: string, external?: boolean) =>
+	external ? href : url(href);
+const getHostname = (href: string, external?: boolean) => {
+	if (!external) return siteConfig.title;
+	try {
+		return new URL(href).hostname.replace(/^www\./, "");
+	} catch {
+		return href;
+	}
+};
+
+const timezone = siteConfig.timezone || "Asia/Shanghai";
+const dateParts = new Intl.DateTimeFormat("en-US", {
+	timeZone: timezone,
+	year: "numeric",
+	month: "numeric",
+	day: "numeric",
+}).formatToParts(new Date());
+const datePart = (type: Intl.DateTimeFormatPartTypes) =>
+	Number(dateParts.find((part) => part.type === type)?.value || 0);
+const currentYear = datePart("year");
+const currentMonth = datePart("month");
+const currentDay = datePart("day");
+const firstWeekday = new Date(
+	Date.UTC(currentYear, currentMonth - 1, 1),
+).getUTCDay();
+const daysInMonth = new Date(
+	Date.UTC(currentYear, currentMonth, 0),
+).getUTCDate();
+const calendarCells: Array<number | null> = [
+	...Array.from({ length: firstWeekday }, () => null),
+	...Array.from({ length: daysInMonth }, (_, index) => index + 1),
+];
+
+const siteDays = Math.max(
+	1,
+	Math.floor(
+		(Date.now() -
+			new Date(siteConfig.siteStartDate || "2025-01-01").getTime()) /
+			86_400_000,
+	),
+);
+---
+
+<div class="site-directory" data-site-directory data-view="grid">
+	<aside class="site-directory__left" aria-label="站点资料">
+		<section class="directory-profile">
+			<div class="directory-profile__cover" data-site-profile-cover>
+				<Picture src={profileCover} alt="" formats={["webp"]} fallbackFormat="webp" width={420} height={180} />
+			</div>
+			<a class="directory-profile__avatar" href="/about/" aria-label="查看关于页面" data-site-avatar>
+				<Picture src={profileAvatar} alt={profileConfig.name} formats={["webp"]} fallbackFormat="webp" width={96} height={96} />
+			</a>
+			<h2>{profileConfig.name}</h2>
+			<p>{profileConfig.bio}</p>
+			<nav aria-label="个人社交链接">
+				{profileConfig.links.map((link) => (
+					<a
+						href={link.url.startsWith("/") ? url(link.url) : link.url}
+						target={link.url.startsWith("http") ? "_blank" : undefined}
+						rel={link.url.startsWith("http") ? "noopener noreferrer" : undefined}
+						aria-label={link.name}
+						title={link.name}
+					>
+						<Icon is:inline name={link.icon} />
+					</a>
+				))}
+			</nav>
+		</section>
+
+		<section class="directory-calendar" aria-label={`${currentYear}年${currentMonth}月日历`}>
+			<header>
+				<Icon is:inline name="material-symbols:calendar-month-rounded" />
+				<strong>{currentYear}年{currentMonth}月</strong>
+			</header>
+			<div class="directory-calendar__week" aria-hidden="true">
+				{["日", "一", "二", "三", "四", "五", "六"].map((day) => <span>{day}</span>)}
+			</div>
+			<div class="directory-calendar__days">
+				{calendarCells.map((day) =>
+					day ? (
+						<time
+							datetime={`${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`}
+							class:list={{ "is-today": day === currentDay }}
+						>
+							{day}
+						</time>
+					) : (
+						<span></span>
+					),
+				)}
+			</div>
+		</section>
+	</aside>
+
+	<main class="site-directory__main">
+		<header class="site-directory__header">
+			<div>
+				<p><Icon is:inline name="material-symbols:bookmark-rounded" /> NAVIGATION</p>
+				<h1>网站导航</h1>
+				<span>收录个人网站、常用工具和可靠的学习文档</span>
+			</div>
+			<button type="button" data-directory-view aria-label="切换为列表视图" title="切换布局">
+				<Icon is:inline class="directory-view-grid" name="material-symbols:grid-view-rounded" />
+				<Icon is:inline class="directory-view-list" name="material-symbols:view-list-rounded" />
+			</button>
+		</header>
+
+		<nav class="site-directory__filters" aria-label="网站分类">
+			<button type="button" class="is-active" data-directory-filter="">
+				全部 <small>{linkDirectoryItems.length}</small>
+			</button>
+			{linkDirectoryCategories.map((category) => (
+				<button type="button" data-directory-filter={category}>
+					{category} <small>{categoryCounts.get(category)}</small>
+				</button>
+			))}
+		</nav>
+
+		<div class="site-directory__groups">
+			{linkDirectoryCategories.map((category) => {
+				const items = linkDirectoryItems.filter((item) => item.category === category);
+				return (
+					<section class="site-directory__group" data-directory-group={category}>
+						<header>
+							<Icon
+								is:inline
+								name={category === "我的网站" ? "material-symbols:person-rounded" : "material-symbols:star-rounded"}
+							/>
+							<h2>{category}</h2>
+							<small>{items.length}</small>
+							<i aria-hidden="true"></i>
+						</header>
+						<div class="site-directory__grid">
+							{items.map((item) => (
+								<a
+									class="site-directory__card"
+									href={getLinkHref(item.href, item.external)}
+									target={item.external ? "_blank" : undefined}
+									rel={item.external ? "noopener noreferrer" : undefined}
+									data-directory-card
+									data-category={item.category}
+								>
+									<div class="site-directory__card-heading">
+										<span class="site-directory__card-icon">
+											<Icon is:inline name={item.icon} />
+										</span>
+										<h3>{item.title}</h3>
+									</div>
+									<div class="site-directory__card-details">
+										<p>{item.description}</p>
+										<small>{getHostname(item.href, item.external)}</small>
+									</div>
+									{item.external && <Icon is:inline class="site-directory__external" name="material-symbols:arrow-outward-rounded" />}
+								</a>
+							))}
+						</div>
+					</section>
+				);
+			})}
+		</div>
+	</main>
+
+	<aside class="site-directory__right" aria-label="站点信息">
+		<section class="directory-days">
+			<p>JingYue 已经记录了</p>
+			<div><strong>{siteDays}</strong><span>天</span></div>
+			<small>愿每一次打开都有新的发现</small>
+		</section>
+
+		<section class="directory-quote">
+			<h2><i aria-hidden="true"></i>今日一言</h2>
+			<blockquote>“{siteConfig.subtitle}”</blockquote>
+			<p>—— {profileConfig.name}</p>
+		</section>
+
+		<section class="directory-recent">
+			<h2><i aria-hidden="true"></i>最近更新</h2>
+			<nav>
+				{recentPosts.map((post) => (
+					<a href={getPostUrlBySlug(post.id)}>
+						<span>{post.data.title}</span>
+						<time datetime={post.data.published.toISOString()}>
+							{post.data.published.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}
+						</time>
+					</a>
+				))}
+			</nav>
+		</section>
+	</aside>
+</div>
+
+<script>
+	function initSiteDirectory() {
+		const root = document.querySelector<HTMLElement>("[data-site-directory]");
+		if (!root || root.dataset.bound === "true") return;
+		root.dataset.bound = "true";
+
+		const filterButtons = Array.from(
+			root.querySelectorAll<HTMLButtonElement>("[data-directory-filter]"),
+		);
+		const groups = Array.from(
+			root.querySelectorAll<HTMLElement>("[data-directory-group]"),
+		);
+		const viewButton = root.querySelector<HTMLButtonElement>("[data-directory-view]");
+
+		const applyFilter = (category: string, updateUrl = true) => {
+			groups.forEach((group) => {
+				group.hidden = Boolean(category && group.dataset.directoryGroup !== category);
+			});
+			filterButtons.forEach((button) => {
+				const active = (button.dataset.directoryFilter || "") === category;
+				button.classList.toggle("is-active", active);
+				button.setAttribute("aria-pressed", String(active));
+			});
+
+			if (updateUrl) {
+				const url = new URL(window.location.href);
+				if (category) url.searchParams.set("category", category);
+				else url.searchParams.delete("category");
+				history.replaceState(history.state, "", url);
+			}
+		};
+
+		const applyView = (view: "grid" | "list") => {
+			root.dataset.view = view;
+			viewButton?.setAttribute(
+				"aria-label",
+				view === "grid" ? "切换为列表视图" : "切换为网格视图",
+			);
+			localStorage.setItem("jingyue-directory-view", view);
+		};
+
+		filterButtons.forEach((button) => {
+			button.addEventListener("click", () =>
+				applyFilter(button.dataset.directoryFilter || ""),
+			);
+		});
+		viewButton?.addEventListener("click", () => {
+			applyView(root.dataset.view === "list" ? "grid" : "list");
+		});
+
+		const requested = new URL(window.location.href).searchParams.get("category") || "";
+		applyFilter(requested, false);
+		applyView(localStorage.getItem("jingyue-directory-view") === "list" ? "list" : "grid");
+	}
+
+	initSiteDirectory();
+	document.addEventListener("swup:contentReplaced", initSiteDirectory);
+</script>
+
+<style>
+	.site-directory {
+		--text-90: #11171a;
+		--text-75: #354047;
+		--text-50: #68757c;
+		--text-30: #929da3;
+		--card-bg: #fff;
+		--line-divider: rgb(28 47 55 / 14%);
+		display: grid;
+		box-sizing: border-box;
+		grid-template-columns: 18rem minmax(0, 1fr) 18rem;
+		gap: 1.5rem;
+		align-items: start;
+		padding: 1.2rem 0 3rem;
+		color: var(--text-75);
+	}
+
+	:global(html.dark) .site-directory {
+		--text-90: #f5f7f8;
+		--text-75: #d4dadd;
+		--text-50: #9ca7ad;
+		--text-30: #748188;
+		--card-bg: #171c20;
+		--line-divider: rgb(226 237 241 / 14%);
+	}
+
+	.site-directory__left,
+	.site-directory__right {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.site-directory__left > section,
+	.site-directory__right > section {
+		border: 1px solid var(--line-divider);
+		border-radius: 0.5rem;
+		background: var(--card-bg);
+		box-shadow: 0 0.65rem 1.8rem rgb(17 31 38 / 7%);
+	}
+
+	.directory-profile {
+		position: relative;
+		overflow: hidden;
+		padding: 0 1.25rem 1.25rem;
+		text-align: center;
+	}
+
+	.directory-profile__cover {
+		height: 8.25rem;
+		margin: 0 -1.25rem;
+		overflow: hidden;
+	}
+
+	.directory-profile__cover :global(picture),
+	.directory-profile__cover :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.directory-profile__cover::after {
+		position: absolute;
+		inset: 0 0 auto;
+		height: 8.25rem;
+		background: linear-gradient(to bottom, transparent 48%, var(--card-bg));
+		content: "";
+		pointer-events: none;
+	}
+
+	.directory-profile__avatar {
+		position: relative;
+		display: block;
+		width: 5.4rem;
+		height: 5.4rem;
+		margin: -2.8rem auto 0;
+		border: 0.2rem solid var(--card-bg);
+		border-radius: 50%;
+		background: var(--card-bg);
+		box-shadow: 0 0 0 1px var(--line-divider), 0 0.5rem 1rem rgb(22 43 49 / 14%);
+		transition: transform 220ms ease;
+	}
+
+	.directory-profile__avatar:hover {
+		transform: translateY(-0.15rem) rotate(-2deg);
+	}
+
+	.directory-profile__avatar :global(picture),
+	.directory-profile__avatar :global(img) {
+		width: 100%;
+		height: 100%;
+		border-radius: inherit;
+		object-fit: cover;
+	}
+
+	.directory-profile h2 {
+		margin: 0.8rem 0 0;
+		color: var(--text-90);
+		font-size: 1.25rem;
+		letter-spacing: 0;
+	}
+
+	.directory-profile p {
+		margin: 0.4rem 0 1rem;
+		color: var(--text-50);
+		font-size: 0.85rem;
+	}
+
+	.directory-profile nav {
+		display: flex;
+		justify-content: center;
+		gap: 0.55rem;
+	}
+
+	.directory-profile nav a {
+		display: grid;
+		width: 2.35rem;
+		height: 2.35rem;
+		place-items: center;
+		border-radius: 50%;
+		color: var(--text-50);
+		transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+	}
+
+	.directory-profile nav a:hover {
+		background: var(--text-90);
+		color: var(--card-bg);
+		transform: translateY(-0.12rem);
+	}
+
+	.directory-profile nav svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.directory-calendar {
+		padding: 1.25rem;
+	}
+
+	.directory-calendar header {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.45rem;
+		margin-bottom: 0.8rem;
+		color: var(--text-90);
+		font-size: 1rem;
+	}
+
+	.directory-calendar header svg {
+		width: 1rem;
+		height: 1rem;
+		color: var(--primary);
+	}
+
+	.directory-calendar__week,
+	.directory-calendar__days {
+		display: grid;
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+		gap: 0.2rem;
+	}
+
+	.directory-calendar__week {
+		margin-bottom: 0.25rem;
+		color: var(--text-30);
+		font-size: 0.7rem;
+		text-align: center;
+	}
+
+	.directory-calendar__days > * {
+		display: grid;
+		aspect-ratio: 1;
+		place-items: center;
+		border-radius: 0.3rem;
+		color: var(--text-50);
+		font-size: 0.75rem;
+		font-style: normal;
+	}
+
+	.directory-calendar__days .is-today {
+		background: var(--text-90);
+		color: var(--card-bg);
+		font-weight: 800;
+	}
+
+	.site-directory__main {
+		min-width: 0;
+	}
+
+	.site-directory__header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.7rem 0 1.15rem;
+	}
+
+	.site-directory__header p {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		margin: 0;
+		color: var(--text-50);
+		font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+		font-size: 0.72rem;
+		font-weight: 750;
+		letter-spacing: 0;
+	}
+
+	.site-directory__header p svg {
+		width: 1.15rem;
+		height: 1.15rem;
+		color: var(--text-90);
+	}
+
+	.site-directory__header h1 {
+		margin: 0.45rem 0 0;
+		color: var(--text-90);
+		font-size: 2.45rem;
+		line-height: 1;
+		letter-spacing: 0;
+	}
+
+	.site-directory__header span {
+		display: block;
+		margin-top: 0.75rem;
+		color: var(--text-50);
+		font-size: 1rem;
+	}
+
+	.site-directory__header > button {
+		display: grid;
+		width: 2.6rem;
+		height: 2.6rem;
+		place-items: center;
+		border: 2px solid var(--text-90);
+		border-radius: 0.45rem;
+		color: var(--text-90);
+		cursor: pointer;
+		transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+	}
+
+	.site-directory__header > button:hover {
+		background: var(--text-90);
+		color: var(--card-bg);
+		transform: translateY(-0.1rem);
+	}
+
+	.site-directory__header > button svg {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	.site-directory__header .directory-view-list,
+	.site-directory[data-view="list"] .directory-view-grid {
+		display: none;
+	}
+
+	.site-directory[data-view="list"] .directory-view-list {
+		display: block;
+	}
+
+	.site-directory__filters {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin-bottom: 1.5rem;
+		padding: 0.45rem;
+		border: 2px solid var(--text-90);
+		border-radius: 0.5rem;
+	}
+
+	.site-directory__filters button {
+		min-height: 2.35rem;
+		padding: 0.375rem 0.875rem;
+		border-radius: 99rem;
+		color: var(--text-75);
+		font-size: 0.8125rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 180ms ease, color 180ms ease;
+	}
+
+	.site-directory__filters button.is-active,
+	.site-directory__filters button:hover {
+		background: var(--text-90);
+		color: var(--card-bg);
+	}
+
+	.site-directory__filters small {
+		margin-left: 0.2rem;
+		padding: 0.08rem 0.32rem;
+		border-radius: 99rem;
+		background: color-mix(in srgb, currentColor 10%, transparent);
+		font-size: 0.65rem;
+	}
+
+	.site-directory__groups {
+		display: grid;
+		gap: 2rem;
+	}
+
+	.site-directory__group[hidden] {
+		display: none;
+	}
+
+	.site-directory__group > header {
+		display: grid;
+		grid-template-columns: auto auto auto minmax(2rem, 1fr);
+		align-items: center;
+		gap: 0.4rem;
+		margin-bottom: 1rem;
+		color: var(--text-90);
+	}
+
+	.site-directory__group > header svg {
+		width: 1.15rem;
+		height: 1.15rem;
+	}
+
+	.site-directory__group > header h2 {
+		margin: 0;
+		font-size: 1rem;
+		letter-spacing: 0;
+	}
+
+	.site-directory__group > header small {
+		color: var(--text-30);
+		font-size: 0.75rem;
+	}
+
+	.site-directory__group > header i {
+		height: 2px;
+		margin-left: 0.4rem;
+		background: var(--text-90);
+	}
+
+	.site-directory__grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+
+	.site-directory[data-view="list"] .site-directory__grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.site-directory__card {
+		position: relative;
+		display: flex;
+		min-height: 10rem;
+		flex-direction: column;
+		gap: 0.65rem;
+		padding: 0.875rem;
+		border: 2px solid color-mix(in srgb, var(--text-90) 84%, transparent);
+		border-radius: 0.5rem;
+		background: var(--card-bg);
+		color: inherit;
+		transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+	}
+
+	.site-directory__card:hover {
+		border-color: var(--primary);
+		box-shadow: 0 0.8rem 1.8rem rgb(20 45 52 / 11%);
+		transform: translateY(-0.16rem);
+	}
+
+	.site-directory__card:focus-visible,
+	.site-directory__filters button:focus-visible,
+	.site-directory__header > button:focus-visible,
+	.directory-profile a:focus-visible {
+		outline: 0.14rem solid color-mix(in srgb, var(--primary) 65%, white);
+		outline-offset: 0.12rem;
+	}
+
+	.site-directory__card-icon {
+		display: grid;
+		width: 2.15rem;
+		height: 2.15rem;
+		flex: 0 0 auto;
+		place-items: center;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--primary) 10%, var(--card-bg));
+		color: var(--primary);
+	}
+
+	.site-directory__card-icon svg {
+		width: 1.15rem;
+		height: 1.15rem;
+	}
+
+	.site-directory__card-heading {
+		display: flex;
+		min-width: 0;
+		align-items: center;
+		gap: 0.55rem;
+	}
+
+	.site-directory__card h3 {
+		min-width: 0;
+		margin: 0;
+		color: var(--text-90);
+		font-size: 1.125rem;
+		line-height: 1.35;
+		letter-spacing: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.site-directory__card-details {
+		display: flex;
+		min-width: 0;
+		flex: 1;
+		flex-direction: column;
+	}
+
+	.site-directory__card p {
+		display: -webkit-box;
+		overflow: hidden;
+		min-height: 2.625rem;
+		margin: 0;
+		color: var(--text-50);
+		font-size: 0.875rem;
+		line-height: 1.55;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	.site-directory__card div > small {
+		display: block;
+		overflow: hidden;
+		margin-top: auto;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--line-divider);
+		color: var(--text-30);
+		font-size: 0.75rem;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.site-directory__external {
+		position: absolute;
+		right: 0.65rem;
+		top: 0.65rem;
+		width: 0.9rem;
+		height: 0.9rem;
+		color: var(--text-30);
+	}
+
+	.site-directory[data-view="list"] .site-directory__card {
+		min-height: 5.8rem;
+	}
+
+	.directory-days,
+	.directory-quote,
+	.directory-recent {
+		padding: 1.25rem;
+	}
+
+	.directory-days {
+		text-align: center;
+	}
+
+	.directory-days p,
+	.directory-days small {
+		margin: 0;
+		color: var(--text-50);
+		font-size: 0.85rem;
+	}
+
+	.directory-days div {
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 0.3rem;
+		margin: 0.8rem 0 0.55rem;
+	}
+
+	.directory-days strong {
+		color: var(--text-90);
+		font-size: 2.65rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.directory-days span {
+		color: var(--primary);
+		font-size: 0.85rem;
+		font-weight: 800;
+	}
+
+	.directory-quote h2,
+	.directory-recent h2 {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		margin: 0 0 0.8rem;
+		color: var(--text-90);
+		font-size: 1.05rem;
+		letter-spacing: 0;
+	}
+
+	.directory-quote h2 i,
+	.directory-recent h2 i {
+		width: 0.2rem;
+		height: 1rem;
+		border-radius: 99rem;
+		background: var(--text-90);
+	}
+
+	.directory-quote blockquote {
+		margin: 0;
+		color: var(--text-75);
+		font-size: 0.85rem;
+		font-style: italic;
+		line-height: 1.75;
+	}
+
+	.directory-quote p {
+		margin: 0.7rem 0 0;
+		color: var(--text-30);
+		font-size: 0.75rem;
+		text-align: right;
+	}
+
+	.directory-recent nav {
+		display: grid;
+	}
+
+	.directory-recent a {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.65rem 0;
+		border-bottom: 1px solid var(--line-divider);
+		color: var(--text-75);
+		font-size: 0.78rem;
+	}
+
+	.directory-recent a:last-child {
+		border-bottom: 0;
+	}
+
+	.directory-recent a:hover {
+		color: var(--primary);
+	}
+
+	.directory-recent a span {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.directory-recent time {
+		flex: 0 0 auto;
+		color: var(--text-30);
+		font-size: 0.68rem;
+	}
+
+	:global(body.plain-content-active:has(.site-directory) #main-layout-container) {
+		width: 94vw !important;
+		max-width: 120rem !important;
+	}
+
+	:global(body.plain-content-active:has(.site-directory) #main-grid) {
+		padding-inline: 0 !important;
+	}
+
+	@media (max-width: 1500px) and (min-width: 1181px) {
+		.site-directory {
+			grid-template-columns: 16rem minmax(0, 1fr) 16rem;
+			gap: 1.5rem;
+		}
+
+		.site-directory__grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 1180px) {
+		.site-directory {
+			grid-template-columns: 13rem minmax(0, 1fr);
+		}
+
+		.site-directory__right {
+			display: none;
+		}
+
+		.site-directory__grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.site-directory {
+			padding-right: 3.5rem;
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.site-directory {
+			margin-right: 3.1rem;
+		}
+	}
+
+	@media (max-width: 780px) {
+		.site-directory {
+			display: block;
+			padding-top: 0.5rem;
+		}
+
+		.site-directory__left {
+			display: none;
+		}
+
+		.site-directory__header h1 {
+			font-size: 1.75rem;
+		}
+
+		.site-directory__filters {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			padding: 0.55rem;
+			scrollbar-width: none;
+		}
+
+		.site-directory__filters::-webkit-scrollbar {
+			display: none;
+		}
+
+		.site-directory__filters button {
+			min-width: max-content;
+		}
+
+		.site-directory__grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.site-directory__card {
+			min-height: 6.8rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.site-directory *,
+		.site-directory *::before,
+		.site-directory *::after {
+			animation: none !important;
+			scroll-behavior: auto !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>

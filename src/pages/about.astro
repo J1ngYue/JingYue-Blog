@@ -1,11 +1,14 @@
 ---
 
-import { getEntry, render } from "astro:content";
+import { getCollection, getEntry, render } from "astro:content";
+import ImageWrapper from "@components/common/ImageWrapper.astro";
 import Markdown from "@components/common/Markdown.astro";
-import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
+import { Icon } from "astro-icon/components";
+import { profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { getSortedPosts } from "@/utils/content-utils";
 
 const aboutPost = await getEntry("spec", "about");
 
@@ -14,14 +17,617 @@ if (!aboutPost) {
 }
 
 const { Content } = await render(aboutPost);
+const [posts, dynamicEntries] = await Promise.all([
+	getSortedPosts(),
+	getCollection("dynamic"),
+]);
+const siteDays = Math.max(
+	1,
+	Math.floor(
+		(Date.now() -
+			new Date(siteConfig.siteStartDate || "2025-01-01").getTime()) /
+			86_400_000,
+	),
+);
 ---
 <MainGridLayout title={i18n(I18nKey.about)} bannerTitle="关于" description={i18n(I18nKey.about)}>
-    <FeatureHubHeader section="about" active="about" />
-    <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
-        <div class="card-base z-10 px-9 py-6 relative w-full ">
-            <Markdown class="mt-2">
-                <Content />
-            </Markdown>
-        </div>
-    </div>
+	<div class="about-editorial">
+		<header class="about-editorial__hero">
+			<div class="about-editorial__copy">
+				<p>ABOUT · PERSONAL PROFILE</p>
+				<h1>关于我 <span>/ About Me</span></h1>
+				<strong>{profileConfig.bio}</strong>
+				<small>{siteConfig.subtitle}</small>
+				<nav aria-label="个人链接">
+					{profileConfig.links.map((link) => (
+						<a
+							href={link.url}
+							target={link.url.startsWith("http") ? "_blank" : undefined}
+							rel={link.url.startsWith("http") ? "noopener noreferrer" : undefined}
+							aria-label={link.name}
+							title={link.name}
+						>
+							<Icon is:inline name={link.icon} />
+							<span>{link.name}</span>
+						</a>
+					))}
+				</nav>
+			</div>
+			<div class="about-editorial__portrait">
+				<i aria-hidden="true"></i>
+				<div class="about-editorial__avatar-frame">
+					<ImageWrapper
+						src={profileConfig.avatar || ""}
+						alt={profileConfig.name}
+						widths={[320]}
+						sizes="min(32vw, 15rem)"
+						loading="eager"
+						fadeIn={false}
+						siteAvatar
+					/>
+					<span class="about-editorial__avatar-sparkle" aria-hidden="true">
+						<Icon is:inline name="material-symbols:auto-awesome-rounded" />
+					</span>
+				</div>
+				<div class="about-editorial__avatar-settings" data-profile-appearance-settings>
+					<input
+						id="site-avatar-file"
+						type="file"
+						accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+						data-avatar-input
+						aria-describedby="site-appearance-status"
+					/>
+					<label for="site-avatar-file">
+						<Icon is:inline name="material-symbols:add-photo-alternate-rounded" />
+						<span>更换头像</span>
+					</label>
+					<button type="button" data-avatar-reset hidden>
+						<Icon is:inline name="material-symbols:restart-alt-rounded" />
+						<span>恢复头像</span>
+					</button>
+					<input
+						id="site-profile-cover-file"
+						type="file"
+						accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+						data-cover-input
+						aria-describedby="site-appearance-status"
+					/>
+					<label for="site-profile-cover-file">
+						<Icon is:inline name="material-symbols:panorama-rounded" />
+						<span>更换封面</span>
+					</label>
+					<button type="button" data-cover-reset hidden>
+						<Icon is:inline name="material-symbols:restart-alt-rounded" />
+						<span>恢复封面</span>
+					</button>
+					<small id="site-appearance-status" data-appearance-status aria-live="polite">
+						头像与资料卡封面会同步到全站
+					</small>
+				</div>
+				<strong>{profileConfig.name}</strong>
+				<span>记录代码、生活与闪光</span>
+			</div>
+		</header>
+
+		<section class="about-editorial__metrics" aria-label="站点统计">
+			<div><strong>{posts.length}</strong><span>篇文章</span></div>
+			<div><strong>{dynamicEntries.length}</strong><span>条动态</span></div>
+			<div><strong>{siteDays}</strong><span>天陪伴</span></div>
+		</section>
+
+		<article class="about-editorial__body">
+			<Markdown class="about-editorial-markdown">
+				<Content />
+			</Markdown>
+		</article>
+	</div>
 </MainGridLayout>
+
+<script>
+	import {
+		getSiteAvatar,
+		removeSiteAvatar,
+		saveSiteAvatar,
+	} from "@/utils/site-avatar";
+	import {
+		getSiteProfileCover,
+		removeSiteProfileCover,
+		saveSiteProfileCover,
+	} from "@/utils/site-profile-cover";
+
+	interface AboutAvatarWindow extends Window {
+		__fireflyAboutAvatarCleanup?: () => void;
+	}
+
+	function validateImage(file: File) {
+		return new Promise<void>((resolve, reject) => {
+			const objectUrl = URL.createObjectURL(file);
+			const image = new Image();
+			image.onload = () => {
+				URL.revokeObjectURL(objectUrl);
+				resolve();
+			};
+			image.onerror = () => {
+				URL.revokeObjectURL(objectUrl);
+				reject(new Error("无法读取这张图片，请换一张试试。"));
+			};
+			image.src = objectUrl;
+		});
+	}
+
+	function setStatus(
+		status: HTMLElement,
+		message: string,
+		state: "idle" | "success" | "error" = "idle",
+	) {
+		status.textContent = message;
+		status.dataset.state = state;
+	}
+
+	async function initAboutAvatarSettings() {
+		const root =
+			document.querySelector<HTMLElement>("[data-profile-appearance-settings]");
+		if (!root || root.dataset.ready === "true") return;
+
+		const avatarInput = root.querySelector<HTMLInputElement>("[data-avatar-input]");
+		const avatarReset =
+			root.querySelector<HTMLButtonElement>("[data-avatar-reset]");
+		const coverInput = root.querySelector<HTMLInputElement>("[data-cover-input]");
+		const coverReset =
+			root.querySelector<HTMLButtonElement>("[data-cover-reset]");
+		const status = root.querySelector<HTMLElement>("[data-appearance-status]");
+		if (!avatarInput || !avatarReset || !coverInput || !coverReset || !status) return;
+		root.dataset.ready = "true";
+
+		const [avatarRecord, coverRecord] = await Promise.allSettled([
+			getSiteAvatar(),
+			getSiteProfileCover(),
+		]);
+		avatarReset.hidden =
+			avatarRecord.status !== "fulfilled" || !avatarRecord.value;
+		coverReset.hidden =
+			coverRecord.status !== "fulfilled" || !coverRecord.value;
+
+		avatarInput.addEventListener("change", async () => {
+			const file = avatarInput.files?.[0];
+			if (!file) return;
+			avatarInput.disabled = true;
+			avatarReset.disabled = true;
+			setStatus(status, "正在同步头像…");
+			try {
+				await validateImage(file);
+				await saveSiteAvatar(file);
+				avatarReset.hidden = false;
+				setStatus(status, "头像已同步到全站", "success");
+			} catch (error) {
+				setStatus(
+					status,
+					error instanceof Error ? error.message : "头像更换失败，请重试。",
+					"error",
+				);
+			} finally {
+				avatarInput.value = "";
+				avatarInput.disabled = false;
+				avatarReset.disabled = false;
+			}
+		});
+
+		avatarReset.addEventListener("click", async () => {
+			avatarInput.disabled = true;
+			avatarReset.disabled = true;
+			setStatus(status, "正在恢复默认头像…");
+			try {
+				await removeSiteAvatar();
+				avatarReset.hidden = true;
+				setStatus(status, "已恢复默认头像", "success");
+			} catch {
+				setStatus(status, "恢复失败，请稍后重试。", "error");
+			} finally {
+				avatarInput.disabled = false;
+				avatarReset.disabled = false;
+			}
+		});
+
+		coverInput.addEventListener("change", async () => {
+			const file = coverInput.files?.[0];
+			if (!file) return;
+			coverInput.disabled = true;
+			coverReset.disabled = true;
+			setStatus(status, "正在同步资料卡封面…");
+			try {
+				await validateImage(file);
+				await saveSiteProfileCover(file);
+				coverReset.hidden = false;
+				setStatus(status, "资料卡封面已同步到全站", "success");
+			} catch (error) {
+				setStatus(
+					status,
+					error instanceof Error ? error.message : "封面更换失败，请重试。",
+					"error",
+				);
+			} finally {
+				coverInput.value = "";
+				coverInput.disabled = false;
+				coverReset.disabled = false;
+			}
+		});
+
+		coverReset.addEventListener("click", async () => {
+			coverInput.disabled = true;
+			coverReset.disabled = true;
+			setStatus(status, "正在恢复默认资料卡封面…");
+			try {
+				await removeSiteProfileCover();
+				coverReset.hidden = true;
+				setStatus(status, "已恢复默认资料卡封面", "success");
+			} catch {
+				setStatus(status, "恢复失败，请稍后重试。", "error");
+			} finally {
+				coverInput.disabled = false;
+				coverReset.disabled = false;
+			}
+		});
+	}
+
+	const aboutAvatarWindow = window as AboutAvatarWindow;
+	aboutAvatarWindow.__fireflyAboutAvatarCleanup?.();
+	const handlePageLoad = () => void initAboutAvatarSettings();
+	document.addEventListener("astro:page-load", handlePageLoad);
+	document.addEventListener("swup:contentReplaced", handlePageLoad);
+	void initAboutAvatarSettings();
+	aboutAvatarWindow.__fireflyAboutAvatarCleanup = () => {
+		document.removeEventListener("astro:page-load", handlePageLoad);
+		document.removeEventListener("swup:contentReplaced", handlePageLoad);
+	};
+</script>
+
+<style>
+	.about-editorial {
+		--about-editorial-ink: #11171a;
+		color: var(--about-editorial-ink);
+	}
+
+	:global(html.dark) .about-editorial {
+		--about-editorial-ink: #f5f7f8;
+	}
+
+	.about-editorial__hero {
+		position: relative;
+		display: grid;
+		min-height: 25rem;
+		grid-template-columns: minmax(0, 1.25fr) minmax(13rem, 0.75fr);
+		align-items: center;
+		gap: clamp(2rem, 6vw, 5rem);
+		overflow: hidden;
+		padding: clamp(2rem, 5vw, 4.5rem);
+		border: 1px solid
+			color-mix(in oklch, var(--about-editorial-ink) 52%, transparent);
+		border-radius: 1.1rem;
+		background:
+			linear-gradient(125deg, color-mix(in oklch, var(--primary) 8%, transparent), transparent 42%),
+			color-mix(in oklch, var(--card-bg) 94%, transparent);
+	}
+
+	.about-editorial__hero::after {
+		position: absolute;
+		right: -7rem;
+		bottom: -7rem;
+		width: 22rem;
+		height: 22rem;
+		border: 1px solid color-mix(in oklch, var(--primary) 22%, transparent);
+		border-radius: 50%;
+		box-shadow:
+			0 0 0 3rem color-mix(in oklch, var(--primary) 5%, transparent),
+			0 0 0 6rem color-mix(in oklch, var(--primary) 3%, transparent);
+		content: "";
+		pointer-events: none;
+	}
+
+	.about-editorial__copy {
+		position: relative;
+		z-index: 1;
+	}
+
+	.about-editorial__copy > p {
+		margin: 0 0 0.8rem;
+		color: var(--primary);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.2em;
+	}
+
+	.about-editorial__copy h1 {
+		margin: 0;
+		font-size: clamp(2.5rem, 6vw, 5.25rem);
+		font-weight: 800;
+		letter-spacing: -0.065em;
+		line-height: 0.98;
+	}
+
+	.about-editorial__copy h1 span {
+		display: block;
+		margin-top: 0.45rem;
+		color: var(--content-meta);
+		font-size: clamp(1.15rem, 2.3vw, 1.8rem);
+		font-weight: 500;
+		letter-spacing: -0.025em;
+	}
+
+	.about-editorial__copy > strong,
+	.about-editorial__copy > small {
+		display: block;
+	}
+
+	.about-editorial__copy > strong {
+		margin-top: 1.6rem;
+		font-size: 1rem;
+	}
+
+	.about-editorial__copy > small {
+		margin-top: 0.45rem;
+		color: var(--content-meta);
+		font-size: 0.82rem;
+	}
+
+	.about-editorial__copy nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 1.55rem;
+	}
+
+	.about-editorial__copy a {
+		display: inline-flex;
+		min-height: 2.4rem;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.5rem 0.8rem;
+		border: 1px solid
+			color-mix(in oklch, var(--about-editorial-ink) 52%, transparent);
+		border-radius: 999px;
+		color: var(--about-editorial-ink);
+		font-size: 0.75rem;
+		font-weight: 700;
+		transition: border-color 180ms ease, color 180ms ease, transform 180ms ease;
+	}
+
+	.about-editorial__copy a:hover {
+		border-color: var(--primary);
+		color: var(--primary);
+		transform: translateY(-2px);
+	}
+
+	.about-editorial__portrait {
+		position: relative;
+		z-index: 1;
+		text-align: center;
+	}
+
+	.about-editorial__avatar-frame {
+		position: relative;
+		display: inline-grid;
+		place-items: center;
+	}
+
+	.about-editorial__portrait > i {
+		position: absolute;
+		inset: -1.2rem 5% auto;
+		height: 2.2rem;
+		border-radius: 0.2rem;
+		background: color-mix(in oklch, var(--primary) 24%, transparent);
+		transform: rotate(-4deg);
+	}
+
+	.about-editorial__portrait :global(img) {
+		position: relative;
+		width: min(100%, 15rem);
+		aspect-ratio: 1;
+		object-fit: cover;
+		border: 0.32rem solid var(--card-bg);
+		border-radius: 48% 52% 45% 55% / 53% 42% 58% 47%;
+		box-shadow: 0.9rem 0.9rem 0 color-mix(in oklch, var(--primary) 22%, transparent);
+		transition: transform 240ms ease, border-radius 240ms ease;
+	}
+
+	.about-editorial__portrait:hover :global(img) {
+		border-radius: 55% 45% 52% 48% / 45% 57% 43% 55%;
+		transform: rotate(2deg) translateY(-4px);
+	}
+
+	.about-editorial__avatar-sparkle {
+		position: absolute;
+		right: 0.25rem;
+		bottom: 0.65rem;
+		display: grid;
+		width: 2.2rem;
+		height: 2.2rem;
+		place-items: center;
+		border: 0.2rem solid var(--card-bg);
+		border-radius: 50%;
+		background: var(--primary);
+		box-shadow: 0 0.7rem 1.4rem color-mix(in oklch, var(--primary) 30%, transparent);
+		color: var(--primary-content);
+		font-size: 1.1rem;
+		pointer-events: none;
+	}
+
+	.about-editorial__avatar-settings {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.45rem;
+		margin-top: 1.2rem;
+	}
+
+	.about-editorial__avatar-settings input {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.about-editorial__avatar-settings label,
+	.about-editorial__avatar-settings button {
+		display: inline-flex;
+		min-height: 2.2rem;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		padding: 0.44rem 0.72rem;
+		border: 1px solid
+			color-mix(in oklch, var(--about-editorial-ink) 30%, transparent);
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--card-bg) 88%, transparent);
+		color: var(--about-editorial-ink);
+		font-size: 0.7rem;
+		font-weight: 750;
+		line-height: 1;
+		cursor: pointer;
+		transition:
+			border-color 180ms ease,
+			background 180ms ease,
+			color 180ms ease;
+	}
+
+	.about-editorial__avatar-settings label {
+		border-color: color-mix(in oklch, var(--primary) 64%, transparent);
+		background: color-mix(in oklch, var(--primary) 14%, var(--card-bg));
+		color: var(--primary);
+	}
+
+	.about-editorial__avatar-settings label:hover,
+	.about-editorial__avatar-settings label:focus-within,
+	.about-editorial__avatar-settings button:hover,
+	.about-editorial__avatar-settings button:focus-visible {
+		border-color: var(--primary);
+		background: color-mix(in oklch, var(--primary) 20%, var(--card-bg));
+		color: var(--primary);
+	}
+
+	.about-editorial__avatar-settings label:has(+ button:disabled),
+	.about-editorial__avatar-settings input:disabled + label,
+	.about-editorial__avatar-settings button:disabled {
+		cursor: wait;
+		opacity: 0.58;
+	}
+
+	.about-editorial__avatar-settings :global(svg) {
+		font-size: 1rem;
+	}
+
+	.about-editorial__avatar-settings small {
+		flex-basis: 100%;
+		margin-top: 0.05rem;
+		color: var(--content-meta);
+		font-size: 0.64rem;
+	}
+
+	.about-editorial__avatar-settings small[data-state="success"] {
+		color: color-mix(in oklch, var(--primary) 76%, #16804e);
+	}
+
+	.about-editorial__avatar-settings small[data-state="error"] {
+		color: #d94b68;
+	}
+
+	.about-editorial__portrait strong,
+	.about-editorial__portrait span {
+		display: block;
+	}
+
+	.about-editorial__portrait strong {
+		margin-top: 0.9rem;
+		font-size: 1.05rem;
+	}
+
+	.about-editorial__portrait span {
+		margin-top: 0.25rem;
+		color: var(--content-meta);
+		font-size: 0.72rem;
+	}
+
+	.about-editorial__metrics {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		margin: 1rem 0;
+		border: 1px solid
+			color-mix(in oklch, var(--about-editorial-ink) 52%, transparent);
+		border-radius: 1rem;
+		background: color-mix(in oklch, var(--card-bg) 92%, transparent);
+	}
+
+	.about-editorial__metrics div {
+		padding: 1.25rem;
+		text-align: center;
+	}
+
+	.about-editorial__metrics div:not(:last-child) {
+		border-right: 1px solid
+			color-mix(in oklch, var(--about-editorial-ink) 18%, transparent);
+	}
+
+	.about-editorial__metrics strong,
+	.about-editorial__metrics span {
+		display: block;
+	}
+
+	.about-editorial__metrics strong {
+		font-size: clamp(1.8rem, 4vw, 2.8rem);
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
+	}
+
+	.about-editorial__metrics span {
+		margin-top: 0.45rem;
+		color: var(--content-meta);
+		font-size: 0.72rem;
+	}
+
+	.about-editorial__body {
+		padding: clamp(1.5rem, 4vw, 3.5rem);
+		border-block: 1px solid
+			color-mix(in oklch, var(--about-editorial-ink) 30%, transparent);
+	}
+
+	.about-editorial__body :global(h1:first-child) {
+		display: none;
+	}
+
+	.about-editorial__body :global(h2) {
+		margin-top: 2.2rem;
+		font-size: clamp(1.35rem, 3vw, 2rem);
+	}
+
+	@media (max-width: 700px) {
+		.about-editorial__hero {
+			grid-template-columns: minmax(0, 1fr);
+			padding: 1.5rem;
+		}
+
+		.about-editorial__portrait {
+			order: -1;
+		}
+
+		.about-editorial__portrait :global(img) {
+			width: 9.5rem;
+		}
+
+		.about-editorial__copy {
+			text-align: center;
+		}
+
+		.about-editorial__copy nav {
+			justify-content: center;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.about-editorial__copy a,
+		.about-editorial__portrait :global(img) {
+			transition: none;
+		}
+	}
+</style>

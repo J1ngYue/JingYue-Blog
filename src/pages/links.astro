@@ -1,8 +1,12 @@
 ---
-import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
+import SiteDirectory from "@/components/pages/links/SiteDirectory.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 ---
 
-<MainGridLayout title="链接" bannerTitle="链接" description="常用的主题资源与外部链接。">
-	<FeatureHubHeader section="links" />
+<MainGridLayout
+	title="网站导航"
+	description="收录 JingYue 的站内入口、常用网站、开发工具和学习文档。"
+	plainContent
+>
+	<SiteDirectory />
 </MainGridLayout>

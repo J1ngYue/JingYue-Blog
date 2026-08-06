@@ -1,0 +1,197 @@
+---
+import { Icon } from "astro-icon/components";
+import { musicPlayerConfig } from "@/config/musicConfig";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const firstTrack = musicPlayerConfig.local?.playlist?.[0];
+---
+
+<MainGridLayout
+	title="音乐"
+	bannerTitle="记录"
+	description="沉浸式音乐放映室"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<section class="music-page-stage onload-animation" aria-labelledby="music-page-title">
+		<div class="music-page-stage__grid" aria-hidden="true"></div>
+		<div class="music-page-stage__copy">
+			<p>JINGYUE RADIO · IMMERSIVE ROOM</p>
+			<h1 id="music-page-title">音乐放映室</h1>
+			<span>歌词、播放队列、歌单同步与频谱视效都在同一个沉浸空间。</span>
+			<div>
+				<button type="button" data-music-page-action="immersive">
+					<Icon is:inline name="material-symbols:play-arrow-rounded" />
+					进入放映室
+				</button>
+				<button type="button" data-music-page-action="library">
+					<Icon is:inline name="material-symbols:library-music-rounded" />
+					打开音乐库
+				</button>
+			</div>
+		</div>
+		<div class="music-page-stage__track">
+			{firstTrack?.cover ? (
+				<img src={firstTrack.cover} alt="" loading="eager" />
+			) : (
+				<Icon is:inline name="material-symbols:album-rounded" />
+			)}
+			<span>
+				<small>NOW PLAYING</small>
+				<strong>{firstTrack?.name || "选择一首歌"}</strong>
+				<i>{firstTrack?.artist || "JingYue Radio"}</i>
+			</span>
+		</div>
+	</section>
+</MainGridLayout>
+
+<style>
+	.music-page-stage {
+		position: relative;
+		display: grid;
+		min-height: calc(100dvh - 8rem);
+		overflow: hidden;
+		place-items: center;
+		border: 1px solid color-mix(in srgb, var(--deep-text) 14%, transparent);
+		background:
+			radial-gradient(circle at 25% 20%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 30%),
+			linear-gradient(145deg, color-mix(in srgb, var(--card-bg) 98%, transparent), color-mix(in srgb, var(--primary) 5%, var(--card-bg)));
+		color: var(--deep-text);
+	}
+
+	.music-page-stage__grid {
+		position: absolute;
+		inset: 30% -15% -30%;
+		background-image:
+			linear-gradient(color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1px),
+			linear-gradient(90deg, color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1px);
+		background-size: 2rem 2rem;
+		mask-image: linear-gradient(to bottom, transparent, #000 22%, transparent 90%);
+		transform: perspective(32rem) rotateX(62deg);
+		transform-origin: center top;
+	}
+
+	.music-page-stage__copy {
+		position: relative;
+		z-index: 2;
+		max-width: 38rem;
+		padding: 2rem;
+		text-align: center;
+	}
+
+	.music-page-stage__copy > p {
+		margin: 0 0 0.5rem;
+		color: var(--primary);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+	}
+
+	.music-page-stage__copy h1 {
+		margin: 0;
+		font-size: clamp(2.4rem, 7vw, 5rem);
+		font-weight: 760;
+		letter-spacing: 0;
+		line-height: 1.05;
+	}
+
+	.music-page-stage__copy > span {
+		display: block;
+		margin-top: 1rem;
+		color: var(--content-meta);
+		font-size: 0.92rem;
+	}
+
+	.music-page-stage__copy > div {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.6rem;
+		margin-top: 1.5rem;
+	}
+
+	.music-page-stage__copy button {
+		display: inline-flex;
+		min-height: 2.8rem;
+		align-items: center;
+		gap: 0.45rem;
+		border: 1.5px solid var(--deep-text);
+		border-radius: 999px;
+		background: var(--card-bg);
+		padding: 0.55rem 1rem;
+		color: var(--deep-text);
+		font: inherit;
+		font-size: 0.82rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.music-page-stage__copy button:first-child {
+		background: var(--deep-text);
+		color: var(--card-bg);
+	}
+
+	.music-page-stage__copy button:hover,
+	.music-page-stage__copy button:focus-visible {
+		outline: 3px solid color-mix(in srgb, var(--primary) 28%, transparent);
+		outline-offset: 2px;
+	}
+
+	.music-page-stage__track {
+		position: absolute;
+		z-index: 2;
+		right: 1.5rem;
+		bottom: 1.5rem;
+		display: grid;
+		grid-template-columns: 3.5rem minmax(0, 1fr);
+		gap: 0.75rem;
+		width: min(20rem, calc(100% - 3rem));
+		align-items: center;
+		border: 1px solid color-mix(in srgb, var(--deep-text) 14%, transparent);
+		border-radius: 0.7rem;
+		background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+		padding: 0.65rem;
+		backdrop-filter: blur(1rem);
+	}
+
+	.music-page-stage__track > img,
+	.music-page-stage__track > :global(svg) {
+		width: 3.5rem;
+		height: 3.5rem;
+		border-radius: 0.45rem;
+		object-fit: cover;
+	}
+
+	.music-page-stage__track > span {
+		display: grid;
+		min-width: 0;
+	}
+
+	.music-page-stage__track small {
+		color: var(--primary);
+		font-size: 0.58rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+	}
+
+	.music-page-stage__track strong,
+	.music-page-stage__track i {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.music-page-stage__track strong { font-size: 0.84rem; }
+	.music-page-stage__track i {
+		color: var(--content-meta);
+		font-size: 0.7rem;
+		font-style: normal;
+	}
+
+	@media (max-width: 640px) {
+		.music-page-stage { min-height: calc(100dvh - 6.5rem); }
+		.music-page-stage__copy { padding: 1rem; }
+		.music-page-stage__track { right: 0.75rem; bottom: 0.75rem; }
+	}
+</style>

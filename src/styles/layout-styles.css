@@ -677,7 +677,7 @@ html[data-wallpaper-mode="fullscreen"] .absolute.w-full.z-30.no-banner-layout {
     height: 100vh !important;
     height: 100lvh !important;
     z-index: var(--overlay-z-index, -1) !important;
-    opacity: var(--overlay-opacity, 0.8) !important;
+    opacity: 1 !important;
     pointer-events: none !important;
     overflow: hidden !important;
     top: 0 !important;

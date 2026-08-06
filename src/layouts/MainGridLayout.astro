@@ -9,6 +9,7 @@ import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import FloatingControls from "@/components/controls/FloatingControls.astro";
+import PageWallpaperPicker from "@/components/controls/PageWallpaperPicker.svelte";
 import QuickToolsDock from "@/components/controls/QuickToolsDock.astro";
 import ScrollDownIndicator from "@/components/controls/ScrollDownIndicator.astro";
 import BackgroundPlayer from "@/components/features/BackgroundPlayer.astro";
@@ -23,11 +24,11 @@ import {
 } from "@/config";
 import {
 	BANNER_HEIGHT,
-	BANNER_HEIGHT_EXTEND,
 	MAIN_PANEL_OVERLAPS_BANNER_HEIGHT,
 } from "@/constants/constants";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
+import type { WidgetComponentType } from "@/types/config";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
 import { getImageQuality } from "@/utils/image-utils";
 import { getBackgroundImages, isHomePage } from "@/utils/layout-utils";
@@ -57,6 +58,8 @@ interface Props {
 	homeLanding?: boolean;
 	articleHub?: boolean;
 	contentOnly?: boolean;
+	plainContent?: boolean;
+	sidebarExcludes?: WidgetComponentType[];
 	bannerTitle?: string;
 	bannerPostMeta?: {
 		title: string;
@@ -82,6 +85,8 @@ const {
 	homeLanding = false,
 	articleHub = false,
 	contentOnly = !homeLanding,
+	plainContent = false,
+	sidebarExcludes = [],
 	bannerTitle,
 	bannerPostMeta,
 } = Astro.props;
@@ -290,7 +295,7 @@ const hasMultipleImages =
 	backgroundImages.desktop.length > 1 || backgroundImages.mobile.length > 1;
 ---
 
-<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug} homeLanding={homeLanding} articleHub={articleHub} contentOnly={contentOnly}>
+<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug} homeLanding={homeLanding} articleHub={articleHub} contentOnly={contentOnly} plainContent={plainContent}>
 
 
 <!-- 为全屏壁纸模式添加body类 -->
@@ -321,6 +326,8 @@ const hasMultipleImages =
     </div>
 </div>
 
+<LocalWallpaperLayer client:load surface="site" />
+
 <!-- Wallpaper - 如果允许切换则始终渲染，否则只渲染当前模式 -->
 {(isWallpaperSwitchable || isBannerMode || isFullscreenMode || isOverlayMode) && (
 <div id="wallpaper-wrapper" class:list={[
@@ -329,15 +336,13 @@ const hasMultipleImages =
 	(isFullscreenMode && !isWallpaperSwitchable) ? 'wallpaper-fullscreen' : '',
 ]} style={
 	isWallpaperSwitchable
-		? `top: -${BANNER_HEIGHT_EXTEND}vh; display: none; --overlay-opacity: ${backgroundWallpaper.overlay?.opacity ?? 0.8}; --overlay-z-index: ${backgroundWallpaper.overlay?.zIndex ?? -1}; --overlay-blur: ${backgroundWallpaper.overlay?.blur ?? 0}px;`
+		? `top: 0; display: none; --overlay-opacity: ${backgroundWallpaper.overlay?.opacity ?? 1}; --overlay-z-index: ${backgroundWallpaper.overlay?.zIndex ?? -1}; --overlay-blur: ${backgroundWallpaper.overlay?.blur ?? 0}px;`
 		: isOverlayMode
-			? `--overlay-opacity: ${backgroundWallpaper.overlay?.opacity ?? 0.8}; --overlay-z-index: ${backgroundWallpaper.overlay?.zIndex ?? -1}; --overlay-blur: ${backgroundWallpaper.overlay?.blur ?? 0}px;`
+			? `--overlay-opacity: ${backgroundWallpaper.overlay?.opacity ?? 1}; --overlay-z-index: ${backgroundWallpaper.overlay?.zIndex ?? -1}; --overlay-blur: ${backgroundWallpaper.overlay?.blur ?? 0}px;`
 			: isFullscreenMode
 				? ``
-				: `top: -${BANNER_HEIGHT_EXTEND}vh`
+				: `top: 0`
 }>
-    <LocalWallpaperLayer client:load surface="site" />
-
     <!-- 背景图片显示 -->
     {hasMultipleImages ? (
     /* 轮播模式：渲染所有图片为 slide-item */
@@ -566,6 +571,8 @@ const hasMultipleImages =
 
             // 键盘控制
             document.addEventListener('keydown', function(e) {
+                if (document.body.classList.contains('home-landing-active')) return;
+                if (e.target && e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
                 if (!isBannerWallpaperMode() || !isCarouselEnabled()) return;
                 if (e.key === 'ArrowRight') {
                     var slides = getVisibleSlides();
@@ -823,7 +830,7 @@ const hasMultipleImages =
 )}
 
 <!-- Main content -->
-<div id="main-content-wrapper" class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={homeLanding ? 'top: 0;' : `top: ${contentOnly && isBackgroundEnabled && (isBannerMode || isFullscreenMode) ? 'calc(100dvh - 3.5rem)' : (isFullscreenMode ? '0' : finalMainPanelTop)}`}>
+<div id="main-content-wrapper" class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={homeLanding ? 'top: 0;' : `top: ${contentOnly && isBackgroundEnabled && isBannerMode ? 'calc(var(--banner-height) - 3.5rem)' : contentOnly && isBackgroundEnabled && isFullscreenMode ? 'calc(100dvh - 3.5rem)' : (isFullscreenMode ? '0' : finalMainPanelTop)}`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
     <div id="main-layout-container" class:list={[
         "relative w-full mx-auto pointer-events-auto",
@@ -854,6 +861,7 @@ const hasMultipleImages =
                                     class={sidebarClass}
                                     headings={headings}
                                     encrypted={encrypted}
+                                    exclude={sidebarExcludes}
                                 />
                             )}
                         </div>
@@ -865,7 +873,7 @@ const hasMultipleImages =
             ) : (
                 <div id="left-sidebar-dynamic" class="contents transition-swup-fade">
                     {effectiveIsBothSidebars && effectiveHasLeftComponents && !homeLanding && !contentOnly && (
-						<SideBar side="left" class={sidebarClass} headings={headings} encrypted={encrypted}></SideBar>
+						<SideBar side="left" class={sidebarClass} headings={headings} encrypted={encrypted} exclude={sidebarExcludes}></SideBar>
                     )}
                 </div>
             )}
@@ -885,6 +893,7 @@ const hasMultipleImages =
                 <div id="home-layout-carrier" data-home-landing={homeLanding ? "true" : "false"} class="hidden"></div>
 				<div id="article-hub-layout-carrier" data-article-hub={articleHub ? "true" : "false"} class="hidden"></div>
 				<div id="content-only-layout-carrier" data-content-only={contentOnly ? "true" : "false"} class="hidden"></div>
+				<div id="plain-content-layout-carrier" data-plain-content={plainContent ? "true" : "false"} class="hidden"></div>
                 {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
                 <h1 class="sr-only">{title}</h1>
                 <div id="content-wrapper" class="onload-animation transition-leaving">
@@ -905,7 +914,7 @@ const hasMultipleImages =
                     {sidebarLayoutConfig.enable ? (
                         <div id="right-sidebar-static" class="contents" data-hide-sidebar-on-post={hideSidebarOnPostPage ? "true" : "false"}>
                             {(effectiveIsBothSidebars || sidebarLayoutConfig.position === "right") && effectiveHasRightComponents && !homeLanding && !contentOnly && (
-								<SideBar side="right" class={rightSidebarClass} headings={headings} encrypted={encrypted}></SideBar>
+								<SideBar side="right" class={rightSidebarClass} headings={headings} encrypted={encrypted} exclude={sidebarExcludes}></SideBar>
                             )}
                         </div>
                     ) : (
@@ -916,7 +925,7 @@ const hasMultipleImages =
             ) : (
                 <div id="right-sidebar-dynamic" class="contents transition-swup-fade">
                     {effectiveIsBothSidebars && effectiveHasRightComponents && !homeLanding && !contentOnly && (
-						<SideBar side="right" class={rightSidebarClass} headings={headings} encrypted={encrypted}></SideBar>
+						<SideBar side="right" class={rightSidebarClass} headings={headings} encrypted={encrypted} exclude={sidebarExcludes}></SideBar>
                     )}
                 </div>
             )}
@@ -924,7 +933,7 @@ const hasMultipleImages =
             {/* 移动端底部组件 - 768px及以下显示 */}
             {sidebarLayoutConfig.mobileBottomComponents && sidebarLayoutConfig.mobileBottomComponents.length > 0 && !homeLanding && !contentOnly && (
                 <div id="mobile-bottom-sidebar" class="col-span-1 block md:hidden mt-4">
-					<SideBar side="bottom" headings={headings} encrypted={encrypted}></SideBar>
+					<SideBar side="bottom" headings={headings} encrypted={encrypted} exclude={sidebarExcludes}></SideBar>
                 </div>
             )}
 
@@ -940,6 +949,7 @@ const hasMultipleImages =
 
 <FloatingControls headings={headings} encrypted={encrypted} />
 <QuickToolsDock />
+<PageWallpaperPicker client:load />
 
 <script is:inline data-swup-ignore-script>
 	(function bindInternalCoverTransition() {
@@ -1160,11 +1170,51 @@ const hasMultipleImages =
     grid-column: 1 / -1 !important;
   }
 
+  body.plain-content-active {
+    background: var(--page-bg) !important;
+  }
+
+  body.plain-content-active #wallpaper-wrapper {
+    pointer-events: none !important;
+  }
+
+  body.plain-content-active #wallpaper-wrapper .banner-page-title-overlay,
+  body.plain-content-active #scroll-down-indicator {
+    display: none !important;
+  }
+
+  body.plain-content-active #main-content-wrapper {
+    margin-top: 0 !important;
+  }
+
+  html[data-wallpaper-mode="banner"] body.plain-content-active #main-content-wrapper {
+    top: calc(var(--banner-height) - 3.5rem) !important;
+  }
+
+  html[data-wallpaper-mode="overlay"] body.plain-content-active #main-content-wrapper,
+  html[data-wallpaper-mode="none"] body.plain-content-active #main-content-wrapper {
+    top: 5.5rem !important;
+  }
+
+  html[data-wallpaper-mode="none"] body.plain-content-active #wallpaper-wrapper {
+    display: none !important;
+    opacity: 0 !important;
+  }
+
+  body.plain-content-active #main-layout-container {
+    width: min(92vw, 92rem) !important;
+    max-width: 92rem !important;
+  }
+
+  body.plain-content-active #main-grid {
+    transform: none !important;
+  }
+
   @media (min-width: 1024px) {
     body.content-only-active.enable-banner #wallpaper-wrapper {
       top: 0 !important;
       display: block !important;
-      height: 100dvh !important;
+      height: var(--banner-height) !important;
       transform: none !important;
       background: transparent;
     }
@@ -1174,7 +1224,7 @@ const hasMultipleImages =
     }
 
     body.content-only-active.enable-banner #main-content-wrapper {
-      top: calc(100dvh - 3.5rem) !important;
+      top: calc(var(--banner-height) - 3.5rem) !important;
     }
 
     body.content-only-active.enable-banner #main-grid {
@@ -1199,7 +1249,7 @@ const hasMultipleImages =
 
     body.content-only-active.enable-banner #wallpaper-wrapper .scroll-down-indicator {
       position: absolute;
-      bottom: 4.5rem;
+      bottom: 1.25rem;
       left: 50%;
       z-index: 45;
       display: flex;
@@ -1211,7 +1261,7 @@ const hasMultipleImages =
     }
 
     body.content-only-active.enable-banner #wallpaper-wrapper .scroll-down-icon {
-      font-size: 4.5rem;
+      font-size: 2.5rem;
       animation: scroll-down-bounce 2s ease-in-out infinite;
     }
 

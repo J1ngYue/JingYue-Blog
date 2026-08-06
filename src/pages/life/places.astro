@@ -1,0 +1,22 @@
+---
+import FootprintNotebook from "@/components/pages/record/FootprintNotebook.svelte";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+---
+
+<MainGridLayout
+	title="足迹"
+	bannerTitle="记录"
+	description="足迹地图与旅行记录"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<RecordPageShell
+		title="去过的地方"
+		description="足迹地图与旅行记录。"
+		icon="material-symbols:location-on"
+	>
+		<FootprintNotebook client:load />
+	</RecordPageShell>
+</MainGridLayout>

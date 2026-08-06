@@ -1,7 +1,10 @@
 import { getCollection } from "astro:content";
+import { gitActivityByDate } from "@/config/recordSync";
 import { siteConfig } from "@/config/siteConfig";
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
+const GITHUB_PUBLIC_CONTRIBUTIONS_URL =
+	"https://github-contributions-api.jogruber.de/v4";
 
 export type ActivityLevel = 0 | 1 | 2 | 3 | 4;
 
@@ -47,6 +50,14 @@ interface GithubContributionResponse {
 		};
 	};
 	errors?: Array<{ message?: string }>;
+}
+
+interface PublicGithubContributionResponse {
+	contributions?: Array<{
+		date: string;
+		count: number;
+		level: number;
+	}>;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -161,6 +172,20 @@ export async function getBlogActivityCalendar(): Promise<ActivityCalendar> {
 		recordContentDates(counts, [dynamic.data.published], window);
 	}
 
+	// Keep the local activity view aligned with the commits that are pushed to
+	// GitHub. The generated map is refreshed by the build/dev sync hook.
+	for (const [dateKey, commitCount] of Object.entries(gitActivityByDate)) {
+		if (
+			dateKey < window.dataStart ||
+			dateKey > window.dataEnd ||
+			!Number.isFinite(commitCount) ||
+			commitCount <= 0
+		) {
+			continue;
+		}
+		counts.set(dateKey, (counts.get(dateKey) ?? 0) + Math.floor(commitCount));
+	}
+
 	return buildCalendar(counts, window);
 }
 
@@ -179,33 +204,67 @@ function githubLevelToNumber(level: string): ActivityLevel {
 	}
 }
 
-async function getGithubToken(): Promise<string> {
-	const configuredToken = (
+function getGithubToken(): string {
+	return (
 		import.meta.env.GITHUB_TOKEN ||
 		process.env.GITHUB_TOKEN ||
 		""
 	).trim();
-	if (configuredToken) return configuredToken;
+}
 
-	try {
-		const { execFileSync } = await import("node:child_process");
-		return execFileSync("gh", ["auth", "token"], {
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-			timeout: 5_000,
-		}).trim();
-	} catch {
-		return "";
+async function getPublicGithubActivityCalendar(
+	username: string,
+	window: CalendarWindow,
+): Promise<ActivityCalendar> {
+	const response = await fetch(
+		`${GITHUB_PUBLIC_CONTRIBUTIONS_URL}/${encodeURIComponent(username)}?y=last`,
+		{ headers: { Accept: "application/json" } },
+	);
+	if (!response.ok) {
+		throw new Error(`Public GitHub contributions returned ${response.status}`);
 	}
+
+	const payload = (await response.json()) as PublicGithubContributionResponse;
+	if (!Array.isArray(payload.contributions)) {
+		throw new Error("Public GitHub contribution data is missing");
+	}
+
+	const counts = new Map<string, number>();
+	const levels = new Map<string, ActivityLevel>();
+	for (const day of payload.contributions) {
+		if (!/^\d{4}-\d{2}-\d{2}$/.test(day.date)) continue;
+		counts.set(day.date, Math.max(0, Number(day.count) || 0));
+		levels.set(
+			day.date,
+			Math.min(4, Math.max(0, Number(day.level) || 0)) as ActivityLevel,
+		);
+	}
+
+	const calendar = buildCalendar(counts, window, true);
+	calendar.days = calendar.days.map((day) => ({
+		...day,
+		level: levels.get(day.date) ?? day.level,
+	}));
+	return calendar;
 }
 
 export async function getGithubActivityCalendar(
 	username: string,
 ): Promise<ActivityCalendar> {
 	const window = getCalendarWindow();
-	const token = await getGithubToken();
+	const token = getGithubToken();
 
-	if (!token) return buildCalendar(new Map(), window, false);
+	if (!token) {
+		try {
+			return await getPublicGithubActivityCalendar(username, window);
+		} catch (error) {
+			console.warn(
+				`[home] Failed to load public GitHub contributions for ${username}:`,
+				error,
+			);
+			return buildCalendar(new Map(), window, false);
+		}
+	}
 
 	const query = `
 		query ContributionCalendar($login: String!, $from: DateTime!, $to: DateTime!) {

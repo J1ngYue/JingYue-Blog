@@ -1,8 +1,10 @@
 ---
 import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
+import MineCapabilityMatrix from "@/components/pages/mine/MineCapabilityMatrix.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 ---
 
-<MainGridLayout title="我的" bannerTitle="我的" description="从这里进入相册、追番与番组计划。">
+<MainGridLayout title="我的" bannerTitle="我的" description="从这里进入相册、追番与番组计划。" plainContent>
+	<MineCapabilityMatrix />
 	<FeatureHubHeader section="personal" />
 </MainGridLayout>

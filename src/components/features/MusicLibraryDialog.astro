@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import profileAvatar from "@/assets/images/avatar.avif";
 import { musicPlayerConfig } from "@/config/musicConfig";
 
 const libraryConfigStr = JSON.stringify({
@@ -15,11 +16,21 @@ const libraryConfigStr = JSON.stringify({
 <dialog id="jingyue-music-library" class="music-library-dialog" aria-labelledby="music-library-title">
 	<div class="music-library-shell">
 		<header class="music-library-header">
+			<div class="music-library-anime-sparkles" aria-hidden="true">
+				<i></i><i></i><i></i>
+			</div>
 			<div class="music-library-handle" aria-hidden="true"></div>
 			<div class="music-library-heading">
 				<div>
 					<p>JINGYUE · MUSIC SPACE</p>
 					<h2 id="music-library-title">音乐库</h2>
+				</div>
+				<div class="music-library-character" aria-hidden="true">
+					<div class="music-library-character-copy">
+						<strong>今日放送</strong>
+						<span>与喜欢的旋律相遇</span>
+					</div>
+					<img src={profileAvatar.src} alt="" data-site-avatar />
 				</div>
 				<button type="button" class="music-library-close" aria-label="关闭音乐库">
 					<Icon is:inline name="material-symbols:close-rounded" />
@@ -244,6 +255,16 @@ const libraryConfigStr = JSON.stringify({
 		var PLAYLISTS_KEY = 'jingyue-music-playlists';
 		var qrPollTimer = 0;
 		var searchResults = [];
+
+		function lockPageScroll() {
+			document.documentElement.classList.add('music-library-open');
+			document.body.classList.add('music-library-open');
+		}
+
+		function unlockPageScroll() {
+			document.documentElement.classList.remove('music-library-open');
+			document.body.classList.remove('music-library-open');
+		}
 
 		var ui = {
 			close: dialog.querySelector('.music-library-close'),
@@ -641,8 +662,38 @@ const libraryConfigStr = JSON.stringify({
 		dialog.addEventListener('click', function (event) {
 			if (event.target === dialog) dialog.close();
 		});
+		var dialogTouchY = 0;
+		dialog.addEventListener('wheel', function (event) {
+			var scroller = event.target instanceof Element
+				? event.target.closest('.music-library-content')
+				: null;
+			var atTop = !scroller || scroller.scrollTop <= 0;
+			var atBottom = !scroller || scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+			if (!scroller || (event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
+				event.preventDefault();
+			}
+			event.stopPropagation();
+		}, { passive: false });
+		dialog.addEventListener('touchstart', function (event) {
+			dialogTouchY = event.touches[0]?.clientY || 0;
+		}, { passive: true });
+		dialog.addEventListener('touchmove', function (event) {
+			var currentY = event.touches[0]?.clientY || dialogTouchY;
+			var deltaY = dialogTouchY - currentY;
+			dialogTouchY = currentY;
+			var scroller = event.target instanceof Element
+				? event.target.closest('.music-library-content')
+				: null;
+			var atTop = !scroller || scroller.scrollTop <= 0;
+			var atBottom = !scroller || scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+			if (!scroller || (deltaY < 0 && atTop) || (deltaY > 0 && atBottom)) {
+				event.preventDefault();
+			}
+			event.stopPropagation();
+		}, { passive: false });
 		dialog.addEventListener('close', function () {
 			if (qrPollTimer) window.clearTimeout(qrPollTimer);
+			unlockPageScroll();
 		});
 		ui.playFavorites.addEventListener('click', function () {
 			var favorites = getFavorites();
@@ -691,6 +742,7 @@ const libraryConfigStr = JSON.stringify({
 			renderAll();
 			switchTab(targetTab);
 			if (!dialog.open) dialog.showModal();
+			lockPageScroll();
 		});
 		['fm:init', 'fm:track', 'fm:play-state'].forEach(function (eventName) {
 			window.addEventListener(eventName, function () {
@@ -709,6 +761,7 @@ const libraryConfigStr = JSON.stringify({
 
 <style is:global>
 	.music-library-dialog {
+		color-scheme: light;
 		width: min(78rem, calc(100vw - 1.5rem));
 		max-width: none;
 		max-height: min(92dvh, 62rem);
@@ -725,11 +778,29 @@ const libraryConfigStr = JSON.stringify({
 			0 2rem 6rem rgba(25, 45, 38, 0.2),
 			inset 0 1px rgba(255, 255, 255, 0.5);
 		backdrop-filter: blur(1.5rem);
+		overscroll-behavior: contain;
 	}
 
 	.music-library-dialog::backdrop {
 		background: rgba(28, 42, 38, 0.28);
 		backdrop-filter: blur(0.45rem);
+	}
+
+	html.dark .music-library-dialog {
+		color-scheme: dark;
+		box-shadow:
+			0 2rem 6rem rgb(0 0 0 / 48%),
+			inset 0 1px rgb(255 255 255 / 8%);
+	}
+
+	html.dark .music-library-dialog::backdrop {
+		background: rgb(2 8 12 / 62%);
+	}
+
+	html.music-library-open,
+	body.music-library-open {
+		overflow: hidden !important;
+		overscroll-behavior: none !important;
 	}
 
 	.music-library-shell {
@@ -942,6 +1013,7 @@ const libraryConfigStr = JSON.stringify({
 		min-height: 30rem;
 		overflow-y: auto;
 		padding: 1.5rem;
+		overscroll-behavior: contain;
 		scrollbar-color: color-mix(in oklch, var(--primary) 35%, transparent) transparent;
 		scrollbar-width: thin;
 	}
@@ -1587,6 +1659,302 @@ const libraryConfigStr = JSON.stringify({
 		height: 1rem;
 	}
 
+	/* Anime-inspired visual layer; data and account controls remain unchanged. */
+	.music-library-dialog {
+		--music-anime-cyan: #08a9bd;
+		--music-anime-cyan-soft: #dff8fb;
+		--music-anime-pink: #ee6fa8;
+		--music-anime-pink-soft: #fde5f0;
+		--primary: var(--music-anime-cyan);
+		--page-bg: #f7fbfc;
+		--card-bg: #fff;
+		--btn-regular-bg: #edf7f9;
+		--line-divider: rgb(37 90 99 / 15%);
+		--text-90: #202b31;
+		--text-75: #34434a;
+		--text-50: #66757c;
+		--text-30: #87949a;
+		border: 2px solid color-mix(in srgb, var(--music-anime-cyan) 58%, var(--line-divider));
+		border-radius: 1.2rem;
+		background:
+			radial-gradient(circle at 92% 2%, color-mix(in srgb, var(--music-anime-pink) 16%, transparent), transparent 18rem),
+			radial-gradient(circle at 4% 96%, color-mix(in srgb, var(--music-anime-cyan) 13%, transparent), transparent 22rem),
+			color-mix(in srgb, var(--page-bg) 96%, white 4%);
+		box-shadow:
+			0 2.2rem 7rem rgb(19 47 55 / 28%),
+			0 0 0 0.4rem rgb(255 255 255 / 35%);
+	}
+
+	.music-library-dialog::backdrop {
+		background: rgb(21 38 44 / 46%);
+		backdrop-filter: blur(0.65rem) saturate(0.85);
+	}
+
+	html.dark .music-library-dialog {
+		--music-anime-cyan: #45d8e7;
+		--music-anime-cyan-soft: #12313b;
+		--music-anime-pink: #ff8cbd;
+		--music-anime-pink-soft: #35202f;
+		--primary: var(--music-anime-cyan);
+		--page-bg: #081119;
+		--card-bg: #101b24;
+		--btn-regular-bg: #182832;
+		--line-divider: rgb(180 222 229 / 16%);
+		--text-90: #f5fbfd;
+		--text-75: #d8e7eb;
+		--text-50: #9eb2b9;
+		--text-30: #778d95;
+		border-color: color-mix(in srgb, var(--music-anime-cyan) 45%, var(--line-divider));
+		background:
+			radial-gradient(circle at 92% 2%, color-mix(in srgb, var(--music-anime-pink) 13%, transparent), transparent 18rem),
+			radial-gradient(circle at 4% 96%, color-mix(in srgb, var(--music-anime-cyan) 12%, transparent), transparent 22rem),
+			var(--page-bg);
+		box-shadow:
+			0 2.2rem 7rem rgb(0 0 0 / 58%),
+			0 0 0 0.4rem rgb(7 16 23 / 72%);
+	}
+
+	html.dark .music-library-dialog::backdrop {
+		background: rgb(2 7 12 / 68%);
+	}
+
+	.music-library-shell {
+		position: relative;
+	}
+
+	.music-library-header {
+		position: relative;
+		overflow: hidden;
+		padding: 0.7rem 1.3rem 0;
+		background:
+			linear-gradient(105deg, color-mix(in srgb, var(--music-anime-cyan-soft) 62%, var(--card-bg)), color-mix(in srgb, var(--music-anime-pink-soft) 54%, var(--card-bg)));
+	}
+
+	.music-library-header::after {
+		position: absolute;
+		right: 8.5rem;
+		bottom: 0;
+		width: 8rem;
+		height: 0.18rem;
+		border-radius: 99rem 99rem 0 0;
+		background: linear-gradient(90deg, var(--music-anime-cyan), var(--music-anime-pink));
+		content: "";
+	}
+
+	.music-library-handle {
+		position: relative;
+		z-index: 2;
+		background: linear-gradient(90deg, var(--music-anime-cyan), var(--music-anime-pink));
+		opacity: 0.8;
+	}
+
+	.music-library-heading {
+		position: relative;
+		z-index: 2;
+	}
+
+	.music-library-heading p {
+		color: var(--music-anime-cyan);
+	}
+
+	.music-library-heading h2 {
+		position: relative;
+		width: max-content;
+		font-size: clamp(1.45rem, 2.3vw, 1.9rem);
+		letter-spacing: 0;
+	}
+
+	.music-library-heading h2::after {
+		position: absolute;
+		right: -1.15rem;
+		bottom: 0.12rem;
+		width: 0.8rem;
+		height: 0.8rem;
+		background: var(--music-anime-pink);
+		clip-path: polygon(50% 0, 61% 38%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 38%);
+		content: "";
+	}
+
+	.music-library-character {
+		display: flex;
+		min-width: 12.5rem;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.65rem;
+		margin-left: auto;
+	}
+
+	.music-library-character-copy {
+		display: grid;
+		justify-items: end;
+	}
+
+	.music-library-character-copy strong {
+		padding: 0.22rem 0.55rem;
+		border-radius: 99rem;
+		background: var(--music-anime-pink);
+		color: white;
+		font-size: 0.68rem;
+		transform: rotate(-2deg);
+	}
+
+	.music-library-character-copy span {
+		margin-top: 0.24rem;
+		color: var(--text-50);
+		font-size: 0.64rem;
+	}
+
+	.music-library-character img {
+		width: 3.9rem;
+		height: 3.9rem;
+		border: 0.2rem solid white;
+		border-radius: 50%;
+		background: var(--music-anime-cyan-soft);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--music-anime-cyan) 42%, transparent),
+			0 0.55rem 1.2rem rgb(17 112 126 / 18%);
+		object-fit: cover;
+		animation: music-library-avatar-float 3.8s ease-in-out infinite;
+	}
+
+	html.dark .music-library-character img {
+		border-color: color-mix(in srgb, var(--music-anime-cyan) 32%, var(--card-bg));
+		background: var(--music-anime-cyan-soft);
+	}
+
+	.music-library-anime-sparkles i {
+		position: absolute;
+		z-index: 1;
+		width: 0.62rem;
+		height: 0.62rem;
+		background: var(--music-anime-pink);
+		clip-path: polygon(50% 0, 61% 38%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 38%);
+		animation: music-library-sparkle 2.8s ease-in-out infinite;
+	}
+
+	.music-library-anime-sparkles i:nth-child(1) { top: 1.2rem; right: 8.1rem; }
+	.music-library-anime-sparkles i:nth-child(2) { top: 3.6rem; right: 13rem; width: 0.4rem; height: 0.4rem; background: var(--music-anime-cyan); animation-delay: -1s; }
+	.music-library-anime-sparkles i:nth-child(3) { top: 1.5rem; left: 18rem; width: 0.34rem; height: 0.34rem; animation-delay: -1.8s; }
+
+	.music-library-close {
+		margin-left: 0.5rem;
+		border: 1px solid color-mix(in srgb, var(--music-anime-cyan) 20%, transparent);
+		background: rgb(255 255 255 / 68%);
+		box-shadow: 0 0.35rem 0.8rem rgb(27 77 85 / 9%);
+	}
+
+	html.dark .music-library-close {
+		background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+		box-shadow: 0 0.35rem 0.8rem rgb(0 0 0 / 20%);
+	}
+
+	.music-library-tabs {
+		position: relative;
+		z-index: 2;
+		gap: 0.35rem;
+	}
+
+	.music-library-tabs button {
+		border: 1px solid transparent;
+		border-bottom: 0;
+		border-radius: 0.65rem 0.65rem 0 0;
+	}
+
+	.music-library-tabs button.is-active {
+		border-color: color-mix(in srgb, var(--music-anime-cyan) 18%, transparent);
+		background: color-mix(in srgb, var(--music-anime-cyan-soft) 58%, var(--card-bg));
+		color: var(--music-anime-cyan);
+		box-shadow: inset 0 0.16rem var(--music-anime-cyan);
+	}
+
+	.music-library-tabs button:nth-child(2).is-active {
+		background: color-mix(in srgb, var(--music-anime-pink-soft) 68%, var(--card-bg));
+		color: var(--music-anime-pink);
+		box-shadow: inset 0 0.16rem var(--music-anime-pink);
+	}
+
+	.music-library-tabs .music-library-import-tab {
+		background: linear-gradient(110deg, var(--music-anime-cyan), #28c9cd);
+		box-shadow: 0 0.5rem 1rem rgb(8 169 189 / 18%);
+	}
+
+	.music-library-now {
+		background:
+			linear-gradient(90deg, color-mix(in srgb, var(--music-anime-cyan-soft) 72%, var(--card-bg)), color-mix(in srgb, var(--music-anime-pink-soft) 45%, var(--card-bg)));
+	}
+
+	.music-library-now-dot,
+	.music-library-now-toggle {
+		background-color: var(--music-anime-cyan);
+		color: white;
+	}
+
+	.music-library-content {
+		background:
+			radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--music-anime-pink) 7%, transparent), transparent 18rem),
+			radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--music-anime-cyan) 7%, transparent), transparent 20rem);
+	}
+
+	.music-library-section-title h3 {
+		position: relative;
+		width: max-content;
+		padding-left: 0.8rem;
+	}
+
+	.music-library-section-title h3::before {
+		position: absolute;
+		left: 0;
+		top: 0.12rem;
+		width: 0.22rem;
+		height: 1rem;
+		border-radius: 99rem;
+		background: linear-gradient(var(--music-anime-cyan), var(--music-anime-pink));
+		content: "";
+	}
+
+	.music-library-track,
+	.music-library-playlist-card,
+	.music-library-search-form,
+	.music-library-import-option {
+		border-color: color-mix(in srgb, var(--music-anime-cyan) 17%, var(--line-divider));
+		border-radius: 0.8rem;
+		box-shadow: 0 0.45rem 1.1rem rgb(22 82 91 / 5%);
+	}
+
+	.music-library-track:hover,
+	.music-library-playlist-card:hover {
+		border-color: color-mix(in srgb, var(--music-anime-pink) 36%, var(--line-divider));
+		box-shadow: 0 0.75rem 1.4rem rgb(238 111 168 / 10%);
+		transform: translateY(-0.08rem);
+	}
+
+	.music-library-track.is-current {
+		border-color: color-mix(in srgb, var(--music-anime-cyan) 52%, var(--line-divider));
+		background: linear-gradient(100deg, color-mix(in srgb, var(--music-anime-cyan-soft) 62%, var(--card-bg)), color-mix(in srgb, var(--music-anime-pink-soft) 28%, var(--card-bg)));
+	}
+
+	.music-library-soft-button,
+	.music-library-playlist-card > button {
+		background: color-mix(in srgb, var(--music-anime-cyan-soft) 70%, var(--btn-regular-bg));
+		color: color-mix(in srgb, var(--music-anime-cyan) 82%, #17404a);
+	}
+
+	.music-library-search-form button,
+	.music-library-import-actions button {
+		background: linear-gradient(110deg, var(--music-anime-cyan), #24c2cb);
+		box-shadow: 0 0.45rem 0.9rem rgb(8 169 189 / 16%);
+	}
+
+	@keyframes music-library-avatar-float {
+		0%, 100% { transform: translateY(0) rotate(-1deg); }
+		50% { transform: translateY(-0.22rem) rotate(1.5deg); }
+	}
+
+	@keyframes music-library-sparkle {
+		0%, 100% { opacity: 0.25; transform: scale(0.7) rotate(0); }
+		50% { opacity: 0.9; transform: scale(1.1) rotate(45deg); }
+	}
+
 	@media (max-width: 800px) {
 		.music-library-dialog {
 			width: calc(100vw - 1rem);
@@ -1602,6 +1970,19 @@ const libraryConfigStr = JSON.stringify({
 		.music-library-content {
 			padding-right: 0.8rem;
 			padding-left: 0.8rem;
+		}
+
+		.music-library-character-copy {
+			display: none;
+		}
+
+		.music-library-character {
+			min-width: 0;
+		}
+
+		.music-library-character img {
+			width: 3rem;
+			height: 3rem;
 		}
 
 		.music-library-tabs .music-library-import-tab {

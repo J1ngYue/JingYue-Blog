@@ -1,63 +1,1140 @@
 ---
 import { Icon } from "astro-icon/components";
-import ArticleHubHeader from "@/components/controls/ArticleHubHeader.astro";
+import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import { getCategoryList } from "@/utils/content-utils";
+import {
+	getCategoryList,
+	getSortedPostsList,
+	getTagList,
+} from "@/utils/content-utils";
+import { getTagUrl } from "@/utils/url-utils";
 
-const categories = await getCategoryList();
-const totalPosts = categories.reduce((sum, cat) => sum + cat.count, 0);
+const [categories, posts, tags] = await Promise.all([
+	getCategoryList(),
+	getSortedPostsList(),
+	getTagList(),
+]);
+
+const uncategorizedLabel = i18n(I18nKey.uncategorized);
+const tagCountsByCategory = new Map<string, Map<string, number>>();
+
+for (const post of posts) {
+	const category = post.data.category?.trim() || uncategorizedLabel;
+	const categoryTags =
+		tagCountsByCategory.get(category) ?? new Map<string, number>();
+	for (const tag of post.data.tags ?? []) {
+		const name = tag.trim();
+		categoryTags.set(name, (categoryTags.get(name) ?? 0) + 1);
+	}
+	tagCountsByCategory.set(category, categoryTags);
+}
+
+const categoryFolders = categories.map((category) => ({
+	...category,
+	tags: [...(tagCountsByCategory.get(category.name) ?? new Map())]
+		.map(([name, count]) => ({ name, count }))
+		.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN")),
+}));
+const categoryData = categoryFolders
+	.slice()
+	.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"));
+const tagData = tags
+	.slice()
+	.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"));
+const totalPosts = categories.reduce(
+	(sum, category) => sum + category.count,
+	0,
+);
+const maxCategoryCount = Math.max(
+	...categoryData.map((category) => category.count),
+	1,
+);
+const maxTagCount = Math.max(...tagData.map((tag) => tag.count), 1);
+const totalTagAssignments = tags.reduce((sum, tag) => sum + tag.count, 0);
+const averageTagsPerPost = posts.length
+	? (totalTagAssignments / posts.length).toFixed(1)
+	: "0.0";
 ---
 
-<MainGridLayout title={i18n(I18nKey.categories)} bannerTitle="文章" articleHub>
-	<ArticleHubHeader active="categories" />
-    <p class="sr-only">{i18n(I18nKey.allCategories)} · {totalPosts} {i18n(I18nKey.postsCount)}</p>
+<MainGridLayout
+	title={i18n(I18nKey.categories)}
+	bannerTitle="文章"
+	description="按分类和标签浏览所有文章"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<div class="category-replica-page onload-animation">
+		<ArchiveReplicaSidebar side="left" posts={posts} />
 
-    <!-- 分类卡片列表 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        {
-            categories.map((category, index) => (
-                <a
-                    href={category.url}
-                    class="card-base p-6 flex items-center gap-4 group onload-animation"
-                    style={`animation-delay: calc(var(--content-delay) + ${index * 50}ms);`}
-                >
-                    <div class="shrink-0 w-14 h-14 rounded-full bg-(--primary)/10 group-hover:bg-(--primary)/20 flex items-center justify-center transition-colors">
-                        <Icon is:inline
-                            name="material-symbols:folder-open"
-                            class="text-3xl text-(--primary)"
-                        />
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h2 class="text-lg font-bold text-90 truncate group-hover:text-(--primary) transition-colors" title={category.name}>
-                            {category.name}
-                        </h2>
-                        <p class="text-sm text-30 mt-1 group-hover:text-(--primary)/60 transition-colors">
-                            {category.count} {i18n(I18nKey.postsCount)}
-                        </p>
-                    </div>
-                    <div class="shrink-0">
-                        <Icon is:inline
-                            name="material-symbols:chevron-right-rounded"
-                            class="text-2xl text-30 group-hover:text-(--primary) transition-colors "
-                        />
-                    </div>
-                </a>
-            ))
-        }
-    </div>
+		<section class="category-workbench" data-category-workbench>
+		<header class="category-workbench__header">
+			<div class="category-workbench__title">
+				<Icon is:inline name="material-symbols:category-rounded" />
+				<div>
+					<h1>分类标签</h1>
+					<p>按分类和标签浏览所有文章</p>
+				</div>
+			</div>
 
-    <!-- 空状态 -->
-    {
-        categories.length === 0 && (
-            <div class="card-base px-8 py-12 text-center">
-                <Icon is:inline
-                    name="material-symbols:folder-off"
-                    class="text-5xl text-30 mx-auto mb-4"
-                />
-                <p class="text-30">{i18n(I18nKey.noData)}</p>
-            </div>
-        )
-    }
+			<div
+				class="category-workbench__switch"
+				role="tablist"
+				aria-label="分类页视图"
+			>
+				<button
+					type="button"
+					role="tab"
+					aria-selected="true"
+					aria-controls="category-folder-panel"
+					data-category-view="folders"
+					class="is-active"
+				>
+					<Icon is:inline name="material-symbols:folder-rounded" />
+					文件夹
+				</button>
+				<button
+					type="button"
+					role="tab"
+					aria-selected="false"
+					aria-controls="category-data-panel"
+					data-category-view="data"
+				>
+					<Icon is:inline name="material-symbols:bar-chart-rounded" />
+					数据图
+				</button>
+				<span class="category-workbench__indicator" aria-hidden="true"></span>
+			</div>
+		</header>
+
+		<div
+			id="category-folder-panel"
+			class="category-folder-list"
+			role="tabpanel"
+			data-category-panel="folders"
+		>
+			{categoryFolders.map((category, index) => {
+				const panelId = `category-folder-tags-${index}`;
+				return (
+					<details class="category-folder">
+						<summary
+							class="category-folder__summary"
+							aria-controls={panelId}
+							aria-expanded="false"
+						>
+							<span class="category-folder__icon" aria-hidden="true">
+								<Icon is:inline class="category-folder__icon-closed" name="material-symbols:folder-rounded" />
+								<Icon is:inline class="category-folder__icon-open" name="material-symbols:folder-open-rounded" />
+							</span>
+							<span class="category-folder__heading">
+								<strong class="category-folder__name">{category.name}</strong>
+								<span class="category-folder__meta">
+									{category.count} 篇文章 · {category.tags.length} 个标签
+								</span>
+							</span>
+							<a
+								href={category.url}
+								class="category-folder__link"
+								aria-label={`查看 ${category.name} 分类的所有文章`}
+								data-category-folder-link
+							>
+								<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+							</a>
+							<Icon is:inline class="category-folder__chevron" name="material-symbols:keyboard-arrow-down-rounded" />
+						</summary>
+
+						<div id={panelId} class="category-folder__content">
+							<div class="category-folder__tags" aria-label={`${category.name}分类下的标签`}>
+							{category.tags.length > 0 ? (
+								category.tags.map((tag) => (
+									<a class="category-folder__tag" href={getTagUrl(tag.name)}>
+										<span class="category-folder__tag-name">#{tag.name}</span>
+										<span class="category-folder__tag-count">{tag.count}</span>
+									</a>
+								))
+							) : (
+								<span>这个分类暂时没有标签</span>
+							)}
+							</div>
+						</div>
+					</details>
+				);
+			})}
+		</div>
+
+		<div
+			id="category-data-panel"
+			class="category-data-panel"
+			role="tabpanel"
+			data-category-panel="data"
+			hidden
+		>
+			<div class="category-data-panel__summary">
+				<div>
+					<span>{categories.length}</span>
+					<small>文章分类</small>
+				</div>
+				<div>
+					<span>{tags.length}</span>
+					<small>内容标签</small>
+				</div>
+				<div>
+					<span>{totalPosts}</span>
+					<small>收录文章</small>
+				</div>
+				<div>
+					<span>{averageTagsPerPost}</span>
+					<small>平均标签 / 文章</small>
+				</div>
+			</div>
+
+			<div class="category-data-panel__grid">
+				<section class="category-data-card" aria-labelledby="category-distribution-title">
+					<header class="category-data-card__header">
+						<div>
+							<h2 id="category-distribution-title">分类分布</h2>
+							<p>按文章数量查看内容重心</p>
+						</div>
+						<Icon is:inline name="material-symbols:bar-chart-rounded" />
+					</header>
+					<div class="category-data-bars">
+						{categoryData.length > 0 ? (
+							categoryData.map((category) => {
+								const share = totalPosts
+									? Math.round((category.count / totalPosts) * 100)
+									: 0;
+								const width = Math.max(
+									4,
+									Math.round((category.count / maxCategoryCount) * 100),
+								);
+								return (
+									<a
+										class="category-data-bar-row"
+										href={category.url}
+										title={`查看 ${category.name} 分类 · ${category.count} 篇文章`}
+									>
+										<span class="category-data-bar-row__meta">
+											<strong>{category.name}</strong>
+											<small>{category.count} 篇 · {share}%</small>
+										</span>
+										<span
+											class="category-data-bar"
+											role="meter"
+											aria-label={`${category.name}文章占比`}
+											aria-valuemin="0"
+											aria-valuemax="100"
+											aria-valuenow={share}
+										>
+											<span style={`--bar-width: ${width}%`}></span>
+										</span>
+									</a>
+								);
+							})
+						) : (
+							<p class="category-data-card__empty">暂时没有可统计的分类</p>
+						)}
+					</div>
+				</section>
+
+				<section class="category-data-card" aria-labelledby="tag-ranking-title">
+					<header class="category-data-card__header">
+						<div>
+							<h2 id="tag-ranking-title">标签活跃度</h2>
+							<p>最常出现在文章中的标签</p>
+						</div>
+						<Icon is:inline name="material-symbols:local-fire-department-rounded" />
+					</header>
+					<ol class="category-tag-ranking">
+						{tagData.length > 0 ? (
+							tagData.slice(0, 8).map((tag, index) => (
+								<li>
+									<span class="category-tag-ranking__index">{String(index + 1).padStart(2, "0")}</span>
+									<a href={getTagUrl(tag.name)} title={`查看 #${tag.name} 标签`}>
+										<span class="category-tag-ranking__name">#{tag.name}</span>
+										<span class="category-tag-ranking__track" aria-hidden="true">
+											<span style={`--bar-width: ${Math.max(4, Math.round((tag.count / maxTagCount) * 100))}%`}></span>
+										</span>
+										<strong>{tag.count}</strong>
+									</a>
+								</li>
+							))
+						) : (
+							<li class="category-data-card__empty">暂时没有可统计的标签</li>
+						)}
+					</ol>
+				</section>
+			</div>
+		</div>
+
+		{categories.length === 0 && (
+			<div class="category-workbench__empty">
+				<Icon is:inline name="material-symbols:folder-off-rounded" />
+				<p>{i18n(I18nKey.noData)}</p>
+			</div>
+		)}
+		</section>
+
+		<ArchiveReplicaSidebar side="right" posts={posts} />
+	</div>
 </MainGridLayout>
+
+<script>
+	function initCategoryWorkbench() {
+		const roots = document.querySelectorAll<HTMLElement>(
+			"[data-category-workbench]",
+		);
+
+		for (const root of roots) {
+			if (root.dataset.bound === "true") continue;
+			root.dataset.bound = "true";
+
+			const viewButtons = root.querySelectorAll<HTMLButtonElement>(
+				"[data-category-view]",
+			);
+			const panels = root.querySelectorAll<HTMLElement>(
+				"[data-category-panel]",
+			);
+			const viewSwitch = root.querySelector<HTMLElement>(
+				".category-workbench__switch",
+			);
+			const indicator = root.querySelector<HTMLElement>(
+				".category-workbench__indicator",
+			);
+
+			const moveIndicator = (button: HTMLButtonElement) => {
+				if (!viewSwitch || !indicator) return;
+				indicator.style.left = `${button.offsetLeft}px`;
+				indicator.style.width = `${button.offsetWidth}px`;
+				viewSwitch.classList.add("is-ready");
+			};
+
+			for (const button of viewButtons) {
+				button.addEventListener("click", () => {
+					const view = button.dataset.categoryView;
+					for (const currentButton of viewButtons) {
+						const active = currentButton === button;
+						currentButton.classList.toggle("is-active", active);
+						currentButton.setAttribute("aria-selected", String(active));
+					}
+					for (const panel of panels) {
+						panel.hidden = panel.dataset.categoryPanel !== view;
+					}
+					moveIndicator(button);
+				});
+			}
+
+			const activeView = root.querySelector<HTMLButtonElement>(
+				"[data-category-view].is-active",
+			);
+			if (activeView) requestAnimationFrame(() => moveIndicator(activeView));
+			for (const link of root.querySelectorAll<HTMLElement>(
+				"[data-category-folder-link]",
+			)) {
+				link.addEventListener("click", (event) => event.stopPropagation());
+			}
+			for (const folder of root.querySelectorAll<HTMLDetailsElement>(
+				".category-folder",
+			)) {
+				const summary = folder.querySelector<HTMLElement>(
+					".category-folder__summary",
+				);
+				const content = folder.querySelector<HTMLElement>(
+					".category-folder__content",
+				);
+				const closeDuration = window.matchMedia(
+					"(prefers-reduced-motion: reduce)",
+				).matches
+					? 0
+					: 420;
+				let closeTimer: number | undefined;
+				const syncContentState = () => {
+					if (content) {
+						content.inert = !folder.open || folder.dataset.state === "closing";
+					}
+					summary?.setAttribute(
+						"aria-expanded",
+						String(folder.open && folder.dataset.state !== "closing"),
+					);
+				};
+				const finishClose = () => {
+					if (folder.dataset.state !== "closing") return;
+					folder.open = false;
+					delete folder.dataset.state;
+					syncContentState();
+				};
+				summary?.addEventListener("click", (event) => {
+					event.preventDefault();
+					if (folder.dataset.state) return;
+					if (!folder.open) {
+						folder.open = true;
+						syncContentState();
+						return;
+					}
+					folder.dataset.state = "closing";
+					syncContentState();
+					closeTimer = window.setTimeout(finishClose, closeDuration);
+				});
+				syncContentState();
+				folder.addEventListener("toggle", syncContentState);
+				content?.addEventListener("transitionend", (event) => {
+					if (
+						folder.dataset.state === "closing" &&
+						event.target === content &&
+						event.propertyName === "grid-template-rows"
+					) {
+						if (closeTimer !== undefined) window.clearTimeout(closeTimer);
+						finishClose();
+					}
+				});
+			}
+			window.addEventListener("resize", () => {
+				const active = root.querySelector<HTMLButtonElement>(
+					"[data-category-view].is-active",
+				);
+				if (active) moveIndicator(active);
+			});
+		}
+	}
+
+	initCategoryWorkbench();
+	document.addEventListener("swup:contentReplaced", initCategoryWorkbench);
+</script>
+
+<style>
+	.category-workbench {
+		--category-text: #14181b;
+		--category-text-soft: #434b50;
+		--category-muted: #747e84;
+		--category-surface: color-mix(in srgb, var(--card-bg) 96%, var(--category-text) 4%);
+		--category-border: color-mix(in srgb, var(--category-text) 18%, transparent);
+		width: 100%;
+		padding: 1.5rem 0 3rem;
+		color: var(--category-text);
+	}
+
+	.category-replica-page {
+		display: grid;
+		grid-template-columns: 17.5rem minmax(0, 61rem) 17.5rem;
+		gap: 1rem;
+		width: min(98rem, calc(100vw - 2rem));
+		min-width: 0;
+		margin-left: 50%;
+		transform: translateX(-50%);
+	}
+
+	:global(body:has(.category-replica-page) #main-column-wrapper) {
+		min-width: 0;
+		overflow: visible;
+	}
+
+	:global(html.dark) .category-workbench {
+		--category-text: #f4f6f7;
+		--category-text-soft: #d3d9dc;
+		--category-muted: #929da3;
+	}
+
+	.category-workbench__header {
+		display: flex;
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.category-workbench__title {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.85rem;
+	}
+
+	.category-workbench__title > :global(svg) {
+		width: 1.875rem;
+		height: 1.875rem;
+		margin-top: 0.08rem;
+		color: var(--category-text);
+	}
+
+	.category-workbench__title h1 {
+		margin: 0;
+		font-size: 1.875rem;
+		font-weight: 800;
+		letter-spacing: -0.035em;
+		line-height: 1.1;
+	}
+
+	.category-workbench__title p {
+		margin: 0.75rem 0 0;
+		color: var(--category-muted);
+		font-size: 1rem;
+		line-height: 1.65;
+	}
+
+	.category-workbench__switch {
+		position: relative;
+		display: inline-flex;
+		flex: 0 0 auto;
+		gap: 0.25rem;
+		max-width: 100%;
+		padding: 0.25rem;
+		border: 1px solid var(--category-text);
+		border-radius: 999rem;
+		background: transparent;
+	}
+
+	.category-workbench__switch button {
+		position: relative;
+		z-index: 1;
+		display: inline-flex;
+		min-width: 6rem;
+		min-height: 2.25rem;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		padding: 0.5rem 0.75rem;
+		border: 0;
+		border-radius: 999rem;
+		background: transparent;
+		color: var(--category-text-soft);
+		font-family: inherit;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		line-height: 1;
+		cursor: pointer;
+		user-select: none;
+		transition: color 200ms ease, opacity 200ms ease, transform 200ms ease;
+	}
+
+	.category-workbench__switch button :global(svg) {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.category-workbench__switch button.is-active {
+		background: var(--category-text);
+		color: var(--card-bg);
+	}
+
+	.category-workbench__switch.is-ready button.is-active {
+		background: transparent;
+	}
+
+	.category-workbench__switch button:hover:not(.is-active) {
+		opacity: 0.7;
+	}
+
+	.category-workbench__switch button:active {
+		transform: scale(0.96);
+	}
+
+	.category-workbench__indicator {
+		position: absolute;
+		top: 0.25rem;
+		bottom: 0.25rem;
+		left: 0.25rem;
+		z-index: 0;
+		width: 0;
+		border-radius: 999rem;
+		background: var(--category-text);
+		box-shadow: 0 1px 3px color-mix(in srgb, var(--category-text) 15%, transparent);
+		opacity: 0;
+		pointer-events: none;
+		transition: left 300ms cubic-bezier(0.4, 0, 0.2, 1), width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms ease;
+	}
+
+	.category-workbench__switch.is-ready .category-workbench__indicator {
+		opacity: 1;
+	}
+
+	.category-workbench__switch button:focus-visible,
+	.category-folder a:focus-visible,
+	.category-folder button:focus-visible,
+	.category-data-card a:focus-visible {
+		outline: 3px solid color-mix(in srgb, var(--primary) 70%, white);
+		outline-offset: 3px;
+	}
+
+	.category-folder-list {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		align-items: start;
+		gap: 1.5rem;
+		padding-top: 0.75rem;
+	}
+
+	.category-folder {
+		position: relative;
+		border: 1px solid var(--category-border);
+		border-radius: 0 0.5rem 0.5rem;
+		background: var(--category-surface);
+		min-width: 0;
+		transition: border-color 200ms ease, box-shadow 200ms ease;
+	}
+
+	.category-folder::before {
+		position: absolute;
+		top: -0.75rem;
+		left: -1px;
+		width: min(42%, 10rem);
+		height: 0.75rem;
+		border: 1px solid var(--category-border);
+		border-bottom: 0;
+		border-radius: 0.5rem 0.5rem 0 0;
+		background: var(--category-surface);
+		content: "";
+		transition: border-color 200ms ease;
+	}
+
+	.category-folder:hover {
+		border-color: color-mix(in srgb, var(--category-text) 38%, transparent);
+		box-shadow: 0 0.5rem 1.25rem rgb(18 24 28 / 6%);
+	}
+
+	.category-folder__summary {
+		display: flex;
+		min-height: 6rem;
+		align-items: center;
+		gap: 0.875rem;
+		padding: 1.125rem 1.25rem;
+		color: inherit;
+		cursor: pointer;
+		list-style: none;
+	}
+
+	.category-folder__summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.category-folder__summary:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: 3px;
+	}
+
+	.category-folder__icon {
+		display: grid;
+		width: 2.75rem;
+		height: 2.75rem;
+		flex: 0 0 2.75rem;
+		place-items: center;
+		border: 1px solid var(--category-border);
+		border-radius: 0.375rem;
+		background: var(--card-bg);
+		color: var(--category-text);
+	}
+
+	.category-folder__icon :global(svg) {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	.category-folder__icon-open,
+	.category-folder[open] .category-folder__icon-closed {
+		display: none;
+	}
+
+	.category-folder[open] .category-folder__icon-open {
+		display: block;
+	}
+
+	.category-folder__heading {
+		display: flex;
+		min-width: 0;
+		flex: 1;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.category-folder__name {
+		overflow-wrap: anywhere;
+		font-size: 1.0625rem;
+		font-weight: 800;
+		line-height: 1.35;
+	}
+
+	.category-folder__meta {
+		color: var(--category-muted);
+		font-size: 0.8125rem;
+		line-height: 1.5;
+	}
+
+	.category-folder__link {
+		display: flex;
+		width: 1.75rem;
+		height: 1.75rem;
+		flex: 0 0 1.75rem;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0.375rem;
+		color: var(--category-text-soft);
+		transition: background-color 150ms ease, color 150ms ease;
+	}
+
+	.category-folder__link:hover {
+		background: color-mix(in srgb, var(--category-text) 9%, transparent);
+		color: var(--primary);
+	}
+
+	.category-folder__link :global(svg) {
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+
+	.category-folder__chevron {
+		width: 1.5rem;
+		height: 1.5rem;
+		flex: 0 0 1.5rem;
+		color: var(--category-muted);
+		transition: color 200ms ease, transform 200ms ease;
+	}
+
+	.category-folder[open] .category-folder__chevron {
+		color: var(--category-text);
+		transform: rotate(180deg);
+	}
+
+	.category-folder__content {
+		display: grid;
+		grid-template-rows: 0fr;
+		min-height: 0;
+		padding: 0 1.25rem;
+		border-top: 1px solid transparent;
+		overflow: hidden;
+		transition:
+			grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1),
+			padding 420ms cubic-bezier(0.22, 1, 0.36, 1),
+			border-color 220ms ease;
+	}
+
+	.category-folder[open] .category-folder__content {
+		grid-template-rows: 1fr;
+		padding: 1rem 1.25rem 1.25rem;
+		border-top-color: var(--category-border);
+	}
+
+	.category-folder[data-state="closing"] .category-folder__content {
+		grid-template-rows: 0fr;
+		padding: 0 1.25rem;
+		border-top-color: transparent;
+	}
+
+	.category-folder__tags {
+		display: flex;
+		min-height: 0;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		overflow: hidden;
+		opacity: 0;
+		transform: translateY(-0.35rem);
+		transition:
+			opacity 260ms ease,
+			transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.category-folder[open] .category-folder__tags {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	.category-folder[data-state="closing"] .category-folder__tags {
+		opacity: 0;
+		transform: translateY(-0.35rem);
+	}
+
+	.category-folder__tag,
+	.category-folder__tags > span {
+		display: inline-flex;
+		min-width: 0;
+		min-height: 2.75rem;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--category-border);
+		border-radius: 0.375rem;
+		background: var(--card-bg);
+		color: var(--category-text);
+		transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+	}
+
+	.category-folder__tag:hover,
+	.category-folder__tag:focus-visible {
+		border-color: var(--category-text);
+		background: var(--category-text);
+		color: var(--card-bg);
+	}
+
+	.category-folder__tag-name {
+		overflow-wrap: anywhere;
+		min-width: 0;
+		font-size: 0.875rem;
+		font-weight: 700;
+		line-height: 1.35;
+	}
+
+	.category-folder__tag-count {
+		display: inline-grid;
+		min-width: 1.5rem;
+		height: 1.5rem;
+		flex-shrink: 0;
+		place-items: center;
+		border-radius: 999rem;
+		background: color-mix(in srgb, var(--category-text) 9%, transparent);
+		color: var(--category-muted);
+		font-size: 0.75rem;
+		font-weight: 700;
+		transition: background-color 200ms ease, color 200ms ease;
+	}
+
+	.category-folder__tag:hover .category-folder__tag-count,
+	.category-folder__tag:focus-visible .category-folder__tag-count {
+		background: var(--card-bg);
+		color: var(--category-text);
+	}
+
+	.category-data-panel {
+		padding: clamp(1rem, 2.5vw, 1.75rem);
+		border: 1px solid var(--category-border);
+		border-radius: 0.85rem;
+		background: var(--category-surface);
+	}
+
+	.category-data-panel[hidden] {
+		display: none;
+	}
+
+	.category-data-panel__summary {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.category-data-panel__summary > div {
+		position: relative;
+		overflow: hidden;
+		display: grid;
+		gap: 0.18rem;
+		padding: 1rem;
+		border: 1px solid
+			color-mix(in srgb, var(--category-text) 10%, transparent);
+		border-radius: 0.65rem;
+		background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+	}
+
+	.category-data-panel__summary > div::after {
+		position: absolute;
+		right: -1.5rem;
+		bottom: -2rem;
+		width: 5rem;
+		height: 5rem;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--primary) 10%, transparent);
+		content: "";
+		pointer-events: none;
+	}
+
+	.category-data-panel__summary span {
+		font-size: 1.6rem;
+		font-weight: 850;
+		line-height: 1;
+	}
+
+	.category-data-panel__summary small {
+		color: var(--category-muted);
+		font-size: 0.75rem;
+	}
+
+	.category-data-panel__grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+		gap: 1rem;
+	}
+
+	.category-data-card {
+		min-width: 0;
+		border: 1px solid
+			color-mix(in srgb, var(--category-text) 11%, transparent);
+		border-radius: 0.75rem;
+		background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+		padding: 1.1rem 1.15rem 1.2rem;
+	}
+
+	.category-data-card__header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1.1rem;
+	}
+
+	.category-data-card__header h2 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 800;
+		line-height: 1.3;
+	}
+
+	.category-data-card__header p {
+		margin: 0.25rem 0 0;
+		color: var(--category-muted);
+		font-size: 0.72rem;
+		line-height: 1.4;
+	}
+
+	.category-data-card__header > :global(svg) {
+		width: 1.25rem;
+		height: 1.25rem;
+		color: var(--primary);
+	}
+
+	.category-data-bars,
+	.category-tag-ranking {
+		display: grid;
+		gap: 0.85rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.category-data-bar-row {
+		display: grid;
+		gap: 0.4rem;
+		color: inherit;
+	}
+
+	.category-data-bar-row__meta {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.category-data-bar-row__meta strong {
+		overflow: hidden;
+		min-width: 0;
+		font-size: 0.78rem;
+		font-weight: 750;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.category-data-bar-row__meta small {
+		flex: 0 0 auto;
+		color: var(--category-muted);
+		font-size: 0.68rem;
+	}
+
+	.category-data-bar,
+	.category-tag-ranking__track {
+		display: block;
+		height: 0.42rem;
+		overflow: hidden;
+		border-radius: 999rem;
+		background: color-mix(in srgb, var(--category-text) 9%, transparent);
+	}
+
+	.category-data-bar > span,
+	.category-tag-ranking__track > span {
+		display: block;
+		width: var(--bar-width);
+		height: 100%;
+		border-radius: inherit;
+		background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 48%, white));
+		transform-origin: left center;
+		transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.category-data-bar-row:hover .category-data-bar > span {
+		filter: saturate(1.2);
+	}
+
+	.category-tag-ranking {
+		gap: 0.35rem;
+	}
+
+	.category-tag-ranking li {
+		display: grid;
+		grid-template-columns: 1.55rem minmax(0, 1fr);
+		align-items: center;
+		gap: 0.5rem;
+		min-height: 2.1rem;
+	}
+
+	.category-tag-ranking__index {
+		color: var(--category-muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 0.68rem;
+		font-weight: 700;
+	}
+
+	.category-tag-ranking li > a {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 3.2rem 1.5rem;
+		align-items: center;
+		gap: 0.55rem;
+		min-width: 0;
+		color: inherit;
+	}
+
+	.category-tag-ranking__name {
+		overflow: hidden;
+		font-size: 0.76rem;
+		font-weight: 650;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.category-tag-ranking li > a > strong {
+		color: var(--category-text);
+		font-size: 0.72rem;
+		text-align: right;
+	}
+
+	.category-tag-ranking li > a:hover .category-tag-ranking__name {
+		color: var(--primary);
+	}
+
+	.category-data-card__empty {
+		margin: 0;
+		padding: 1.5rem 0;
+		color: var(--category-muted);
+		font-size: 0.78rem;
+		text-align: center;
+	}
+
+	.category-workbench__empty {
+		display: grid;
+		min-height: 15rem;
+		place-items: center;
+		color: var(--category-muted);
+		text-align: center;
+	}
+
+	.category-workbench__empty :global(svg) {
+		width: 3rem;
+		height: 3rem;
+	}
+
+	@media (max-width: 700px) {
+		.category-replica-page {
+			grid-template-columns: minmax(0, 1fr);
+			width: calc(100vw - 1rem);
+		}
+
+		.category-replica-page :global(.archive-side) {
+			display: none;
+		}
+
+		.category-workbench {
+			padding: 1.25rem 0 2.5rem;
+		}
+
+		.category-workbench__header {
+			align-items: stretch;
+			flex-direction: column;
+			gap: 1.25rem;
+			margin-bottom: 1.75rem;
+		}
+
+		.category-workbench__switch {
+			align-self: flex-start;
+		}
+
+		.category-folder__summary {
+			min-height: 5.5rem;
+			padding: 1rem;
+		}
+
+		.category-folder__icon {
+			width: 2.75rem;
+			height: 2.75rem;
+		}
+
+		.category-folder__icon :global(svg) {
+			width: 1.35rem;
+			height: 1.35rem;
+		}
+
+		.category-folder__name {
+			font-size: 1rem;
+		}
+
+		.category-folder__meta {
+			font-size: 0.76rem;
+		}
+
+		.category-folder__content {
+			padding: 0 1rem;
+		}
+
+		.category-folder[open] .category-folder__content {
+			padding: 1rem;
+		}
+
+		.category-data-panel__summary {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0.45rem;
+		}
+
+		.category-data-panel__summary > div {
+			padding: 0.75rem 0.6rem;
+		}
+
+		.category-data-panel__summary span {
+			font-size: 1.25rem;
+		}
+
+		.category-data-panel__grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.category-data-card {
+			padding: 1rem;
+		}
+
+		.category-tag-ranking li > a {
+			grid-template-columns: minmax(0, 1fr) 2.8rem 1.4rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.category-folder,
+		.category-folder::before,
+		.category-folder__chevron,
+		.category-folder__tag,
+		.category-folder__tag-count,
+		.category-workbench__indicator,
+		.category-workbench__switch button,
+		.category-data-card a {
+			transition: none;
+		}
+
+		.category-folder__content,
+		.category-folder__tags,
+		.category-data-bar > span,
+		.category-tag-ranking__track > span {
+			transition: none;
+		}
+	}
+
+	@media (max-width: 1399px) and (min-width: 1100px) {
+		.category-replica-page {
+			grid-template-columns: 14rem minmax(0, 1fr) 14rem;
+			width: min(92vw, 92rem);
+			max-width: 92rem;
+			justify-content: center;
+		}
+	}
+
+	@media (max-width: 1099px) and (min-width: 701px) {
+		.category-replica-page {
+			grid-template-columns: minmax(0, 61rem);
+			width: min(61rem, calc(100vw - 2rem));
+			justify-content: center;
+		}
+
+		.category-replica-page :global(.archive-side) {
+			display: none;
+		}
+	}
+</style>

@@ -10,61 +10,103 @@ import {
 // NavBar Configuration - Dynamically generate navigation bar links based on order
 // ============================================================================
 const getDynamicNavBarConfig = (): NavBarConfig => {
-	// 基础导航栏链接
 	const links: NavBarLink[] = [
-		// 主页
-		LinkPresets.Home,
+		{
+			...LinkPresets.Home,
+			name: "首页",
+		},
+		{
+			name: "网站导航",
+			url: "/links/",
+			icon: "material-symbols:globe",
+		},
+		{
+			name: "文章",
+			url: "/posts/",
+			icon: "material-symbols:article-rounded",
+			children: [
+				{
+					name: "文章列表",
+					url: "/posts/",
+					icon: "material-symbols:article-rounded",
+				},
+				LinkPresets.Archive,
+				LinkPresets.Categories,
+				LinkPresets.Tags,
+			],
+		},
+		{
+			name: "动态",
+			url: "/dynamic/",
+			icon: "material-symbols:local-cafe",
+			children: [
+				LinkPresets.Dynamic,
+				LinkPresets.Gallery,
+				LinkPresets.Guestbook,
+				{
+					name: "笔记本",
+					url: "/life/notebooks/",
+					icon: "material-symbols:menu-book-rounded",
+				},
+				{
+					...LinkPresets.Friends,
+					name: "朋友圈",
+				},
+			],
+		},
+		{
+			name: "记录",
+			url: "/books/",
+			icon: "material-symbols:home-work-rounded",
+			children: [
+				{
+					name: "书架",
+					url: "/books/",
+					icon: "material-symbols:book-4",
+				},
+				{
+					name: "影视与游戏",
+					url: "/movies-games/",
+					icon: "material-symbols:movie",
+				},
+				{
+					name: "音乐",
+					url: "/music/",
+					icon: "material-symbols:music-note",
+				},
+				{
+					name: "更新日志",
+					url: "/changelog/",
+					icon: "material-symbols:history",
+				},
+				{
+					name: "足迹",
+					url: "/life/places/",
+					icon: "material-symbols:location-on",
+				},
+				{
+					name: "应用展示",
+					url: "/apps/",
+					icon: "material-symbols:apps",
+				},
+			],
+		},
+		{
+			name: "关于",
+			url: "/about/",
+			icon: "material-symbols:info-rounded",
+			children: [
+				LinkPresets.About,
+				{
+					name: "社交主页",
+					url: "/social/",
+					icon: "material-symbols:group",
+				},
+				LinkPresets.Friends,
+				LinkPresets.Sponsor,
+			],
+		},
 	];
-
-	// 文章中心：归档、分类与标签在页面内部切换，不再使用下拉菜单
-	links.push({
-		...LinkPresets.Archive,
-		name: "文章",
-		icon: "material-symbols:article",
-		url: LinkPresets.Archive.url,
-	});
-
-	// 动态
-	links.push({
-		...LinkPresets.Dynamic,
-		url: LinkPresets.Dynamic.url,
-	});
-
-	// 社交：友链与留言在社交页面内部切换
-	links.push({
-		name: "社交",
-		url: "/social/",
-		icon: "material-symbols:group",
-	});
-
-	// 我的：相册、追番与番组计划在页面内部切换
-	links.push({
-		name: "我的",
-		url: "/mine/",
-		icon: "material-symbols:person",
-	});
-
-	// 关于：个人介绍与支持本站在页面内部切换
-	links.push({
-		name: "关于",
-		url: "/about/",
-		icon: "material-symbols:info",
-	});
-
-	// 链接：外部资源在链接页面内部选择
-	links.push({
-		name: "链接",
-		url: "/links/",
-		icon: "material-symbols:link",
-	});
-
-	// 文档链接
-	// links.push({
-	// 	name: "文档",
-	// 	url: "https://docs-firefly.cuteleaf.cn",
-	// 	external: true,
-	// 	icon: "material-symbols:docs",
-	// });
 
 	return { links } as NavBarConfig;
 };

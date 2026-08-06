@@ -1,0 +1,219 @@
+---
+import { Icon } from "astro-icon/components";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import { recordApps } from "@/config/recordConfig";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const categories = ["全部", ...new Set(recordApps.map((app) => app.category))];
+---
+
+<MainGridLayout
+	title="应用展示"
+	bannerTitle="记录"
+	description="博客里的应用与工具"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<RecordPageShell
+		title="应用展示"
+		description="我使用过的应用和工具推荐。"
+		icon="material-symbols:apps"
+	>
+		<nav class="apps-filter" aria-label="应用分类">
+			{categories.map((category, index) => (
+				<button
+					type="button"
+					class:list={{ "is-active": index === 0 }}
+					data-app-filter={category}
+					aria-pressed={index === 0 ? "true" : "false"}
+				>
+					{category}
+				</button>
+			))}
+		</nav>
+
+		<div class="apps-grid">
+			{recordApps.map((app) => (
+				<a href={app.url} data-app-card data-category={app.category}>
+					<span class="apps-card__clip">{app.category}</span>
+					<div class="apps-card__icon">
+						<Icon is:inline name={app.icon} />
+					</div>
+					<div class="apps-card__copy">
+						<h2>{app.name}</h2>
+						<p>{app.description}</p>
+					</div>
+				</a>
+			))}
+		</div>
+	</RecordPageShell>
+</MainGridLayout>
+
+<style>
+	.apps-filter {
+		display: flex;
+		width: fit-content;
+		max-width: 100%;
+		overflow-x: auto;
+		gap: 0.2rem;
+		margin-bottom: 2.4rem;
+		border: 1.5px solid var(--record-ink, #111);
+		border-radius: 999px;
+		padding: 0.25rem;
+		scrollbar-width: none;
+	}
+
+	.apps-filter::-webkit-scrollbar { display: none; }
+
+	.apps-filter button {
+		min-height: 2.35rem;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		padding: 0.4rem 0.9rem;
+		color: var(--content-meta);
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.apps-filter button:hover,
+	.apps-filter button:focus-visible {
+		background: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
+		color: var(--record-ink, #111);
+		outline: none;
+	}
+
+	.apps-filter button.is-active {
+		background: var(--record-ink, #111);
+		color: var(--card-bg, white);
+	}
+
+	.apps-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1.6rem;
+	}
+
+	.apps-grid > a {
+		position: relative;
+		display: flex;
+		min-height: 14rem;
+		align-items: center;
+		flex-direction: column;
+		justify-content: center;
+		border: 2px solid var(--record-ink, #111);
+		border-radius: 0.3rem;
+		background:
+			repeating-linear-gradient(0deg, transparent 0 1.75rem, color-mix(in srgb, var(--record-ink, #111) 9%, transparent) 1.75rem calc(1.75rem + 1px)),
+			color-mix(in srgb, var(--card-bg) 98%, transparent);
+		padding: 2.4rem 1.25rem 1.15rem;
+		color: inherit;
+		text-decoration: none;
+		box-shadow: 0.35rem 0.45rem 0 var(--record-ink, #111);
+		transition: box-shadow 180ms ease, transform 180ms ease;
+	}
+
+	.apps-grid > a:nth-child(even) { transform: rotate(0.35deg); }
+	.apps-grid > a:nth-child(odd) { transform: rotate(-0.35deg); }
+
+	.apps-grid > a:hover,
+	.apps-grid > a:focus-visible {
+		outline: none;
+		box-shadow: 0.15rem 0.2rem 0 var(--record-ink, #111);
+		transform: translate(0.15rem, 0.2rem) rotate(0deg);
+	}
+
+	.apps-card__clip {
+		position: absolute;
+		top: -0.75rem;
+		left: 50%;
+		min-width: 3.8rem;
+		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 35%, transparent);
+		border-radius: 0.2rem;
+		background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+		padding: 0.3rem 0.75rem;
+		color: var(--record-ink, #111);
+		font-size: 0.67rem;
+		font-weight: 750;
+		text-align: center;
+		transform: translateX(-50%) rotate(-2deg);
+		backdrop-filter: blur(0.5rem);
+	}
+
+	.apps-card__icon {
+		display: grid;
+		width: 4.5rem;
+		height: 4.5rem;
+		place-items: center;
+		border: 2px solid var(--record-ink, #111);
+		border-radius: 50%;
+		background: var(--card-bg);
+		color: var(--record-ink, #111);
+		font-size: 2rem;
+		box-shadow: 0.22rem 0.25rem 0 var(--record-ink, #111);
+	}
+
+	.apps-grid h2 {
+		margin: 0.85rem 0 0;
+		color: var(--record-ink, var(--deep-text));
+		font-size: 1.08rem;
+		text-align: center;
+	}
+
+	.apps-grid p {
+		margin: 0.7rem 0 0;
+		border: 2px solid var(--record-ink, #111);
+		border-radius: 0.25rem;
+		background: var(--card-bg);
+		padding: 0.55rem 0.8rem;
+		color: var(--content-meta);
+		font-size: 0.76rem;
+		line-height: 1.45;
+		text-align: center;
+	}
+
+	.apps-grid > a[hidden] {
+		display: none;
+	}
+
+	@media (max-width: 680px) {
+		.apps-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.apps-grid > a { min-height: 12.5rem; }
+	}
+</style>
+
+<script>
+	function bindAppFilters() {
+		const buttons = Array.from(
+			document.querySelectorAll<HTMLButtonElement>("[data-app-filter]"),
+		);
+		const cards = Array.from(
+			document.querySelectorAll<HTMLElement>("[data-app-card]"),
+		);
+
+		for (const button of buttons) {
+			if (button.dataset.bound === "true") continue;
+			button.dataset.bound = "true";
+			button.addEventListener("click", () => {
+				const filter = button.dataset.appFilter || "全部";
+				for (const item of buttons) {
+					const active = item === button;
+					item.classList.toggle("is-active", active);
+					item.setAttribute("aria-pressed", String(active));
+				}
+				for (const card of cards) {
+					card.hidden =
+						filter !== "全部" && card.dataset.category !== filter;
+				}
+			});
+		}
+	}
+
+	bindAppFilters();
+	document.addEventListener("astro:page-load", bindAppFilters);
+</script>

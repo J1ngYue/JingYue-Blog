@@ -11,8 +11,21 @@ import FloatingButton from "@/components/common/FloatingButton.astro";
   class="hide" 
 />
 
+<style>
+  :global(body.home-landing-active #back-to-top-btn) {
+    display: none !important;
+  }
+</style>
+
 <script is:raw is:inline>
   function backToTop() {
+    if (
+      document.body.classList.contains("home-landing-active") &&
+      typeof window.__fireflyHomeGoToScene === "function"
+    ) {
+      window.__fireflyHomeGoToScene(0);
+      return;
+    }
     // 直接使用原生滚动，避免OverlayScrollbars冲突
     window.scroll({ top: 0, behavior: "smooth" });
   }
