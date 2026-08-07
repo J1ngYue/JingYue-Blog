@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.2",
+		date: "2026-08-08",
+		time: "02:50",
+		type: "feature",
+		title: "留言板社交登录入口",
+		summary: "留言板新增 QQ、微信、Google 与 GitHub 四种登录方式选择。",
+		changes: [
+			"新增统一的账号登录弹层与四渠道品牌图标。",
+			"支持 Waline 原生 GitHub 登录，并为 QQ、微信、Google 接入公开 OAuth 地址配置。",
+			"增加 OAuth 回跳令牌校验与未配置渠道提示。",
+		],
+	},
+	{
 		version: "v6.14.1",
 		date: "2026-07-30",
 		time: "23:40",

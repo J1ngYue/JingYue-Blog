@@ -1380,10 +1380,12 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	border: 1px solid var(--guestbook-link);
 	background: var(--guestbook-link);
 	color: var(--guestbook-bubble-text);
+	transition: transform 160ms ease, opacity 160ms ease;
 }
 
 .guestbook-composer__login:hover:not(:disabled) {
-	opacity: 0.82;
+	opacity: 0.9;
+	transform: translateY(-1px);
 }
 
 .guestbook-composer__login--logout {
@@ -1411,6 +1413,94 @@ html:has(.guestbook-page) #category-bar-wrapper {
 
 .guestbook-profile-modal__panel {
 	max-width: 28rem;
+}
+
+.guestbook-login-modal__panel {
+	max-width: 30rem;
+}
+
+.guestbook-login-modal .privacy-header > div {
+	display: grid;
+	gap: 0.2rem;
+}
+
+.guestbook-login-modal .privacy-header p {
+	margin: 0;
+	color: var(--guestbook-editor-muted);
+	font-size: 0.78rem;
+}
+
+.guestbook-login-modal__providers {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-3);
+}
+
+.guestbook-chat .guestbook-login-provider {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	min-height: 4.5rem;
+	padding: var(--space-3);
+	border: 1px solid var(--guestbook-editor-line);
+	border-radius: var(--radius-medium);
+	background: var(--guestbook-editor-bg);
+	color: var(--guestbook-editor-text);
+	text-align: left;
+	transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.guestbook-login-provider > span {
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+	width: 2.75rem;
+	height: 2.75rem;
+	border: 1px solid var(--guestbook-editor-line);
+	border-radius: 50%;
+	background: var(--guestbook-editor-hover);
+}
+
+.guestbook-login-provider strong {
+	font-size: 0.92rem;
+	font-weight: 750;
+}
+
+.guestbook-login-provider:hover:not(:disabled) {
+	border-color: var(--guestbook-focus);
+	box-shadow: 0 0.6rem 1.4rem rgb(15 23 42 / 0.1);
+	transform: translateY(-2px);
+}
+
+.guestbook-login-modal__error {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	margin: 0;
+	padding: 0 var(--space-4) var(--space-4);
+	color: var(--guestbook-danger);
+	font-size: 0.78rem;
+	line-height: 1.5;
+}
+
+.guestbook-login-provider--qq > span {
+	color: #12b7f5;
+}
+
+.guestbook-login-provider--wechat > span {
+	color: #07c160;
+}
+
+.guestbook-login-provider--google > span {
+	color: #4285f4;
+}
+
+.guestbook-login-provider--github > span {
+	color: #181717;
+}
+
+:root.dark .guestbook-login-provider--github > span {
+	color: #fff;
 }
 
 .guestbook-profile-modal__body {
@@ -1962,6 +2052,16 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	.guestbook-composer__send {
 		padding-right: 0.375rem;
 		padding-left: 0.375rem;
+	}
+}
+
+@media (max-width: 420px) {
+	.guestbook-login-modal__providers {
+		grid-template-columns: 1fr;
+	}
+
+	.guestbook-chat .guestbook-login-provider {
+		min-height: 3.75rem;
 	}
 }
 

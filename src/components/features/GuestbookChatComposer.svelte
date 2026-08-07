@@ -2,12 +2,14 @@
 import {
 	ImagePlus,
 	LoaderCircle,
+	LogIn,
 	Reply,
 	Smile,
 	TriangleAlert,
 	X,
 } from "lucide-svelte";
 import { tick } from "svelte";
+import Icon from "@/components/common/Icon.svelte";
 import { commentConfig } from "@/config/commentConfig";
 import type {
 	GuestbookAuthUser,
@@ -15,6 +17,7 @@ import type {
 	GuestbookEmojiItem,
 	GuestbookEmojiPack,
 	GuestbookImageAttachment,
+	GuestbookLoginProvider,
 	GuestbookProfile,
 } from "@/types/guestbook-chat";
 import {
@@ -30,7 +33,6 @@ interface Props {
 	replyTarget: GuestbookChatMessage | null;
 	composerError: string;
 	isOffline: boolean;
-	localMode: boolean;
 	serviceAvailable: boolean;
 	isSending: boolean;
 	loggingIn: boolean;
@@ -38,7 +40,7 @@ interface Props {
 	onProfileChange: (profile: GuestbookProfile) => void;
 	onDraftChange: (draft: string) => void;
 	onReplyCancel: () => void;
-	onLogin: () => void;
+	onLogin: (provider: GuestbookLoginProvider) => Promise<boolean>;
 	onLogout: () => void;
 	onSend: (
 		content: string,
@@ -54,7 +56,6 @@ let {
 	replyTarget,
 	composerError,
 	isOffline,
-	localMode,
 	serviceAvailable,
 	isSending,
 	loggingIn,
@@ -89,8 +90,10 @@ let emojiTrigger = $state<HTMLButtonElement | null>(null);
 let emojiPanel = $state<HTMLDivElement | null>(null);
 let imageInput = $state<HTMLInputElement | null>(null);
 let profileDialog = $state<HTMLDialogElement | null>(null);
+let loginDialog = $state<HTMLDialogElement | null>(null);
 let profileNickInput = $state<HTMLInputElement | null>(null);
 let showEmojiPicker = $state(false);
+let loginDialogOpen = $state(false);
 let isComposing = $state(false);
 let isLoadingEmojis = $state(false);
 let isUploadingImage = $state(false);
@@ -132,6 +135,28 @@ function closeGuestProfile() {
 	if (profileDialog?.open) profileDialog.close();
 	profileDialogError = "";
 	document.body.style.overflow = "";
+}
+
+async function openLoginDialog() {
+	onToolError("");
+	if (!loginDialog?.open) loginDialog?.showModal();
+	loginDialogOpen = true;
+	document.body.style.overflow = "hidden";
+	await tick();
+	loginDialog
+		?.querySelector<HTMLButtonElement>(".guestbook-login-provider")
+		?.focus();
+}
+
+function closeLoginDialog() {
+	if (loginDialog?.open) loginDialog.close();
+	loginDialogOpen = false;
+	document.body.style.overflow = "";
+}
+
+async function selectLoginProvider(provider: GuestbookLoginProvider) {
+	const accepted = await onLogin(provider);
+	if (accepted) closeLoginDialog();
 }
 
 function validateGuestProfile(nextProfile: GuestbookProfile): string {
@@ -590,7 +615,7 @@ async function handleImageSelection(event: Event) {
 						游客访问
 					</button>
 				{/if}
-				{#if loginMode !== "disable" && !localMode}
+				{#if loginMode !== "disable"}
 					{#if authUser}
 						<button
 							class="guestbook-composer__login guestbook-composer__login--logout"
@@ -604,9 +629,10 @@ async function handleImageSelection(event: Event) {
 						<button
 							class="guestbook-composer__login"
 							type="button"
-							onclick={onLogin}
+							onclick={() => void openLoginDialog()}
 							disabled={loggingIn}
 						>
+							<LogIn size={15} aria-hidden="true" />
 							{loggingIn ? "登录中" : "登录"}
 						</button>
 					{/if}
@@ -673,7 +699,7 @@ async function handleImageSelection(event: Event) {
 		{/if}
 	</div>
 
-	{#if composerError}
+	{#if composerError && !loginDialogOpen}
 		<div class="guestbook-composer__error" role="alert">
 			<TriangleAlert size={16} aria-hidden="true" />
 			<span>{composerError}</span>
@@ -764,4 +790,80 @@ async function handleImageSelection(event: Event) {
 			<button class="privacy-confirm-btn" type="submit">保存资料</button>
 		</div>
 	</form>
+</dialog>
+
+<dialog
+	bind:this={loginDialog}
+	class="privacy-modal guestbook-login-modal"
+	aria-labelledby="guestbook-login-title"
+	onclose={() => {
+		loginDialogOpen = false;
+		document.body.style.overflow = "";
+	}}
+	oncancel={(event) => {
+		event.preventDefault();
+		closeLoginDialog();
+	}}
+>
+	<div class="privacy-overlay" onclick={closeLoginDialog}></div>
+	<div class="privacy-panel guestbook-login-modal__panel">
+		<div class="privacy-header">
+			<div>
+				<h2 id="guestbook-login-title" class="privacy-title">账号登录</h2>
+				<p>选择登录方式</p>
+			</div>
+			<button
+				class="privacy-close"
+				type="button"
+				onclick={closeLoginDialog}
+				aria-label="关闭登录"
+			>
+				<X size={20} aria-hidden="true" />
+			</button>
+		</div>
+		<div class="privacy-body guestbook-login-modal__providers">
+			<button
+				class="guestbook-login-provider guestbook-login-provider--qq"
+				type="button"
+				onclick={() => void selectLoginProvider("qq")}
+				disabled={loggingIn}
+			>
+				<span><Icon icon="simple-icons:tencentqq" size="xl" /></span>
+				<strong>QQ</strong>
+			</button>
+			<button
+				class="guestbook-login-provider guestbook-login-provider--wechat"
+				type="button"
+				onclick={() => void selectLoginProvider("wechat")}
+				disabled={loggingIn}
+			>
+				<span><Icon icon="simple-icons:wechat" size="xl" /></span>
+				<strong>微信</strong>
+			</button>
+			<button
+				class="guestbook-login-provider guestbook-login-provider--google"
+				type="button"
+				onclick={() => void selectLoginProvider("google")}
+				disabled={loggingIn}
+			>
+				<span><Icon icon="simple-icons:google" size="xl" /></span>
+				<strong>Google</strong>
+			</button>
+			<button
+				class="guestbook-login-provider guestbook-login-provider--github"
+				type="button"
+				onclick={() => void selectLoginProvider("github")}
+				disabled={loggingIn}
+			>
+				<span><Icon icon="simple-icons:github" size="xl" /></span>
+				<strong>GitHub</strong>
+			</button>
+		</div>
+		{#if composerError}
+			<p class="guestbook-login-modal__error" role="alert">
+				<TriangleAlert size={16} aria-hidden="true" />
+				<span>{composerError}</span>
+			</p>
+		{/if}
+	</div>
 </dialog>

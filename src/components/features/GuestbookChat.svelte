@@ -26,6 +26,7 @@ import type { GuestbookAnnouncementItem } from "@/types/config";
 import type {
 	GuestbookAuthUser,
 	GuestbookImageAttachment,
+	GuestbookLoginProvider,
 	GuestbookChatMessage as GuestbookMessage,
 	GuestbookProfile,
 } from "@/types/guestbook-chat";
@@ -59,6 +60,7 @@ const localMode = !serverURL;
 const serviceAvailable = true;
 const lang = commentConfig.waline?.lang ?? "zh-CN";
 const loginMode = commentConfig.waline?.login ?? "enable";
+const oauthProviders = commentConfig.waline?.oauthProviders ?? {};
 const announcements = guestbookConfig.announcements;
 
 type ChatMember = {
@@ -1002,11 +1004,41 @@ async function confirmDeleteMessage() {
 	}
 }
 
-async function handleLogin() {
-	if (loggingIn) return;
+function buildOAuthLoginURL(provider: GuestbookLoginProvider): string {
+	const configuredURL = oauthProviders[provider]?.trim();
+	if (!configuredURL) return "";
+
+	const loginURL = new URL(configuredURL, window.location.href);
+	if (!loginURL.searchParams.has("redirect")) {
+		const returnURL = new URL(window.location.href);
+		returnURL.searchParams.delete("token");
+		loginURL.searchParams.set("redirect", returnURL.toString());
+	}
+	return loginURL.toString();
+}
+
+async function handleLogin(provider: GuestbookLoginProvider): Promise<boolean> {
+	if (loggingIn) return false;
+	let externalLoginURL = "";
+	try {
+		externalLoginURL = buildOAuthLoginURL(provider);
+	} catch {
+		composerError = "登录地址配置无效，请检查 OAuth URL";
+		return false;
+	}
+	if (externalLoginURL) {
+		window.location.assign(externalLoginURL);
+		return true;
+	}
+	if (provider !== "github") {
+		const providerName =
+			provider === "qq" ? "QQ" : provider === "wechat" ? "微信" : "Google";
+		composerError = `${providerName} 登录尚未配置`;
+		return false;
+	}
 	if (!serverURL) {
-		composerError = "Waline 服务地址未配置，暂时无法登录";
-		return;
+		composerError = "GitHub 登录需要先配置 PUBLIC_WALINE_SERVER_URL";
+		return false;
 	}
 	loggingIn = true;
 	composerError = "";
@@ -1017,11 +1049,13 @@ async function handleLogin() {
 		authUser = user;
 		persistAuthentication(user);
 		await loadInitial();
+		return true;
 	} catch (error) {
 		composerError =
 			error instanceof Error && error.message
 				? error.message
 				: "登录失败，请稍后重试";
+		return false;
 	} finally {
 		loggingIn = false;
 	}
@@ -1285,14 +1319,13 @@ onMount(() => {
 					{replyTarget}
 					{composerError}
 					{isOffline}
-					{localMode}
 					{isSending}
 					{loggingIn}
 					{loginMode}
 					onProfileChange={handleProfileChange}
 					onDraftChange={handleDraftChange}
 					onReplyCancel={() => (replyTarget = null)}
-					onLogin={() => void handleLogin()}
+					onLogin={handleLogin}
 					onLogout={handleLogout}
 				onSend={(content, attachment) =>
 					sendMessage(undefined, attachment, content)}

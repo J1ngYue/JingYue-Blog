@@ -2,6 +2,8 @@ import type { UserInfo } from "@waline/api";
 
 export type GuestbookMessageLocalState = "sending" | "failed";
 
+export type GuestbookLoginProvider = "qq" | "wechat" | "google" | "github";
+
 export type GuestbookAuthUser = UserInfo & {
 	remember?: boolean;
 };

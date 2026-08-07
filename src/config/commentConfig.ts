@@ -1,6 +1,12 @@
 import type { CommentConfig } from "../types/commentConfig";
 
 const walineServerURL = import.meta.env.PUBLIC_WALINE_SERVER_URL?.trim() || "";
+const walineOAuthProviders = {
+	qq: import.meta.env.PUBLIC_WALINE_OAUTH_QQ_URL?.trim() || "",
+	wechat: import.meta.env.PUBLIC_WALINE_OAUTH_WECHAT_URL?.trim() || "",
+	google: import.meta.env.PUBLIC_WALINE_OAUTH_GOOGLE_URL?.trim() || "",
+	github: import.meta.env.PUBLIC_WALINE_OAUTH_GITHUB_URL?.trim() || "",
+};
 
 export const commentConfig: CommentConfig = {
 	// 评论系统类型: none, twikoo, waline, giscus, disqus, artalk，默认为none，即不启用评论系统
@@ -39,6 +45,8 @@ export const commentConfig: CommentConfig = {
 		//   'force'    —— 强制必须登录后才能评论，适合严格社区，关闭匿名评论。
 		//   'disable'  —— 禁止所有登录和 OAuth，仅允许匿名评论（填写昵称/邮箱），适用于极简留言。
 		login: "enable",
+		// 四种社交登录入口。URL 由对应 OAuth 服务返回本站并携带 Waline token。
+		oauthProviders: walineOAuthProviders,
 		// 是否启用文章访问量统计功能
 		visitorCount: true,
 	},
