@@ -8,6 +8,9 @@ import {
 	setDarkModeSpotlightSettings,
 } from "@/utils/dark-mode-spotlight";
 
+const COLOR_PRESETS = ["#ffb36b", "#ffd9a3", "#8fdcff", "#c79cff", "#ff7a9e"];
+type PointerCoordinates = Pick<MouseEvent, "clientX" | "clientY">;
+
 let layer: HTMLDivElement;
 let canvas: HTMLCanvasElement;
 let settings = $state<DarkModeSpotlightSettings>(
@@ -76,6 +79,7 @@ onMount(() => {
 	let beamLength = 3.8;
 	let beamRadius = 1.4;
 	let pulling = false;
+	let pointerTracking = false;
 	let pullPointerId = -1;
 	let pullStrength = 0;
 	let lastPointerTime = 0;
@@ -275,11 +279,11 @@ onMount(() => {
 			Math.tan(THREE.MathUtils.degToRad(next.angle * 0.5)) * beamLength;
 		softBeamMaterial.uniforms.uColor.value.copy(color);
 		softBeamMaterial.uniforms.uOpacity.value = enabled
-			? 0.16 + next.range / 800
+			? 0.18 + next.range / 650
 			: 0;
 		beam.scale.set(Math.max(0.12, beamRadius * 2), beamLength, 1);
 		poolMaterial.color.copy(color);
-		poolMaterial.opacity = enabled ? 0.22 + next.range / 300 : 0;
+		poolMaterial.opacity = enabled ? 0.28 + next.range / 260 : 0;
 		pool.scale.setScalar(Math.max(1.3, beamRadius * 1.35));
 		glowMaterial.color.copy(color);
 		glowMaterial.opacity = enabled ? 0.52 + next.range / 420 : 0;
@@ -291,6 +295,11 @@ onMount(() => {
 			? 0.64 + next.range / 220
 			: 0.03;
 		layer.style.setProperty("--spotlight-color", next.color);
+		layer.style.setProperty("--spotlight-range", `${next.range}`);
+		layer.style.setProperty(
+			"--spotlight-pool",
+			`${22 + (next.range - 40) * 0.42}vmax`,
+		);
 		wake();
 	}
 
@@ -311,7 +320,7 @@ onMount(() => {
 		renderer.setSize(width, height, false);
 		anchor.set(0, halfHeight + 0.58, 0.8);
 		ceilingCap.position.copy(anchor).add(new THREE.Vector3(0, 0.06, 0));
-		if (!pulling) {
+		if (!pulling && !pointerTracking) {
 			position.copy(anchor).addScaledVector(DOWN, ropeLength);
 			previous.copy(position);
 		}
@@ -326,9 +335,11 @@ onMount(() => {
 		cableQuaternion.setFromUnitVectors(UP, ropeDirection);
 		cable.quaternion.copy(cableQuaternion);
 
-		if (pulling) {
+		if (pulling || pointerTracking) {
 			lightDirection.copy(aimTarget).sub(position).normalize();
-			currentLightDirection.lerp(lightDirection, 0.3).normalize();
+			currentLightDirection
+				.lerp(lightDirection, pulling ? 0.3 : 0.2)
+				.normalize();
 		} else {
 			lightDirection.copy(DOWN);
 			currentLightDirection.lerp(lightDirection, 0.14).normalize();
@@ -346,15 +357,17 @@ onMount(() => {
 		beam.quaternion.copy(beamQuaternion);
 		beamEnd.copy(beamStart).addScaledVector(beamDirection, beamLength * 0.9);
 		pool.position.copy(beamEnd);
-		projection.copy(beamEnd).project(camera);
-		layer.style.setProperty(
-			"--spotlight-x",
-			`${((projection.x + 1) / 2) * 100}%`,
-		);
-		layer.style.setProperty(
-			"--spotlight-y",
-			`${((1 - projection.y) / 2) * 100}%`,
-		);
+		if (!pointerTracking) {
+			projection.copy(beamEnd).project(camera);
+			layer.style.setProperty(
+				"--spotlight-x",
+				`${((projection.x + 1) / 2) * 100}%`,
+			);
+			layer.style.setProperty(
+				"--spotlight-y",
+				`${((1 - projection.y) / 2) * 100}%`,
+			);
+		}
 	}
 
 	function stepPhysics() {
@@ -365,22 +378,28 @@ onMount(() => {
 		previous.copy(position);
 		position.add(velocity).addScaledVector(gravity, fixedStep * fixedStep);
 
-		if (pulling) {
+		if (pulling || pointerTracking) {
+			const trackingStrength = pulling
+				? pullStrength
+				: Math.max(0.18, pullStrength * 0.56);
 			tempB.copy(aimTarget).sub(anchor).normalize();
-			tempB.lerp(DOWN, 1 - pullStrength * 0.82).normalize();
+			tempB
+				.lerp(DOWN, 1 - trackingStrength * (pulling ? 0.82 : 0.54))
+				.normalize();
 			tempC.copy(tempB).multiplyScalar(ropeLength).add(anchor).sub(position);
 			ropeDirection.copy(position).sub(anchor).normalize();
 			tempC.addScaledVector(ropeDirection, -tempC.dot(ropeDirection));
-			position.addScaledVector(tempC, 52 * fixedStep * fixedStep);
+			position.addScaledVector(
+				tempC,
+				(pulling ? 52 : 28) * fixedStep * fixedStep,
+			);
 		}
 
 		temp.copy(position).sub(anchor);
 		if (temp.lengthSq() < 1e-8) temp.copy(DOWN);
 		temp.normalize().multiplyScalar(ropeLength);
 		position.copy(anchor).add(temp);
-		if (pulling) stableFrames = 0;
-		else if (position.distanceToSquared(previous) < 0.000000014)
-			stableFrames += 1;
+		if (position.distanceToSquared(previous) < 0.000000014) stableFrames += 1;
 		else stableFrames = 0;
 	}
 
@@ -409,11 +428,23 @@ onMount(() => {
 		}
 	}
 
-	function updatePointerTarget(event: PointerEvent) {
+	function updatePointerTarget(event: PointerCoordinates) {
 		const rect = layer.getBoundingClientRect();
-		const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-		const ny = 1 - ((event.clientY - rect.top) / rect.height) * 2;
+		const pointerX = THREE.MathUtils.clamp(
+			((event.clientX - rect.left) / rect.width) * 100,
+			0,
+			100,
+		);
+		const pointerY = THREE.MathUtils.clamp(
+			((event.clientY - rect.top) / rect.height) * 100,
+			0,
+			100,
+		);
+		const nx = pointerX / 50 - 1;
+		const ny = 1 - pointerY / 50;
 		aimTarget.set(nx * halfWidth, ny * halfHeight, 0.8);
+		layer.style.setProperty("--spotlight-x", `${pointerX}%`);
+		layer.style.setProperty("--spotlight-y", `${pointerY}%`);
 		const projected = projection.copy(position).project(camera);
 		const distanceX = (nx - projected.x) * 0.75;
 		const distanceY = ny - projected.y;
@@ -424,7 +455,7 @@ onMount(() => {
 		);
 	}
 
-	function pointerNearLamp(event: PointerEvent) {
+	function pointerNearLamp(event: PointerCoordinates) {
 		const rect = layer.getBoundingClientRect();
 		projection.copy(position).project(camera);
 		const x = rect.left + ((projection.x + 1) / 2) * rect.width;
@@ -434,13 +465,18 @@ onMount(() => {
 
 	function onPointerDown(event: PointerEvent) {
 		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
+		updatePointerTarget(event);
+		pointerTracking = true;
 		if (event.button === 2 && pointerNearLamp(event)) {
-			const nextColor = event.shiftKey ? "#8fdcff" : "#c79cff";
+			const currentColor = settings.color.toLowerCase();
+			const currentIndex = COLOR_PRESETS.indexOf(currentColor);
+			const nextColor =
+				COLOR_PRESETS[(currentIndex + 1) % COLOR_PRESETS.length];
 			setDarkModeSpotlightSettings({ color: nextColor });
+			wake();
 			return;
 		}
 		if (event.button !== 0 || !pointerNearLamp(event)) return;
-		updatePointerTarget(event);
 		pulling = true;
 		pullPointerId = event.pointerId;
 		lastPointerTime = performance.now();
@@ -450,8 +486,13 @@ onMount(() => {
 	}
 
 	function onPointerMove(event: PointerEvent) {
-		if (!pulling || event.pointerId !== pullPointerId) return;
+		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
 		updatePointerTarget(event);
+		pointerTracking = true;
+		if (!pulling || event.pointerId !== pullPointerId) {
+			wake();
+			return;
+		}
 		const now = performance.now();
 		const elapsed = Math.max(
 			0.008,
@@ -491,6 +532,7 @@ onMount(() => {
 
 	function resetMotion() {
 		pulling = false;
+		pointerTracking = false;
 		pullPointerId = -1;
 		pullStrength = 0;
 		position.copy(anchor).addScaledVector(DOWN, ropeLength);
@@ -501,6 +543,7 @@ onMount(() => {
 
 	function syncTheme() {
 		isDark = document.documentElement.classList.contains("dark");
+		if (!isDark) pointerTracking = false;
 		applySettings(settings);
 		if (!isDark) renderer.clear();
 	}
@@ -513,11 +556,32 @@ onMount(() => {
 	}
 
 	function onDoubleClick(event: MouseEvent) {
-		if (pointerNearLamp(event as PointerEvent)) resetMotion();
+		if (pointerNearLamp(event)) resetMotion();
 	}
 
 	function onContextMenu(event: MouseEvent) {
-		if (pointerNearLamp(event as PointerEvent)) event.preventDefault();
+		if (pointerNearLamp(event)) event.preventDefault();
+	}
+
+	function onWheel(event: WheelEvent) {
+		if (!isDark || !settings.enabled || !pointerNearLamp(event)) return;
+		if (event.cancelable) event.preventDefault();
+		const range = THREE.MathUtils.clamp(
+			settings.range + (event.deltaY < 0 ? 4 : -4),
+			40,
+			100,
+		);
+		if (range !== settings.range) {
+			setDarkModeSpotlightSettings({ range });
+		}
+	}
+
+	function onWindowBlur() {
+		pointerTracking = false;
+		pulling = false;
+		pullPointerId = -1;
+		pullStrength = 0;
+		wake();
 	}
 
 	const observer = new MutationObserver(syncTheme);
@@ -533,6 +597,8 @@ onMount(() => {
 	window.addEventListener("resize", resize, { passive: true });
 	window.addEventListener("dblclick", onDoubleClick);
 	window.addEventListener("contextmenu", onContextMenu);
+	window.addEventListener("wheel", onWheel, { passive: false });
+	window.addEventListener("blur", onWindowBlur);
 
 	resize();
 	syncTheme();
@@ -551,6 +617,8 @@ onMount(() => {
 		window.removeEventListener("resize", resize);
 		window.removeEventListener("dblclick", onDoubleClick);
 		window.removeEventListener("contextmenu", onContextMenu);
+		window.removeEventListener("wheel", onWheel);
+		window.removeEventListener("blur", onWindowBlur);
 		renderer.dispose();
 		scene.traverse((object) => {
 			if (object instanceof THREE.Mesh) {
@@ -573,7 +641,6 @@ onMount(() => {
 	bind:this={layer}
 	class="dark-mode-spotlight"
 	class:is-disabled={!isDark || !settings.enabled}
-	style={`--spotlight-color: ${settings.color}; --spotlight-range: ${settings.range};`}
 	aria-hidden="true"
 >
 	<canvas bind:this={canvas} class="dark-mode-spotlight__canvas"></canvas>
@@ -583,8 +650,11 @@ onMount(() => {
 
 <style>
 	.dark-mode-spotlight {
+		--spotlight-color: #ffb36b;
+		--spotlight-range: 76;
 		--spotlight-x: 50%;
 		--spotlight-y: 48%;
+		--spotlight-pool: 37vmax;
 		position: fixed;
 		inset: 0;
 		z-index: 6;
@@ -615,38 +685,45 @@ onMount(() => {
 
 	.dark-mode-spotlight__wash {
 		z-index: 2;
-		background:
-			radial-gradient(
-				ellipse at 50% 84%,
-				color-mix(in srgb, var(--spotlight-color) 18%, transparent),
-				transparent calc(27% + (100 - var(--spotlight-range)) * 0.08%)
-			),
-			radial-gradient(
-				ellipse at var(--spotlight-x) var(--spotlight-y),
-				color-mix(in srgb, var(--spotlight-color) 24%, transparent) 0%,
-				color-mix(in srgb, var(--spotlight-color) 10%, transparent) 28%,
-				transparent 66%
-			);
-		filter: blur(1.5rem);
+		background: radial-gradient(
+			circle var(--spotlight-pool) at var(--spotlight-x) var(--spotlight-y),
+			color-mix(in srgb, var(--spotlight-color) 42%, transparent) 0%,
+			color-mix(in srgb, var(--spotlight-color) 27%, transparent) 24%,
+			color-mix(in srgb, var(--spotlight-color) 10%, transparent) 54%,
+			transparent 100%
+		);
+		filter: blur(1.1rem);
 		mix-blend-mode: screen;
-		opacity: 0.9;
+		opacity: 1;
 		transition: background 260ms ease;
 	}
 
 	.dark-mode-spotlight__vignette {
 		z-index: 1;
-		background: rgb(0 0 0 / 72%);
+		background: radial-gradient(
+			circle var(--spotlight-pool) at var(--spotlight-x) var(--spotlight-y),
+			rgb(0 0 0 / 24%) 0%,
+			rgb(0 0 0 / 47%) 40%,
+			rgb(0 0 0 / 78%) 78%,
+			rgb(0 0 0 / 84%) 100%
+		);
 		mix-blend-mode: normal;
 		opacity: 1;
 	}
 
 	@media (max-width: 700px) {
 		.dark-mode-spotlight__wash {
-			opacity: 0.72;
+			opacity: 0.84;
 		}
 
 		.dark-mode-spotlight__vignette {
-			background: rgb(0 0 0 / 64%);
+			background: radial-gradient(
+				circle var(--spotlight-pool) at var(--spotlight-x) var(--spotlight-y),
+				rgb(0 0 0 / 18%) 0%,
+				rgb(0 0 0 / 39%) 40%,
+				rgb(0 0 0 / 68%) 78%,
+				rgb(0 0 0 / 74%) 100%
+			);
 		}
 	}
 
