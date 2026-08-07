@@ -776,6 +776,19 @@ function adjustMainContentPosition(
 		return;
 	}
 
+	const customContentTop = mainContent.dataset.contentTop;
+	if (customContentTop) {
+		mainContent.classList.add("no-banner-layout");
+		mainContent.classList.remove("mobile-main-no-banner");
+		mainContent.style.position = "";
+		mainContent.style.zIndex = "";
+		mainContent.style.setProperty("top", customContentTop, "important");
+		mainContent.style.setProperty("margin-top", "0", "important");
+		mainContent.style.visibility = "visible";
+		document.body.classList.add("wallpaper-initialized");
+		return;
+	}
+
 	// 移除现有的位置类
 	mainContent.classList.remove("mobile-main-no-banner", "no-banner-layout");
 

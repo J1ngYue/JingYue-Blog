@@ -182,12 +182,12 @@ function formatPostDate(date: Date): string {
 					<ol data-bilibili-hot-list>
 						{bilibiliHot.map((item, index) => (
 							<li>
-								<span>{index + 1}</span>
+								<span class="archive-ranking__rank">{index + 1}</span>
 								<a href={getBilibiliSearchUrl(item.keyword)} target="_blank" rel="noopener noreferrer">
-									<strong>{item.showName}</strong>
-									<small>{formatBilibiliHeat(item.heatScore)}</small>
+									<strong class="archive-ranking__name">{item.showName}</strong>
+									<small class="archive-ranking__heat">{formatBilibiliHeat(item.heatScore)}</small>
 								</a>
-								<i aria-hidden="true">{getBilibiliHotTag(item.wordType)}</i>
+								<i class="archive-ranking__tag" aria-hidden="true">{getBilibiliHotTag(item.wordType)}</i>
 							</li>
 						))}
 					</ol>
@@ -347,17 +347,21 @@ function formatPostDate(date: Date): string {
 								: keyword;
 						const li = document.createElement("li");
 						const rank = document.createElement("span");
+						rank.className = "archive-ranking__rank";
 						rank.textContent = String(index + 1);
 						const link = document.createElement("a");
 						link.href = `https://search.bilibili.com/all?keyword=${encodeURIComponent(keyword)}`;
 						link.target = "_blank";
 						link.rel = "noopener noreferrer";
 						const title = document.createElement("strong");
+						title.className = "archive-ranking__name";
 						title.textContent = showName;
 						const meta = document.createElement("small");
+						meta.className = "archive-ranking__heat";
 						meta.textContent = formatHeat(item.heatScore);
 						link.append(title, meta);
 						const tag = document.createElement("i");
+						tag.className = "archive-ranking__tag";
 						tag.setAttribute("aria-hidden", "true");
 						tag.textContent = formatTag(item.wordType);
 						li.append(rank, link, tag);
@@ -820,10 +824,11 @@ function formatPostDate(date: Date): string {
 
 	.archive-ranking li {
 		display: grid;
-		grid-template-columns: 1.25rem minmax(0, 1fr) 2.2rem;
-		align-items: center;
-		gap: 0.4rem;
-		min-height: 3.1rem;
+		grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+		align-items: start;
+		gap: 0.55rem;
+		min-height: 4rem;
+		padding: 0.55rem 0;
 		border-bottom: 1px solid var(--line-divider);
 	}
 
@@ -831,47 +836,60 @@ function formatPostDate(date: Date): string {
 		border-bottom: 0;
 	}
 
-	.archive-ranking li > span {
+	.archive-ranking__rank {
+		display: grid;
+		place-items: center;
+		min-height: 2rem;
 		color: var(--content-meta);
-		font-size: 0.75rem;
+		font-size: 0.78rem;
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
 		text-align: center;
 	}
 
-	.archive-ranking li:nth-child(-n + 3) > span {
+	.archive-ranking li:nth-child(-n + 3) .archive-ranking__rank {
 		color: #ff4266;
 		font-weight: 800;
 	}
 
 	.archive-ranking li a {
 		display: grid;
+		grid-template-rows: auto auto;
+		gap: 0.3rem;
 		min-width: 0;
 		color: inherit;
 	}
 
-	.archive-ranking li a strong {
+	.archive-ranking__name {
+		display: -webkit-box;
 		overflow: hidden;
-		font-size: 0.72rem;
-		font-weight: 600;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		color: var(--deep-text);
+		font-size: 0.86rem;
+		font-weight: 700;
+		line-height: 1.45;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
 	}
 
-	.archive-ranking li a small {
+	.archive-ranking__heat {
 		color: var(--content-meta);
-		font-size: 0.62rem;
+		font-size: 0.69rem;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.25;
 	}
 
-	.archive-ranking li > i {
+	.archive-ranking__tag {
 		display: grid;
-		width: 2.1rem;
-		height: 1.8rem;
+		place-self: center end;
+		width: 1.7rem;
+		height: 1.7rem;
 		place-items: center;
-		border-radius: 0.3rem;
+		border-radius: var(--radius-full);
 		background:
 			linear-gradient(145deg, color-mix(in srgb, var(--primary) 20%, white), transparent),
 			var(--btn-regular-bg);
 		color: var(--primary);
-		font-size: 0.75rem;
+		font-size: 0.68rem;
 		font-style: normal;
 		font-weight: 800;
 	}
@@ -1003,5 +1021,86 @@ function formatPostDate(date: Date): string {
 		.archive-weather header button[aria-busy="true"] :global(svg) {
 			animation: none;
 		}
+	}
+</style>
+
+<style is:global>
+	/* 热搜条目由客户端刷新脚本创建，不能依赖 Astro 的作用域属性。 */
+	.archive-ranking ol {
+		margin: 0.55rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.archive-ranking li {
+		display: grid;
+		grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+		align-items: start;
+		gap: 0.55rem;
+		min-height: 4rem;
+		padding: 0.55rem 0;
+		border-bottom: 1px solid var(--line-divider);
+	}
+
+	.archive-ranking li:last-child {
+		border-bottom: 0;
+	}
+
+	.archive-ranking__rank {
+		display: grid;
+		place-items: center;
+		min-height: 2rem;
+		color: var(--content-meta);
+		font-size: 0.78rem;
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
+		text-align: center;
+	}
+
+	.archive-ranking li:nth-child(-n + 3) .archive-ranking__rank {
+		color: #ff4266;
+		font-weight: 800;
+	}
+
+	.archive-ranking li a {
+		display: grid;
+		grid-template-rows: auto auto;
+		gap: 0.3rem;
+		min-width: 0;
+		color: inherit;
+	}
+
+	.archive-ranking__name {
+		display: -webkit-box;
+		overflow: hidden;
+		color: var(--deep-text);
+		font-size: 0.86rem;
+		font-weight: 700;
+		line-height: 1.45;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	.archive-ranking__heat {
+		color: var(--content-meta);
+		font-size: 0.69rem;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.25;
+	}
+
+	.archive-ranking__tag {
+		display: grid;
+		place-self: center end;
+		width: 1.7rem;
+		height: 1.7rem;
+		place-items: center;
+		border-radius: var(--radius-full);
+		background:
+			linear-gradient(145deg, color-mix(in srgb, var(--primary) 20%, white), transparent),
+			var(--btn-regular-bg);
+		color: var(--primary);
+		font-size: 0.68rem;
+		font-style: normal;
+		font-weight: 800;
 	}
 </style>

@@ -579,6 +579,7 @@ const siteLang = lang.replace("_", "-");
             // 初始化期间禁用过渡动画，防止内容位置跳动
             mainContentWrapper.style.setProperty("transition", "none", "important");
             const isMobile = window.innerWidth < 1024;
+			const customContentTop = mainContentWrapper.dataset.contentTop;
             // 只在移动端非首页时调整主内容位置
             if (isMobile && !isHomePage) {
               mainContentWrapper.classList.add("mobile-main-no-banner");
@@ -587,7 +588,14 @@ const siteLang = lang.replace("_", "-");
             }
             // 全屏壁纸模式：用 relative 定位让内容紧跟壁纸（移动端非首页除外，壁纸已隐藏）
             const isMobileNonHome = window.innerWidth < 1024 && !isHomePage;
-            if (isImmersiveHomeLanding) {
+            if (customContentTop) {
+			  mainContentWrapper.classList.remove("mobile-main-no-banner");
+			  mainContentWrapper.classList.add("no-banner-layout");
+			  mainContentWrapper.style.position = "";
+			  mainContentWrapper.style.zIndex = "";
+			  mainContentWrapper.style.setProperty("top", customContentTop, "important");
+			  mainContentWrapper.style.setProperty("margin-top", "0", "important");
+            } else if (isImmersiveHomeLanding) {
               mainContentWrapper.classList.remove("mobile-main-no-banner");
               mainContentWrapper.classList.add("no-banner-layout");
               mainContentWrapper.style.position = "relative";
@@ -1838,14 +1846,19 @@ function disableAnimation() {
         }
       }
       if (mainContent) {
+        const customContentTop = mainContent.dataset.contentTop;
         mainContent.classList.remove("mobile-main-no-banner");
-        mainContent.classList.toggle("no-banner-layout", currentMode !== "banner");
+        mainContent.classList.toggle(
+          "no-banner-layout",
+          currentMode !== "banner" || Boolean(customContentTop),
+        );
         mainContent.style.zIndex = "30";
         mainContent.style.setProperty(
           "top",
-          currentMode === "banner"
+          customContentTop ??
+            (currentMode === "banner"
             ? "calc(var(--banner-height) - 3.5rem)"
-            : "5.5rem",
+            : "5.5rem"),
           "important",
         );
         mainContent.style.setProperty("margin-top", "0", "important");

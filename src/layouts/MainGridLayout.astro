@@ -59,6 +59,7 @@ interface Props {
 	articleHub?: boolean;
 	contentOnly?: boolean;
 	plainContent?: boolean;
+	contentTop?: string;
 	sidebarExcludes?: WidgetComponentType[];
 	bannerTitle?: string;
 	bannerPostMeta?: {
@@ -86,6 +87,7 @@ const {
 	articleHub = false,
 	contentOnly = !homeLanding,
 	plainContent = false,
+	contentTop,
 	sidebarExcludes = [],
 	bannerTitle,
 	bannerPostMeta,
@@ -181,6 +183,15 @@ const mainPanelTop =
 // 非首页在小于1024px时会通过 mobile-main-no-banner CSS类覆盖top值为5.5rem
 const finalMainPanelTop =
 	isBannerMode && isBackgroundEnabled ? mainPanelTop : "5.5rem";
+const resolvedContentTop =
+	contentTop ??
+	(contentOnly && isBackgroundEnabled && isBannerMode
+		? "calc(var(--banner-height) - 3.5rem)"
+		: contentOnly && isBackgroundEnabled && isFullscreenMode
+			? "calc(100dvh - 3.5rem)"
+			: isFullscreenMode
+				? "0"
+				: finalMainPanelTop);
 
 // 获取响应式侧边栏配置
 const sidebarConfig = getResponsiveSidebarConfig();
@@ -830,7 +841,7 @@ const hasMultipleImages =
 )}
 
 <!-- Main content -->
-<div id="main-content-wrapper" class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={homeLanding ? 'top: 0;' : `top: ${contentOnly && isBackgroundEnabled && isBannerMode ? 'calc(var(--banner-height) - 3.5rem)' : contentOnly && isBackgroundEnabled && isFullscreenMode ? 'calc(100dvh - 3.5rem)' : (isFullscreenMode ? '0' : finalMainPanelTop)}`}>
+<div id="main-content-wrapper" data-content-top={contentTop} class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={homeLanding ? 'top: 0;' : `top: ${resolvedContentTop}`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
     <div id="main-layout-container" class:list={[
         "relative w-full mx-auto pointer-events-auto",
@@ -1187,7 +1198,7 @@ const hasMultipleImages =
     margin-top: 0 !important;
   }
 
-  html[data-wallpaper-mode="banner"] body.plain-content-active #main-content-wrapper {
+  html[data-wallpaper-mode="banner"] body.plain-content-active #main-content-wrapper:not([data-content-top]) {
     top: calc(var(--banner-height) - 3.5rem) !important;
   }
 
@@ -1223,7 +1234,7 @@ const hasMultipleImages =
       height: 100% !important;
     }
 
-    body.content-only-active.enable-banner #main-content-wrapper {
+    body.content-only-active.enable-banner #main-content-wrapper:not([data-content-top]) {
       top: calc(var(--banner-height) - 3.5rem) !important;
     }
 
@@ -1277,7 +1288,7 @@ const hasMultipleImages =
       height: 100% !important;
     }
 
-    html[data-wallpaper-mode="fullscreen"] body.content-only-active #main-content-wrapper {
+    html[data-wallpaper-mode="fullscreen"] body.content-only-active #main-content-wrapper:not([data-content-top]) {
       top: calc(100dvh - 3.5rem) !important;
     }
 

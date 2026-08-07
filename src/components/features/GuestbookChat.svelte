@@ -13,12 +13,15 @@ import {
 	LoaderCircle,
 	RefreshCw,
 	RotateCcw,
+	Users,
 	WifiOff,
 	X,
 } from "lucide-svelte";
 import { onMount, tick } from "svelte";
+import profileAvatar from "@/assets/images/avatar.avif";
 import { commentConfig } from "@/config/commentConfig";
 import { guestbookConfig } from "@/config/guestbookConfig";
+import { profileConfig } from "@/config/profileConfig";
 import type { GuestbookAnnouncementItem } from "@/types/config";
 import type {
 	GuestbookAuthUser,
@@ -50,12 +53,20 @@ const MAX_MESSAGE_LENGTH = 300;
 const PROFILE_STORAGE_KEY = "guestbook-chat-profile";
 const AUTH_STORAGE_KEY = "guestbook-chat-auth";
 const DRAFT_STORAGE_KEY = "guestbook-chat-draft";
-const ANNOUNCEMENT_SEEN_STORAGE_KEY = "guestbook-announcement-seen";
+const LOCAL_MESSAGES_STORAGE_KEY = "guestbook-chat-local-messages";
 const serverURL = commentConfig.waline?.serverURL ?? "";
-const serviceAvailable = Boolean(serverURL);
+const localMode = !serverURL;
+const serviceAvailable = true;
 const lang = commentConfig.waline?.lang ?? "zh-CN";
 const loginMode = commentConfig.waline?.login ?? "enable";
 const announcements = guestbookConfig.announcements;
+
+type ChatMember = {
+	id: string;
+	nick: string;
+	avatar: string;
+	isAdmin: boolean;
+};
 
 let messages = $state<GuestbookMessage[]>([]);
 let profile = $state<GuestbookProfile>({ nick: "", mail: "", link: "" });
@@ -79,7 +90,6 @@ let messageList = $state<HTMLDivElement | null>(null);
 let announcementDialog = $state<HTMLDialogElement | null>(null);
 let deleteDialog = $state<HTMLDialogElement | null>(null);
 let selectedAnnouncement = $state<GuestbookAnnouncementItem | null>(null);
-let announcementBarVisible = $state(true);
 let showScrollToBottom = $state(false);
 let editingMessageId = $state<string | null>(null);
 let editDraft = $state("");
@@ -95,6 +105,37 @@ const hasMore = $derived(currentPage < totalPages);
 const isSending = $derived(
 	messages.some((message) => message.localState === "sending"),
 );
+const chatMembers = $derived.by(() => {
+	const members: ChatMember[] = [
+		{
+			id: "site-owner",
+			nick: profileConfig.name,
+			avatar: profileAvatar.src,
+			isAdmin: true,
+		},
+	];
+
+	if (profile.nick.trim() && profile.nick.trim() !== profileConfig.name) {
+		members.push({
+			id: "current-guest",
+			nick: profile.nick.trim(),
+			avatar: "",
+			isAdmin: false,
+		});
+	}
+
+	for (const message of messages) {
+		if (members.some((member) => member.nick === message.nick)) continue;
+		members.push({
+			id: `member-${message.id}`,
+			nick: message.nick,
+			avatar: message.avatar,
+			isAdmin: message.isAdmin,
+		});
+	}
+
+	return members.slice(0, 16);
+});
 
 function canManageMessage(message: GuestbookMessage): boolean {
 	if (!authUser?.token || !message.objectId || message.localState) return false;
@@ -313,7 +354,44 @@ async function fetchPage(page: number, signal?: AbortSignal) {
 	});
 }
 
+function isStoredLocalMessage(value: unknown): value is GuestbookMessage {
+	if (!value || typeof value !== "object") return false;
+	const message = value as Partial<GuestbookMessage>;
+	return (
+		typeof message.id === "string" &&
+		typeof message.nick === "string" &&
+		typeof message.body === "string" &&
+		typeof message.createdAt === "number" &&
+		typeof message.isAdmin === "boolean"
+	);
+}
+
+async function loadLocalMessages() {
+	const storedMessages = readStoredValue<unknown>(
+		localStorage,
+		LOCAL_MESSAGES_STORAGE_KEY,
+	);
+	messages = Array.isArray(storedMessages)
+		? storedMessages
+				.filter(isStoredLocalMessage)
+				.sort((a, b) => a.createdAt - b.createdAt)
+		: [];
+	currentPage = 1;
+	totalPages = 1;
+	totalCount = messages.length;
+	lastSyncedAt = Date.now();
+	initialError = "";
+	syncError = "";
+	initialLoading = false;
+	await tick();
+	scrollToBottom(false);
+}
+
 async function loadInitial() {
+	if (localMode) {
+		await loadLocalMessages();
+		return;
+	}
 	if (isOffline) {
 		initialLoading = false;
 		initialError = "当前处于离线状态，恢复网络后将自动加载";
@@ -361,6 +439,10 @@ async function loadInitial() {
 }
 
 async function syncLatest() {
+	if (localMode) {
+		await loadLocalMessages();
+		return;
+	}
 	if (initialError && messages.length === 0) {
 		await loadInitial();
 		return;
@@ -411,6 +493,7 @@ async function syncLatest() {
 }
 
 async function loadOlder() {
+	if (localMode) return;
 	if (!hasMore || loadingOlder || !messageList || dataController) return;
 	const controller = new AbortController();
 	dataController = controller;
@@ -445,6 +528,7 @@ async function loadOlder() {
 }
 
 function startPolling() {
+	if (localMode) return;
 	if (pollTimer) window.clearInterval(pollTimer);
 	pollTimer = undefined;
 	if (document.visibilityState !== "visible" || !navigator.onLine) return;
@@ -467,11 +551,16 @@ function handleVisibilityChange() {
 
 function handleOnline() {
 	isOffline = false;
+	if (localMode) return;
 	queueLatestSync();
 	startPolling();
 }
 
 function handleOffline() {
+	if (localMode) {
+		isOffline = false;
+		return;
+	}
 	isOffline = true;
 	syncError = "网络已断开，恢复连接后将自动同步";
 	if (pollTimer) window.clearInterval(pollTimer);
@@ -572,7 +661,7 @@ function formatMessageTime(value: number): string {
 }
 
 function formatSyncStatus(): string {
-	if (!serviceAvailable) return "未配置服务";
+	if (localMode) return "仅当前设备";
 	if (isOffline) return "离线";
 	if (syncing) return "同步中";
 	if (syncError) return "同步失败";
@@ -684,10 +773,6 @@ async function sendMessage(
 	contentOverride?: string,
 ): Promise<boolean> {
 	if (isSending || isOffline) return false;
-	if (!serviceAvailable) {
-		composerError = "留言服务尚未配置，请先设置 PUBLIC_WALINE_SERVER_URL";
-		return false;
-	}
 	const content = appendGuestbookImage(
 		contentOverride ?? draft.trim(),
 		attachment,
@@ -697,6 +782,36 @@ async function sendMessage(
 
 	const selectedTarget = replyTarget;
 	const target = selectedTarget?.objectId ? selectedTarget : null;
+	const retainedMessages = replaceMessageId
+		? messages.filter((message) => message.id !== replaceMessageId)
+		: messages;
+
+	if (localMode) {
+		const localMessage: GuestbookMessage = {
+			id: `local-${Date.now()}`,
+			nick: profile.nick.trim() || "访客",
+			avatar: "",
+			link: profile.link.trim() || undefined,
+			body: selectedTarget ? `@${selectedTarget.nick} ${content}` : content,
+			createdAt: Date.now(),
+			isAdmin: false,
+			replyToId: selectedTarget?.id,
+			replyToNick: selectedTarget?.nick,
+		};
+		messages = [...retainedMessages, localMessage];
+		totalCount = messages.length;
+		currentPage = 1;
+		totalPages = 1;
+		lastSyncedAt = Date.now();
+		draft = "";
+		replyTarget = null;
+		removeStoredValue(localStorage, DRAFT_STORAGE_KEY);
+		writeStoredValue(localStorage, LOCAL_MESSAGES_STORAGE_KEY, messages);
+		await tick();
+		scrollToBottom(true);
+		return true;
+	}
+
 	const tempId = `local-${Date.now()}`;
 	const optimistic: GuestbookMessage = {
 		id: tempId,
@@ -711,9 +826,6 @@ async function sendMessage(
 		localState: "sending",
 	};
 
-	const retainedMessages = replaceMessageId
-		? messages.filter((message) => message.id !== replaceMessageId)
-		: messages;
 	messages = [...retainedMessages, optimistic];
 	draft = "";
 	replyTarget = null;
@@ -970,16 +1082,9 @@ onMount(() => {
 	if (loginMode === "disable") clearAuthentication();
 	else authUser = readAuthentication();
 	draft = readStoredString(localStorage, DRAFT_STORAGE_KEY);
-	isOffline = !navigator.onLine;
+	isOffline = localMode ? false : !navigator.onLine;
 	const returnedToken = new URL(window.location.href).searchParams.get("token");
 	void initializeGuestbook(returnedToken);
-	if (
-		announcements[0] &&
-		readStoredString(sessionStorage, ANNOUNCEMENT_SEEN_STORAGE_KEY) !== "1"
-	) {
-		writeStoredString(sessionStorage, ANNOUNCEMENT_SEEN_STORAGE_KEY, "1");
-		void openAnnouncement(announcements[0]);
-	}
 	startPolling();
 	document.addEventListener("visibilitychange", handleVisibilityChange);
 	window.addEventListener("online", handleOnline);
@@ -1027,7 +1132,7 @@ onMount(() => {
 							aria-live="polite"
 						>
 							<span class:is-offline={isOffline}></span>
-							{formatSyncStatus()} · 30 s
+							{formatSyncStatus()}{#if !localMode} · 30 s{/if}
 						</div>
 						<button
 							class:is-syncing={syncing} class="guestbook-chat__refresh"
@@ -1046,34 +1151,7 @@ onMount(() => {
 
 	</header>
 
-	<div
-		class:has-announcement-bar={announcementBarVisible && announcements.length > 0}
-		class="guestbook-chat__workspace"
-	>
-		{#if announcementBarVisible && announcements.length > 0}
-			<aside class="guestbook-chat__announcement-bar" aria-label="公告">
-				<div class="guestbook-chat__announcement-bar-label">
-					<Bell size={16} aria-hidden="true" />
-					<strong>公告</strong>
-				</div>
-				<div class="guestbook-chat__announcement-bar-items">
-					{#each announcements as announcement}
-						<button type="button" onclick={() => void openAnnouncement(announcement)}>
-							{announcement.title}
-						</button>
-					{/each}
-				</div>
-				<button
-					class="guestbook-chat__announcement-bar-close"
-					type="button"
-					onclick={() => (announcementBarVisible = false)}
-					aria-label="关闭公告"
-					title="关闭公告"
-				>
-					<X size={17} aria-hidden="true" />
-				</button>
-			</aside>
-		{/if}
+	<div class="guestbook-chat__workspace">
 
 		<div class="guestbook-chat__conversation">
 			{#if initialLoading}
@@ -1207,6 +1285,7 @@ onMount(() => {
 					{replyTarget}
 					{composerError}
 					{isOffline}
+					{localMode}
 					{isSending}
 					{loggingIn}
 					{loginMode}
@@ -1222,6 +1301,53 @@ onMount(() => {
 			</div>
 		</div>
 
+		<aside class="guestbook-chat__sidebar" aria-label="留言板信息">
+			<section class="guestbook-chat__side-section guestbook-chat__side-announcements">
+				<div class="guestbook-chat__side-heading">
+					<Bell size={17} aria-hidden="true" />
+					<h3>群公告</h3>
+				</div>
+				<div class="guestbook-chat__side-announcement-list">
+					{#each announcements as announcement}
+						<button type="button" onclick={() => void openAnnouncement(announcement)}>
+							<strong>{announcement.title}</strong>
+							<span>{announcement.summary}</span>
+						</button>
+					{/each}
+				</div>
+			</section>
+
+			<section class="guestbook-chat__side-section guestbook-chat__side-members">
+				<div class="guestbook-chat__side-heading">
+					<Users size={18} aria-hidden="true" />
+					<h3>聊天成员</h3>
+					<span>{chatMembers.length}</span>
+				</div>
+				<ul class="guestbook-chat__member-list">
+					{#each chatMembers as member (member.id)}
+						<li>
+							<span class="guestbook-chat__member-avatar" aria-hidden="true">
+								<span>{member.nick.slice(0, 1)}</span>
+								{#if member.avatar}
+									<img
+										src={member.avatar}
+										alt=""
+										loading="lazy"
+										data-site-avatar={member.isAdmin ? "" : undefined}
+									/>
+								{/if}
+							</span>
+							<span class:is-admin={member.isAdmin} class="guestbook-chat__member-name">
+								{member.nick}
+							</span>
+							{#if member.isAdmin}
+								<span class="guestbook-chat__member-badge">站长</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			</section>
+		</aside>
 	</div>
 
 	<dialog

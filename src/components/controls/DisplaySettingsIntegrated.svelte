@@ -1034,9 +1034,9 @@ onMount(() => {
                     class="slider w-full overlay-slider"
                 />
             </div>
-            <p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
-                仅深色模式显示；鼠标移动会带动灯具轻微偏转，设置会自动保存。
-            </p>
+			<p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
+				仅深色模式显示；光照区域内右键单击换色，按住右键上下拖动可调范围。
+			</p>
         </div>
     </div>
 

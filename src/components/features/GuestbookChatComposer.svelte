@@ -30,6 +30,7 @@ interface Props {
 	replyTarget: GuestbookChatMessage | null;
 	composerError: string;
 	isOffline: boolean;
+	localMode: boolean;
 	serviceAvailable: boolean;
 	isSending: boolean;
 	loggingIn: boolean;
@@ -53,6 +54,7 @@ let {
 	replyTarget,
 	composerError,
 	isOffline,
+	localMode,
 	serviceAvailable,
 	isSending,
 	loggingIn,
@@ -588,7 +590,7 @@ async function handleImageSelection(event: Event) {
 						游客访问
 					</button>
 				{/if}
-				{#if loginMode !== "disable"}
+				{#if loginMode !== "disable" && !localMode}
 					{#if authUser}
 						<button
 							class="guestbook-composer__login guestbook-composer__login--logout"

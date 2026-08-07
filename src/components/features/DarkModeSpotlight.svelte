@@ -70,6 +70,8 @@ onMount(() => {
 	const beamEnd = new THREE.Vector3();
 	const beamDirection = new THREE.Vector3();
 	const projection = new THREE.Vector3();
+	const projectedBeamStart = new THREE.Vector3();
+	const projectedBeamEnd = new THREE.Vector3();
 
 	const ropeLength = 1.55;
 	const fixedStep = 1 / 120;
@@ -80,6 +82,12 @@ onMount(() => {
 	let beamRadius = 1.4;
 	let pulling = false;
 	let pointerTracking = false;
+	let adjustingRange = false;
+	let rangePointerId = -1;
+	let rangeStartY = 0;
+	let rangeStartValue = 0;
+	let rangeGestureMoved = false;
+	let suppressContextMenu = false;
 	let pullPointerId = -1;
 	let pullStrength = 0;
 	let lastPointerTime = 0;
@@ -223,10 +231,14 @@ onMount(() => {
 			uniform float uOpacity;
 			varying vec2 vUv;
 			void main() {
-				float edge = 1.0 - smoothstep(0.06, 0.5, abs(vUv.x - 0.5));
-				float topFade = smoothstep(0.0, 0.18, vUv.y);
-				float bottomFade = 1.0 - smoothstep(0.76, 1.0, vUv.y);
-				float alpha = edge * topFade * bottomFade * uOpacity;
+				float distanceFromCenter = abs(vUv.x - 0.5) * 2.0;
+				float coneWidth = mix(0.10, 0.98, vUv.y);
+				float outerBeam = 1.0 - smoothstep(coneWidth * 0.58, coneWidth, distanceFromCenter);
+				float coreBeam = 1.0 - smoothstep(coneWidth * 0.18, coneWidth * 0.62, distanceFromCenter);
+				float topFade = smoothstep(0.02, 0.16, vUv.y);
+				float bottomFade = 1.0 - smoothstep(0.82, 1.0, vUv.y);
+				float depth = mix(0.18, 0.92, vUv.y);
+				float alpha = (outerBeam * depth + coreBeam * 0.28) * topFade * bottomFade * uOpacity;
 				gl_FragColor = vec4(uColor, alpha);
 			}
 		`,
@@ -274,17 +286,17 @@ onMount(() => {
 	function applySettings(next: DarkModeSpotlightSettings) {
 		const color = new THREE.Color(next.color);
 		const enabled = isDark && next.enabled;
-		beamLength = THREE.MathUtils.lerp(2.8, 5.2, (next.range - 40) / 60);
+		beamLength = THREE.MathUtils.lerp(3.45, 6.3, (next.range - 40) / 60);
 		beamRadius =
 			Math.tan(THREE.MathUtils.degToRad(next.angle * 0.5)) * beamLength;
 		softBeamMaterial.uniforms.uColor.value.copy(color);
 		softBeamMaterial.uniforms.uOpacity.value = enabled
-			? 0.18 + next.range / 650
+			? 0.28 + next.range / 520
 			: 0;
 		beam.scale.set(Math.max(0.12, beamRadius * 2), beamLength, 1);
 		poolMaterial.color.copy(color);
-		poolMaterial.opacity = enabled ? 0.28 + next.range / 260 : 0;
-		pool.scale.setScalar(Math.max(1.3, beamRadius * 1.35));
+		poolMaterial.opacity = enabled ? 0.34 + next.range / 220 : 0;
+		pool.scale.setScalar(Math.max(1.7, beamRadius * 1.65));
 		glowMaterial.color.copy(color);
 		glowMaterial.opacity = enabled ? 0.52 + next.range / 420 : 0;
 		bulbMaterial.emissive.copy(color);
@@ -297,8 +309,12 @@ onMount(() => {
 		layer.style.setProperty("--spotlight-color", next.color);
 		layer.style.setProperty("--spotlight-range", `${next.range}`);
 		layer.style.setProperty(
-			"--spotlight-pool",
-			`${22 + (next.range - 40) * 0.42}vmax`,
+			"--spotlight-pool-x",
+			`${19 + (next.range - 40) * 0.32}vmax`,
+		);
+		layer.style.setProperty(
+			"--spotlight-pool-y",
+			`${12 + (next.range - 40) * 0.19}vmax`,
 		);
 		wake();
 	}
@@ -463,19 +479,60 @@ onMount(() => {
 		return Math.hypot(event.clientX - x, event.clientY - y) < 130;
 	}
 
+	function pointerWithinLight(event: PointerCoordinates) {
+		if (pointerNearLamp(event)) return true;
+		const rect = layer.getBoundingClientRect();
+		projectedBeamStart.copy(beamStart).project(camera);
+		projectedBeamEnd.copy(beamEnd).project(camera);
+		const startX = rect.left + ((projectedBeamStart.x + 1) / 2) * rect.width;
+		const startY = rect.top + ((1 - projectedBeamStart.y) / 2) * rect.height;
+		const endX = rect.left + ((projectedBeamEnd.x + 1) / 2) * rect.width;
+		const endY = rect.top + ((1 - projectedBeamEnd.y) / 2) * rect.height;
+		const beamX = endX - startX;
+		const beamY = endY - startY;
+		const beamLengthSquared = beamX * beamX + beamY * beamY;
+		if (beamLengthSquared < 1) return false;
+		const progress = THREE.MathUtils.clamp(
+			((event.clientX - startX) * beamX + (event.clientY - startY) * beamY) /
+				beamLengthSquared,
+			0,
+			1,
+		);
+		const nearestX = startX + beamX * progress;
+		const nearestY = startY + beamY * progress;
+		const worldToScreen = rect.width / (halfWidth * 2);
+		const radius = THREE.MathUtils.lerp(
+			48,
+			Math.max(92, beamRadius * worldToScreen * 0.94),
+			progress,
+		);
+		return (
+			Math.hypot(event.clientX - nearestX, event.clientY - nearestY) <= radius
+		);
+	}
+
+	function cycleLightColor() {
+		const currentColor = settings.color.toLowerCase();
+		const currentIndex = COLOR_PRESETS.indexOf(currentColor);
+		const nextColor = COLOR_PRESETS[(currentIndex + 1) % COLOR_PRESETS.length];
+		setDarkModeSpotlightSettings({ color: nextColor });
+	}
+
 	function onPointerDown(event: PointerEvent) {
 		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
-		updatePointerTarget(event);
-		pointerTracking = true;
-		if (event.button === 2 && pointerNearLamp(event)) {
-			const currentColor = settings.color.toLowerCase();
-			const currentIndex = COLOR_PRESETS.indexOf(currentColor);
-			const nextColor =
-				COLOR_PRESETS[(currentIndex + 1) % COLOR_PRESETS.length];
-			setDarkModeSpotlightSettings({ color: nextColor });
+		if (event.button === 2) {
+			if (!pointerWithinLight(event)) return;
+			adjustingRange = true;
+			rangePointerId = event.pointerId;
+			rangeStartY = event.clientY;
+			rangeStartValue = settings.range;
+			rangeGestureMoved = false;
+			suppressContextMenu = true;
 			wake();
 			return;
 		}
+		updatePointerTarget(event);
+		pointerTracking = true;
 		if (event.button !== 0 || !pointerNearLamp(event)) return;
 		pulling = true;
 		pullPointerId = event.pointerId;
@@ -487,6 +544,19 @@ onMount(() => {
 
 	function onPointerMove(event: PointerEvent) {
 		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
+		if (adjustingRange && event.pointerId === rangePointerId) {
+			const distance = rangeStartY - event.clientY;
+			if (Math.abs(distance) > 4) rangeGestureMoved = true;
+			const range = THREE.MathUtils.clamp(
+				rangeStartValue + distance * 0.18,
+				40,
+				100,
+			);
+			if (Math.round(range) !== settings.range) {
+				setDarkModeSpotlightSettings({ range: Math.round(range) });
+			}
+			return;
+		}
 		updatePointerTarget(event);
 		pointerTracking = true;
 		if (!pulling || event.pointerId !== pullPointerId) {
@@ -509,6 +579,14 @@ onMount(() => {
 	}
 
 	function onPointerUp(event: PointerEvent) {
+		if (adjustingRange && event.pointerId === rangePointerId) {
+			if (!rangeGestureMoved) cycleLightColor();
+			adjustingRange = false;
+			rangePointerId = -1;
+			suppressContextMenu = false;
+			wake();
+			return;
+		}
 		if (!pulling || event.pointerId !== pullPointerId) return;
 		const velocity = temp
 			.copy(position)
@@ -530,9 +608,25 @@ onMount(() => {
 		wake();
 	}
 
+	function onPointerCancel(event: PointerEvent) {
+		if (event.pointerId === rangePointerId) {
+			adjustingRange = false;
+			rangePointerId = -1;
+			suppressContextMenu = false;
+		}
+		if (event.pointerId === pullPointerId) {
+			pulling = false;
+			pullPointerId = -1;
+			pullStrength = 0;
+		}
+		wake();
+	}
+
 	function resetMotion() {
 		pulling = false;
 		pointerTracking = false;
+		adjustingRange = false;
+		rangePointerId = -1;
 		pullPointerId = -1;
 		pullStrength = 0;
 		position.copy(anchor).addScaledVector(DOWN, ropeLength);
@@ -560,25 +654,22 @@ onMount(() => {
 	}
 
 	function onContextMenu(event: MouseEvent) {
-		if (pointerNearLamp(event)) event.preventDefault();
-	}
-
-	function onWheel(event: WheelEvent) {
-		if (!isDark || !settings.enabled || !pointerNearLamp(event)) return;
-		if (event.cancelable) event.preventDefault();
-		const range = THREE.MathUtils.clamp(
-			settings.range + (event.deltaY < 0 ? 4 : -4),
-			40,
-			100,
-		);
-		if (range !== settings.range) {
-			setDarkModeSpotlightSettings({ range });
+		if (!isDark || !settings.enabled) {
+			suppressContextMenu = false;
+			return;
+		}
+		if (suppressContextMenu || pointerWithinLight(event)) {
+			event.preventDefault();
+			suppressContextMenu = false;
 		}
 	}
 
 	function onWindowBlur() {
 		pointerTracking = false;
 		pulling = false;
+		adjustingRange = false;
+		rangePointerId = -1;
+		suppressContextMenu = false;
 		pullPointerId = -1;
 		pullStrength = 0;
 		wake();
@@ -593,11 +684,10 @@ onMount(() => {
 	window.addEventListener("pointerdown", onPointerDown, { passive: true });
 	window.addEventListener("pointermove", onPointerMove, { passive: true });
 	window.addEventListener("pointerup", onPointerUp);
-	window.addEventListener("pointercancel", onPointerUp);
+	window.addEventListener("pointercancel", onPointerCancel);
 	window.addEventListener("resize", resize, { passive: true });
 	window.addEventListener("dblclick", onDoubleClick);
 	window.addEventListener("contextmenu", onContextMenu);
-	window.addEventListener("wheel", onWheel, { passive: false });
 	window.addEventListener("blur", onWindowBlur);
 
 	resize();
@@ -613,11 +703,10 @@ onMount(() => {
 		window.removeEventListener("pointerdown", onPointerDown);
 		window.removeEventListener("pointermove", onPointerMove);
 		window.removeEventListener("pointerup", onPointerUp);
-		window.removeEventListener("pointercancel", onPointerUp);
+		window.removeEventListener("pointercancel", onPointerCancel);
 		window.removeEventListener("resize", resize);
 		window.removeEventListener("dblclick", onDoubleClick);
 		window.removeEventListener("contextmenu", onContextMenu);
-		window.removeEventListener("wheel", onWheel);
 		window.removeEventListener("blur", onWindowBlur);
 		renderer.dispose();
 		scene.traverse((object) => {
@@ -654,7 +743,8 @@ onMount(() => {
 		--spotlight-range: 76;
 		--spotlight-x: 50%;
 		--spotlight-y: 48%;
-		--spotlight-pool: 37vmax;
+		--spotlight-pool-x: 31vmax;
+		--spotlight-pool-y: 19vmax;
 		position: fixed;
 		inset: 0;
 		z-index: 6;
@@ -686,13 +776,13 @@ onMount(() => {
 	.dark-mode-spotlight__wash {
 		z-index: 2;
 		background: radial-gradient(
-			circle var(--spotlight-pool) at var(--spotlight-x) var(--spotlight-y),
-			color-mix(in srgb, var(--spotlight-color) 42%, transparent) 0%,
-			color-mix(in srgb, var(--spotlight-color) 27%, transparent) 24%,
-			color-mix(in srgb, var(--spotlight-color) 10%, transparent) 54%,
+			ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
+			color-mix(in srgb, var(--spotlight-color) 48%, transparent) 0%,
+			color-mix(in srgb, var(--spotlight-color) 28%, transparent) 28%,
+			color-mix(in srgb, var(--spotlight-color) 9%, transparent) 62%,
 			transparent 100%
 		);
-		filter: blur(1.1rem);
+		filter: blur(0.8rem);
 		mix-blend-mode: screen;
 		opacity: 1;
 		transition: background 260ms ease;
@@ -701,11 +791,11 @@ onMount(() => {
 	.dark-mode-spotlight__vignette {
 		z-index: 1;
 		background: radial-gradient(
-			circle var(--spotlight-pool) at var(--spotlight-x) var(--spotlight-y),
-			rgb(0 0 0 / 24%) 0%,
-			rgb(0 0 0 / 47%) 40%,
-			rgb(0 0 0 / 78%) 78%,
-			rgb(0 0 0 / 84%) 100%
+			ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
+			rgb(0 0 0 / 12%) 0%,
+			rgb(0 0 0 / 45%) 42%,
+			rgb(0 0 0 / 82%) 80%,
+			rgb(0 0 0 / 88%) 100%
 		);
 		mix-blend-mode: normal;
 		opacity: 1;
@@ -718,11 +808,11 @@ onMount(() => {
 
 		.dark-mode-spotlight__vignette {
 			background: radial-gradient(
-				circle var(--spotlight-pool) at var(--spotlight-x) var(--spotlight-y),
-				rgb(0 0 0 / 18%) 0%,
-				rgb(0 0 0 / 39%) 40%,
-				rgb(0 0 0 / 68%) 78%,
-				rgb(0 0 0 / 74%) 100%
+				ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
+				rgb(0 0 0 / 10%) 0%,
+				rgb(0 0 0 / 36%) 42%,
+				rgb(0 0 0 / 70%) 80%,
+				rgb(0 0 0 / 76%) 100%
 			);
 		}
 	}
