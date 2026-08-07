@@ -74,12 +74,14 @@ onMount(() => {
 	const projectedBeamEnd = new THREE.Vector3();
 
 	const ropeLength = 1.3;
+	const defaultBeamLength = 4.6;
 	const fixedStep = 1 / 120;
 	const gravity = new THREE.Vector3(0, -9.81, 0);
 	let halfWidth = 5;
 	let halfHeight = 5;
-	let beamLength = 3.8;
+	let beamLength = defaultBeamLength;
 	let beamRadius = 1.4;
+	let beamWidthMultiplier = 1;
 	let pulling = false;
 	let pointerTracking = false;
 	let suppressContextMenu = false;
@@ -297,21 +299,17 @@ onMount(() => {
 	function applySettings(next: DarkModeSpotlightSettings) {
 		const color = new THREE.Color(next.color);
 		const enabled = isDark && next.enabled;
-		beamLength = THREE.MathUtils.lerp(3.6, 6.1, (next.range - 40) / 60);
-		beamRadius =
-			Math.tan(THREE.MathUtils.degToRad(next.angle * 0.5)) * beamLength;
+		beamWidthMultiplier = THREE.MathUtils.lerp(
+			0.62,
+			1.18,
+			(next.range - 40) / 60,
+		);
 		softBeamMaterial.uniforms.uColor.value.copy(color);
 		softBeamMaterial.uniforms.uOpacity.value = enabled
 			? 0.2 + next.range / 680
 			: 0;
-		beam.scale.set(Math.max(0.12, beamRadius * 2), beamLength, 1);
 		poolMaterial.color.copy(color);
 		poolMaterial.opacity = enabled ? 0.12 + next.range / 650 : 0;
-		pool.scale.set(
-			Math.max(1.15, beamRadius * 1.22),
-			Math.max(0.68, beamRadius * 0.62),
-			1,
-		);
 		glowMaterial.color.copy(color);
 		glowMaterial.opacity = enabled ? 0.42 + next.range / 620 : 0;
 		bulbMaterial.emissive.copy(color);
@@ -370,10 +368,15 @@ onMount(() => {
 		cableQuaternion.setFromUnitVectors(UP, ropeDirection);
 		cable.quaternion.copy(cableQuaternion);
 
-		if (pulling) {
-			lightDirection.copy(aimTarget).sub(position).normalize();
+		if (pulling || pointerTracking) {
+			lightDirection.copy(aimTarget).sub(position);
+			if (lightDirection.lengthSq() < 1e-8) {
+				lightDirection.copy(currentLightDirection);
+			} else {
+				lightDirection.normalize();
+			}
 			currentLightDirection
-				.lerp(lightDirection, pulling ? 0.3 : 0.2)
+				.lerp(lightDirection, pulling ? 0.3 : 0.38)
 				.normalize();
 		} else {
 			lightDirection.copy(DOWN);
@@ -384,18 +387,44 @@ onMount(() => {
 		lampRoot.quaternion.copy(lampQuaternion);
 
 		if (pointerTracking) {
-			beamDirection.copy(aimTarget).sub(position).normalize();
+			beamDirection.copy(aimTarget).sub(position);
+			if (beamDirection.lengthSq() < 1e-8) {
+				beamDirection.copy(currentLightDirection);
+			} else {
+				beamDirection.normalize();
+			}
 		} else {
 			beamDirection.copy(currentLightDirection).normalize();
 		}
 		beamStart.copy(position).addScaledVector(beamDirection, 0.3);
-		beam.position
-			.copy(beamStart)
-			.addScaledVector(beamDirection, beamLength * 0.5);
+		if (pointerTracking) {
+			beamEnd.copy(aimTarget);
+			beamLength = beamStart.distanceTo(beamEnd);
+		} else {
+			beamLength = defaultBeamLength;
+			beamEnd.copy(beamStart).addScaledVector(beamDirection, beamLength);
+		}
+		beamRadius =
+			Math.tan(THREE.MathUtils.degToRad(settings.angle * 0.5)) *
+			beamLength *
+			beamWidthMultiplier;
+		beam.visible = beamLength > 0.01;
+		beam.position.copy(beamStart).add(beamEnd).multiplyScalar(0.5);
+		beam.scale.set(
+			Math.max(0.12, beamRadius * 2),
+			Math.max(0.001, beamLength),
+			1,
+		);
 		beamQuaternion.setFromUnitVectors(DOWN, beamDirection);
 		beam.quaternion.copy(beamQuaternion);
-		beamEnd.copy(beamStart).addScaledVector(beamDirection, beamLength * 0.9);
 		pool.position.copy(beamEnd);
+		pool.scale.set(
+			Math.max(1.15, beamRadius * 1.22),
+			Math.max(0.68, beamRadius * 0.62),
+			1,
+		);
+		spotLight.distance = beamLength + 0.6;
+		spotLight.target.position.y = -(beamLength + 0.4);
 		if (!pointerTracking) {
 			projection.copy(beamEnd).project(camera);
 			layer.style.setProperty(

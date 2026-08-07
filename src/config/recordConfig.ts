@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.3",
+		date: "2026-08-08",
+		time: "02:57",
+		type: "optimize",
+		title: "深色灯光追踪优化",
+		summary: "光束长度改为跟随灯具与鼠标之间的实时距离。",
+		changes: [
+			"灯口作为光束起点，鼠标位置固定作为光束末端。",
+			"鼠标远近实时控制光束长度，照射范围仅控制光束宽度。",
+			"同步光斑、明暗区域与灯具朝向，避免光束和鼠标错位。",
+		],
+	},
+	{
 		version: "v6.14.2",
 		date: "2026-08-08",
 		time: "02:50",
