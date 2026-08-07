@@ -945,7 +945,10 @@ export function initWallpaperMode(): void {
 }
 
 function getDefaultWallpaperModeForCurrentPage(): WALLPAPER_MODE {
-	if (typeof window !== "undefined" && !checkIsHomePage(window.location.pathname)) {
+	if (
+		typeof window !== "undefined" &&
+		!checkIsHomePage(window.location.pathname)
+	) {
 		return WALLPAPER_NONE;
 	}
 	return backgroundWallpaper.mode === WALLPAPER_FULLSCREEN

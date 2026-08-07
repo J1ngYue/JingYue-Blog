@@ -39,7 +39,9 @@ onMount(() => {
 			? host.closest(".home-landing")
 			: document.getElementById("wallpaper-wrapper");
 	document
-		.querySelectorAll<HTMLElement>(`[data-local-wallpaper-surface="${surface}"]`)
+		.querySelectorAll<HTMLElement>(
+			`[data-local-wallpaper-surface="${surface}"]`,
+		)
 		.forEach((layer) => {
 			if (layer !== host) layer.remove();
 		});
@@ -146,7 +148,10 @@ onMount(() => {
 	syncWallpaperMode();
 	void loadMedia();
 	window.addEventListener(LOCAL_WALLPAPER_CHANGE_EVENT, handleChange);
-	window.addEventListener(PAGE_WALLPAPER_CHANGE_EVENT, handlePageWallpaperChange);
+	window.addEventListener(
+		PAGE_WALLPAPER_CHANGE_EVENT,
+		handlePageWallpaperChange,
+	);
 	window.addEventListener("wallpaperModeChange", handleWallpaperModeChange);
 	window.addEventListener("popstate", handlePageWallpaperChange);
 	document.addEventListener("swup:contentReplaced", handlePageWallpaperChange);

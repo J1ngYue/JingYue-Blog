@@ -51,6 +51,13 @@ import {
 } from "@/config";
 import type { WALLPAPER_MODE } from "@/types/config";
 import {
+	DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
+	type DarkModeSpotlightSettings,
+	getDarkModeSpotlightSettings,
+	resetDarkModeSpotlightSettings,
+	setDarkModeSpotlightSettings,
+} from "@/utils/dark-mode-spotlight";
+import {
 	getDefaultLocalWallpaperBlur,
 	getDefaultLocalWallpaperOpacity,
 	getLocalWallpaperBlur,
@@ -58,13 +65,6 @@ import {
 	setLocalWallpaperBlur,
 	setLocalWallpaperOpacity,
 } from "@/utils/local-wallpaper";
-import {
-	DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
-	getDarkModeSpotlightSettings,
-	resetDarkModeSpotlightSettings,
-	setDarkModeSpotlightSettings,
-	type DarkModeSpotlightSettings,
-} from "@/utils/dark-mode-spotlight";
 
 let hue = $state(getHue());
 let wallpaperMode: WALLPAPER_MODE = $state(backgroundWallpaper.mode);
@@ -620,7 +620,10 @@ onMount(() => {
 		spotlight = { ...spotlight, ...next };
 	};
 
-	window.addEventListener(DARK_MODE_SPOTLIGHT_CHANGE_EVENT, handleSpotlightChange);
+	window.addEventListener(
+		DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
+		handleSpotlightChange,
+	);
 	return () => {
 		window.removeEventListener(
 			DARK_MODE_SPOTLIGHT_CHANGE_EVENT,

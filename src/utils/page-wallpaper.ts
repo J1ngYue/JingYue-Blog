@@ -71,12 +71,12 @@ export function isPageWallpaperChoice(
 export function resolvePageWallpaperKey(
 	pathname = typeof window !== "undefined" ? window.location.pathname : "/",
 ): PageWallpaperKey {
-	const normalized = `/${pathname}`.replace(/\/{2,}/g, "/").replace(/\/$/, "") || "/";
+	const normalized =
+		`/${pathname}`.replace(/\/{2,}/g, "/").replace(/\/$/, "") || "/";
 	for (const page of PAGE_WALLPAPER_PAGES) {
 		if (
 			page.paths.some(
-				(path) =>
-					normalized === path || normalized.startsWith(`${path}/`),
+				(path) => normalized === path || normalized.startsWith(`${path}/`),
 			)
 		) {
 			return page.key;

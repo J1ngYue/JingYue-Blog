@@ -42,7 +42,10 @@ export const characterModelCatalog = [
 		sprite: "/pio/models/pets/gugugaga/spritesheet.webp",
 		controlInsetTop: 4,
 		runtimeSize: { width: 108, height: 117 },
-		interactionMessages: ["咕咕嘎嘎，今天也很有精神！", "再点一下，我还有别的动作。"],
+		interactionMessages: [
+			"咕咕嘎嘎，今天也很有精神！",
+			"再点一下，我还有别的动作。",
+		],
 	},
 	{
 		id: "feibi",

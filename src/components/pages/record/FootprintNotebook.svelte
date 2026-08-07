@@ -1,5 +1,4 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import {
 	CalendarDays,
 	Focus,
@@ -13,6 +12,7 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-svelte";
+import { onMount } from "svelte";
 
 type Footprint = {
 	id: string;

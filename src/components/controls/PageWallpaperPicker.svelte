@@ -1,8 +1,8 @@
 <script lang="ts">
+import { WALLPAPER_BANNER, WALLPAPER_NONE } from "@constants/constants";
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
 import { pageWallpaperAssets } from "@/config/pageWallpapers";
-import { WALLPAPER_BANNER, WALLPAPER_NONE } from "@constants/constants";
 import {
 	getLocalWallpaperHistory,
 	LOCAL_WALLPAPER_CHANGE_EVENT,

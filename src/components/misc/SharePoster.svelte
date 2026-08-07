@@ -2,10 +2,7 @@
 import QRCode from "qrcode";
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
-import {
-	getSiteAvatar,
-	SITE_AVATAR_CHANGE_EVENT,
-} from "@/utils/site-avatar";
+import { getSiteAvatar, SITE_AVATAR_CHANGE_EVENT } from "@/utils/site-avatar";
 import I18nKey from "../../i18n/i18nKey";
 import { i18n } from "../../i18n/translation";
 
@@ -42,9 +39,7 @@ onMount(() => {
 		try {
 			const record = await getSiteAvatar();
 			if (runtimeAvatarObjectUrl) URL.revokeObjectURL(runtimeAvatarObjectUrl);
-			runtimeAvatarObjectUrl = record
-				? URL.createObjectURL(record.blob)
-				: "";
+			runtimeAvatarObjectUrl = record ? URL.createObjectURL(record.blob) : "";
 			runtimeAvatar = runtimeAvatarObjectUrl || avatar;
 			posterImage = null;
 		} catch {
@@ -413,8 +408,7 @@ async function generatePoster() {
 			ctx.stroke();
 		}
 
-		const authorTextX =
-			padding + (runtimeAvatar ? 64 * scale + 16 * scale : 0);
+		const authorTextX = padding + (runtimeAvatar ? 64 * scale + 16 * scale : 0);
 		const textCenterY = footerY + 32 * scale;
 
 		ctx.fillStyle = "#9ca3af";
