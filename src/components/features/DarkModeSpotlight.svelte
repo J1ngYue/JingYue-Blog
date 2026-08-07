@@ -44,7 +44,7 @@ onMount(() => {
 
 	const ambient = new THREE.HemisphereLight(0x91a6c8, 0x0d0e14, 0.42);
 	scene.add(ambient);
-	const fill = new THREE.DirectionalLight(0x9cacc8, 0.2);
+	const fill = new THREE.DirectionalLight(0x9cacc8, 0.08);
 	fill.position.set(-4, 5, 6);
 	scene.add(fill);
 
@@ -73,7 +73,7 @@ onMount(() => {
 	const projectedBeamStart = new THREE.Vector3();
 	const projectedBeamEnd = new THREE.Vector3();
 
-	const ropeLength = 1.55;
+	const ropeLength = 1.3;
 	const fixedStep = 1 / 120;
 	const gravity = new THREE.Vector3(0, -9.81, 0);
 	let halfWidth = 5;
@@ -82,11 +82,6 @@ onMount(() => {
 	let beamRadius = 1.4;
 	let pulling = false;
 	let pointerTracking = false;
-	let adjustingRange = false;
-	let rangePointerId = -1;
-	let rangeStartY = 0;
-	let rangeStartValue = 0;
-	let rangeGestureMoved = false;
 	let suppressContextMenu = false;
 	let pullPointerId = -1;
 	let pullStrength = 0;
@@ -97,7 +92,7 @@ onMount(() => {
 	let lastTime = performance.now();
 	let disposed = false;
 
-	anchor.set(0, 4.2, 0.8);
+	anchor.set(0, 4.82, 0.8);
 	position.copy(anchor).addScaledVector(DOWN, ropeLength);
 	position.x = 0.1;
 	previous.copy(position).add(new THREE.Vector3(0.014, 0, -0.01));
@@ -130,17 +125,19 @@ onMount(() => {
 	const shadeGroup = new THREE.Group();
 	lampRoot.add(shadeGroup);
 	const shadeProfile = [
-		new THREE.Vector2(0.08, 0.08),
-		new THREE.Vector2(0.18, 0.02),
-		new THREE.Vector2(0.43, -0.1),
-		new THREE.Vector2(0.82, -0.25),
-		new THREE.Vector2(1.08, -0.36),
-		new THREE.Vector2(1.1, -0.41),
+		new THREE.Vector2(0.05, 0.07),
+		new THREE.Vector2(0.12, 0.01),
+		new THREE.Vector2(0.3, -0.07),
+		new THREE.Vector2(0.58, -0.18),
+		new THREE.Vector2(0.84, -0.27),
+		new THREE.Vector2(0.86, -0.3),
 	];
 	const shadeMaterial = new THREE.MeshStandardMaterial({
-		color: 0x101116,
-		roughness: 0.34,
-		metalness: 0.76,
+		color: 0x15171c,
+		emissive: 0x06070a,
+		emissiveIntensity: 0.42,
+		roughness: 0.44,
+		metalness: 0.34,
 		side: THREE.DoubleSide,
 	});
 	const shade = new THREE.Mesh(
@@ -150,34 +147,34 @@ onMount(() => {
 	shadeGroup.add(shade);
 
 	const rim = new THREE.Mesh(
-		new THREE.TorusGeometry(1.095, 0.027, 8, 48),
+		new THREE.TorusGeometry(0.855, 0.018, 8, 48),
 		new THREE.MeshStandardMaterial({
-			color: 0x1b1d24,
-			roughness: 0.26,
-			metalness: 0.82,
+			color: 0x111318,
+			roughness: 0.36,
+			metalness: 0.68,
 		}),
 	);
 	rim.rotation.x = Math.PI / 2;
-	rim.position.y = -0.397;
+	rim.position.y = -0.29;
 	shadeGroup.add(rim);
 
 	const undersideMaterial = new THREE.MeshStandardMaterial({
-		color: 0x3a261b,
+		color: 0x3b2718,
 		emissive: 0xffb36b,
-		emissiveIntensity: 0.42,
+		emissiveIntensity: 0.24,
 		roughness: 0.9,
 		side: THREE.DoubleSide,
 	});
 	const underside = new THREE.Mesh(
-		new THREE.CircleGeometry(1.055, 48),
+		new THREE.CircleGeometry(0.82, 48),
 		undersideMaterial,
 	);
-	underside.scale.set(1, 0.28, 1);
-	underside.position.y = -0.385;
+	underside.scale.set(1, 0.22, 1);
+	underside.position.y = -0.285;
 	shadeGroup.add(underside);
 
 	const connector = new THREE.Mesh(
-		new THREE.CylinderGeometry(0.095, 0.12, 0.2, 20),
+		new THREE.CylinderGeometry(0.07, 0.09, 0.16, 20),
 		new THREE.MeshStandardMaterial({
 			color: 0x9c6744,
 			roughness: 0.44,
@@ -188,17 +185,17 @@ onMount(() => {
 	shadeGroup.add(connector);
 
 	const bulbMaterial = new THREE.MeshStandardMaterial({
-		color: 0xffd7ad,
+		color: 0xffc77f,
 		emissive: 0xffb36b,
-		emissiveIntensity: 3.2,
+		emissiveIntensity: 2.35,
 		roughness: 0.2,
 	});
 	const bulb = new THREE.Mesh(
-		new THREE.SphereGeometry(0.16, 20, 12),
+		new THREE.SphereGeometry(0.105, 20, 12),
 		bulbMaterial,
 	);
 	bulb.scale.y = 1.2;
-	bulb.position.y = -0.33;
+	bulb.position.y = -0.235;
 	shadeGroup.add(bulb);
 
 	const glowMaterial = new THREE.SpriteMaterial({
@@ -210,9 +207,22 @@ onMount(() => {
 		blending: THREE.AdditiveBlending,
 	});
 	const glow = new THREE.Sprite(glowMaterial);
-	glow.position.y = -0.36;
-	glow.scale.set(0.96, 0.96, 0.96);
+	glow.position.y = -0.255;
+	glow.scale.set(0.7, 0.7, 0.7);
 	shadeGroup.add(glow);
+
+	const spotLight = new THREE.SpotLight(
+		0xffb36b,
+		1.6,
+		12,
+		THREE.MathUtils.degToRad(28),
+		0.84,
+		1.7,
+	);
+	spotLight.power = 30;
+	spotLight.position.set(0, -0.25, 0.02);
+	spotLight.target.position.set(0, -6, 0);
+	shadeGroup.add(spotLight, spotLight.target);
 
 	const softBeamMaterial = new THREE.ShaderMaterial({
 		uniforms: {
@@ -232,13 +242,14 @@ onMount(() => {
 			varying vec2 vUv;
 			void main() {
 				float distanceFromCenter = abs(vUv.x - 0.5) * 2.0;
-				float coneWidth = mix(0.10, 0.98, vUv.y);
-				float outerBeam = 1.0 - smoothstep(coneWidth * 0.58, coneWidth, distanceFromCenter);
-				float coreBeam = 1.0 - smoothstep(coneWidth * 0.18, coneWidth * 0.62, distanceFromCenter);
-				float topFade = smoothstep(0.02, 0.16, vUv.y);
-				float bottomFade = 1.0 - smoothstep(0.82, 1.0, vUv.y);
-				float depth = mix(0.18, 0.92, vUv.y);
-				float alpha = (outerBeam * depth + coreBeam * 0.28) * topFade * bottomFade * uOpacity;
+				float depth = 1.0 - vUv.y;
+				float coneWidth = mix(0.055, 0.88, pow(depth, 0.82));
+				float softEdge = 1.0 - smoothstep(coneWidth * 0.48, coneWidth, distanceFromCenter);
+				float core = 1.0 - smoothstep(coneWidth * 0.08, coneWidth * 0.42, distanceFromCenter);
+				float topFade = smoothstep(0.01, 0.12, depth);
+				float bottomFade = 1.0 - smoothstep(0.86, 1.0, depth);
+				float depthFalloff = mix(0.34, 0.86, smoothstep(0.02, 0.76, depth));
+				float alpha = (softEdge * 0.68 + core * 0.2) * depthFalloff * topFade * bottomFade * uOpacity;
 				gl_FragColor = vec4(uColor, alpha);
 			}
 		`,
@@ -272,9 +283,9 @@ onMount(() => {
 		if (context) {
 			const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
 			gradient.addColorStop(0, "rgba(255,255,255,1)");
-			gradient.addColorStop(0.16, "rgba(255,222,172,.82)");
-			gradient.addColorStop(0.46, "rgba(255,170,94,.24)");
-			gradient.addColorStop(1, "rgba(255,140,70,0)");
+			gradient.addColorStop(0.14, "rgba(255,218,164,.72)");
+			gradient.addColorStop(0.42, "rgba(255,164,74,.17)");
+			gradient.addColorStop(1, "rgba(255,124,46,0)");
 			context.fillStyle = gradient;
 			context.fillRect(0, 0, 64, 64);
 		}
@@ -286,35 +297,43 @@ onMount(() => {
 	function applySettings(next: DarkModeSpotlightSettings) {
 		const color = new THREE.Color(next.color);
 		const enabled = isDark && next.enabled;
-		beamLength = THREE.MathUtils.lerp(3.45, 6.3, (next.range - 40) / 60);
+		beamLength = THREE.MathUtils.lerp(3.6, 6.1, (next.range - 40) / 60);
 		beamRadius =
 			Math.tan(THREE.MathUtils.degToRad(next.angle * 0.5)) * beamLength;
 		softBeamMaterial.uniforms.uColor.value.copy(color);
 		softBeamMaterial.uniforms.uOpacity.value = enabled
-			? 0.28 + next.range / 520
+			? 0.2 + next.range / 680
 			: 0;
 		beam.scale.set(Math.max(0.12, beamRadius * 2), beamLength, 1);
 		poolMaterial.color.copy(color);
-		poolMaterial.opacity = enabled ? 0.34 + next.range / 220 : 0;
-		pool.scale.setScalar(Math.max(1.7, beamRadius * 1.65));
+		poolMaterial.opacity = enabled ? 0.12 + next.range / 650 : 0;
+		pool.scale.set(
+			Math.max(1.15, beamRadius * 1.22),
+			Math.max(0.68, beamRadius * 0.62),
+			1,
+		);
 		glowMaterial.color.copy(color);
-		glowMaterial.opacity = enabled ? 0.52 + next.range / 420 : 0;
+		glowMaterial.opacity = enabled ? 0.42 + next.range / 620 : 0;
 		bulbMaterial.emissive.copy(color);
-		bulbMaterial.emissiveIntensity = enabled ? 2.4 + next.range / 26 : 0.04;
-		undersideMaterial.color.copy(color).multiplyScalar(0.42);
+		bulbMaterial.emissiveIntensity = enabled ? 1.9 + next.range / 34 : 0.04;
+		undersideMaterial.color.copy(color).multiplyScalar(0.18);
 		undersideMaterial.emissive.copy(color);
 		undersideMaterial.emissiveIntensity = enabled
-			? 0.64 + next.range / 220
+			? 0.2 + next.range / 400
 			: 0.03;
+		spotLight.color.copy(color);
+		spotLight.angle = THREE.MathUtils.degToRad(next.angle);
+		spotLight.intensity = enabled ? 1.2 + next.range / 90 : 0;
+		spotLight.power = enabled ? 20 + next.range * 0.42 : 0;
 		layer.style.setProperty("--spotlight-color", next.color);
 		layer.style.setProperty("--spotlight-range", `${next.range}`);
 		layer.style.setProperty(
 			"--spotlight-pool-x",
-			`${19 + (next.range - 40) * 0.32}vmax`,
+			`${16 + (next.range - 40) * 0.2}vmax`,
 		);
 		layer.style.setProperty(
 			"--spotlight-pool-y",
-			`${12 + (next.range - 40) * 0.19}vmax`,
+			`${9 + (next.range - 40) * 0.12}vmax`,
 		);
 		wake();
 	}
@@ -334,7 +353,7 @@ onMount(() => {
 			Math.min(window.devicePixelRatio || 1, width < 760 ? 1.25 : 1.5),
 		);
 		renderer.setSize(width, height, false);
-		anchor.set(0, halfHeight + 0.58, 0.8);
+		anchor.set(0, halfHeight - 0.18, 0.8);
 		ceilingCap.position.copy(anchor).add(new THREE.Vector3(0, 0.06, 0));
 		if (!pulling && !pointerTracking) {
 			position.copy(anchor).addScaledVector(DOWN, ropeLength);
@@ -351,7 +370,7 @@ onMount(() => {
 		cableQuaternion.setFromUnitVectors(UP, ropeDirection);
 		cable.quaternion.copy(cableQuaternion);
 
-		if (pulling || pointerTracking) {
+		if (pulling) {
 			lightDirection.copy(aimTarget).sub(position).normalize();
 			currentLightDirection
 				.lerp(lightDirection, pulling ? 0.3 : 0.2)
@@ -364,8 +383,12 @@ onMount(() => {
 		lampRoot.position.copy(position);
 		lampRoot.quaternion.copy(lampQuaternion);
 
-		beamStart.copy(position).addScaledVector(currentLightDirection, 0.34);
-		beamDirection.copy(currentLightDirection).normalize();
+		if (pointerTracking) {
+			beamDirection.copy(aimTarget).sub(position).normalize();
+		} else {
+			beamDirection.copy(currentLightDirection).normalize();
+		}
+		beamStart.copy(position).addScaledVector(beamDirection, 0.3);
 		beam.position
 			.copy(beamStart)
 			.addScaledVector(beamDirection, beamLength * 0.5);
@@ -503,7 +526,7 @@ onMount(() => {
 		const worldToScreen = rect.width / (halfWidth * 2);
 		const radius = THREE.MathUtils.lerp(
 			48,
-			Math.max(92, beamRadius * worldToScreen * 0.94),
+			Math.max(120, beamRadius * worldToScreen * 1.15),
 			progress,
 		);
 		return (
@@ -522,11 +545,7 @@ onMount(() => {
 		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
 		if (event.button === 2) {
 			if (!pointerWithinLight(event)) return;
-			adjustingRange = true;
-			rangePointerId = event.pointerId;
-			rangeStartY = event.clientY;
-			rangeStartValue = settings.range;
-			rangeGestureMoved = false;
+			cycleLightColor();
 			suppressContextMenu = true;
 			wake();
 			return;
@@ -544,19 +563,6 @@ onMount(() => {
 
 	function onPointerMove(event: PointerEvent) {
 		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
-		if (adjustingRange && event.pointerId === rangePointerId) {
-			const distance = rangeStartY - event.clientY;
-			if (Math.abs(distance) > 4) rangeGestureMoved = true;
-			const range = THREE.MathUtils.clamp(
-				rangeStartValue + distance * 0.18,
-				40,
-				100,
-			);
-			if (Math.round(range) !== settings.range) {
-				setDarkModeSpotlightSettings({ range: Math.round(range) });
-			}
-			return;
-		}
 		updatePointerTarget(event);
 		pointerTracking = true;
 		if (!pulling || event.pointerId !== pullPointerId) {
@@ -579,14 +585,6 @@ onMount(() => {
 	}
 
 	function onPointerUp(event: PointerEvent) {
-		if (adjustingRange && event.pointerId === rangePointerId) {
-			if (!rangeGestureMoved) cycleLightColor();
-			adjustingRange = false;
-			rangePointerId = -1;
-			suppressContextMenu = false;
-			wake();
-			return;
-		}
 		if (!pulling || event.pointerId !== pullPointerId) return;
 		const velocity = temp
 			.copy(position)
@@ -609,11 +607,6 @@ onMount(() => {
 	}
 
 	function onPointerCancel(event: PointerEvent) {
-		if (event.pointerId === rangePointerId) {
-			adjustingRange = false;
-			rangePointerId = -1;
-			suppressContextMenu = false;
-		}
 		if (event.pointerId === pullPointerId) {
 			pulling = false;
 			pullPointerId = -1;
@@ -625,8 +618,6 @@ onMount(() => {
 	function resetMotion() {
 		pulling = false;
 		pointerTracking = false;
-		adjustingRange = false;
-		rangePointerId = -1;
 		pullPointerId = -1;
 		pullStrength = 0;
 		position.copy(anchor).addScaledVector(DOWN, ropeLength);
@@ -653,6 +644,16 @@ onMount(() => {
 		if (pointerNearLamp(event)) resetMotion();
 	}
 
+	function onWheel(event: WheelEvent) {
+		if (!isDark || !settings.enabled || !pointerWithinLight(event)) return;
+		event.preventDefault();
+		event.stopPropagation();
+		const step = event.deltaY < 0 ? 3 : -3;
+		const range = THREE.MathUtils.clamp(settings.range + step, 40, 100);
+		if (range !== settings.range) setDarkModeSpotlightSettings({ range });
+		wake();
+	}
+
 	function onContextMenu(event: MouseEvent) {
 		if (!isDark || !settings.enabled) {
 			suppressContextMenu = false;
@@ -667,8 +668,6 @@ onMount(() => {
 	function onWindowBlur() {
 		pointerTracking = false;
 		pulling = false;
-		adjustingRange = false;
-		rangePointerId = -1;
 		suppressContextMenu = false;
 		pullPointerId = -1;
 		pullStrength = 0;
@@ -687,6 +686,7 @@ onMount(() => {
 	window.addEventListener("pointercancel", onPointerCancel);
 	window.addEventListener("resize", resize, { passive: true });
 	window.addEventListener("dblclick", onDoubleClick);
+	window.addEventListener("wheel", onWheel, { passive: false, capture: true });
 	window.addEventListener("contextmenu", onContextMenu);
 	window.addEventListener("blur", onWindowBlur);
 
@@ -706,6 +706,7 @@ onMount(() => {
 		window.removeEventListener("pointercancel", onPointerCancel);
 		window.removeEventListener("resize", resize);
 		window.removeEventListener("dblclick", onDoubleClick);
+		window.removeEventListener("wheel", onWheel, true);
 		window.removeEventListener("contextmenu", onContextMenu);
 		window.removeEventListener("blur", onWindowBlur);
 		renderer.dispose();
@@ -777,14 +778,14 @@ onMount(() => {
 		z-index: 2;
 		background: radial-gradient(
 			ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
-			color-mix(in srgb, var(--spotlight-color) 48%, transparent) 0%,
-			color-mix(in srgb, var(--spotlight-color) 28%, transparent) 28%,
-			color-mix(in srgb, var(--spotlight-color) 9%, transparent) 62%,
+			color-mix(in srgb, var(--spotlight-color) 30%, transparent) 0%,
+			color-mix(in srgb, var(--spotlight-color) 15%, transparent) 24%,
+			color-mix(in srgb, var(--spotlight-color) 4%, transparent) 58%,
 			transparent 100%
 		);
-		filter: blur(0.8rem);
+		filter: blur(1.05rem);
 		mix-blend-mode: screen;
-		opacity: 1;
+		opacity: 0.9;
 		transition: background 260ms ease;
 	}
 
@@ -792,10 +793,10 @@ onMount(() => {
 		z-index: 1;
 		background: radial-gradient(
 			ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
-			rgb(0 0 0 / 12%) 0%,
-			rgb(0 0 0 / 45%) 42%,
-			rgb(0 0 0 / 82%) 80%,
-			rgb(0 0 0 / 88%) 100%
+			rgb(0 0 0 / 6%) 0%,
+			rgb(0 0 0 / 48%) 42%,
+			rgb(0 0 0 / 88%) 80%,
+			rgb(0 0 0 / 94%) 100%
 		);
 		mix-blend-mode: normal;
 		opacity: 1;
@@ -803,16 +804,16 @@ onMount(() => {
 
 	@media (max-width: 700px) {
 		.dark-mode-spotlight__wash {
-			opacity: 0.84;
+			opacity: 0.78;
 		}
 
 		.dark-mode-spotlight__vignette {
 			background: radial-gradient(
 				ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
-				rgb(0 0 0 / 10%) 0%,
-				rgb(0 0 0 / 36%) 42%,
-				rgb(0 0 0 / 70%) 80%,
-				rgb(0 0 0 / 76%) 100%
+				rgb(0 0 0 / 5%) 0%,
+				rgb(0 0 0 / 38%) 42%,
+				rgb(0 0 0 / 75%) 80%,
+				rgb(0 0 0 / 82%) 100%
 			);
 		}
 	}

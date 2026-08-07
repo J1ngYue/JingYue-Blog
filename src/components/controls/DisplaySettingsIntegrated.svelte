@@ -1035,7 +1035,7 @@ onMount(() => {
                 />
             </div>
 			<p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
-				仅深色模式显示；光照区域内右键单击换色，按住右键上下拖动可调范围。
+				仅深色模式显示；光照区域内滚轮上滑扩大、下滑缩小范围，右键单击换色。
 			</p>
         </div>
     </div>
