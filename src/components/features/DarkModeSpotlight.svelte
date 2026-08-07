@@ -160,7 +160,7 @@ onMount(() => {
 		new THREE.CircleGeometry(1.055, 48),
 		undersideMaterial,
 	);
-	underside.rotation.x = Math.PI / 2;
+	underside.scale.set(1, 0.28, 1);
 	underside.position.y = -0.385;
 	shadeGroup.add(underside);
 
@@ -285,10 +285,10 @@ onMount(() => {
 		glowMaterial.opacity = enabled ? 0.52 + next.range / 420 : 0;
 		bulbMaterial.emissive.copy(color);
 		bulbMaterial.emissiveIntensity = enabled ? 2.4 + next.range / 26 : 0.04;
-		undersideMaterial.color.copy(color).multiplyScalar(0.18);
+		undersideMaterial.color.copy(color).multiplyScalar(0.42);
 		undersideMaterial.emissive.copy(color);
 		undersideMaterial.emissiveIntensity = enabled
-			? 0.22 + next.range / 340
+			? 0.64 + next.range / 220
 			: 0.03;
 		layer.style.setProperty("--spotlight-color", next.color);
 		wake();
@@ -309,7 +309,7 @@ onMount(() => {
 			Math.min(window.devicePixelRatio || 1, width < 760 ? 1.25 : 1.5),
 		);
 		renderer.setSize(width, height, false);
-		anchor.set(0, halfHeight - 0.32, 0.8);
+		anchor.set(0, halfHeight + 0.58, 0.8);
 		ceilingCap.position.copy(anchor).add(new THREE.Vector3(0, 0.06, 0));
 		if (!pulling) {
 			position.copy(anchor).addScaledVector(DOWN, ropeLength);
@@ -346,6 +346,15 @@ onMount(() => {
 		beam.quaternion.copy(beamQuaternion);
 		beamEnd.copy(beamStart).addScaledVector(beamDirection, beamLength * 0.9);
 		pool.position.copy(beamEnd);
+		projection.copy(beamEnd).project(camera);
+		layer.style.setProperty(
+			"--spotlight-x",
+			`${((projection.x + 1) / 2) * 100}%`,
+		);
+		layer.style.setProperty(
+			"--spotlight-y",
+			`${((1 - projection.y) / 2) * 100}%`,
+		);
 	}
 
 	function stepPhysics() {
@@ -574,6 +583,8 @@ onMount(() => {
 
 <style>
 	.dark-mode-spotlight {
+		--spotlight-x: 50%;
+		--spotlight-y: 48%;
 		position: fixed;
 		inset: 0;
 		z-index: 6;
@@ -599,21 +610,22 @@ onMount(() => {
 	}
 
 	.dark-mode-spotlight__canvas {
-		z-index: 2;
+		z-index: 3;
 	}
 
 	.dark-mode-spotlight__wash {
-		z-index: 1;
+		z-index: 2;
 		background:
 			radial-gradient(
 				ellipse at 50% 84%,
-				color-mix(in srgb, var(--spotlight-color) 12%, transparent),
+				color-mix(in srgb, var(--spotlight-color) 18%, transparent),
 				transparent calc(27% + (100 - var(--spotlight-range)) * 0.08%)
 			),
 			radial-gradient(
-				ellipse at 50% 12%,
-				color-mix(in srgb, var(--spotlight-color) 5%, transparent),
-				transparent 54%
+				ellipse at var(--spotlight-x) var(--spotlight-y),
+				color-mix(in srgb, var(--spotlight-color) 24%, transparent) 0%,
+				color-mix(in srgb, var(--spotlight-color) 10%, transparent) 28%,
+				transparent 66%
 			);
 		filter: blur(1.5rem);
 		mix-blend-mode: screen;
@@ -622,10 +634,10 @@ onMount(() => {
 	}
 
 	.dark-mode-spotlight__vignette {
-		z-index: 3;
-		background: radial-gradient(ellipse at center, transparent 42%, rgb(0 0 0 / 20%) 100%);
-		mix-blend-mode: multiply;
-		opacity: 0.72;
+		z-index: 1;
+		background: rgb(0 0 0 / 72%);
+		mix-blend-mode: normal;
+		opacity: 1;
 	}
 
 	@media (max-width: 700px) {
@@ -634,7 +646,7 @@ onMount(() => {
 		}
 
 		.dark-mode-spotlight__vignette {
-			opacity: 0.5;
+			background: rgb(0 0 0 / 64%);
 		}
 	}
 
