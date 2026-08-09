@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.11",
+		date: "2026-08-10",
+		time: "03:19",
+		type: "fix",
+		title: "放映室跨页进入修复",
+		summary: "修复从动态页进入音乐页后打开放映室只显示空白遮罩的问题。",
+		changes: [
+			"保留沉浸式播放器与音乐地形的常驻样式，避免无刷新切页时被 Swup 清除。",
+			"放映室外壳与播放器内容保持同一生命周期，不再出现遮罩已打开但内容未渲染的状态。",
+			"覆盖动态页进入音乐页后再打开，以及直接打开音乐页两条访问路径。",
+		],
+	},
+	{
 		version: "v6.14.10",
 		date: "2026-08-10",
 		time: "03:03",

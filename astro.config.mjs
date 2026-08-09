@@ -152,7 +152,8 @@ export default defineConfig({
 			accessibility: true,
 			updateHead: {
 				awaitAssets: true,
-				persistTags: "link[data-swup-persist-style]",
+				persistTags:
+					'link[data-swup-persist-style], style[data-vite-dev-id*="MusicTerrainCanvas.svelte"], style[data-vite-dev-id*="ImmersiveMusicPlayer.svelte"]',
 			},
 			updateBodyClass: false,
 			globalInstance: true,
