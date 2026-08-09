@@ -14,9 +14,9 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 >
 	<RecordPageShell
 		title="去过的地方"
-		description="足迹地图与旅行记录。"
-		icon="material-symbols:location-on"
+		description="足迹地图与旅行记录"
+		icon="material-symbols:explore"
 	>
-		<FootprintNotebook client:load />
+		<FootprintNotebook client:only="svelte" />
 	</RecordPageShell>
 </MainGridLayout>

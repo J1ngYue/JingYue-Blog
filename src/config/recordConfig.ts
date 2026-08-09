@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.14",
+		date: "2026-08-10",
+		time: "03:40",
+		type: "feature",
+		title: "足迹地图完整重制",
+		summary: "参照目标页面重做足迹地图、统计与旅行记录交互。",
+		changes: [
+			"接入 Leaflet 与 OpenStreetMap 实际地图，替换原有装饰网格地图。",
+			"新增地图锁定、全屏、缩放、视野复位、年份筛选与足迹集群显示。",
+			"支持点击地图选择位置、记录到访次数，以及为已有足迹重新定位。",
+			"统一三项胶囊统计、地图控制和旅行记录区的明暗主题与响应式样式。",
+		],
+	},
+	{
 		version: "v6.14.13",
 		date: "2026-08-10",
 		time: "03:30",
