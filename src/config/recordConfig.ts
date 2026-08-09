@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.16",
+		date: "2026-08-10",
+		time: "04:13",
+		type: "optimize",
+		title: "文章列表横向卡片重制",
+		summary: "参照目标页面将文章列表改为封面渐隐的三层横向卡片。",
+		changes: [
+			"将列表视图从左图右文改为整张横向卡片，封面在右侧以低透明度融入背景。",
+			"新增从卡片底色到封面的多段渐变，统一深浅色模式下的文字可读性。",
+			"重新排列置顶、标题、分类、日期、标签与摘要，形成清晰的三层信息结构。",
+			"保留分类筛选、骷髅布局开关、网格视图和移动端响应式布局。",
+		],
+	},
+	{
 		version: "v6.14.15",
 		date: "2026-08-10",
 		time: "04:05",
