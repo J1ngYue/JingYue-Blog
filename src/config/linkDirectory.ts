@@ -16,6 +16,8 @@ export interface LinkDirectoryItem {
 	href: string;
 	category: LinkDirectoryCategory;
 	icon: string;
+	iconColor: string;
+	iconColorDark?: string;
 	external?: boolean;
 }
 
@@ -26,6 +28,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "/",
 		category: "我的网站",
 		icon: "material-symbols:home-rounded",
+		iconColor: "#4f8ef7",
 	},
 	{
 		title: "文章列表",
@@ -33,6 +36,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "/posts/",
 		category: "我的网站",
 		icon: "material-symbols:article-rounded",
+		iconColor: "#6366f1",
 	},
 	{
 		title: "文章归档",
@@ -40,6 +44,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "/archive/",
 		category: "我的网站",
 		icon: "material-symbols:archive-rounded",
+		iconColor: "#10b981",
 	},
 	{
 		title: "影像相册",
@@ -47,6 +52,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "/gallery/",
 		category: "我的网站",
 		icon: "material-symbols:photo-library-rounded",
+		iconColor: "#ec4899",
 	},
 	{
 		title: "友情链接",
@@ -54,6 +60,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "/friends/",
 		category: "我的网站",
 		icon: "material-symbols:group-rounded",
+		iconColor: "#f59e0b",
 	},
 	{
 		title: "留言板",
@@ -61,13 +68,16 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "/guestbook/",
 		category: "我的网站",
 		icon: "material-symbols:chat-rounded",
+		iconColor: "#06b6d4",
 	},
 	{
 		title: "GitHub",
 		description: "代码托管、协作与开源项目",
 		href: "https://github.com/",
 		category: "常用网站",
-		icon: "fa7-brands:github",
+		icon: "simple-icons:github",
+		iconColor: "#181717",
+		iconColorDark: "#f0f0f0",
 		external: true,
 	},
 	{
@@ -75,7 +85,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "动画、创作与技术视频社区",
 		href: "https://www.bilibili.com/",
 		category: "常用网站",
-		icon: "fa7-brands:bilibili",
+		icon: "simple-icons:bilibili",
+		iconColor: "#00aeec",
 		external: true,
 	},
 	{
@@ -84,6 +95,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "https://music.163.com/",
 		category: "常用网站",
 		icon: "simple-icons:neteasecloudmusic",
+		iconColor: "#d43c33",
 		external: true,
 	},
 	{
@@ -91,7 +103,9 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "本站使用的 Astro 博客主题",
 		href: "https://github.com/CuteLeaf/Firefly",
 		category: "资源网站",
-		icon: "fa7-brands:github",
+		icon: "simple-icons:github",
+		iconColor: "#181717",
+		iconColorDark: "#f0f0f0",
 		external: true,
 	},
 	{
@@ -99,7 +113,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "主题安装、配置与使用说明",
 		href: "https://docs-firefly.cuteleaf.cn/",
 		category: "资源网站",
-		icon: "material-symbols:menu-book-rounded",
+		icon: "material-symbols:local-fire-department-rounded",
+		iconColor: "#ff6b35",
 		external: true,
 	},
 	{
@@ -107,7 +122,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "查找 Astro 官方与社区集成",
 		href: "https://astro.build/integrations/",
 		category: "资源网站",
-		icon: "material-symbols:extension-rounded",
+		icon: "simple-icons:astro",
+		iconColor: "#bc52ee",
 		external: true,
 	},
 	{
@@ -116,6 +132,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "https://caniuse.com/",
 		category: "工具网站",
 		icon: "material-symbols:travel-explore-rounded",
+		iconColor: "#c75000",
 		external: true,
 	},
 	{
@@ -123,7 +140,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "检测网页性能与核心体验指标",
 		href: "https://pagespeed.web.dev/",
 		category: "工具网站",
-		icon: "material-symbols:speed-rounded",
+		icon: "simple-icons:pagespeedinsights",
+		iconColor: "#4285f4",
 		external: true,
 	},
 	{
@@ -131,7 +149,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "域名、CDN 与网络安全管理",
 		href: "https://dash.cloudflare.com/",
 		category: "工具网站",
-		icon: "material-symbols:cloud",
+		icon: "simple-icons:cloudflare",
+		iconColor: "#f38020",
 		external: true,
 	},
 	{
@@ -139,7 +158,9 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "权威的 Web 平台技术参考",
 		href: "https://developer.mozilla.org/zh-CN/",
 		category: "学习网站",
-		icon: "material-symbols:school-rounded",
+		icon: "simple-icons:mdnwebdocs",
+		iconColor: "#111111",
+		iconColorDark: "#f0f0f0",
 		external: true,
 	},
 	{
@@ -147,7 +168,9 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "现代 JavaScript 系统教程",
 		href: "https://zh.javascript.info/",
 		category: "学习网站",
-		icon: "material-symbols:code-rounded",
+		icon: "simple-icons:javascript",
+		iconColor: "#b38f00",
+		iconColorDark: "#f7df1e",
 		external: true,
 	},
 	{
@@ -155,7 +178,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "TypeScript 官方语言手册",
 		href: "https://www.typescriptlang.org/docs/handbook/intro.html",
 		category: "学习网站",
-		icon: "material-symbols:data-object-rounded",
+		icon: "simple-icons:typescript",
+		iconColor: "#3178c6",
 		external: true,
 	},
 	{
@@ -163,7 +187,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "Astro 框架官方文档",
 		href: "https://docs.astro.build/zh-cn/",
 		category: "文档",
-		icon: "material-symbols:rocket-launch-rounded",
+		icon: "simple-icons:astro",
+		iconColor: "#bc52ee",
 		external: true,
 	},
 	{
@@ -171,7 +196,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "Svelte 5 官方指南与 API",
 		href: "https://svelte.dev/docs/svelte/overview",
 		category: "文档",
-		icon: "material-symbols:code-rounded",
+		icon: "simple-icons:svelte",
+		iconColor: "#ff3e00",
 		external: true,
 	},
 	{
@@ -179,7 +205,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "Tailwind CSS 工具类参考",
 		href: "https://tailwindcss.com/docs/installation/using-vite",
 		category: "文档",
-		icon: "material-symbols:css-rounded",
+		icon: "simple-icons:tailwindcss",
+		iconColor: "#06b6d4",
 		external: true,
 	},
 	{
@@ -188,6 +215,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "https://chatgpt.com/",
 		category: "AI 工具",
 		icon: "simple-icons:openai",
+		iconColor: "#10a37f",
 		external: true,
 	},
 	{
@@ -196,6 +224,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		href: "https://claude.ai/",
 		category: "AI 工具",
 		icon: "simple-icons:claude",
+		iconColor: "#d97757",
 		external: true,
 	},
 	{
@@ -203,7 +232,8 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "Google 的多模态 AI 助手",
 		href: "https://gemini.google.com/",
 		category: "AI 工具",
-		icon: "material-symbols:auto-awesome-rounded",
+		icon: "simple-icons:googlegemini",
+		iconColor: "#8e75b2",
 		external: true,
 	},
 ];

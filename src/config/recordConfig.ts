@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.8",
+		date: "2026-08-10",
+		time: "02:50",
+		type: "optimize",
+		title: "网站导航品牌图标升级",
+		summary: "导航卡片改用对应站点的品牌图标与官方主色。",
+		changes: [
+			"GitHub、Bilibili、网易云音乐等外部入口替换为对应品牌 SVG 图标。",
+			"为 Cloudflare、Astro、Svelte、Tailwind、OpenAI 等站点应用品牌主色。",
+			"站内入口按功能使用独立语义色，并优化深浅色模式下的图标对比度。",
+		],
+	},
+	{
 		version: "v6.14.7",
 		date: "2026-08-10",
 		time: "02:46",

@@ -81,7 +81,10 @@ const getHostname = (href: string, external?: boolean) => {
 									data-category={item.category}
 								>
 									<div class="site-directory__card-heading">
-										<span class="site-directory__card-icon">
+										<span
+											class="site-directory__card-icon"
+											style={`--directory-icon-color: ${item.iconColor}; --directory-icon-color-dark: ${item.iconColorDark ?? item.iconColor}`}
+										>
 											<Icon is:inline name={item.icon} />
 										</span>
 										<h3>{item.title}</h3>
@@ -388,8 +391,15 @@ const getHostname = (href: string, external?: boolean) => {
 		flex: 0 0 auto;
 		place-items: center;
 		border-radius: 50%;
-		background: color-mix(in srgb, var(--primary) 10%, var(--card-bg));
-		color: var(--primary);
+		background: color-mix(in srgb, var(--directory-icon-color) 14%, var(--card-bg));
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--directory-icon-color) 18%, transparent);
+		color: var(--directory-icon-color);
+	}
+
+	:global(html.dark) .site-directory__card-icon {
+		background: color-mix(in srgb, var(--directory-icon-color-dark) 18%, var(--card-bg));
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--directory-icon-color-dark) 24%, transparent);
+		color: var(--directory-icon-color-dark);
 	}
 
 	.site-directory__card-icon svg {
