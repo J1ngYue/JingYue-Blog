@@ -20,6 +20,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.12",
+		date: "2026-08-10",
+		time: "03:21",
+		type: "fix",
+		title: "快捷工具箭头方向修正",
+		summary: "修正快捷工具栏展开与收起状态的箭头方向。",
+		changes: [
+			"对调展开和收起状态的箭头朝向，使图标与当前操作保持一致。",
+			"保留原有平滑旋转与工具栏折叠动画。",
+		],
+	},
+	{
 		version: "v6.14.11",
 		date: "2026-08-10",
 		time: "03:19",

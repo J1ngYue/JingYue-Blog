@@ -589,12 +589,13 @@ const quickLinks = [
 
 	.quick-tools-collapse-icon {
 		display: grid;
+		transform: rotate(180deg);
 		transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 		place-items: center;
 	}
 
 	.quick-tools-dock[data-collapsed="true"] .quick-tools-collapse-icon {
-		transform: rotate(180deg);
+		transform: rotate(0deg);
 	}
 
 	.quick-tools-button {
