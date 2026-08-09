@@ -20,6 +20,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.13",
+		date: "2026-08-10",
+		time: "03:30",
+		type: "remove",
+		title: "关于导航精简",
+		summary: "从关于菜单中移除社交主页入口。",
+		changes: [
+			"删除关于下拉菜单中的社交主页子项。",
+			"保留关于、友情链接与赞助支持入口。",
+		],
+	},
+	{
 		version: "v6.14.12",
 		date: "2026-08-10",
 		time: "03:21",

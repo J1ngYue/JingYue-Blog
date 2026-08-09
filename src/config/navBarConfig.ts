@@ -95,16 +95,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			name: "关于",
 			url: "/about/",
 			icon: "material-symbols:info-rounded",
-			children: [
-				LinkPresets.About,
-				{
-					name: "社交主页",
-					url: "/social/",
-					icon: "material-symbols:group",
-				},
-				LinkPresets.Friends,
-				LinkPresets.Sponsor,
-			],
+			children: [LinkPresets.About, LinkPresets.Friends, LinkPresets.Sponsor],
 		},
 	];
 
