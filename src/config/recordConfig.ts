@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.6",
+		date: "2026-08-10",
+		time: "02:33",
+		type: "fix",
+		title: "非首页背景与留言板留白修复",
+		summary: "非首页默认使用纯色背景，并让留言板按当前背景模式正确定位。",
+		changes: [
+			"首页与非首页分别保存背景模式，未设置的非首页统一使用纯色背景。",
+			"移除留言板对横幅的强制隐藏，手动选择横幅背景后可正常显示。",
+			"留言板在纯色模式下紧贴导航栏，横幅模式下自动恢复横幅间距。",
+		],
+	},
+	{
 		version: "v6.14.5",
 		date: "2026-08-10",
 		time: "02:25",

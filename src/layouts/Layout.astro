@@ -89,6 +89,9 @@ const shouldShowTopHighlight =
 const pageDefaultWallpaperMode = isHomePageCheck
 	? backgroundWallpaper.mode
 	: WALLPAPER_NONE;
+const wallpaperModeStorageKey = isHomePageCheck
+	? "wallpaperMode"
+	: "nonHomeWallpaperMode";
 const enableBanner = pageDefaultWallpaperMode === "banner";
 
 let pageTitle: string;
@@ -282,6 +285,7 @@ const siteLang = lang.replace("_", "-");
         configHue,
         defaultMode: siteConfig.themeColor.defaultMode ?? "light",
         defaultWallpaperMode: pageDefaultWallpaperMode,
+        wallpaperModeStorageKey,
         isWallpaperSwitchable:
           backgroundWallpaper.switchable ?? true,
         darkTheme: expressiveCodeConfig.darkTheme,
@@ -438,11 +442,11 @@ const siteLang = lang.replace("_", "-");
       const WALLPAPER_OVERLAY = "overlay";
       const WALLPAPER_NONE = "none";
       let wallpaperMode = isWallpaperSwitchable
-        ? localStorage.getItem("wallpaperMode") || defaultWallpaperMode
+        ? localStorage.getItem(wallpaperModeStorageKey) || defaultWallpaperMode
         : defaultWallpaperMode;
       if (wallpaperMode === WALLPAPER_FULLSCREEN) {
         wallpaperMode = WALLPAPER_BANNER;
-        localStorage.setItem("wallpaperMode", wallpaperMode);
+        localStorage.setItem(wallpaperModeStorageKey, wallpaperMode);
       }
       if (
         wallpaperMode !== WALLPAPER_BANNER &&

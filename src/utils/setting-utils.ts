@@ -939,7 +939,7 @@ export function setWallpaperMode(mode: WALLPAPER_MODE): void {
 	) {
 		return;
 	}
-	localStorage.setItem("wallpaperMode", mode);
+	localStorage.setItem(getWallpaperModeStorageKeyForCurrentPage(), mode);
 	applyWallpaperModeToDocument(mode);
 	if (typeof window !== "undefined") {
 		window.dispatchEvent(
@@ -969,26 +969,32 @@ function getDefaultWallpaperModeForCurrentPage(): WALLPAPER_MODE {
 		: backgroundWallpaper.mode;
 }
 
+function getWallpaperModeStorageKeyForCurrentPage(): string {
+	return typeof window !== "undefined" &&
+		!checkIsHomePage(window.location.pathname)
+		? "nonHomeWallpaperMode"
+		: "wallpaperMode";
+}
+
 export function getStoredWallpaperMode(): WALLPAPER_MODE {
 	// 检查是否在浏览器环境中
 	if (
 		typeof localStorage === "undefined" ||
 		typeof localStorage.getItem !== "function"
 	) {
-		return backgroundWallpaper.mode;
-	}
-
-	const isSwitchable = backgroundWallpaper.switchable ?? true;
-	if (!isSwitchable) {
-		localStorage.removeItem("wallpaperMode");
 		return getDefaultWallpaperModeForCurrentPage();
 	}
 
-	const storedMode = localStorage.getItem(
-		"wallpaperMode",
-	) as WALLPAPER_MODE | null;
+	const storageKey = getWallpaperModeStorageKeyForCurrentPage();
+	const isSwitchable = backgroundWallpaper.switchable ?? true;
+	if (!isSwitchable) {
+		localStorage.removeItem(storageKey);
+		return getDefaultWallpaperModeForCurrentPage();
+	}
+
+	const storedMode = localStorage.getItem(storageKey) as WALLPAPER_MODE | null;
 	if (storedMode === WALLPAPER_FULLSCREEN) {
-		localStorage.setItem("wallpaperMode", WALLPAPER_BANNER);
+		localStorage.setItem(storageKey, WALLPAPER_BANNER);
 		return WALLPAPER_BANNER;
 	}
 	if (

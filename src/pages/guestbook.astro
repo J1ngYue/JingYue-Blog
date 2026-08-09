@@ -20,7 +20,6 @@ const description = i18n(I18nKey.guestbookDescription);
 	title={title}
 	description={description}
 	plainContent={true}
-	contentTop="5.5rem"
 >
 	<div class="guestbook-page">
 		<GuestbookChat client:only="svelte">
@@ -28,13 +27,3 @@ const description = i18n(I18nKey.guestbookDescription);
 		</GuestbookChat>
 	</div>
 </MainGridLayout>
-
-<style is:global>
-	body.content-only-active.plain-content-active:has(.guestbook-page) #wallpaper-wrapper,
-	body.content-only-active.plain-content-active:has(.guestbook-page) .local-wallpaper-site,
-	body.content-only-active.plain-content-active:has(.guestbook-page) #header-waves,
-	body.content-only-active.plain-content-active:has(.guestbook-page) #scroll-down-indicator {
-		display: none !important;
-	}
-
-</style>
