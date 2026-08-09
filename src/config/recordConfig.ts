@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.4",
+		date: "2026-08-10",
+		time: "02:23",
+		type: "fix",
+		title: "灯光范围手势修复",
+		summary: "灯光范围改为左键横向拖动，恢复首页滚轮翻页。",
+		changes: [
+			"移除光照区域对滚轮事件的拦截，首页可正常切换下一屏。",
+			"光照区域内按住左键向左缩小、向右放大，普通点击仍可正常使用。",
+			"照射范围上限提升至 180，并限制动态光束宽度以避免翻页后异常放大。",
+		],
+	},
+	{
 		version: "v6.14.3",
 		date: "2026-08-08",
 		time: "02:57",

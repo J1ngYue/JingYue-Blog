@@ -1,6 +1,8 @@
 export const DARK_MODE_SPOTLIGHT_CHANGE_EVENT =
 	"firefly:dark-mode-spotlight-change";
 export const DARK_MODE_SPOTLIGHT_STORAGE_KEY = "fireflyDarkModeSpotlightV1";
+export const DARK_MODE_SPOTLIGHT_RANGE_MIN = 40;
+export const DARK_MODE_SPOTLIGHT_RANGE_MAX = 180;
 
 export interface DarkModeSpotlightSettings {
 	enabled: boolean;
@@ -42,7 +44,11 @@ function normalizeSettings(
 			? clamp(Number(value?.angle), 16, 58)
 			: DEFAULT_DARK_MODE_SPOTLIGHT.angle,
 		range: Number.isFinite(value?.range)
-			? clamp(Number(value?.range), 40, 100)
+			? clamp(
+					Number(value?.range),
+					DARK_MODE_SPOTLIGHT_RANGE_MIN,
+					DARK_MODE_SPOTLIGHT_RANGE_MAX,
+				)
 			: DEFAULT_DARK_MODE_SPOTLIGHT.range,
 	};
 }

@@ -3,6 +3,8 @@ import { onMount } from "svelte";
 import * as THREE from "three";
 import {
 	DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
+	DARK_MODE_SPOTLIGHT_RANGE_MAX,
+	DARK_MODE_SPOTLIGHT_RANGE_MIN,
 	type DarkModeSpotlightSettings,
 	getDarkModeSpotlightSettings,
 	setDarkModeSpotlightSettings,
@@ -84,6 +86,12 @@ onMount(() => {
 	let beamWidthMultiplier = 1;
 	let pulling = false;
 	let pointerTracking = false;
+	let rangePointerId = -1;
+	let rangeStartX = 0;
+	let rangeStartValue = settings.range;
+	let rangeGestureMoved = false;
+	let suppressNextClick = false;
+	let clickResetTimer = 0;
 	let suppressContextMenu = false;
 	let pullPointerId = -1;
 	let pullStrength = 0;
@@ -299,11 +307,13 @@ onMount(() => {
 	function applySettings(next: DarkModeSpotlightSettings) {
 		const color = new THREE.Color(next.color);
 		const enabled = isDark && next.enabled;
-		beamWidthMultiplier = THREE.MathUtils.lerp(
-			0.62,
-			1.18,
-			(next.range - 40) / 60,
+		const rangeProgress = THREE.MathUtils.clamp(
+			(next.range - DARK_MODE_SPOTLIGHT_RANGE_MIN) /
+				(DARK_MODE_SPOTLIGHT_RANGE_MAX - DARK_MODE_SPOTLIGHT_RANGE_MIN),
+			0,
+			1,
 		);
+		beamWidthMultiplier = THREE.MathUtils.lerp(0.62, 1.75, rangeProgress);
 		softBeamMaterial.uniforms.uColor.value.copy(color);
 		softBeamMaterial.uniforms.uOpacity.value = enabled
 			? 0.2 + next.range / 680
@@ -327,11 +337,11 @@ onMount(() => {
 		layer.style.setProperty("--spotlight-range", `${next.range}`);
 		layer.style.setProperty(
 			"--spotlight-pool-x",
-			`${16 + (next.range - 40) * 0.2}vmax`,
+			`${16 + rangeProgress * 22}vmax`,
 		);
 		layer.style.setProperty(
 			"--spotlight-pool-y",
-			`${9 + (next.range - 40) * 0.12}vmax`,
+			`${9 + rangeProgress * 14}vmax`,
 		);
 		wake();
 	}
@@ -404,10 +414,13 @@ onMount(() => {
 			beamLength = defaultBeamLength;
 			beamEnd.copy(beamStart).addScaledVector(beamDirection, beamLength);
 		}
-		beamRadius =
+		beamRadius = THREE.MathUtils.clamp(
 			Math.tan(THREE.MathUtils.degToRad(settings.angle * 0.5)) *
-			beamLength *
-			beamWidthMultiplier;
+				defaultBeamLength *
+				beamWidthMultiplier,
+			0.72,
+			2.6,
+		);
 		beam.visible = beamLength > 0.01;
 		beam.position.copy(beamStart).add(beamEnd).multiplyScalar(0.5);
 		beam.scale.set(
@@ -579,14 +592,23 @@ onMount(() => {
 			wake();
 			return;
 		}
+		const isNearLamp = pointerNearLamp(event);
+		const isWithinLight = pointerWithinLight(event);
 		updatePointerTarget(event);
 		pointerTracking = true;
-		if (event.button !== 0 || !pointerNearLamp(event)) return;
-		pulling = true;
-		pullPointerId = event.pointerId;
-		lastPointerTime = performance.now();
-		lastPointerTarget.copy(aimTarget);
-		pointerVelocity.set(0, 0, 0);
+		if (event.button !== 0) return;
+		if (isNearLamp) {
+			pulling = true;
+			pullPointerId = event.pointerId;
+			lastPointerTime = performance.now();
+			lastPointerTarget.copy(aimTarget);
+			pointerVelocity.set(0, 0, 0);
+		} else if (isWithinLight) {
+			rangePointerId = event.pointerId;
+			rangeStartX = event.clientX;
+			rangeStartValue = settings.range;
+			rangeGestureMoved = false;
+		}
 		wake();
 	}
 
@@ -594,6 +616,25 @@ onMount(() => {
 		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
 		updatePointerTarget(event);
 		pointerTracking = true;
+		if (event.pointerId === rangePointerId) {
+			const distanceX = event.clientX - rangeStartX;
+			if (Math.abs(distanceX) >= 6) {
+				rangeGestureMoved = true;
+				suppressNextClick = true;
+				document.documentElement.classList.add("spotlight-range-adjusting");
+				event.preventDefault();
+				const range = THREE.MathUtils.clamp(
+					Math.round(rangeStartValue + distanceX * 0.24),
+					DARK_MODE_SPOTLIGHT_RANGE_MIN,
+					DARK_MODE_SPOTLIGHT_RANGE_MAX,
+				);
+				if (range !== settings.range) {
+					setDarkModeSpotlightSettings({ range });
+				}
+			}
+			wake();
+			return;
+		}
 		if (!pulling || event.pointerId !== pullPointerId) {
 			wake();
 			return;
@@ -614,6 +655,19 @@ onMount(() => {
 	}
 
 	function onPointerUp(event: PointerEvent) {
+		if (event.pointerId === rangePointerId) {
+			rangePointerId = -1;
+			document.documentElement.classList.remove("spotlight-range-adjusting");
+			if (rangeGestureMoved) {
+				window.clearTimeout(clickResetTimer);
+				clickResetTimer = window.setTimeout(() => {
+					suppressNextClick = false;
+				}, 0);
+			}
+			rangeGestureMoved = false;
+			wake();
+			return;
+		}
 		if (!pulling || event.pointerId !== pullPointerId) return;
 		const velocity = temp
 			.copy(position)
@@ -636,6 +690,11 @@ onMount(() => {
 	}
 
 	function onPointerCancel(event: PointerEvent) {
+		if (event.pointerId === rangePointerId) {
+			rangePointerId = -1;
+			rangeGestureMoved = false;
+			document.documentElement.classList.remove("spotlight-range-adjusting");
+		}
 		if (event.pointerId === pullPointerId) {
 			pulling = false;
 			pullPointerId = -1;
@@ -673,14 +732,11 @@ onMount(() => {
 		if (pointerNearLamp(event)) resetMotion();
 	}
 
-	function onWheel(event: WheelEvent) {
-		if (!isDark || !settings.enabled || !pointerWithinLight(event)) return;
+	function onClick(event: MouseEvent) {
+		if (!suppressNextClick) return;
 		event.preventDefault();
-		event.stopPropagation();
-		const step = event.deltaY < 0 ? 3 : -3;
-		const range = THREE.MathUtils.clamp(settings.range + step, 40, 100);
-		if (range !== settings.range) setDarkModeSpotlightSettings({ range });
-		wake();
+		event.stopImmediatePropagation();
+		suppressNextClick = false;
 	}
 
 	function onContextMenu(event: MouseEvent) {
@@ -697,9 +753,13 @@ onMount(() => {
 	function onWindowBlur() {
 		pointerTracking = false;
 		pulling = false;
+		rangePointerId = -1;
+		rangeGestureMoved = false;
+		suppressNextClick = false;
 		suppressContextMenu = false;
 		pullPointerId = -1;
 		pullStrength = 0;
+		document.documentElement.classList.remove("spotlight-range-adjusting");
 		wake();
 	}
 
@@ -710,12 +770,12 @@ onMount(() => {
 	});
 	window.addEventListener(DARK_MODE_SPOTLIGHT_CHANGE_EVENT, syncSettings);
 	window.addEventListener("pointerdown", onPointerDown, { passive: true });
-	window.addEventListener("pointermove", onPointerMove, { passive: true });
+	window.addEventListener("pointermove", onPointerMove, { passive: false });
 	window.addEventListener("pointerup", onPointerUp);
 	window.addEventListener("pointercancel", onPointerCancel);
 	window.addEventListener("resize", resize, { passive: true });
 	window.addEventListener("dblclick", onDoubleClick);
-	window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+	window.addEventListener("click", onClick, true);
 	window.addEventListener("contextmenu", onContextMenu);
 	window.addEventListener("blur", onWindowBlur);
 
@@ -727,6 +787,8 @@ onMount(() => {
 	return () => {
 		disposed = true;
 		if (animationFrame) cancelAnimationFrame(animationFrame);
+		window.clearTimeout(clickResetTimer);
+		document.documentElement.classList.remove("spotlight-range-adjusting");
 		observer.disconnect();
 		window.removeEventListener(DARK_MODE_SPOTLIGHT_CHANGE_EVENT, syncSettings);
 		window.removeEventListener("pointerdown", onPointerDown);
@@ -735,7 +797,7 @@ onMount(() => {
 		window.removeEventListener("pointercancel", onPointerCancel);
 		window.removeEventListener("resize", resize);
 		window.removeEventListener("dblclick", onDoubleClick);
-		window.removeEventListener("wheel", onWheel, true);
+		window.removeEventListener("click", onClick, true);
 		window.removeEventListener("contextmenu", onContextMenu);
 		window.removeEventListener("blur", onWindowBlur);
 		renderer.dispose();
@@ -853,3 +915,13 @@ onMount(() => {
 		}
 	}
 </style>
+
+<svelte:head>
+	<style>
+		html.spotlight-range-adjusting,
+		html.spotlight-range-adjusting * {
+			cursor: ew-resize !important;
+			user-select: none !important;
+		}
+	</style>
+</svelte:head>

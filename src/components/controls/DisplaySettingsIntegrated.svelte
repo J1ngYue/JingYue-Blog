@@ -52,6 +52,8 @@ import {
 import type { WALLPAPER_MODE } from "@/types/config";
 import {
 	DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
+	DARK_MODE_SPOTLIGHT_RANGE_MAX,
+	DARK_MODE_SPOTLIGHT_RANGE_MIN,
 	type DarkModeSpotlightSettings,
 	getDarkModeSpotlightSettings,
 	resetDarkModeSpotlightSettings,
@@ -1012,8 +1014,8 @@ onMount(() => {
                     <div class="numeric-value-field">
                         <input
                             type="number"
-                            min="40"
-                            max="100"
+							min={DARK_MODE_SPOTLIGHT_RANGE_MIN}
+							max={DARK_MODE_SPOTLIGHT_RANGE_MAX}
                             step="1"
                             value={spotlight.range}
                             aria-label="照射范围数值"
@@ -1026,8 +1028,8 @@ onMount(() => {
                 <input
                     aria-label="当前照射范围"
                     type="range"
-                    min="40"
-                    max="100"
+					min={DARK_MODE_SPOTLIGHT_RANGE_MIN}
+					max={DARK_MODE_SPOTLIGHT_RANGE_MAX}
                     step="1"
                     value={spotlight.range}
                     oninput={(event) => updateSpotlight({ range: (event.currentTarget as HTMLInputElement).valueAsNumber })}
@@ -1035,7 +1037,7 @@ onMount(() => {
                 />
             </div>
 			<p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
-				仅深色模式显示；光照区域内滚轮上滑扩大、下滑缩小范围，右键单击换色。
+				仅深色模式显示；光照区域内按住左键左右拖动调整范围，右键单击换色。
 			</p>
         </div>
     </div>
