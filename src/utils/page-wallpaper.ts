@@ -1,3 +1,5 @@
+import { DEFAULT_PAGE_WALLPAPER_ID } from "@/config/pageWallpapers";
+
 export const PAGE_WALLPAPER_CHANGE_EVENT = "firefly:page-wallpaper-change";
 export const OPEN_WALLPAPER_PICKER_EVENT = "firefly:open-wallpaper-picker";
 
@@ -6,7 +8,7 @@ export const PAGE_WALLPAPER_DEFAULT_KEY = "fireflyDefaultWallpaperV1";
 export const PAGE_WALLPAPER_SYNC_TARGETS_KEY =
 	"fireflyPageWallpaperSyncTargetsV1";
 
-export const SYSTEM_DEFAULT_WALLPAPER = "wallpaper-1";
+export const SYSTEM_DEFAULT_WALLPAPER = DEFAULT_PAGE_WALLPAPER_ID;
 
 export const PAGE_WALLPAPER_PAGES = [
 	{ key: "home", label: "主页", paths: ["/"] },

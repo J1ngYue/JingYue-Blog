@@ -660,8 +660,15 @@ onMount(() => {
 						>
 							<span class="home-cover-option-number">0{index + 1}</span>
 							<span class="home-cover-option-preview">
-								{#if favorite?.type === "video"}
-									<video src={favorite.previewUrl} muted playsinline preload="metadata"></video>
+								{#if favorite?.type === "video" || (!favorite && asset.type === "video")}
+									<video
+										src={favorite?.previewUrl || asset.desktopUrl}
+										autoplay
+										muted
+										loop
+										playsinline
+										preload="metadata"
+									></video>
 									<Icon icon="material-symbols:play-circle-rounded" />
 								{:else}
 									<img src={favorite?.previewUrl || asset.desktopUrl} alt="" loading={index === 0 ? "eager" : "lazy"} />

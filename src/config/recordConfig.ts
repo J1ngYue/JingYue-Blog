@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.15",
+		date: "2026-08-10",
+		time: "04:05",
+		type: "fix",
+		title: "默认动态壁纸持久化修正",
+		summary: "将蓝色忧郁视频设为代码默认壁纸，并统一刷新后的选择来源。",
+		changes: [
+			"将蓝色忧郁 MP4 正式加入站点静态资源并设为第一默认壁纸。",
+			"为内置壁纸补充图片与视频类型，刷新后继续渲染正确的媒体组件。",
+			"让系统默认值、管理员默认值与壁纸选择器共用同一默认壁纸标识。",
+			"保留用户选择的页面壁纸；本地记录失效时自动回退到默认视频。",
+		],
+	},
+	{
 		version: "v6.14.14",
 		date: "2026-08-10",
 		time: "03:40",

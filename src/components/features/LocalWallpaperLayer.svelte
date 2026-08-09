@@ -110,7 +110,7 @@ onMount(() => {
 						? builtIn.mobileUrl
 						: builtIn.desktopUrl
 					: "";
-			mediaType = record?.type ?? (sourceUrl ? "image" : null);
+			mediaType = record?.type ?? builtIn?.type ?? null;
 			hasMedia = Boolean(sourceUrl);
 			document.documentElement.setAttribute(
 				"data-has-local-wallpaper",
