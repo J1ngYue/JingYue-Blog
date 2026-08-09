@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.10",
+		date: "2026-08-10",
+		time: "03:03",
+		type: "fix",
+		title: "更新日志展开交互修复",
+		summary: "恢复更新日志在无刷新切页后的点击展开与平滑收起。",
+		changes: [
+			"改用全站常驻事件委托，直接打开、无刷新切页及前进后退时均可展开日志。",
+			"每次初始化同步展开状态与无障碍属性，避免箭头状态和内容状态不一致。",
+			"保留可反向衔接的高度与透明度过渡，连续点击时也能平滑展开或收起。",
+		],
+	},
+	{
 		version: "v6.14.9",
 		date: "2026-08-10",
 		time: "02:56",

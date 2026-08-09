@@ -962,6 +962,63 @@ const hasMultipleImages =
 <QuickToolsDock />
 <PageWallpaperPicker client:load />
 
+<script>
+	type ChangelogWindow = Window & {
+		__jingyueChangelogInteractionsBound?: boolean;
+	};
+
+	const changelogWindow = window as ChangelogWindow;
+
+	function syncChangelogState() {
+		document.querySelectorAll<HTMLElement>("[data-log-toggle]").forEach((toggle) => {
+			const entry = toggle.closest<HTMLElement>("[data-log-entry]");
+			const content = entry?.querySelector<HTMLElement>("[data-log-content]");
+			if (!entry || !content) return;
+			const expanded = entry.dataset.expanded === "true";
+			toggle.setAttribute("aria-expanded", String(expanded));
+			content.setAttribute("aria-hidden", String(!expanded));
+		});
+	}
+
+	if (!changelogWindow.__jingyueChangelogInteractionsBound) {
+		changelogWindow.__jingyueChangelogInteractionsBound = true;
+		document.addEventListener("click", (event) => {
+			if (!(event.target instanceof Element)) return;
+
+			const toggle = event.target.closest<HTMLElement>("[data-log-toggle]");
+			if (toggle) {
+				const entry = toggle.closest<HTMLElement>("[data-log-entry]");
+				if (!entry) return;
+				const expanded = entry.dataset.expanded !== "true";
+				entry.dataset.expanded = String(expanded);
+				toggle.setAttribute("aria-expanded", String(expanded));
+				entry
+					.querySelector<HTMLElement>("[data-log-content]")
+					?.setAttribute("aria-hidden", String(!expanded));
+				return;
+			}
+
+			const filterButton = event.target.closest<HTMLElement>("[data-log-filter]");
+			if (!filterButton) return;
+			const filter = filterButton.dataset.logFilter || "all";
+			document.querySelectorAll<HTMLElement>("[data-log-filter]").forEach((button) => {
+				const active = button === filterButton;
+				button.classList.toggle("is-active", active);
+				button.setAttribute("aria-pressed", String(active));
+			});
+			document.querySelectorAll<HTMLElement>("[data-log-entry]").forEach((entry) => {
+				entry.hidden = filter !== "all" && entry.dataset.logType !== filter;
+			});
+		});
+
+		document.addEventListener("astro:page-load", syncChangelogState);
+		document.addEventListener("swup:contentReplaced", syncChangelogState);
+		window.addEventListener("pageshow", syncChangelogState);
+	}
+
+	syncChangelogState();
+</script>
+
 <script is:inline data-swup-ignore-script>
 	(function bindInternalCoverTransition() {
 		function scheduleInit() {
