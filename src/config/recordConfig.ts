@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.9",
+		date: "2026-08-10",
+		time: "02:56",
+		type: "fix",
+		title: "文章布局开关推拉动画修复",
+		summary: "重做骷髅布局开关的骨手推拉轨迹，消除动画重叠。",
+		changes: [
+			"统一骷髅与骨手的移动时长和轨迹，让骨手完整跟随开关左右推拉。",
+			"调整动画层级，使骨手始终位于骷髅后方，不再遮挡面部。",
+			"使用位移与透明度动画替代位置跳变，并保留减少动态效果设置。",
+		],
+	},
+	{
 		version: "v6.14.8",
 		date: "2026-08-10",
 		time: "02:50",

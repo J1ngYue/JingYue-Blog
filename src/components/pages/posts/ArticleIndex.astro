@@ -245,7 +245,7 @@ const formatCardDate = (date: Date) =>
 			switchAnimationTimer = window.setTimeout(() => {
 				viewSwitch.classList.remove("is-switching");
 				switchAnimationTimer = undefined;
-			}, 900);
+			}, 620);
 		};
 		const storedView = localStorage.getItem("jingyue-article-view");
 		if (storedView === "list" || storedView === "grid") {
@@ -260,7 +260,6 @@ const formatCardDate = (date: Date) =>
 			);
 		};
 		syncViewSwitch();
-		replayViewSwitchAnimation();
 		viewInput?.addEventListener("change", () => {
 			const nextView = viewInput.checked ? "grid" : "list";
 			root.dataset.view = nextView;
@@ -590,6 +589,7 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__view-switch {
+		--skull-travel: 2.4375rem;
 		position: relative;
 		display: inline-flex;
 		width: 5rem;
@@ -626,36 +626,31 @@ const formatCardDate = (date: Date) =>
 	.article-index__skull {
 		position: absolute;
 		top: 0.15625rem;
-		left: calc(100% - 2.33331rem);
-		z-index: 1;
+		left: 0.15625rem;
+		z-index: 3;
 		display: flex;
 		width: 2.1875rem;
 		height: 2.1875rem;
 		align-items: center;
 		justify-content: center;
 		border-radius: 1.25rem;
+		transform: translateX(0);
+		transition: transform 0.52s cubic-bezier(0.22, 0.82, 0.3, 1.08);
+		will-change: transform;
 	}
 
 	.article-index__view-switch input:checked ~ .article-index__skull {
-		left: calc(100% - 2.33331rem);
+		transform: translateX(var(--skull-travel));
 	}
 
 	.article-index__view-switch input:not(:checked) ~ .article-index__skull {
-		left: 0.15625rem;
-	}
-
-	.article-index__view-switch.is-switching input:checked ~ .article-index__skull {
-		animation: article-skull-right 0.42s ease-out forwards;
-	}
-
-	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__skull {
-		animation: article-skull-left 0.42s ease-out forwards;
+		transform: translateX(0);
 	}
 
 	.article-index__skull > span {
 		position: absolute;
 		filter: drop-shadow(0 1px 1px #000);
-		animation: none;
+		transition: filter 0.24s ease;
 	}
 
 	.article-index__view-switch input:checked ~ .article-index__skull > span {
@@ -663,11 +658,11 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__view-switch.is-switching input:checked ~ .article-index__skull > span {
-		animation: article-skull-tone 0.82s ease-in-out normal forwards;
+		animation: article-skull-lean-right 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08);
 	}
 
 	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__skull > span {
-		animation: article-skull-tone 0.82s ease-in-out reverse forwards;
+		animation: article-skull-lean-left 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08);
 	}
 
 	.article-index__cranium {
@@ -740,28 +735,30 @@ const formatCardDate = (date: Date) =>
 
 	.article-index__arm-wrapper {
 		position: absolute;
-		right: -65%;
-		width: 100%;
-		height: 100%;
+		inset: 0;
+		z-index: 2;
 		overflow: hidden;
 		border-radius: 1.25rem;
-		animation: none;
+		pointer-events: none;
 	}
 
-	.article-index__view-switch.is-switching input:checked ~ .article-index__arm-wrapper {
-		animation: article-arm-off 0.82s ease-in-out normal forwards;
+	.article-index__view-switch.is-switching input:checked ~ .article-index__arm-wrapper .article-index__arm {
+		animation: article-arm-pull-right 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08) forwards;
 	}
 
-	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__arm-wrapper {
-		animation: article-arm-off 0.82s ease-in-out reverse forwards;
+	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__arm-wrapper .article-index__arm {
+		animation: article-arm-push-left 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08) forwards;
 	}
 
 	.article-index__arm {
 		position: absolute;
 		top: calc(50% - 0.3125rem);
-		right: 2%;
+		right: 0.1rem;
 		width: 2rem;
 		height: 0.625rem;
+		opacity: 0;
+		transform: translateX(3.2rem);
+		will-change: transform, opacity;
 	}
 
 	.article-index__bone {
@@ -862,26 +859,30 @@ const formatCardDate = (date: Date) =>
 		filter: drop-shadow(-0.3125rem 0 #fff) drop-shadow(0 0 1px #000);
 	}
 
-	@keyframes article-skull-right {
-		from { left: 0.15625rem; }
-		to { left: calc(100% - 2.33331rem); }
+	@keyframes article-skull-lean-right {
+		0%, 18% { transform: translateX(-0.04rem) rotate(-2deg); }
+		76% { transform: translateX(0.06rem) rotate(2deg); }
+		100% { transform: translateX(0) rotate(0); }
 	}
 
-	@keyframes article-skull-left {
-		from { left: calc(100% - 2.33331rem); }
-		to { left: 0.15625rem; }
+	@keyframes article-skull-lean-left {
+		0%, 18% { transform: translateX(0.04rem) rotate(2deg); }
+		76% { transform: translateX(-0.06rem) rotate(-2deg); }
+		100% { transform: translateX(0) rotate(0); }
 	}
 
-	@keyframes article-skull-tone {
-		0%, 50% { filter: drop-shadow(0 1px 1px #000) brightness(1); }
-		50.01%, 100% { filter: drop-shadow(0 1px 1px #000) brightness(1.875); }
+	@keyframes article-arm-pull-right {
+		0% { opacity: 0; transform: translateX(3.2rem); }
+		16% { opacity: 1; transform: translateX(0); }
+		80% { opacity: 1; transform: translateX(var(--skull-travel)); }
+		100% { opacity: 0; transform: translateX(3.35rem); }
 	}
 
-	@keyframes article-arm-off {
-		0% { right: -65%; }
-		25%, 33% { right: 0; }
-		66%, 80% { right: -50%; }
-		100% { right: -65%; }
+	@keyframes article-arm-push-left {
+		0% { opacity: 0; transform: translateX(3.35rem); }
+		16% { opacity: 1; transform: translateX(var(--skull-travel)); }
+		80% { opacity: 1; transform: translateX(0); }
+		100% { opacity: 0; transform: translateX(3.2rem); }
 	}
 
 	.article-index__header nav {
@@ -1246,11 +1247,11 @@ const formatCardDate = (date: Date) =>
 		}
 
 		.article-index__view-switch input:checked ~ .article-index__skull {
-			left: calc(100% - 2.33331rem);
+			transform: translateX(var(--skull-travel));
 		}
 
 		.article-index__view-switch input:not(:checked) ~ .article-index__skull {
-			left: 0.15625rem;
+			transform: translateX(0);
 		}
 
 		.article-index__view-switch input:checked ~ .article-index__skull > span {
