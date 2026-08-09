@@ -773,7 +773,7 @@ onDestroy(() => {
 		z-index: 4;
 		width: min(32rem, 36vw);
 		text-shadow: 0 2px 12px rgb(0 0 0 / 80%);
-		transform: perspective(72rem) rotateY(-10deg) rotateZ(-0.45deg);
+		transform: perspective(72rem) rotateY(-10deg) rotateZ(-0.9deg);
 		transform-origin: left center;
 	}
 

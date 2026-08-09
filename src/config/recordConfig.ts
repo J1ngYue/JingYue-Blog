@@ -20,6 +20,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.5",
+		date: "2026-08-10",
+		time: "02:25",
+		type: "optimize",
+		title: "音乐歌词视角微调",
+		summary: "沉浸式播放器歌词面板增加轻微的右高左低倾斜。",
+		changes: [
+			"桌面端歌词与制作信息面板的倾斜角度由 -0.45° 调整为 -0.9°。",
+			"保留窄屏无倾斜布局，避免移动端文字裁切。",
+		],
+	},
+	{
 		version: "v6.14.4",
 		date: "2026-08-10",
 		time: "02:23",
