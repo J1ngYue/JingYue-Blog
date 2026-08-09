@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
 import WidgetLayout from "@/components/common/WidgetLayout.astro";
 import { siteConfig } from "@/config";
+import { changelogEntries } from "@/config/recordConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import type { WidgetComponentConfig } from "@/types/config";
@@ -16,9 +17,21 @@ interface Props {
 	class?: string;
 	style?: string;
 	widgetConfig?: WidgetComponentConfig;
+	variant?: "default" | "sidebar";
 }
 
-const { class: className, style, widgetConfig } = Astro.props;
+const {
+	class: className,
+	style,
+	widgetConfig,
+	variant = "default",
+} = Astro.props;
+const widgetClassName = [
+	className,
+	variant === "sidebar" ? "site-stats--sidebar" : "",
+]
+	.filter(Boolean)
+	.join(" ");
 
 const showTitle = widgetConfig?.showTitle !== false;
 
@@ -62,11 +75,17 @@ const getActivityDate = (post: (typeof posts)[number]): Date => {
 	return published;
 };
 
-const lastActivityDate = posts.reduce<Date | null>((latest, post) => {
-	const current = getActivityDate(post);
-	if (!latest || current > latest) return current;
-	return latest;
-}, null);
+const activityDates = [
+	...posts.map(getActivityDate),
+	...dynamics.map((entry) => entry.data.published),
+	...changelogEntries.map(
+		(entry) => new Date(`${entry.date}T${entry.time}:00+08:00`),
+	),
+].filter((date) => !Number.isNaN(date.getTime()));
+const lastActivityDate = activityDates.reduce<Date | null>(
+	(latest, current) => (!latest || current > latest ? current : latest),
+	null,
+);
 
 const lastPostDate = lastActivityDate ? lastActivityDate.toISOString() : null;
 
@@ -87,6 +106,11 @@ const stats = [
 				},
 			]
 		: []),
+	{
+		icon: "material-symbols:edit-note-rounded",
+		label: "记录次数",
+		value: changelogEntries.length,
+	},
 	{
 		icon: "material-symbols:folder-outline",
 		label: i18n(I18nKey.siteStatsCategoryCount),
@@ -122,21 +146,21 @@ const stats = [
 ];
 ---
 
-<WidgetLayout name={i18n(I18nKey.siteStats)} showTitle={showTitle} id="site-stats" class={className} style={style}>
-  <div class="flex flex-col gap-2">
+<WidgetLayout name={i18n(I18nKey.siteStats)} showTitle={showTitle} id="site-stats" class={widgetClassName} style={style}>
+  <div class="site-stats__list flex flex-col gap-2">
     {stats.map((stat) => (
-      <div class="flex items-center justify-between px-3 py-1.5">
-        <div class="flex items-center gap-2.5">
-          <div class="text-(--primary) text-xl">
+      <div class="site-stats__row flex items-center justify-between px-3 py-1.5">
+        <div class="site-stats__label-group flex items-center gap-2.5">
+          <div class="site-stats__icon text-(--primary) text-xl">
             <Icon is:inline name={stat.icon} />
           </div>
-          <span class="text-neutral-700 dark:text-neutral-300 font-medium text-sm">
+          <span class="site-stats__label text-neutral-700 dark:text-neutral-300 font-medium text-sm">
             {stat.label}
           </span>
         </div>
-        <div class="flex items-center">
+        <div class="site-stats__number flex items-center">
           <span
-            class="text-base font-bold text-neutral-900 dark:text-neutral-100"
+            class="site-stats__value text-base font-bold text-neutral-900 dark:text-neutral-100"
             data-stat-id={stat.id}
           >
             {stat.formatted ? formatNumber(stat.value) : stat.value}
@@ -151,6 +175,98 @@ const stats = [
     ))}
   </div>
 </WidgetLayout>
+
+<style>
+  :global(widget-layout.site-stats--sidebar) {
+    display: block;
+    overflow: hidden;
+    border: 1px solid rgb(0 0 0 / 8%);
+    border-radius: 0.625rem;
+    background: color-mix(in srgb, var(--card-bg) 97%, transparent);
+    box-shadow: 0 0 0.75rem 0.125rem rgb(0 0 0 / 6%);
+    backdrop-filter: blur(1rem);
+  }
+
+  :global(html.dark widget-layout.site-stats--sidebar) {
+    border-color: rgb(255 255 255 / 10%);
+    box-shadow: 0 0 0.75rem 0.125rem rgb(0 0 0 / 18%);
+  }
+
+  :global(widget-layout.site-stats--sidebar .widget-title) {
+    margin: 1.35rem 1.25rem 0.75rem 2.2rem;
+    color: var(--deep-text);
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+
+  :global(widget-layout.site-stats--sidebar .widget-title::before) {
+    top: 0.22rem;
+    left: -1rem;
+    width: 0.22rem;
+    height: 1.2rem;
+    border-radius: 0;
+    background: var(--deep-text);
+  }
+
+  :global(widget-layout.site-stats--sidebar #site-stats) {
+    padding: 0 1rem 1.1rem;
+  }
+
+  :global(widget-layout.site-stats--sidebar) .site-stats__list {
+    gap: 0.1rem;
+  }
+
+  :global(widget-layout.site-stats--sidebar) .site-stats__row {
+    display: grid;
+    min-height: 2.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    padding: 0.32rem 0.7rem;
+  }
+
+  :global(widget-layout.site-stats--sidebar) .site-stats__label-group {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 1.35rem minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+
+  :global(widget-layout.site-stats--sidebar) .site-stats__icon {
+    display: grid;
+    width: 1.35rem;
+    height: 1.35rem;
+    place-items: center;
+    color: var(--deep-text);
+    font-size: 1.25rem;
+  }
+
+  :global(widget-layout.site-stats--sidebar .site-stats__icon svg) {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  :global(widget-layout.site-stats--sidebar) .site-stats__label {
+    overflow: hidden;
+    color: var(--content-meta);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(widget-layout.site-stats--sidebar) .site-stats__number {
+    justify-content: flex-end;
+    min-width: 4.5rem;
+    color: var(--deep-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :global(widget-layout.site-stats--sidebar) .site-stats__value {
+    color: var(--deep-text);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+</style>
 
 <script is:inline define:vars={{ siteStartDate, lastPostDate, todayText }}>
   function updateDynamicStats() {

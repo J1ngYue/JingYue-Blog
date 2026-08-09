@@ -1,21 +1,15 @@
 ---
-import { Picture } from "astro:assets";
 import { Icon } from "astro-icon/components";
-import profileAvatar from "@/assets/images/avatar.avif";
-import profileCover from "@/assets/images/cover.avif";
+import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
 import {
 	linkDirectoryCategories,
 	linkDirectoryItems,
 } from "@/config/linkDirectory";
-import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
-import { getSortedPosts } from "@/utils/content-utils";
-import { getPostUrlBySlug, url } from "@/utils/url-utils";
+import { getSortedPostsList } from "@/utils/content-utils";
+import { url } from "@/utils/url-utils";
 
-const posts = (await getSortedPosts()).filter(
-	(post) => post.data.draft !== true,
-);
-const recentPosts = posts.slice(0, 5);
+const posts = await getSortedPostsList();
 const categoryCounts = new Map(
 	linkDirectoryCategories.map((category) => [
 		category,
@@ -33,90 +27,10 @@ const getHostname = (href: string, external?: boolean) => {
 		return href;
 	}
 };
-
-const timezone = siteConfig.timezone || "Asia/Shanghai";
-const dateParts = new Intl.DateTimeFormat("en-US", {
-	timeZone: timezone,
-	year: "numeric",
-	month: "numeric",
-	day: "numeric",
-}).formatToParts(new Date());
-const datePart = (type: Intl.DateTimeFormatPartTypes) =>
-	Number(dateParts.find((part) => part.type === type)?.value || 0);
-const currentYear = datePart("year");
-const currentMonth = datePart("month");
-const currentDay = datePart("day");
-const firstWeekday = new Date(
-	Date.UTC(currentYear, currentMonth - 1, 1),
-).getUTCDay();
-const daysInMonth = new Date(
-	Date.UTC(currentYear, currentMonth, 0),
-).getUTCDate();
-const calendarCells: Array<number | null> = [
-	...Array.from({ length: firstWeekday }, () => null),
-	...Array.from({ length: daysInMonth }, (_, index) => index + 1),
-];
-
-const siteDays = Math.max(
-	1,
-	Math.floor(
-		(Date.now() -
-			new Date(siteConfig.siteStartDate || "2025-01-01").getTime()) /
-			86_400_000,
-	),
-);
 ---
 
 <div class="site-directory" data-site-directory data-view="grid">
-	<aside class="site-directory__left" aria-label="站点资料">
-		<section class="directory-profile">
-			<div class="directory-profile__cover" data-site-profile-cover>
-				<Picture src={profileCover} alt="" formats={["webp"]} fallbackFormat="webp" width={420} height={180} />
-			</div>
-			<a class="directory-profile__avatar" href="/about/" aria-label="查看关于页面" data-site-avatar>
-				<Picture src={profileAvatar} alt={profileConfig.name} formats={["webp"]} fallbackFormat="webp" width={96} height={96} />
-			</a>
-			<h2>{profileConfig.name}</h2>
-			<p>{profileConfig.bio}</p>
-			<nav aria-label="个人社交链接">
-				{profileConfig.links.map((link) => (
-					<a
-						href={link.url.startsWith("/") ? url(link.url) : link.url}
-						target={link.url.startsWith("http") ? "_blank" : undefined}
-						rel={link.url.startsWith("http") ? "noopener noreferrer" : undefined}
-						aria-label={link.name}
-						title={link.name}
-					>
-						<Icon is:inline name={link.icon} />
-					</a>
-				))}
-			</nav>
-		</section>
-
-		<section class="directory-calendar" aria-label={`${currentYear}年${currentMonth}月日历`}>
-			<header>
-				<Icon is:inline name="material-symbols:calendar-month-rounded" />
-				<strong>{currentYear}年{currentMonth}月</strong>
-			</header>
-			<div class="directory-calendar__week" aria-hidden="true">
-				{["日", "一", "二", "三", "四", "五", "六"].map((day) => <span>{day}</span>)}
-			</div>
-			<div class="directory-calendar__days">
-				{calendarCells.map((day) =>
-					day ? (
-						<time
-							datetime={`${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`}
-							class:list={{ "is-today": day === currentDay }}
-						>
-							{day}
-						</time>
-					) : (
-						<span></span>
-					),
-				)}
-			</div>
-		</section>
-	</aside>
+	<ArchiveReplicaSidebar side="left" posts={posts} />
 
 	<main class="site-directory__main">
 		<header class="site-directory__header">
@@ -186,33 +100,7 @@ const siteDays = Math.max(
 		</div>
 	</main>
 
-	<aside class="site-directory__right" aria-label="站点信息">
-		<section class="directory-days">
-			<p>JingYue 已经记录了</p>
-			<div><strong>{siteDays}</strong><span>天</span></div>
-			<small>愿每一次打开都有新的发现</small>
-		</section>
-
-		<section class="directory-quote">
-			<h2><i aria-hidden="true"></i>今日一言</h2>
-			<blockquote>“{siteConfig.subtitle}”</blockquote>
-			<p>—— {profileConfig.name}</p>
-		</section>
-
-		<section class="directory-recent">
-			<h2><i aria-hidden="true"></i>最近更新</h2>
-			<nav>
-				{recentPosts.map((post) => (
-					<a href={getPostUrlBySlug(post.id)}>
-						<span>{post.data.title}</span>
-						<time datetime={post.data.published.toISOString()}>
-							{post.data.published.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}
-						</time>
-					</a>
-				))}
-			</nav>
-		</section>
-	</aside>
+	<ArchiveReplicaSidebar side="right" posts={posts} />
 </div>
 
 <script>
@@ -284,11 +172,15 @@ const siteDays = Math.max(
 		--line-divider: rgb(28 47 55 / 14%);
 		display: grid;
 		box-sizing: border-box;
-		grid-template-columns: 18rem minmax(0, 1fr) 18rem;
-		gap: 1.5rem;
+		grid-template-columns: 17.5rem minmax(0, 61rem) 17.5rem;
+		gap: 1rem;
 		align-items: start;
-		padding: 1.2rem 0 3rem;
+		width: min(98rem, calc(100vw - 2rem));
+		min-width: 0;
+		margin-left: 50%;
+		padding: 0 0 3rem;
 		color: var(--text-75);
+		transform: translateX(-50%);
 	}
 
 	:global(html.dark) .site-directory {
@@ -298,164 +190,6 @@ const siteDays = Math.max(
 		--text-30: #748188;
 		--card-bg: #171c20;
 		--line-divider: rgb(226 237 241 / 14%);
-	}
-
-	.site-directory__left,
-	.site-directory__right {
-		display: grid;
-		gap: 1rem;
-	}
-
-	.site-directory__left > section,
-	.site-directory__right > section {
-		border: 1px solid var(--line-divider);
-		border-radius: 0.5rem;
-		background: var(--card-bg);
-		box-shadow: 0 0.65rem 1.8rem rgb(17 31 38 / 7%);
-	}
-
-	.directory-profile {
-		position: relative;
-		overflow: hidden;
-		padding: 0 1.25rem 1.25rem;
-		text-align: center;
-	}
-
-	.directory-profile__cover {
-		height: 8.25rem;
-		margin: 0 -1.25rem;
-		overflow: hidden;
-	}
-
-	.directory-profile__cover :global(picture),
-	.directory-profile__cover :global(img) {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
-
-	.directory-profile__cover::after {
-		position: absolute;
-		inset: 0 0 auto;
-		height: 8.25rem;
-		background: linear-gradient(to bottom, transparent 48%, var(--card-bg));
-		content: "";
-		pointer-events: none;
-	}
-
-	.directory-profile__avatar {
-		position: relative;
-		display: block;
-		width: 5.4rem;
-		height: 5.4rem;
-		margin: -2.8rem auto 0;
-		border: 0.2rem solid var(--card-bg);
-		border-radius: 50%;
-		background: var(--card-bg);
-		box-shadow: 0 0 0 1px var(--line-divider), 0 0.5rem 1rem rgb(22 43 49 / 14%);
-		transition: transform 220ms ease;
-	}
-
-	.directory-profile__avatar:hover {
-		transform: translateY(-0.15rem) rotate(-2deg);
-	}
-
-	.directory-profile__avatar :global(picture),
-	.directory-profile__avatar :global(img) {
-		width: 100%;
-		height: 100%;
-		border-radius: inherit;
-		object-fit: cover;
-	}
-
-	.directory-profile h2 {
-		margin: 0.8rem 0 0;
-		color: var(--text-90);
-		font-size: 1.25rem;
-		letter-spacing: 0;
-	}
-
-	.directory-profile p {
-		margin: 0.4rem 0 1rem;
-		color: var(--text-50);
-		font-size: 0.85rem;
-	}
-
-	.directory-profile nav {
-		display: flex;
-		justify-content: center;
-		gap: 0.55rem;
-	}
-
-	.directory-profile nav a {
-		display: grid;
-		width: 2.35rem;
-		height: 2.35rem;
-		place-items: center;
-		border-radius: 50%;
-		color: var(--text-50);
-		transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
-	}
-
-	.directory-profile nav a:hover {
-		background: var(--text-90);
-		color: var(--card-bg);
-		transform: translateY(-0.12rem);
-	}
-
-	.directory-profile nav svg {
-		width: 1.1rem;
-		height: 1.1rem;
-	}
-
-	.directory-calendar {
-		padding: 1.25rem;
-	}
-
-	.directory-calendar header {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.45rem;
-		margin-bottom: 0.8rem;
-		color: var(--text-90);
-		font-size: 1rem;
-	}
-
-	.directory-calendar header svg {
-		width: 1rem;
-		height: 1rem;
-		color: var(--primary);
-	}
-
-	.directory-calendar__week,
-	.directory-calendar__days {
-		display: grid;
-		grid-template-columns: repeat(7, minmax(0, 1fr));
-		gap: 0.2rem;
-	}
-
-	.directory-calendar__week {
-		margin-bottom: 0.25rem;
-		color: var(--text-30);
-		font-size: 0.7rem;
-		text-align: center;
-	}
-
-	.directory-calendar__days > * {
-		display: grid;
-		aspect-ratio: 1;
-		place-items: center;
-		border-radius: 0.3rem;
-		color: var(--text-50);
-		font-size: 0.75rem;
-		font-style: normal;
-	}
-
-	.directory-calendar__days .is-today {
-		background: var(--text-90);
-		color: var(--card-bg);
-		font-weight: 800;
 	}
 
 	.site-directory__main {
@@ -642,8 +376,7 @@ const siteDays = Math.max(
 
 	.site-directory__card:focus-visible,
 	.site-directory__filters button:focus-visible,
-	.site-directory__header > button:focus-visible,
-	.directory-profile a:focus-visible {
+	.site-directory__header > button:focus-visible {
 		outline: 0.14rem solid color-mix(in srgb, var(--primary) 65%, white);
 		outline-offset: 0.12rem;
 	}
@@ -727,166 +460,38 @@ const siteDays = Math.max(
 		min-height: 5.8rem;
 	}
 
-	.directory-days,
-	.directory-quote,
-	.directory-recent {
-		padding: 1.25rem;
-	}
-
-	.directory-days {
-		text-align: center;
-	}
-
-	.directory-days p,
-	.directory-days small {
-		margin: 0;
-		color: var(--text-50);
-		font-size: 0.85rem;
-	}
-
-	.directory-days div {
-		display: flex;
-		align-items: baseline;
-		justify-content: center;
-		gap: 0.3rem;
-		margin: 0.8rem 0 0.55rem;
-	}
-
-	.directory-days strong {
-		color: var(--text-90);
-		font-size: 2.65rem;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.directory-days span {
-		color: var(--primary);
-		font-size: 0.85rem;
-		font-weight: 800;
-	}
-
-	.directory-quote h2,
-	.directory-recent h2 {
-		display: flex;
-		align-items: center;
-		gap: 0.55rem;
-		margin: 0 0 0.8rem;
-		color: var(--text-90);
-		font-size: 1.05rem;
-		letter-spacing: 0;
-	}
-
-	.directory-quote h2 i,
-	.directory-recent h2 i {
-		width: 0.2rem;
-		height: 1rem;
-		border-radius: 99rem;
-		background: var(--text-90);
-	}
-
-	.directory-quote blockquote {
-		margin: 0;
-		color: var(--text-75);
-		font-size: 0.85rem;
-		font-style: italic;
-		line-height: 1.75;
-	}
-
-	.directory-quote p {
-		margin: 0.7rem 0 0;
-		color: var(--text-30);
-		font-size: 0.75rem;
-		text-align: right;
-	}
-
-	.directory-recent nav {
-		display: grid;
-	}
-
-	.directory-recent a {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		padding: 0.65rem 0;
-		border-bottom: 1px solid var(--line-divider);
-		color: var(--text-75);
-		font-size: 0.78rem;
-	}
-
-	.directory-recent a:last-child {
-		border-bottom: 0;
-	}
-
-	.directory-recent a:hover {
-		color: var(--primary);
-	}
-
-	.directory-recent a span {
-		overflow: hidden;
-		white-space: nowrap;
-		text-overflow: ellipsis;
-	}
-
-	.directory-recent time {
-		flex: 0 0 auto;
-		color: var(--text-30);
-		font-size: 0.68rem;
-	}
-
 	:global(body.plain-content-active:has(.site-directory) #main-layout-container) {
-		width: 94vw !important;
-		max-width: 120rem !important;
+		width: min(98rem, calc(100vw - 2rem)) !important;
+		max-width: 98rem !important;
 	}
 
 	:global(body.plain-content-active:has(.site-directory) #main-grid) {
 		padding-inline: 0 !important;
 	}
 
-	@media (max-width: 1500px) and (min-width: 1181px) {
+	@media (max-width: 1399px) {
 		.site-directory {
-			grid-template-columns: 16rem minmax(0, 1fr) 16rem;
-			gap: 1.5rem;
+			grid-template-columns: minmax(0, 61rem);
+			justify-content: center;
+			width: min(61rem, calc(100vw - 2rem));
 		}
 
-		.site-directory__grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-	}
-
-	@media (max-width: 1180px) {
-		.site-directory {
-			grid-template-columns: 13rem minmax(0, 1fr);
-		}
-
-		.site-directory__right {
+		.site-directory :global(.archive-side) {
 			display: none;
 		}
+	}
 
+	@media (max-width: 900px) {
 		.site-directory__grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 1024px) {
-		.site-directory {
-			padding-right: 3.5rem;
-		}
-	}
-
-	@media (max-width: 1023px) {
-		.site-directory {
-			margin-right: 3.1rem;
 		}
 	}
 
 	@media (max-width: 780px) {
 		.site-directory {
 			display: block;
+			width: calc(100vw - 1rem);
 			padding-top: 0.5rem;
-		}
-
-		.site-directory__left {
-			display: none;
 		}
 
 		.site-directory__header h1 {

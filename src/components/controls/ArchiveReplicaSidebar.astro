@@ -2,6 +2,7 @@
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import Calendar from "@/components/widget/Calendar.astro";
+import SiteStats from "@/components/widget/SiteStats.astro";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
 import type { WidgetComponentConfig } from "@/types/config";
@@ -136,6 +137,8 @@ function formatPostDate(date: Date): string {
 					))}
 				</nav>
 			</div>
+
+			<SiteStats class="archive-site-stats" variant="sidebar" />
 		</aside>
 	) : (
 		<aside class="archive-side archive-side--right" aria-label="归档页右侧信息">

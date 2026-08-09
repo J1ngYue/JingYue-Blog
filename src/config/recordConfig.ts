@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.7",
+		date: "2026-08-10",
+		time: "02:46",
+		type: "optimize",
+		title: "全站信息侧栏统一",
+		summary: "统一带左右信息栏页面的模块与视觉结构，并新增完整站点统计。",
+		changes: [
+			"网站导航接入记录中心同款共享侧栏，个人资料、天气、日历及右侧信息模块保持一致。",
+			"在左侧日历下方新增站点统计，展示文章、动态、记录、分类、标签、字数、运行时长与最后活动。",
+			"最后活动时间综合文章、动态与更新日志计算，避免旧文章日期导致统计失真。",
+		],
+	},
+	{
 		version: "v6.14.6",
 		date: "2026-08-10",
 		time: "02:33",
