@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.18",
+		date: "2026-08-13",
+		time: "01:15",
+		type: "optimize",
+		title: "骷髅开关骨手重绘",
+		summary: "重绘白骨手的手掌、指骨和双骨前臂，强化抓取推拉效果。",
+		changes: [
+			"分离上下两根前臂骨并补全两端关节，让伸展状态保持完整清晰。",
+			"放大掌骨和四根手指，使手掌能明显抓住骷髅侧面。",
+			"新增抓紧与松开的手掌形变，继续保持双向推拉动画完整重播。",
+		],
+	},
+	{
 		version: "v6.14.17",
 		date: "2026-08-13",
 		time: "00:57",

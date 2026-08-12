@@ -767,113 +767,172 @@ const formatCardDate = (date: Date) =>
 		animation: article-arm-push-left 1.5s cubic-bezier(0.45, 0, 0.25, 1) both;
 	}
 
+	.article-index__view-switch.is-switching input:checked ~ .article-index__arm-wrapper .article-index__hand {
+		animation: article-hand-grab-right 1.5s ease-in-out both;
+	}
+
+	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__arm-wrapper .article-index__hand {
+		animation: article-hand-grab-left 1.5s ease-in-out both;
+	}
+
 	.article-index__arm {
 		position: absolute;
-		top: calc(50% - 0.3125rem);
+		top: calc(50% - 0.375rem);
 		right: 0.1rem;
 		width: 2rem;
-		height: 0.625rem;
+		height: 0.75rem;
 		opacity: 0;
 		transform: translateX(3.35rem);
 		will-change: transform, opacity;
 	}
 
-	.article-index__bone {
+	.article-index__arm > .article-index__bone {
 		position: absolute;
-		top: 0.1875rem;
-		right: -0.5rem;
-		width: 1rem;
-		height: 0.25rem;
+		left: 0.12rem;
+		width: 1.9rem;
+		height: 0.13rem;
+		border-radius: 99rem;
 		background: #fff;
+		filter: drop-shadow(0 0 1px #000);
+		transform-origin: right center;
 	}
 
-	.article-index__bone::before,
-	.article-index__bone::after,
-	.article-index__big-bone::before,
-	.article-index__big-bone::after {
+	.article-index__arm > .article-index__bone:nth-child(1) {
+		top: 0.2rem;
+		transform: rotate(-4deg);
+	}
+
+	.article-index__arm > .article-index__bone:nth-child(2) {
+		top: 0.45rem;
+		transform: rotate(4deg);
+	}
+
+	.article-index__arm > .article-index__bone::before,
+	.article-index__arm > .article-index__bone::after {
 		position: absolute;
-		top: -0.0625rem;
-		left: -0.0625rem;
-		width: 0.1875rem;
-		height: 0.1875rem;
+		top: 50%;
+		width: 0.24rem;
+		height: 0.24rem;
 		border-radius: 50%;
 		background: #fff;
-		box-shadow: 1rem 0 #fff;
 		content: "";
+		transform: translateY(-50%);
 	}
 
-	.article-index__bone::after {
-		top: calc(100% - 0.125rem);
+	.article-index__arm > .article-index__bone::before {
+		left: -0.08rem;
+	}
+
+	.article-index__arm > .article-index__bone::after {
+		right: -0.08rem;
 	}
 
 	.article-index__hand {
 		position: absolute;
-		left: -0.875rem;
-		z-index: 0;
-		width: 0.875rem;
-		height: 0.625rem;
+		top: -0.05rem;
+		left: -1rem;
+		z-index: 2;
+		width: 1.35rem;
+		height: 0.86rem;
 		background:
-			radial-gradient(circle at 91% 29%, #fff 0.0625rem, transparent calc(1px + 0.0625rem)),
-			radial-gradient(circle at 92% 49%, #fff 0.0625rem, transparent calc(1px + 0.0625rem)),
-			radial-gradient(circle at 91% 69%, #fff 0.0625rem, transparent calc(1px + 0.0625rem)),
-			radial-gradient(circle at 76% 21%, #fff 0.0625rem, transparent calc(1px + 0.0625rem)),
-			radial-gradient(circle at 78% 39%, #fff 0.0625rem, transparent calc(1px + 0.0625rem)),
-			radial-gradient(circle at 79% 58%, #fff 0.0625rem, transparent calc(1px + 0.0625rem)),
-			radial-gradient(circle at 78% 78%, #fff 0.0625rem, transparent calc(1px + 0.0625rem));
+			radial-gradient(circle at 79% 25%, #fff 0 0.12rem, transparent 0.13rem),
+			radial-gradient(circle at 82% 50%, #fff 0 0.12rem, transparent 0.13rem),
+			radial-gradient(circle at 79% 75%, #fff 0 0.12rem, transparent 0.13rem);
+		filter: drop-shadow(0 0 1px #000);
+		transform-origin: right center;
 	}
 
-	.article-index__hand .article-index__bone,
-	.article-index__big-bone {
-		left: 0.16875rem;
-		width: 0.375rem;
-		height: 0.09375rem;
-		border-radius: 0.0625rem 0 0 0.0625rem;
+	.article-index__hand::after {
+		position: absolute;
+		top: 0.26rem;
+		right: -0.12rem;
+		width: 0.64rem;
+		height: 0.34rem;
+		border-radius: 45% 55% 55% 45%;
+		background: #fff;
+		content: "";
+	}
+
+	.article-index__hand .article-index__bone {
+		position: absolute;
+		left: 0.05rem;
+		width: 0.92rem;
+		height: 0.11rem;
+		border-radius: 99rem;
+		background: #fff;
+		transform-origin: right center;
 	}
 
 	.article-index__hand .article-index__bone::before,
-	.article-index__hand .article-index__bone::after,
-	.article-index__big-bone::before,
-	.article-index__big-bone::after {
-		top: -0.03125rem;
-		left: 0.28125rem;
-		width: 0.1rem;
-		height: 0.1rem;
-		box-shadow: none;
+	.article-index__hand .article-index__bone::after {
+		position: absolute;
+		top: 50%;
+		width: 0.16rem;
+		height: 0.16rem;
+		border-radius: 50%;
+		background: #fff;
+		content: "";
+		transform: translateY(-50%);
 	}
 
-	.article-index__hand .article-index__bone::after,
-	.article-index__big-bone::after {
-		top: 0.015625rem;
+	.article-index__hand .article-index__bone::before {
+		left: -0.06rem;
+	}
+
+	.article-index__hand .article-index__bone::after {
+		right: -0.04rem;
 	}
 
 	.article-index__hand .article-index__bone:nth-child(1) {
-		filter: drop-shadow(-0.375rem 0 #fff);
-		transform: rotate(5deg) translateY(-0.125rem) translateX(0.01875rem);
+		top: 0.03rem;
+		transform: rotate(10deg);
 	}
 
 	.article-index__hand .article-index__bone:nth-child(2) {
-		filter: drop-shadow(-0.375rem 0 #fff);
-		transform: translateX(0.0625rem);
+		top: 0.25rem;
+		transform: rotate(3deg);
 	}
 
 	.article-index__hand .article-index__bone:nth-child(3) {
-		filter: drop-shadow(-0.375rem 0 #fff);
-		transform: rotate(-2deg) translateY(0.14375rem) translateX(0.0625rem);
+		top: 0.48rem;
+		transform: rotate(-3deg);
 	}
 
 	.article-index__hand .article-index__bone:nth-child(4) {
-		filter: drop-shadow(-0.375rem 0 #fff);
-		transform: rotate(-5deg) translateY(0.2875rem) translateX(0.0625rem);
+		top: 0.7rem;
+		transform: rotate(-10deg);
 	}
 
 	.article-index__big-bone {
 		position: absolute;
-		top: 0.14375rem;
-		left: -0.53125rem;
-		z-index: 1;
-		height: 0.125rem;
+		top: 0.31rem;
+		left: 0.16rem;
+		z-index: 3;
+		width: 0.72rem;
+		height: 0.15rem;
+		border-radius: 99rem;
 		background: #fff;
-		filter: drop-shadow(-0.3125rem 0 #fff) drop-shadow(0 0 1px #000);
+		filter: drop-shadow(0 0 1px #000);
+	}
+
+	.article-index__big-bone::before,
+	.article-index__big-bone::after {
+		position: absolute;
+		top: 50%;
+		width: 0.2rem;
+		height: 0.2rem;
+		border-radius: 50%;
+		background: #fff;
+		content: "";
+		transform: translateY(-50%);
+	}
+
+	.article-index__big-bone::before {
+		left: -0.07rem;
+	}
+
+	.article-index__big-bone::after {
+		right: -0.07rem;
 	}
 
 	@keyframes article-skull-move-right {
@@ -915,6 +974,18 @@ const formatCardDate = (date: Date) =>
 		68% { opacity: 1; transform: translateX(0); }
 		92% { opacity: 1; transform: translateX(3.35rem); }
 		100% { opacity: 0; transform: translateX(3.35rem); }
+	}
+
+	@keyframes article-hand-grab-right {
+		0%, 12% { transform: translateX(0.2rem) scaleX(0.82); }
+		26%, 70% { transform: translateX(0) scaleX(1); }
+		84%, 100% { transform: translateX(0.2rem) scaleX(0.82); }
+	}
+
+	@keyframes article-hand-grab-left {
+		0%, 12% { transform: translateX(0.2rem) scaleX(0.82); }
+		26%, 70% { transform: translateX(0) scaleX(1); }
+		84%, 100% { transform: translateX(0.2rem) scaleX(0.82); }
 	}
 
 	.article-index__header nav {
