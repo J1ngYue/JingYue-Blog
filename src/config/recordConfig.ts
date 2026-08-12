@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.19",
+		date: "2026-08-13",
+		time: "02:05",
+		type: "fix",
+		title: "骷髅开关骨手精确还原",
+		summary: "按参考开关的实际尺寸、骨节结构与关键帧精确还原白骨手。",
+		changes: [
+			"还原十四像素手掌、四根双节指骨及掌心关节的原始比例。",
+			"还原主骨、细副骨与末端圆形骨节，不再使用放大的自制骨手造型。",
+			"同步参考动画的滑入、抓取停顿、推拉和退出时序。",
+		],
+	},
+	{
 		version: "v6.14.18",
 		date: "2026-08-13",
 		time: "01:15",
