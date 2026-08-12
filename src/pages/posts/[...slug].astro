@@ -3,6 +3,7 @@ import { render } from "astro:content";
 import * as path from "node:path";
 import Comment from "@components/comment/index.astro";
 import Markdown from "@components/common/Markdown.astro";
+import ArticleReadingRails from "@components/features/ArticleReadingRails.astro";
 import EncryptedPost from "@components/features/EncryptedPost.astro";
 import KatexManager from "@components/features/KatexManager.astro";
 import License from "@components/misc/License.astro";
@@ -11,6 +12,7 @@ import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { getRelatedPosts, getSortedPosts } from "@utils/content-utils";
 import {
+	getCategoryUrl,
 	getFileDirFromPath,
 	getPostUrlBySlug,
 	removeFileExtension,
@@ -129,6 +131,13 @@ const jsonLd = {
 };
 
 const relatedPosts = await getRelatedPosts(entry, 5);
+const currentCategory = entry.data.category || "未分类";
+const publicPosts = (await getSortedPosts()).filter(
+	(post) => post.data.draft !== true,
+);
+const currentCategoryCount = publicPosts.filter(
+	(post) => (post.data.category || "未分类") === currentCategory,
+).length;
 ---
 
 <MainGridLayout
@@ -152,8 +161,16 @@ const relatedPosts = await getRelatedPosts(entry, 5);
     type="application/ld+json"
     set:html={JSON.stringify(jsonLd)}
   />
+
+  <ArticleReadingRails
+    headings={headings}
+    currentId={entry.id}
+    currentCategory={currentCategory}
+    encrypted={!!entry.data.password}
+  />
+
   <div
-    class="flex w-full rounded-(--radius-large) overflow-hidden relative mb-4"
+    class="post-reading-shell flex w-full rounded-(--radius-large) overflow-hidden relative mb-4"
   >
     <div
       id="post-container"
@@ -162,91 +179,73 @@ const relatedPosts = await getRelatedPosts(entry, 5);
         {},
       ]}
     >
-      <!-- word count and reading time -->
-      <div
-        class="flex flex-row text-black/30 dark:text-white/30 gap-5 mb-3 transition onload-animation"
-      >
-        <div class="flex flex-row items-center">
-          <div
-            class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2"
-          >
-            <Icon is:inline name="material-symbols:notes-rounded" />
-          </div>
-          <div class="text-sm">
-            {remarkPluginFrontmatter.words}
-            {" " + i18n(I18nKey.wordsCount)}
-          </div>
-        </div>
-        <div class="flex flex-row items-center">
-          <div
-            class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2"
-          >
-            <Icon is:inline name="material-symbols:schedule-outline-rounded" />
-          </div>
-          <div class="text-sm">
-            {remarkPluginFrontmatter.minutes}
-            {
-              " " +
-                i18n(
-                  remarkPluginFrontmatter.minutes === 1
-                    ? I18nKey.minuteCount
-                    : I18nKey.minutesCount
-                )
-            }
-          </div>
-        </div>
-        {entry.data.password && (
-          <div class="flex flex-row items-center">
-            <div
-              class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2"
-            >
-              <Icon is:inline name="material-symbols:lock-outline" />
-            </div>
-            <div class="text-sm">
-              {i18n(I18nKey.postEncrypted)}
-            </div>
-          </div>
-        )}
-      </div>
+      <nav class="post-reading-breadcrumb onload-animation" aria-label="文章位置">
+        <a href={url("/posts/")}>文章列表</a>
+        <Icon is:inline name="material-symbols:chevron-right-rounded" />
+        <a href={getCategoryUrl(currentCategory)}>
+          {currentCategory}<small>{currentCategoryCount}</small>
+        </a>
+        <Icon is:inline name="material-symbols:chevron-right-rounded" />
+        <span aria-current="page">此文章</span>
+      </nav>
 
       <!-- title -->
-      <div class="relative onload-animation">
-        <div
+      <header class="post-reading-header onload-animation">
+        <h1
           data-pagefind-body
           data-pagefind-weight="10"
           data-pagefind-meta="title"
-          class="transition w-full block font-bold mb-3
-                    text-3xl md:text-[2.25rem]/[2.75rem]
-                    text-black/90 dark:text-white/90
-                    md:before:w-1 before:h-5 before:rounded-md before:bg-(--primary)
-                    before:absolute before:top-3 before:-left-4.5"
+          class="post-reading-title"
         >
           {entry.data.title}
-        </div>
-      </div>
+        </h1>
 
-      <!-- metadata -->
-      <div class="onload-animation">
         <PostMetadata
-          className="mb-5"
+          className="post-reading-meta"
           published={entry.data.published}
           updated={entry.data.updated}
           tags={entry.data.tags}
           category={entry.data.category || undefined}
           id={entry.id}
         />
-        {
-          !processedImage && (
-            <div class="border-(--line-divider) border-dashed border-b mt-3 mb-5" />
-          )
-        }
-      </div>
+
+        <div class="post-reading-stats" aria-label="文章阅读信息">
+          <span>
+            <Icon is:inline name="material-symbols:notes-rounded" />
+            {remarkPluginFrontmatter.words} {i18n(I18nKey.wordsCount)}
+          </span>
+          <span>
+            <Icon is:inline name="material-symbols:schedule-outline-rounded" />
+            {remarkPluginFrontmatter.minutes} {i18n(
+              remarkPluginFrontmatter.minutes === 1
+                ? I18nKey.minuteCount
+                : I18nKey.minutesCount
+            )}
+          </span>
+          {entry.data.password && (
+            <span>
+              <Icon is:inline name="material-symbols:lock-outline" />
+              {i18n(I18nKey.postEncrypted)}
+            </span>
+          )}
+        </div>
+      </header>
+
+      {entry.data.description && (
+        <aside class="post-reading-summary onload-animation" aria-label="文章摘要">
+          <Icon is:inline name="material-symbols:format-quote-rounded" />
+          <div>
+            <strong>文章摘要</strong>
+            <p>{entry.data.description}</p>
+          </div>
+        </aside>
+      )}
 
       <!-- always show cover as long as it has one -->
 
       {
         processedImage && coverImageConfig.enableInPost && (
-          <div style="margin-top:1rem;">
+          <div class="post-reading-cover">
             <CoverImage
               id="post-cover"
               src={processedImage}
@@ -547,3 +546,170 @@ const relatedPosts = await getRelatedPosts(entry, 5);
   <!-- 评论 -->
   {entry.data.comment && !entry.data.password && <Comment post={entry} />}
 </MainGridLayout>
+
+<style is:global>
+  html:has([data-article-reading-rails]) #post-container {
+    padding: clamp(1.35rem, 2.6vw, 2.5rem) clamp(1.25rem, 3vw, 3rem) 1.75rem;
+    border: 0;
+    border-radius: 0;
+    background: var(--page-bg) !important;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-shell {
+    margin-bottom: 0;
+    border-radius: 0;
+    background: var(--page-bg) !important;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-breadcrumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.38rem;
+    margin: 0 auto 1.5rem;
+    color: color-mix(in srgb, var(--content-meta) 58%, transparent);
+    font-size: 0.75rem;
+    font-weight: 650;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-breadcrumb a {
+    color: inherit;
+    transition: color 160ms ease;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-breadcrumb a:hover {
+    color: var(--primary);
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-breadcrumb svg {
+    width: 0.88rem;
+    height: 0.88rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-breadcrumb small {
+    margin-left: 0.3rem;
+    padding: 0.08rem 0.34rem;
+    border-radius: 99rem;
+    background: color-mix(in srgb, var(--content-meta) 9%, transparent);
+    font-size: 0.62rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.55rem;
+    text-align: center;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-title {
+    max-width: min(72rem, 100%);
+    margin: 0;
+    color: var(--content-meta);
+    font-size: clamp(1.75rem, 3.2vw, 2.6rem);
+    font-weight: 850;
+    line-height: 1.28;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-meta {
+    justify-content: center;
+    margin-top: 1.15rem;
+    gap: 0.8rem 1.2rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.55rem 1rem;
+    margin-top: 0.65rem;
+    color: color-mix(in srgb, var(--content-meta) 46%, transparent);
+    font-size: 0.7rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-stats span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-stats svg {
+    width: 0.88rem;
+    height: 0.88rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-summary {
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    gap: 0.85rem;
+    margin: 0 0 1.8rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--line-divider);
+    border-radius: 0.9rem;
+    background: color-mix(in srgb, var(--btn-card-bg) 64%, transparent);
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-summary > svg {
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0.5rem;
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--primary);
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-summary strong {
+    color: var(--content-meta);
+    font-size: 0.82rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-summary p {
+    margin: 0.28rem 0 0;
+    color: color-mix(in srgb, var(--content-meta) 72%, transparent);
+    font-size: 0.78rem;
+    line-height: 1.75;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-cover {
+    margin: 0 0 1.9rem;
+    overflow: hidden;
+    border-radius: 0.9rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-cover #post-cover,
+  html:has([data-article-reading-rails]) .post-reading-cover .banner-container {
+    max-height: 22rem;
+    margin-bottom: 0 !important;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-cover img {
+    max-height: 22rem;
+    object-fit: cover;
+  }
+
+  html:has([data-article-reading-rails]) #post-container .markdown-content {
+    color: color-mix(in srgb, var(--content-meta) 88%, transparent);
+    font-size: 0.98rem;
+    line-height: 1.9;
+  }
+
+  @media (max-width: 760px) {
+    html:has([data-article-reading-rails]) #post-container {
+      padding-inline: 1rem;
+    }
+
+    html:has([data-article-reading-rails]) .post-reading-breadcrumb {
+      justify-content: flex-start;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    html:has([data-article-reading-rails]) .post-reading-title {
+      font-size: 1.72rem;
+    }
+  }
+</style>

@@ -1,0 +1,696 @@
+---
+import type { MarkdownHeading } from "astro";
+import { Icon } from "astro-icon/components";
+import { getSortedPosts } from "@/utils/content-utils";
+import { computeTocItems } from "@/utils/toc-shared";
+import { getPostUrlBySlug } from "@/utils/url-utils";
+
+interface Props {
+	headings: MarkdownHeading[];
+	currentId: string;
+	currentCategory?: string;
+	encrypted?: boolean;
+}
+
+const {
+	headings = [],
+	currentId,
+	currentCategory = "未分类",
+	encrypted = false,
+} = Astro.props;
+
+const tocItems = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
+const posts = (await getSortedPosts()).filter(
+	(entry) => entry.data.draft !== true,
+);
+const categoryPosts = new Map<string, typeof posts>();
+
+for (const entry of posts) {
+	const category = entry.data.category || "未分类";
+	const entries = categoryPosts.get(category) || [];
+	entries.push(entry);
+	categoryPosts.set(category, entries);
+}
+
+const categories = Array.from(categoryPosts, ([name, entries]) => ({
+	name,
+	entries,
+})).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+
+const formatDate = (date: Date) =>
+	new Intl.DateTimeFormat("en-CA").format(date);
+---
+
+<div class="article-reading-rails" data-article-reading-rails>
+	<aside
+		class="article-reading-toc"
+		data-article-reading-toc
+		aria-label="文章目录"
+	>
+		<header class="article-reading-toc__header">
+			<span aria-hidden="true"></span>
+			<Icon is:inline name="material-symbols:format-list-bulleted-rounded" />
+			<h2>目录</h2>
+		</header>
+
+		<div class="article-reading-toc__scroll custom-scrollbar">
+			<nav class="toc-content" id="article-reading-toc-content" aria-label="文章章节">
+				{!encrypted && tocItems.length > 0 && (
+					<>
+						{tocItems.map((item) => (
+							<a
+								href={item.href}
+								class={`toc-item toc-level-${item.depthLevel}`}
+								data-heading-id={item.headingId}
+								aria-label={item.text}
+								title={item.text}
+							>
+								<span class={`toc-badge ${item.badgeKind === "index" ? "toc-badge-index" : ""}`}>
+									{item.badgeKind === "index" ? (
+										item.badgeIndex
+									) : item.badgeKind === "dot" ? (
+										<span class="toc-badge-dot"></span>
+									) : (
+										<span class="toc-badge-dot toc-badge-dot-sm"></span>
+									)}
+								</span>
+								<span class={`toc-label ${item.labelPrimary ? "toc-label-primary" : "toc-label-secondary"}`}>
+									{item.text}
+								</span>
+							</a>
+						))}
+						<span id="article-reading-active-indicator" class="toc-active-indicator" style="opacity: 0;"></span>
+					</>
+				)}
+				{!encrypted && tocItems.length === 0 && (
+					<p class="article-reading-toc__empty">当前文章没有目录</p>
+				)}
+			</nav>
+		</div>
+
+		<button
+			type="button"
+			class="article-reading-toc__handle"
+			data-article-toc-toggle
+			aria-expanded="true"
+			aria-controls="article-reading-toc-content"
+			aria-label="收起文章目录"
+			title="收起文章目录"
+		>
+			<Icon is:inline name="material-symbols:chevron-left-rounded" />
+		</button>
+	</aside>
+
+	<aside class="article-reading-library" data-article-reading-library aria-label="全部文章">
+		<button
+			type="button"
+			class="article-reading-library__trigger"
+			data-article-library-trigger
+			aria-expanded="false"
+			aria-controls="article-reading-library-panel"
+			aria-label="查看全部文章"
+			title="全部文章"
+		>
+			<Icon is:inline name="material-symbols:library-books-rounded" />
+		</button>
+
+		<section class="article-reading-library__panel" id="article-reading-library-panel">
+			<header>
+				<i aria-hidden="true"></i>
+				<h2>全部文章</h2>
+				<small>{posts.length}</small>
+			</header>
+
+			<nav class="article-reading-library__tree" aria-label="文章分类与文章">
+				{categories.map((category) => (
+					<details open={category.name === currentCategory}>
+						<summary>
+							<Icon is:inline name="material-symbols:folder-rounded" />
+							<span>{category.name}</span>
+							<small>{category.entries.length}</small>
+						</summary>
+						<div>
+							{category.entries.map((entry) => (
+								<a
+									href={getPostUrlBySlug(entry.id)}
+									class:list={{ "is-current": entry.id === currentId }}
+									aria-current={entry.id === currentId ? "page" : undefined}
+									title={entry.data.title}
+								>
+									<Icon is:inline name="material-symbols:description-outline-rounded" />
+									<span>{entry.data.title}</span>
+									<time datetime={entry.data.published.toISOString()}>{formatDate(entry.data.published)}</time>
+								</a>
+							))}
+						</div>
+					</details>
+				))}
+			</nav>
+		</section>
+	</aside>
+</div>
+
+<script>
+	import { TOCManager } from "@/utils/toc-utils";
+
+	type ReadingRailsWindow = Window & {
+		__articleReadingRailsBound?: boolean;
+		__articleReadingTocManager?: TOCManager;
+	};
+
+	const readingWindow = window as ReadingRailsWindow;
+
+	function initArticleReadingRails() {
+		const root = document.querySelector<HTMLElement>("[data-article-reading-rails]");
+		if (!root || root.dataset.bound === "true") return;
+		root.dataset.bound = "true";
+
+		const toc = root.querySelector<HTMLElement>("[data-article-reading-toc]");
+		const tocToggle = root.querySelector<HTMLButtonElement>("[data-article-toc-toggle]");
+		const library = root.querySelector<HTMLElement>("[data-article-reading-library]");
+		const libraryTrigger = root.querySelector<HTMLButtonElement>("[data-article-library-trigger]");
+
+		type ReadingAnchor = {
+			range: Range;
+			top: number;
+		};
+
+		const captureReadingAnchor = (): ReadingAnchor | null => {
+			const article = document.querySelector<HTMLElement>("#post-container");
+			const main = document.querySelector<HTMLElement>("#main-column-wrapper");
+			if (!article || !main) return null;
+
+			const mainRect = main.getBoundingClientRect();
+			const anchorY = window.innerHeight * 0.48;
+			const xCandidates = [0.28, 0.4, 0.18, 0.55].map(
+				(ratio) => mainRect.left + mainRect.width * ratio,
+			);
+			const yOffsets = [0, 24, -24, 48, -48, 72, -72];
+
+			for (const yOffset of yOffsets) {
+				for (const x of xCandidates) {
+					const y = anchorY + yOffset;
+					const caretPosition = document.caretPositionFromPoint?.(x, y);
+					if (!caretPosition || !article.contains(caretPosition.offsetNode)) continue;
+					const range = document.createRange();
+					range.setStart(caretPosition.offsetNode, caretPosition.offset);
+					range.collapse(true);
+					const rect = range.getBoundingClientRect();
+					if (Number.isFinite(rect.top)) return { range, top: rect.top };
+				}
+			}
+
+			return null;
+		};
+
+		const keepReadingAnchor = (anchor: ReadingAnchor | null) => {
+			if (!anchor) return;
+			const startedAt = performance.now();
+			const stabilize = () => {
+				const rect = anchor.range.getBoundingClientRect();
+				if (Number.isFinite(rect.top)) {
+					window.scrollBy(0, rect.top - anchor.top);
+				}
+				if (performance.now() - startedAt < 380) requestAnimationFrame(stabilize);
+			};
+			requestAnimationFrame(stabilize);
+		};
+
+		const applyTocState = (collapsed: boolean) => {
+			toc?.classList.toggle("is-collapsed", collapsed);
+			document.documentElement.dataset.articleTocCollapsed = String(collapsed);
+			if (!tocToggle) return;
+			tocToggle.setAttribute("aria-expanded", String(!collapsed));
+			tocToggle.setAttribute("aria-label", collapsed ? "展开文章目录" : "收起文章目录");
+			tocToggle.title = collapsed ? "展开文章目录" : "收起文章目录";
+		};
+
+		applyTocState(localStorage.getItem("jingyue-article-toc-collapsed") === "true");
+		tocToggle?.addEventListener("click", () => {
+			const readingAnchor = captureReadingAnchor();
+			const collapsed = !toc?.classList.contains("is-collapsed");
+			applyTocState(collapsed);
+			localStorage.setItem("jingyue-article-toc-collapsed", String(collapsed));
+			keepReadingAnchor(readingAnchor);
+		});
+
+		const setLibraryExpanded = (expanded: boolean) => {
+			library?.classList.toggle("is-open", expanded);
+			libraryTrigger?.setAttribute("aria-expanded", String(expanded));
+		};
+
+		library?.addEventListener("pointerenter", () => setLibraryExpanded(true));
+		library?.addEventListener("pointerleave", () => setLibraryExpanded(false));
+		library?.addEventListener("focusin", () => setLibraryExpanded(true));
+		library?.addEventListener("focusout", () => {
+			window.setTimeout(() => {
+				if (!library.contains(document.activeElement)) setLibraryExpanded(false);
+			}, 0);
+		});
+		libraryTrigger?.addEventListener("click", () => {
+			if (window.matchMedia("(hover: none)").matches) {
+				setLibraryExpanded(!library?.classList.contains("is-open"));
+			}
+		});
+
+		readingWindow.__articleReadingTocManager?.cleanup();
+		readingWindow.__articleReadingTocManager = new TOCManager({
+			contentId: "article-reading-toc-content",
+			indicatorId: "article-reading-active-indicator",
+			maxLevel: 3,
+			scrollOffset: 88,
+		});
+		readingWindow.__articleReadingTocManager.attach();
+	}
+
+	initArticleReadingRails();
+
+	if (!readingWindow.__articleReadingRailsBound) {
+		readingWindow.__articleReadingRailsBound = true;
+		document.addEventListener("swup:contentReplaced", () => {
+			if (!document.querySelector("[data-article-reading-rails]")) {
+				delete document.documentElement.dataset.articleTocCollapsed;
+				readingWindow.__articleReadingTocManager?.cleanup();
+				readingWindow.__articleReadingTocManager = undefined;
+				return;
+			}
+			window.setTimeout(initArticleReadingRails, 80);
+		});
+		document.addEventListener("password:decrypted", () => {
+			window.setTimeout(initArticleReadingRails, 160);
+		});
+	}
+</script>
+
+<style>
+	.article-reading-toc,
+	.article-reading-library__panel,
+	.article-reading-library__trigger {
+		border: 1px solid var(--line-divider);
+		background: color-mix(in srgb, var(--card-bg) 96%, transparent);
+		box-shadow: 0 0.8rem 2.4rem rgb(20 29 33 / 9%);
+		backdrop-filter: blur(1rem);
+	}
+
+	.article-reading-toc {
+		position: fixed;
+		top: 5.35rem;
+		bottom: 0.75rem;
+		left: 1rem;
+		z-index: 42;
+		display: flex;
+		width: 17.5rem;
+		flex-direction: column;
+		border-radius: 0.9rem;
+		transition: transform 320ms cubic-bezier(0.22, 0.8, 0.2, 1);
+	}
+
+	.article-reading-toc.is-collapsed {
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+		backdrop-filter: none;
+		transform: translateX(calc(-100% - 0.25rem));
+	}
+
+	.article-reading-toc__header {
+		display: grid;
+		grid-template-columns: 0.22rem 1.2rem minmax(0, 1fr);
+		align-items: center;
+		gap: 0.65rem;
+		min-height: 4rem;
+		padding: 0 1.15rem;
+		border-bottom: 1px solid var(--line-divider);
+	}
+
+	.article-reading-toc__header > span {
+		height: 1.35rem;
+		border-radius: 99rem;
+		background: var(--content-meta);
+	}
+
+	.article-reading-toc__header svg {
+		width: 1.15rem;
+		height: 1.15rem;
+		color: var(--content-meta);
+	}
+
+	.article-reading-toc__header h2,
+	.article-reading-library__panel h2 {
+		margin: 0;
+		color: var(--content-meta);
+		font-size: 1.08rem;
+		font-weight: 800;
+	}
+
+	.article-reading-toc__scroll {
+		min-height: 0;
+		flex: 1;
+		overflow-y: auto;
+		padding: 0.9rem 0.75rem 1.2rem;
+	}
+
+	.article-reading-toc .toc-content {
+		position: relative;
+		display: grid;
+		gap: 0.18rem;
+	}
+
+	.article-reading-toc .toc-item {
+		min-height: 2.55rem;
+		padding-top: 0.58rem;
+		padding-bottom: 0.58rem;
+	}
+
+	.article-reading-toc .toc-label {
+		font-size: 0.83rem;
+	}
+
+	.article-reading-toc__empty {
+		margin: 3rem 0;
+		color: color-mix(in srgb, var(--content-meta) 65%, transparent);
+		font-size: 0.78rem;
+		text-align: center;
+	}
+
+	.article-reading-toc__handle {
+		position: absolute;
+		top: 50%;
+		right: -1.125rem;
+		display: grid;
+		width: 2.25rem;
+		height: 3.25rem;
+		place-items: center;
+		border: 1px solid var(--line-divider);
+		border-left: 0;
+		border-radius: 0 0.8rem 0.8rem 0;
+		background: color-mix(in srgb, var(--card-bg) 97%, transparent);
+		box-shadow: 0.7rem 0.5rem 1.4rem rgb(20 29 33 / 8%);
+		color: var(--content-meta);
+		cursor: pointer;
+		transform: translateY(-50%);
+	}
+
+	.article-reading-toc__handle svg {
+		width: 1.35rem;
+		height: 1.35rem;
+		transition: transform 280ms ease;
+	}
+
+	.article-reading-toc.is-collapsed .article-reading-toc__header,
+	.article-reading-toc.is-collapsed .article-reading-toc__scroll {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.article-reading-toc.is-collapsed .article-reading-toc__handle svg {
+		transform: rotate(180deg);
+	}
+
+	.article-reading-toc.is-collapsed .article-reading-toc__handle {
+		right: -2.75rem;
+		width: 2.4rem;
+		height: 2.75rem;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		box-shadow: none;
+	}
+
+	.article-reading-toc.is-collapsed .article-reading-toc__handle:hover,
+	.article-reading-toc.is-collapsed .article-reading-toc__handle:focus-visible {
+		background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+	}
+
+	.article-reading-library {
+		position: fixed;
+		top: 6.5rem;
+		right: 4.75rem;
+		z-index: 44;
+		width: 3.25rem;
+		height: 3.25rem;
+	}
+
+	.article-reading-library__trigger {
+		position: relative;
+		z-index: 3;
+		display: grid;
+		width: 3.25rem;
+		height: 3.25rem;
+		place-items: center;
+		border-radius: 0.85rem;
+		color: var(--content-meta);
+		cursor: pointer;
+		transition: color 180ms ease, background-color 180ms ease;
+	}
+
+	.article-reading-library__trigger:hover,
+	.article-reading-library.is-open .article-reading-library__trigger {
+		background: var(--btn-card-bg-hover);
+		color: var(--primary);
+	}
+
+	.article-reading-library__trigger svg {
+		width: 1.3rem;
+		height: 1.3rem;
+	}
+
+	.article-reading-library__panel {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 18rem;
+		max-height: calc(100vh - 7.5rem);
+		overflow: hidden;
+		border-radius: 0.9rem;
+		opacity: 0;
+		pointer-events: none;
+		transform: translateX(0.8rem) scale(0.97);
+		transform-origin: top right;
+		visibility: hidden;
+		transition:
+			opacity 180ms ease,
+			transform 220ms cubic-bezier(0.22, 0.8, 0.2, 1),
+			visibility 180ms ease;
+	}
+
+	.article-reading-library.is-open .article-reading-library__panel {
+		opacity: 1;
+		pointer-events: auto;
+		transform: translateX(0) scale(1);
+		visibility: visible;
+	}
+
+	.article-reading-library__panel > header {
+		display: grid;
+		grid-template-columns: 0.22rem minmax(0, 1fr) auto 3rem;
+		align-items: center;
+		gap: 0.65rem;
+		min-height: 4rem;
+		padding: 0 0.85rem 0 1.15rem;
+		border-bottom: 1px solid var(--line-divider);
+	}
+
+	.article-reading-library__panel > header i {
+		height: 1.3rem;
+		border-radius: 99rem;
+		background: var(--content-meta);
+	}
+
+	.article-reading-library__panel > header small {
+		color: color-mix(in srgb, var(--content-meta) 60%, transparent);
+		font-size: 0.7rem;
+		font-weight: 700;
+	}
+
+	.article-reading-library__tree {
+		max-height: calc(100vh - 11.5rem);
+		overflow-y: auto;
+		padding: 0.8rem;
+	}
+
+	.article-reading-library__tree details + details {
+		margin-top: 0.1rem;
+	}
+
+	.article-reading-library__tree summary {
+		display: grid;
+		grid-template-columns: 1.1rem minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.55rem;
+		min-height: 2.35rem;
+		padding: 0.4rem 0.55rem;
+		border-radius: 0.65rem;
+		color: var(--content-meta);
+		font-size: 0.78rem;
+		font-weight: 750;
+		cursor: pointer;
+		list-style: none;
+	}
+
+	.article-reading-library__tree summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.article-reading-library__tree summary:hover {
+		background: var(--btn-card-bg-hover);
+	}
+
+	.article-reading-library__tree summary svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.article-reading-library__tree summary small {
+		color: color-mix(in srgb, var(--content-meta) 52%, transparent);
+		font-size: 0.66rem;
+	}
+
+	.article-reading-library__tree details > div {
+		position: relative;
+		display: grid;
+		gap: 0.12rem;
+		margin: 0.12rem 0 0.4rem 0.72rem;
+		padding-left: 0.58rem;
+	}
+
+	.article-reading-library__tree details > div::before {
+		position: absolute;
+		inset: 0.2rem auto 0.2rem 0;
+		width: 1px;
+		background: var(--line-divider);
+		content: "";
+	}
+
+	.article-reading-library__tree a {
+		display: grid;
+		grid-template-columns: 1rem minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.42rem;
+		min-height: 2.25rem;
+		padding: 0.38rem 0.5rem;
+		border-radius: 0.65rem;
+		color: color-mix(in srgb, var(--content-meta) 82%, transparent);
+		font-size: 0.7rem;
+		transition: background-color 160ms ease, color 160ms ease;
+	}
+
+	.article-reading-library__tree a:hover,
+	.article-reading-library__tree a:focus-visible,
+	.article-reading-library__tree a.is-current {
+		background: color-mix(in srgb, var(--content-meta) 12%, transparent);
+		color: var(--content-meta);
+		outline: none;
+	}
+
+	.article-reading-library__tree a.is-current {
+		box-shadow: inset 0.18rem 0 var(--primary);
+	}
+
+	.article-reading-library__tree a svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+
+	.article-reading-library__tree a span {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.article-reading-library__tree time {
+		color: color-mix(in srgb, var(--content-meta) 48%, transparent);
+		font-size: 0.6rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.article-reading-toc__handle:focus-visible,
+	.article-reading-library__trigger:focus-visible,
+	.article-reading-library__tree summary:focus-visible,
+	.article-reading-library__tree a:focus-visible {
+		outline: 0.14rem solid var(--primary);
+		outline-offset: 0.12rem;
+	}
+
+	:global(html:has([data-article-reading-rails]) #left-sidebar-wrapper),
+	:global(html:has([data-article-reading-rails]) #left-sidebar-dynamic),
+	:global(html:has([data-article-reading-rails]) #right-sidebar-static),
+	:global(html:has([data-article-reading-rails]) #right-sidebar-dynamic),
+	:global(html:has([data-article-reading-rails]) #mobile-bottom-sidebar),
+	:global(html:has([data-article-reading-rails]) #floating-toc-wrapper) {
+		display: none !important;
+	}
+
+	:global(html:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
+		grid-column: 1 / -1 !important;
+		width: calc(100% - 19.75rem) !important;
+		margin-right: 0 !important;
+		margin-left: 19.75rem !important;
+		transition:
+			width 320ms cubic-bezier(0.22, 0.8, 0.2, 1),
+			margin-left 320ms cubic-bezier(0.22, 0.8, 0.2, 1);
+	}
+
+	:global(html[data-article-toc-collapsed="true"]:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
+		width: 100% !important;
+		margin-left: 0 !important;
+	}
+
+	:global(html:has([data-article-reading-rails]) body.content-only-active #main-layout-container),
+	:global(html:has([data-article-reading-rails]) body.content-only-active #main-grid),
+	:global(html:has([data-article-reading-rails]) body.content-only-active #swup-container) {
+		width: 100% !important;
+		max-width: none !important;
+	}
+
+	:global(html:has([data-article-reading-rails]) body.content-only-active #main-layout-container),
+	:global(html:has([data-article-reading-rails]) body.content-only-active #main-grid) {
+		margin-inline: 0 !important;
+		padding-inline: 0 !important;
+	}
+
+	@media (max-width: 1120px) {
+		:global(html:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper),
+		:global(html[data-article-toc-collapsed="true"]:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
+			width: 100% !important;
+			margin-left: 0 !important;
+		}
+	}
+
+	@media (max-width: 760px) {
+		.article-reading-toc {
+			top: 4.8rem;
+			bottom: 0.5rem;
+			left: 0;
+			width: min(18.5rem, calc(100vw - 4rem));
+			border-radius: 0 0.9rem 0.9rem 0;
+			transform: translateX(calc(-100% + 2.5rem));
+		}
+
+		.article-reading-toc:not(.is-collapsed) {
+			transform: translateX(0);
+		}
+
+		.article-reading-library {
+			top: 5.1rem;
+			right: 0.5rem;
+		}
+
+		.article-reading-library__panel {
+			width: min(18rem, calc(100vw - 1rem));
+		}
+
+		:global(html:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper),
+		:global(html[data-article-toc-collapsed="true"]:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
+			width: 100% !important;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.article-reading-toc,
+		.article-reading-toc__handle svg,
+		.article-reading-library__panel {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>

@@ -250,7 +250,7 @@ const formatCardDate = (date: Date) =>
 			switchAnimationTimer = window.setTimeout(() => {
 				viewSwitch.classList.remove("is-switching");
 				switchAnimationTimer = undefined;
-			}, 620);
+			}, 1560);
 		};
 		const storedView = localStorage.getItem("jingyue-article-view");
 		if (storedView === "list" || storedView === "grid") {
@@ -354,6 +354,10 @@ const formatCardDate = (date: Date) =>
 		--text-30: #748188;
 		--card-bg: #171c20;
 		--line-divider: rgb(226 237 241 / 14%);
+	}
+
+	:global(html.dark) .article-index__card {
+		background: color-mix(in srgb, #171c20 86%, transparent);
 	}
 
 	.article-index__sidebar {
@@ -640,7 +644,7 @@ const formatCardDate = (date: Date) =>
 		justify-content: center;
 		border-radius: 1.25rem;
 		transform: translateX(0);
-		transition: transform 0.52s cubic-bezier(0.22, 0.82, 0.3, 1.08);
+		transition: none;
 		will-change: transform;
 	}
 
@@ -663,11 +667,19 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__view-switch.is-switching input:checked ~ .article-index__skull > span {
-		animation: article-skull-lean-right 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08);
+		animation: article-skull-brighten 1.5s linear both;
 	}
 
 	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__skull > span {
-		animation: article-skull-lean-left 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08);
+		animation: article-skull-dim 1.5s linear both;
+	}
+
+	.article-index__view-switch.is-switching input:checked ~ .article-index__skull {
+		animation: article-skull-move-right 1.5s cubic-bezier(0.45, 0, 0.25, 1) both;
+	}
+
+	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__skull {
+		animation: article-skull-move-left 1.5s cubic-bezier(0.45, 0, 0.25, 1) both;
 	}
 
 	.article-index__cranium {
@@ -748,11 +760,11 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__view-switch.is-switching input:checked ~ .article-index__arm-wrapper .article-index__arm {
-		animation: article-arm-pull-right 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08) forwards;
+		animation: article-arm-pull-right 1.5s cubic-bezier(0.45, 0, 0.25, 1) both;
 	}
 
 	.article-index__view-switch.is-switching input:not(:checked) ~ .article-index__arm-wrapper .article-index__arm {
-		animation: article-arm-push-left 0.56s cubic-bezier(0.22, 0.82, 0.3, 1.08) forwards;
+		animation: article-arm-push-left 1.5s cubic-bezier(0.45, 0, 0.25, 1) both;
 	}
 
 	.article-index__arm {
@@ -762,7 +774,7 @@ const formatCardDate = (date: Date) =>
 		width: 2rem;
 		height: 0.625rem;
 		opacity: 0;
-		transform: translateX(3.2rem);
+		transform: translateX(3.35rem);
 		will-change: transform, opacity;
 	}
 
@@ -864,30 +876,45 @@ const formatCardDate = (date: Date) =>
 		filter: drop-shadow(-0.3125rem 0 #fff) drop-shadow(0 0 1px #000);
 	}
 
-	@keyframes article-skull-lean-right {
-		0%, 18% { transform: translateX(-0.04rem) rotate(-2deg); }
-		76% { transform: translateX(0.06rem) rotate(2deg); }
-		100% { transform: translateX(0) rotate(0); }
+	@keyframes article-skull-move-right {
+		0%, 28% { transform: translateX(0); }
+		32% { transform: translateX(0.08rem) rotate(1deg); }
+		68% { transform: translateX(var(--skull-travel)) rotate(0); }
+		100% { transform: translateX(var(--skull-travel)); }
 	}
 
-	@keyframes article-skull-lean-left {
-		0%, 18% { transform: translateX(0.04rem) rotate(2deg); }
-		76% { transform: translateX(-0.06rem) rotate(-2deg); }
-		100% { transform: translateX(0) rotate(0); }
+	@keyframes article-skull-move-left {
+		0%, 28% { transform: translateX(var(--skull-travel)); }
+		32% { transform: translateX(calc(var(--skull-travel) - 0.08rem)) rotate(-1deg); }
+		68%, 100% { transform: translateX(0); }
+	}
+
+	@keyframes article-skull-brighten {
+		0%, 57% { filter: drop-shadow(0 1px 1px #000) brightness(1); }
+		72%, 100% { filter: drop-shadow(0 1px 1px #000) brightness(1.875); }
+	}
+
+	@keyframes article-skull-dim {
+		0%, 57% { filter: drop-shadow(0 1px 1px #000) brightness(1.875); }
+		72%, 100% { filter: drop-shadow(0 1px 1px #000) brightness(1); }
 	}
 
 	@keyframes article-arm-pull-right {
-		0% { opacity: 0; transform: translateX(3.2rem); }
-		16% { opacity: 1; transform: translateX(0); }
-		80% { opacity: 1; transform: translateX(var(--skull-travel)); }
+		0% { opacity: 0; transform: translateX(3.35rem); }
+		7% { opacity: 1; }
+		28% { opacity: 1; transform: translateX(0); }
+		68% { opacity: 1; transform: translateX(var(--skull-travel)); }
+		92% { opacity: 1; transform: translateX(3.35rem); }
 		100% { opacity: 0; transform: translateX(3.35rem); }
 	}
 
 	@keyframes article-arm-push-left {
 		0% { opacity: 0; transform: translateX(3.35rem); }
-		16% { opacity: 1; transform: translateX(var(--skull-travel)); }
-		80% { opacity: 1; transform: translateX(0); }
-		100% { opacity: 0; transform: translateX(3.2rem); }
+		7% { opacity: 1; }
+		28% { opacity: 1; transform: translateX(var(--skull-travel)); }
+		68% { opacity: 1; transform: translateX(0); }
+		92% { opacity: 1; transform: translateX(3.35rem); }
+		100% { opacity: 0; transform: translateX(3.35rem); }
 	}
 
 	.article-index__header nav {
@@ -951,9 +978,9 @@ const formatCardDate = (date: Date) =>
 	.article-index__card {
 		min-width: 0;
 		overflow: hidden;
-		border: 1.5px solid color-mix(in srgb, var(--text-90) 20%, transparent);
+		border: 1.5px solid color-mix(in srgb, var(--text-90) 17%, transparent);
 		border-radius: 0.75rem;
-		background: var(--card-bg);
+		background: color-mix(in srgb, #fff 78%, transparent);
 		box-shadow: 0 0.45rem 1.25rem rgb(22 33 38 / 4%);
 		animation: article-card-in 420ms ease both;
 		animation-delay: var(--article-delay);
@@ -961,7 +988,7 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__card.is-pinned {
-		border-color: #ef4444;
+		border-color: color-mix(in srgb, var(--text-90) 17%, transparent);
 	}
 
 	.article-index__card[hidden] {
@@ -969,13 +996,18 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__card:hover {
-		border-color: color-mix(in srgb, var(--text-90) 55%, transparent);
+		border-color: var(--text-90);
 		box-shadow: 0 0.85rem 2rem rgb(23 43 49 / 10%);
 		transform: translateY(-0.12rem);
 	}
 
 	.article-index__card.is-pinned:hover {
-		border-color: #ef4444;
+		border-color: var(--text-90);
+	}
+
+	.article-index__card:focus-within {
+		border-color: var(--text-90);
+		box-shadow: 0 0.85rem 2rem rgb(23 43 49 / 10%);
 	}
 
 	.article-index__card-link {
@@ -1012,7 +1044,7 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__card-link:focus-visible {
-		outline: 0.18rem solid var(--primary);
+		outline: 0.14rem solid var(--text-90);
 		outline-offset: -0.2rem;
 	}
 
