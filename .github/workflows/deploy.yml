@@ -39,10 +39,7 @@ jobs:
         run: pnpm run build
         env:
           PUBLIC_WALINE_SERVER_URL: ${{ vars.PUBLIC_WALINE_SERVER_URL }}
-          PUBLIC_WALINE_OAUTH_QQ_URL: ${{ vars.PUBLIC_WALINE_OAUTH_QQ_URL }}
-          PUBLIC_WALINE_OAUTH_WECHAT_URL: ${{ vars.PUBLIC_WALINE_OAUTH_WECHAT_URL }}
-          PUBLIC_WALINE_OAUTH_GOOGLE_URL: ${{ vars.PUBLIC_WALINE_OAUTH_GOOGLE_URL }}
-          PUBLIC_WALINE_OAUTH_GITHUB_URL: ${{ vars.PUBLIC_WALINE_OAUTH_GITHUB_URL }}
+          PUBLIC_WALINE_OAUTH_SERVICE_URL: ${{ vars.PUBLIC_WALINE_OAUTH_SERVICE_URL }}
 
       - name: Create .nojekyll file
         run: touch dist/.nojekyll

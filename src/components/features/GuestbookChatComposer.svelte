@@ -37,6 +37,8 @@ interface Props {
 	serviceAvailable: boolean;
 	isSending: boolean;
 	loggingIn: boolean;
+	oauthProvidersLoading: boolean;
+	availableOAuthProviders: GuestbookLoginProvider[];
 	loginMode: "enable" | "force" | "disable";
 	onProfileChange: (profile: GuestbookProfile) => void;
 	onDraftChange: (draft: string) => void;
@@ -60,6 +62,8 @@ let {
 	serviceAvailable,
 	isSending,
 	loggingIn,
+	oauthProvidersLoading,
+	availableOAuthProviders,
 	loginMode,
 	onProfileChange,
 	onDraftChange,
@@ -75,12 +79,10 @@ const MAX_REMOTE_IMAGE_SIZE = 5 * 1024 * 1024;
 const MIN_MESSAGE_PANE_HEIGHT = 128;
 const RESIZE_KEYBOARD_STEP = 16;
 const emojiSources = commentConfig.waline?.emoji ?? [];
-const oauthProviders = commentConfig.waline?.oauthProviders ?? {};
 const hasWalineLogin = Boolean(commentConfig.waline?.serverURL);
+const hasOAuthService = Boolean(commentConfig.waline?.oauthServiceURL);
 const providerAvailable = (provider: GuestbookLoginProvider) =>
-	provider === "github"
-		? hasWalineLogin || Boolean(oauthProviders.github?.trim())
-		: Boolean(oauthProviders[provider]?.trim());
+	availableOAuthProviders.includes(provider);
 const imageUploadURL = commentConfig.waline?.imageUploadURL ?? "";
 const maxImageSize = imageUploadURL
 	? MAX_REMOTE_IMAGE_SIZE
@@ -162,6 +164,18 @@ function closeLoginDialog() {
 }
 
 async function selectLoginProvider(provider: GuestbookLoginProvider) {
+	if (!providerAvailable(provider)) {
+		const providerName =
+			provider === "qq"
+				? "QQ"
+				: provider === "wechat"
+					? "微信"
+					: provider === "google"
+						? "Google"
+						: "GitHub";
+		onToolError(`${providerName} OAuth 尚未配置`);
+		return;
+	}
 	const accepted = await onLogin(provider);
 	if (accepted) closeLoginDialog();
 }
@@ -833,9 +847,9 @@ async function handleImageSelection(event: Event) {
 				class="guestbook-login-provider guestbook-login-provider--qq"
 				type="button"
 				onclick={() => void selectLoginProvider("qq")}
-				disabled={loggingIn || !providerAvailable("qq")}
+				disabled={loggingIn || oauthProvidersLoading}
 				aria-disabled={!providerAvailable("qq")}
-				title={providerAvailable("qq") ? "使用 QQ 登录" : "需要配置 QQ OAuth 服务"}
+				title={providerAvailable("qq") ? "使用 QQ 登录" : "QQ OAuth 尚未配置"}
 			>
 				<span><Icon icon="simple-icons:tencentqq" size="xl" /></span>
 				<strong>QQ</strong>
@@ -844,9 +858,9 @@ async function handleImageSelection(event: Event) {
 				class="guestbook-login-provider guestbook-login-provider--wechat"
 				type="button"
 				onclick={() => void selectLoginProvider("wechat")}
-				disabled={loggingIn || !providerAvailable("wechat")}
+				disabled={loggingIn || oauthProvidersLoading}
 				aria-disabled={!providerAvailable("wechat")}
-				title={providerAvailable("wechat") ? "使用微信登录" : "需要配置微信 OAuth 服务"}
+				title={providerAvailable("wechat") ? "使用微信登录" : "微信 OAuth 尚未配置"}
 			>
 				<span><Icon icon="simple-icons:wechat" size="xl" /></span>
 				<strong>微信</strong>
@@ -855,9 +869,9 @@ async function handleImageSelection(event: Event) {
 				class="guestbook-login-provider guestbook-login-provider--google"
 				type="button"
 				onclick={() => void selectLoginProvider("google")}
-				disabled={loggingIn || !providerAvailable("google")}
+				disabled={loggingIn || oauthProvidersLoading}
 				aria-disabled={!providerAvailable("google")}
-				title={providerAvailable("google") ? "使用 Google 登录" : "需要配置 Google OAuth 服务"}
+				title={providerAvailable("google") ? "使用 Google 登录" : "Google OAuth 尚未配置"}
 			>
 				<span><GoogleLogo size={25} /></span>
 				<strong>Google</strong>
@@ -866,18 +880,27 @@ async function handleImageSelection(event: Event) {
 				class="guestbook-login-provider guestbook-login-provider--github"
 				type="button"
 				onclick={() => void selectLoginProvider("github")}
-				disabled={loggingIn || !providerAvailable("github")}
+				disabled={loggingIn || oauthProvidersLoading}
 				aria-disabled={!providerAvailable("github")}
-				title={providerAvailable("github") ? "使用 GitHub 或 Waline 账号登录" : "需要配置 Waline 服务"}
+				title={providerAvailable("github") ? "使用 GitHub 登录" : "GitHub OAuth 尚未配置"}
 			>
 				<span><Icon icon="simple-icons:github" size="xl" /></span>
 				<strong>GitHub</strong>
 			</button>
 		</div>
-		{#if !hasWalineLogin}
+		{#if oauthProvidersLoading}
+			<p class="guestbook-login-modal__setup" aria-live="polite">
+				<LoaderCircle class="is-spinning" size={15} aria-hidden="true" />
+				正在检查登录服务...
+			</p>
+		{:else if loggingIn}
+			<p class="guestbook-login-modal__setup" aria-live="polite">
+				<LoaderCircle class="is-spinning" size={15} aria-hidden="true" />
+				正在登录...
+			</p>
+		{:else if !hasWalineLogin || !hasOAuthService}
 			<p class="guestbook-login-modal__setup">
-				站点尚未连接账号服务。部署 Waline 并设置
-				<code>PUBLIC_WALINE_SERVER_URL</code> 后，GitHub 与 Waline 账号登录即可使用。
+				站点尚未连接完整账号服务，请配置 Waline 与 OAuth 服务地址。
 			</p>
 		{/if}
 		{#if composerError}

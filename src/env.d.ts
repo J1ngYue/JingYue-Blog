@@ -5,10 +5,7 @@ declare global {
 	interface ImportMetaEnv {
 		readonly PUBLIC_NETEASE_API_BASE_URL?: string;
 		readonly PUBLIC_WALINE_SERVER_URL?: string;
-		readonly PUBLIC_WALINE_OAUTH_QQ_URL?: string;
-		readonly PUBLIC_WALINE_OAUTH_WECHAT_URL?: string;
-		readonly PUBLIC_WALINE_OAUTH_GOOGLE_URL?: string;
-		readonly PUBLIC_WALINE_OAUTH_GITHUB_URL?: string;
+		readonly PUBLIC_WALINE_OAUTH_SERVICE_URL?: string;
 		readonly MEILI_MASTER_KEY: string;
 		readonly GITHUB_TOKEN?: string;
 	}

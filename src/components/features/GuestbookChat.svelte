@@ -3,7 +3,6 @@ import {
 	addComment,
 	deleteComment,
 	getComment,
-	login as loginWithWaline,
 	updateComment,
 } from "@waline/api";
 import {
@@ -55,12 +54,14 @@ const PROFILE_STORAGE_KEY = "guestbook-chat-profile";
 const AUTH_STORAGE_KEY = "guestbook-chat-auth";
 const DRAFT_STORAGE_KEY = "guestbook-chat-draft";
 const LOCAL_MESSAGES_STORAGE_KEY = "guestbook-chat-local-messages";
+const OAUTH_ATTEMPT_STORAGE_KEY = "guestbook-oauth-attempt";
+const OAUTH_ATTEMPT_TTL = 10 * 60 * 1000;
 const serverURL = commentConfig.waline?.serverURL ?? "";
+const oauthServiceURL = commentConfig.waline?.oauthServiceURL ?? "";
 const localMode = !serverURL;
 const serviceAvailable = true;
 const lang = commentConfig.waline?.lang ?? "zh-CN";
 const loginMode = commentConfig.waline?.login ?? "enable";
-const oauthProviders = commentConfig.waline?.oauthProviders ?? {};
 const announcements = guestbookConfig.announcements;
 
 type ChatMember = {
@@ -82,6 +83,8 @@ let composerError = $state("");
 let loadingOlder = $state(false);
 let syncing = $state(false);
 let loggingIn = $state(false);
+let oauthProvidersLoading = $state(Boolean(oauthServiceURL));
+let availableOAuthProviders = $state<GuestbookLoginProvider[]>([]);
 let isOffline = $state(false);
 let currentPage = $state(1);
 let totalPages = $state(0);
@@ -286,15 +289,104 @@ interface WalineTokenResponse {
 	data?: unknown;
 }
 
-function removeLoginTokenFromURL() {
+interface OAuthServiceResponse {
+	services?: Array<{ name?: unknown }>;
+}
+
+interface OAuthLoginAttempt {
+	provider: GuestbookLoginProvider;
+	state: string;
+	createdAt: number;
+}
+
+function isLoginProvider(value: unknown): value is GuestbookLoginProvider {
+	return (
+		value === "qq" ||
+		value === "wechat" ||
+		value === "google" ||
+		value === "github"
+	);
+}
+
+function mapOAuthServiceName(value: unknown): GuestbookLoginProvider | null {
+	if (value === "oidc") return "wechat";
+	return isLoginProvider(value) ? value : null;
+}
+
+function removeOAuthCallbackFromURL() {
 	const url = new URL(window.location.href);
-	if (!url.searchParams.has("token")) return;
-	url.searchParams.delete("token");
+	const callbackKeys = [
+		"token",
+		"oauth_error",
+		"oauth_provider",
+		"oauth_state",
+	];
+	if (!callbackKeys.some((key) => url.searchParams.has(key))) return;
+	for (const key of callbackKeys) url.searchParams.delete(key);
 	window.history.replaceState(
 		window.history.state,
 		"",
 		`${url.pathname}${url.search}${url.hash}`,
 	);
+}
+
+function readOAuthAttempt(): OAuthLoginAttempt | null {
+	const attempt = readStoredValue<unknown>(
+		sessionStorage,
+		OAUTH_ATTEMPT_STORAGE_KEY,
+	);
+	if (!attempt || typeof attempt !== "object") return null;
+	const candidate = attempt as Partial<OAuthLoginAttempt>;
+	if (
+		!isLoginProvider(candidate.provider) ||
+		typeof candidate.state !== "string" ||
+		typeof candidate.createdAt !== "number" ||
+		Date.now() - candidate.createdAt > OAUTH_ATTEMPT_TTL
+	) {
+		removeStoredValue(sessionStorage, OAUTH_ATTEMPT_STORAGE_KEY);
+		return null;
+	}
+	return candidate as OAuthLoginAttempt;
+}
+
+function createOAuthState(): string {
+	const bytes = new Uint8Array(24);
+	crypto.getRandomValues(bytes);
+	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+		"",
+	);
+}
+
+async function loadOAuthProviderAvailability() {
+	if (!oauthServiceURL) {
+		oauthProvidersLoading = false;
+		availableOAuthProviders = [];
+		return;
+	}
+
+	try {
+		const serviceURL = new URL(oauthServiceURL);
+		if (serviceURL.protocol !== "https:" && serviceURL.protocol !== "http:") {
+			throw new Error("OAuth 服务地址协议无效");
+		}
+		const response = await fetch(serviceURL, {
+			headers: { Accept: "application/json" },
+			signal: AbortSignal.timeout(8_000),
+		});
+		if (!response.ok) throw new Error("OAuth 服务不可用");
+		const payload = (await response.json()) as OAuthServiceResponse;
+		availableOAuthProviders = Array.isArray(payload.services)
+			? payload.services
+					.map((service) => mapOAuthServiceName(service.name))
+					.filter(
+						(provider): provider is GuestbookLoginProvider => provider !== null,
+					)
+			: [];
+	} catch {
+		availableOAuthProviders = [];
+	} finally {
+		oauthProvidersLoading = false;
+	}
 }
 
 async function restoreWalineRedirectLogin(token: string) {
@@ -1005,64 +1097,101 @@ async function confirmDeleteMessage() {
 }
 
 function buildOAuthLoginURL(provider: GuestbookLoginProvider): string {
-	const configuredURL = oauthProviders[provider]?.trim();
-	if (!configuredURL) return "";
-
-	const loginURL = new URL(configuredURL, window.location.href);
-	if (!loginURL.searchParams.has("redirect")) {
-		const returnURL = new URL(window.location.href);
-		returnURL.searchParams.delete("token");
-		loginURL.searchParams.set("redirect", returnURL.toString());
+	const walineBaseURL = new URL(serverURL);
+	if (
+		walineBaseURL.protocol !== "https:" &&
+		walineBaseURL.protocol !== "http:"
+	) {
+		throw new Error("Waline 服务地址协议无效");
 	}
+
+	const state = createOAuthState();
+	const returnURL = new URL(window.location.href);
+	for (const key of ["token", "oauth_error", "oauth_provider", "oauth_state"]) {
+		returnURL.searchParams.delete(key);
+	}
+	returnURL.searchParams.set("oauth_provider", provider);
+	returnURL.searchParams.set("oauth_state", state);
+	writeStoredValue(sessionStorage, OAUTH_ATTEMPT_STORAGE_KEY, {
+		provider,
+		state,
+		createdAt: Date.now(),
+	} satisfies OAuthLoginAttempt);
+
+	const loginURL = new URL(
+		`${walineBaseURL.pathname.replace(/\/+$/u, "")}/api/oauth`,
+		walineBaseURL.origin,
+	);
+	loginURL.searchParams.set("type", provider === "wechat" ? "oidc" : provider);
+	loginURL.searchParams.set("redirect", returnURL.toString());
 	return loginURL.toString();
 }
 
 async function handleLogin(provider: GuestbookLoginProvider): Promise<boolean> {
 	if (loggingIn) return false;
-	let externalLoginURL = "";
-	try {
-		externalLoginURL = buildOAuthLoginURL(provider);
-	} catch {
-		composerError = "登录地址配置无效，请检查 OAuth URL";
-		return false;
-	}
-	if (externalLoginURL) {
-		window.location.assign(externalLoginURL);
-		return true;
-	}
-	if (provider !== "github") {
-		const providerName =
-			provider === "qq" ? "QQ" : provider === "wechat" ? "微信" : "Google";
-		composerError = `${providerName} 登录尚未配置`;
-		return false;
-	}
 	if (!serverURL) {
-		composerError = "GitHub 登录需要先配置 PUBLIC_WALINE_SERVER_URL";
+		composerError = "账号登录需要先配置 PUBLIC_WALINE_SERVER_URL";
 		return false;
 	}
-	loggingIn = true;
-	composerError = "";
+	if (!oauthServiceURL) {
+		composerError = "账号登录需要先配置 PUBLIC_WALINE_OAUTH_SERVICE_URL";
+		return false;
+	}
+	if (!availableOAuthProviders.includes(provider)) {
+		const providerName =
+			provider === "qq"
+				? "QQ"
+				: provider === "wechat"
+					? "微信"
+					: provider === "google"
+						? "Google"
+						: "GitHub";
+		composerError = `${providerName} OAuth 尚未在登录服务中配置`;
+		return false;
+	}
 
 	try {
-		const user = await loginWithWaline({ serverURL, lang });
-		if (!isAuthUser(user)) throw new Error("登录返回信息无效，请重新登录");
-		authUser = user;
-		persistAuthentication(user);
-		await loadInitial();
+		const externalLoginURL = buildOAuthLoginURL(provider);
+		loggingIn = true;
+		composerError = "";
+		window.location.assign(externalLoginURL);
 		return true;
-	} catch (error) {
-		composerError =
-			error instanceof Error && error.message
-				? error.message
-				: "登录失败，请稍后重试";
-		return false;
-	} finally {
+	} catch {
+		composerError = "登录地址配置无效，请检查 OAuth URL";
 		loggingIn = false;
+		return false;
 	}
 }
 
-async function initializeGuestbook(returnedToken: string | null) {
-	if (returnedToken && loginMode !== "disable") {
+async function initializeGuestbook() {
+	const callbackURL = new URL(window.location.href);
+	const returnedToken = callbackURL.searchParams.get("token");
+	const returnedError = callbackURL.searchParams.get("oauth_error");
+	const returnedProvider = callbackURL.searchParams.get("oauth_provider");
+	const returnedState = callbackURL.searchParams.get("oauth_state");
+	const hasOAuthCallback = Boolean(returnedToken || returnedError);
+	const attempt = hasOAuthCallback ? readOAuthAttempt() : null;
+	const callbackIsValid = Boolean(
+		attempt &&
+			returnedState === attempt.state &&
+			returnedProvider === attempt.provider,
+	);
+
+	if (hasOAuthCallback) {
+		removeStoredValue(sessionStorage, OAUTH_ATTEMPT_STORAGE_KEY);
+		removeOAuthCallbackFromURL();
+	}
+
+	if (hasOAuthCallback && !callbackIsValid) {
+		composerError = "登录校验失败或请求已过期，请重新登录";
+	} else if (returnedError) {
+		composerError =
+			returnedError === "access_denied"
+				? "已取消登录授权"
+				: "第三方登录失败，请稍后重试";
+	}
+
+	if (returnedToken && callbackIsValid && loginMode !== "disable") {
 		loggingIn = true;
 		try {
 			await restoreWalineRedirectLogin(returnedToken);
@@ -1072,11 +1201,8 @@ async function initializeGuestbook(returnedToken: string | null) {
 					? error.message
 					: "登录信息验证失败，请重新登录";
 		} finally {
-			removeLoginTokenFromURL();
 			loggingIn = false;
 		}
-	} else if (returnedToken) {
-		removeLoginTokenFromURL();
 	}
 
 	if (isOffline) {
@@ -1117,8 +1243,8 @@ onMount(() => {
 	else authUser = readAuthentication();
 	draft = readStoredString(localStorage, DRAFT_STORAGE_KEY);
 	isOffline = localMode ? false : !navigator.onLine;
-	const returnedToken = new URL(window.location.href).searchParams.get("token");
-	void initializeGuestbook(returnedToken);
+	void loadOAuthProviderAvailability();
+	void initializeGuestbook();
 	startPolling();
 	document.addEventListener("visibilitychange", handleVisibilityChange);
 	window.addEventListener("online", handleOnline);
@@ -1321,6 +1447,8 @@ onMount(() => {
 					{isOffline}
 					{isSending}
 					{loggingIn}
+					{oauthProvidersLoading}
+					{availableOAuthProviders}
 					{loginMode}
 					onProfileChange={handleProfileChange}
 					onDraftChange={handleDraftChange}

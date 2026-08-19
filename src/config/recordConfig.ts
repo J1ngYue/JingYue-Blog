@@ -20,6 +20,21 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.21",
+		date: "2026-08-19",
+		time: "16:35",
+		type: "feature",
+		title: "四渠道 Waline OAuth 登录",
+		summary:
+			"接通 QQ、微信、Google 与 GitHub 的标准 OAuth 登录及 Waline 身份映射。",
+		changes: [
+			"四个登录按钮统一通过 Waline OAuth 入口完成用户创建、绑定与会话恢复。",
+			"新增独立 OAuth 适配服务，服务端完成授权码交换并返回标准化用户资料。",
+			"增加 state、HttpOnly Cookie、回调来源限制与短期加密身份票据。",
+			"登录弹窗增加服务可用性检测、登录中状态、取消授权与失败提示。",
+		],
+	},
+	{
 		version: "v6.14.20",
 		date: "2026-08-19",
 		time: "11:23",
