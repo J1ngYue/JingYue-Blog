@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.20",
+		date: "2026-08-19",
+		time: "11:23",
+		type: "fix",
+		title: "Waline 构建环境兼容修复",
+		summary: "兼容 Vite、Astro 与 Node 直接执行配置模块时的环境变量读取。",
+		changes: [
+			"Waline 服务地址与四种 OAuth 地址优先读取 import.meta.env，并在 Node 构建阶段回退到 process.env。",
+			"浏览器端增加 process 全局存在性防护，避免客户端运行时报错。",
+			"修复字体子集化脚本经统一配置出口加载评论配置时的构建崩溃。",
+		],
+	},
+	{
 		version: "v6.14.19",
 		date: "2026-08-13",
 		time: "02:05",

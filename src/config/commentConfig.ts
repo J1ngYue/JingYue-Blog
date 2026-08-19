@@ -1,11 +1,25 @@
 import type { CommentConfig } from "../types/commentConfig";
 
-const walineServerURL = import.meta.env.PUBLIC_WALINE_SERVER_URL?.trim() || "";
+type PublicWalineEnvKey =
+	| "PUBLIC_WALINE_SERVER_URL"
+	| "PUBLIC_WALINE_OAUTH_QQ_URL"
+	| "PUBLIC_WALINE_OAUTH_WECHAT_URL"
+	| "PUBLIC_WALINE_OAUTH_GOOGLE_URL"
+	| "PUBLIC_WALINE_OAUTH_GITHUB_URL";
+
+const readPublicWalineEnv = (key: PublicWalineEnvKey): string => {
+	const viteValue = import.meta.env?.[key];
+	const nodeValue =
+		typeof process !== "undefined" ? process.env?.[key] : undefined;
+	return (viteValue || nodeValue || "").trim();
+};
+
+const walineServerURL = readPublicWalineEnv("PUBLIC_WALINE_SERVER_URL");
 const walineOAuthProviders = {
-	qq: import.meta.env.PUBLIC_WALINE_OAUTH_QQ_URL?.trim() || "",
-	wechat: import.meta.env.PUBLIC_WALINE_OAUTH_WECHAT_URL?.trim() || "",
-	google: import.meta.env.PUBLIC_WALINE_OAUTH_GOOGLE_URL?.trim() || "",
-	github: import.meta.env.PUBLIC_WALINE_OAUTH_GITHUB_URL?.trim() || "",
+	qq: readPublicWalineEnv("PUBLIC_WALINE_OAUTH_QQ_URL"),
+	wechat: readPublicWalineEnv("PUBLIC_WALINE_OAUTH_WECHAT_URL"),
+	google: readPublicWalineEnv("PUBLIC_WALINE_OAUTH_GOOGLE_URL"),
+	github: readPublicWalineEnv("PUBLIC_WALINE_OAUTH_GITHUB_URL"),
 };
 
 export const commentConfig: CommentConfig = {
