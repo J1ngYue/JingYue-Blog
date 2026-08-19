@@ -44,6 +44,7 @@ export { announcementConfig } from "./announcementConfig"; // 公告配置
 export { backgroundWallpaper } from "./backgroundWallpaper"; // 背景壁纸配置
 // 功能配置
 export { commentConfig } from "./commentConfig"; // 评论系统配置
+export { circleConfig } from "./circleConfig"; // 朋友圈配置
 export { coverImageConfig } from "./coverImageConfig"; // 封面图配置
 export { dynamicConfig } from "./dynamicConfig"; // 动态页面配置
 export { rainConfig, sakuraConfig, snowConfig } from "./effectsConfig"; // 动画特效配置

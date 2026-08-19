@@ -9,7 +9,6 @@ import endingForegroundImage from "@/assets/images/HomeReference/utl-1.webp";
 import endingMidgroundImage from "@/assets/images/HomeReference/utl-back1.webp";
 import endingBackgroundVideo from "@/assets/images/HomeReference/utl-back2.webm";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
-import DarkModeSpotlight from "@/components/features/DarkModeSpotlight.svelte";
 import LocalWallpaperLayer from "@/components/features/LocalWallpaperLayer.svelte";
 import Categories from "@/components/widget/Categories.astro";
 import Dynamic from "@/components/widget/Dynamic.astro";
@@ -33,6 +32,7 @@ interface Props {
 }
 
 const { githubActivity } = Astro.props;
+const showLocalAdminControls = import.meta.env.DEV;
 const backgroundImages = getBackgroundImages();
 const heroDesktop =
 	backgroundImages.desktop[0] ||
@@ -131,7 +131,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	data-home-default-hue={siteConfig.themeColor.hue}
 >
 	<LocalWallpaperLayer client:load surface="home" />
-	<DarkModeSpotlight client:load />
 
 	{musicPlayerConfig.showInNavbar && (
 		<button
@@ -159,20 +158,24 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		<button type="button" data-home-quick-tool="search" data-tooltip="站内搜索" aria-label="打开站内搜索">
 			<Icon is:inline name="material-symbols:manage-search-rounded" />
 		</button>
-		<button type="button" data-home-quick-tool="settings" data-tooltip="显示设置" aria-label="打开显示设置">
-			<Icon is:inline name="material-symbols:settings-rounded" />
-		</button>
+		{showLocalAdminControls && (
+			<button type="button" data-home-quick-tool="settings" data-tooltip="显示设置" aria-label="打开显示设置">
+				<Icon is:inline name="material-symbols:settings-rounded" />
+			</button>
+		)}
 		<i class="home-profile-rail-divider" aria-hidden="true"></i>
-		<button
-			type="button"
-			data-global-wallpaper-trigger
-			aria-label="打开页面壁纸选择器"
-			aria-controls="page-wallpaper-picker"
-			aria-expanded="false"
-			data-tooltip="切换壁纸"
-		>
-			<Icon is:inline name="material-symbols:wallpaper" />
-		</button>
+		{showLocalAdminControls && (
+			<button
+				type="button"
+				data-global-wallpaper-trigger
+				aria-label="打开页面壁纸选择器"
+				aria-controls="page-wallpaper-picker"
+				aria-expanded="false"
+				data-tooltip="切换壁纸"
+			>
+				<Icon is:inline name="material-symbols:wallpaper" />
+			</button>
+		)}
 		<a href="/archive/" data-tooltip="文章" aria-label="查看文章归档">
 			<Icon is:inline name="material-symbols:article-outline-rounded" />
 		</a>

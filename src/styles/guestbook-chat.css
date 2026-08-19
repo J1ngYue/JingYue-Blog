@@ -1472,6 +1472,17 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	transform: translateY(-2px);
 }
 
+.guestbook-login-provider[aria-disabled="true"] {
+	opacity: 0.48;
+	cursor: not-allowed;
+}
+
+.guestbook-login-provider[aria-disabled="true"]:hover {
+	border-color: var(--guestbook-editor-line);
+	box-shadow: none;
+	transform: none;
+}
+
 .guestbook-login-modal__error {
 	display: flex;
 	align-items: center;
@@ -1492,7 +1503,7 @@ html:has(.guestbook-page) #category-bar-wrapper {
 }
 
 .guestbook-login-provider--google > span {
-	color: #4285f4;
+	background: #fff;
 }
 
 .guestbook-login-provider--github > span {
@@ -1501,6 +1512,19 @@ html:has(.guestbook-page) #category-bar-wrapper {
 
 :root.dark .guestbook-login-provider--github > span {
 	color: #fff;
+}
+
+.guestbook-login-modal__setup {
+	margin: 0;
+	padding: 0 var(--space-4) var(--space-4);
+	color: var(--guestbook-editor-muted);
+	font-size: 0.75rem;
+	line-height: 1.6;
+}
+
+.guestbook-login-modal__setup code {
+	color: var(--guestbook-focus);
+	font-size: 0.72rem;
 }
 
 .guestbook-profile-modal__body {

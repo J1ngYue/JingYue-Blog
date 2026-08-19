@@ -7,8 +7,10 @@ import { url } from "@/utils/url-utils";
 const showThemeColor = !siteConfig.themeColor.fixed;
 const isWallpaperSwitchable = backgroundWallpaper.switchable ?? true;
 const allowLayoutSwitch = siteConfig.postListLayout.allowSwitch;
+const showLocalAdminControls = import.meta.env.DEV;
 const hasDisplaySettings =
-	showThemeColor || isWallpaperSwitchable || allowLayoutSwitch;
+	showLocalAdminControls &&
+	(showThemeColor || isWallpaperSwitchable || allowLayoutSwitch);
 
 const quickLinks = [
 	{
@@ -152,15 +154,17 @@ const quickLinks = [
 				>
 					<Icon is:inline name="material-symbols:ads-click-rounded" />
 				</button>
-				<button
-					id="quick-tools-wallpaper"
-					class="quick-tools-button"
-					type="button"
-					data-tooltip="切换壁纸"
-					aria-label="切换壁纸"
-				>
-					<Icon is:inline name="material-symbols:wallpaper" />
-				</button>
+				{showLocalAdminControls && (
+					<button
+						id="quick-tools-wallpaper"
+						class="quick-tools-button"
+						type="button"
+						data-tooltip="切换壁纸"
+						aria-label="切换壁纸"
+					>
+						<Icon is:inline name="material-symbols:wallpaper" />
+					</button>
+				)}
 			</div>
 		</div>
 		<button

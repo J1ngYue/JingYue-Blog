@@ -72,6 +72,7 @@ interface Props {
 }
 
 const backgroundImages = getBackgroundImages();
+const showLocalAdminControls = import.meta.env.DEV;
 
 const {
 	title,
@@ -896,7 +897,7 @@ const hasMultipleImages =
                 {/* 主内容区 - 始终渲染，确保 Swup 容器存在 */}
                 <main
                     id="swup-container"
-                    class="transition-main"
+                    class="transition-swup-main"
                     data-current-post-category={postCategory || ""}
                 >
                 {/* 携带网格布局类名，用于JS更新父容器 */}
@@ -907,7 +908,7 @@ const hasMultipleImages =
 				<div id="plain-content-layout-carrier" data-plain-content={plainContent ? "true" : "false"} class="hidden"></div>
                 {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
                 <h1 class="sr-only">{title}</h1>
-                <div id="content-wrapper" class="onload-animation transition-leaving">
+                <div id="content-wrapper">
                     <slot></slot>
                 </div>
             </main>
@@ -960,7 +961,7 @@ const hasMultipleImages =
 
 <FloatingControls headings={headings} encrypted={encrypted} />
 <QuickToolsDock />
-<PageWallpaperPicker client:load />
+{showLocalAdminControls && <PageWallpaperPicker client:load />}
 
 <script>
 	type ChangelogWindow = Window & {

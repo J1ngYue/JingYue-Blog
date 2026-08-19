@@ -88,17 +88,6 @@ const formatDate = (date: Date) =>
 			</nav>
 		</div>
 
-		<button
-			type="button"
-			class="article-reading-toc__handle"
-			data-article-toc-toggle
-			aria-expanded="true"
-			aria-controls="article-reading-toc-content"
-			aria-label="收起文章目录"
-			title="收起文章目录"
-		>
-			<Icon is:inline name="material-symbols:chevron-left-rounded" />
-		</button>
 	</aside>
 
 	<aside class="article-reading-library" data-article-reading-library aria-label="全部文章">
@@ -166,7 +155,6 @@ const formatDate = (date: Date) =>
 		root.dataset.bound = "true";
 
 		const toc = root.querySelector<HTMLElement>("[data-article-reading-toc]");
-		const tocToggle = root.querySelector<HTMLButtonElement>("[data-article-toc-toggle]");
 		const library = root.querySelector<HTMLElement>("[data-article-reading-library]");
 		const libraryTrigger = root.querySelector<HTMLButtonElement>("[data-article-library-trigger]");
 
@@ -219,20 +207,46 @@ const formatDate = (date: Date) =>
 		const applyTocState = (collapsed: boolean) => {
 			toc?.classList.toggle("is-collapsed", collapsed);
 			document.documentElement.dataset.articleTocCollapsed = String(collapsed);
-			if (!tocToggle) return;
-			tocToggle.setAttribute("aria-expanded", String(!collapsed));
-			tocToggle.setAttribute("aria-label", collapsed ? "展开文章目录" : "收起文章目录");
-			tocToggle.title = collapsed ? "展开文章目录" : "收起文章目录";
 		};
 
-		applyTocState(localStorage.getItem("jingyue-article-toc-collapsed") === "true");
-		tocToggle?.addEventListener("click", () => {
+		const hoverMedia = window.matchMedia("(hover: hover) and (pointer: fine)");
+		let collapseTimer: number | undefined;
+		const setTocExpanded = (expanded: boolean) => {
+			if (!toc || toc.classList.contains("is-collapsed") === !expanded) return;
 			const readingAnchor = captureReadingAnchor();
-			const collapsed = !toc?.classList.contains("is-collapsed");
-			applyTocState(collapsed);
-			localStorage.setItem("jingyue-article-toc-collapsed", String(collapsed));
+			applyTocState(!expanded);
 			keepReadingAnchor(readingAnchor);
-		});
+		};
+		const cancelTocCollapse = () => {
+			if (collapseTimer === undefined) return;
+			window.clearTimeout(collapseTimer);
+			collapseTimer = undefined;
+		};
+		const scheduleTocCollapse = () => {
+			cancelTocCollapse();
+			collapseTimer = window.setTimeout(() => {
+				collapseTimer = undefined;
+				setTocExpanded(false);
+			}, 140);
+		};
+
+		applyTocState(hoverMedia.matches);
+		if (hoverMedia.matches) {
+			toc?.addEventListener("pointerenter", () => {
+				cancelTocCollapse();
+				setTocExpanded(true);
+			});
+			toc?.addEventListener("pointerleave", scheduleTocCollapse);
+			toc?.addEventListener("focusin", () => {
+				cancelTocCollapse();
+				setTocExpanded(true);
+			});
+			toc?.addEventListener("focusout", () => {
+				window.setTimeout(() => {
+					if (!toc.contains(document.activeElement)) scheduleTocCollapse();
+				}, 0);
+			});
+		}
 
 		const setLibraryExpanded = (expanded: boolean) => {
 			library?.classList.toggle("is-open", expanded);
@@ -302,7 +316,11 @@ const formatDate = (date: Date) =>
 		width: 17.5rem;
 		flex-direction: column;
 		border-radius: 0.9rem;
-		transition: transform 320ms cubic-bezier(0.22, 0.8, 0.2, 1);
+		transition:
+			transform 380ms cubic-bezier(0.22, 0.8, 0.2, 1),
+			border-color 220ms ease,
+			background-color 220ms ease,
+			box-shadow 220ms ease;
 	}
 
 	.article-reading-toc.is-collapsed {
@@ -310,7 +328,7 @@ const formatDate = (date: Date) =>
 		background: transparent;
 		box-shadow: none;
 		backdrop-filter: none;
-		transform: translateX(calc(-100% - 0.25rem));
+		transform: translateX(calc(-100% + 1rem));
 	}
 
 	.article-reading-toc__header {
@@ -321,6 +339,7 @@ const formatDate = (date: Date) =>
 		min-height: 4rem;
 		padding: 0 1.15rem;
 		border-bottom: 1px solid var(--line-divider);
+		transition: opacity 220ms ease, transform 320ms cubic-bezier(0.22, 0.8, 0.2, 1);
 	}
 
 	.article-reading-toc__header > span {
@@ -348,6 +367,7 @@ const formatDate = (date: Date) =>
 		flex: 1;
 		overflow-y: auto;
 		padding: 0.9rem 0.75rem 1.2rem;
+		transition: opacity 220ms ease, transform 320ms cubic-bezier(0.22, 0.8, 0.2, 1);
 	}
 
 	.article-reading-toc .toc-content {
@@ -373,53 +393,11 @@ const formatDate = (date: Date) =>
 		text-align: center;
 	}
 
-	.article-reading-toc__handle {
-		position: absolute;
-		top: 50%;
-		right: -1.125rem;
-		display: grid;
-		width: 2.25rem;
-		height: 3.25rem;
-		place-items: center;
-		border: 1px solid var(--line-divider);
-		border-left: 0;
-		border-radius: 0 0.8rem 0.8rem 0;
-		background: color-mix(in srgb, var(--card-bg) 97%, transparent);
-		box-shadow: 0.7rem 0.5rem 1.4rem rgb(20 29 33 / 8%);
-		color: var(--content-meta);
-		cursor: pointer;
-		transform: translateY(-50%);
-	}
-
-	.article-reading-toc__handle svg {
-		width: 1.35rem;
-		height: 1.35rem;
-		transition: transform 280ms ease;
-	}
-
 	.article-reading-toc.is-collapsed .article-reading-toc__header,
 	.article-reading-toc.is-collapsed .article-reading-toc__scroll {
 		opacity: 0;
 		pointer-events: none;
-	}
-
-	.article-reading-toc.is-collapsed .article-reading-toc__handle svg {
-		transform: rotate(180deg);
-	}
-
-	.article-reading-toc.is-collapsed .article-reading-toc__handle {
-		right: -2.75rem;
-		width: 2.4rem;
-		height: 2.75rem;
-		border: 0;
-		border-radius: 50%;
-		background: transparent;
-		box-shadow: none;
-	}
-
-	.article-reading-toc.is-collapsed .article-reading-toc__handle:hover,
-	.article-reading-toc.is-collapsed .article-reading-toc__handle:focus-visible {
-		background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+		transform: translateX(-0.65rem);
 	}
 
 	.article-reading-library {
@@ -604,7 +582,6 @@ const formatDate = (date: Date) =>
 		font-variant-numeric: tabular-nums;
 	}
 
-	.article-reading-toc__handle:focus-visible,
 	.article-reading-library__trigger:focus-visible,
 	.article-reading-library__tree summary:focus-visible,
 	.article-reading-library__tree a:focus-visible {
@@ -688,7 +665,8 @@ const formatDate = (date: Date) =>
 
 	@media (prefers-reduced-motion: reduce) {
 		.article-reading-toc,
-		.article-reading-toc__handle svg,
+		.article-reading-toc__header,
+		.article-reading-toc__scroll,
 		.article-reading-library__panel {
 			transition-duration: 0.01ms !important;
 		}

@@ -19,6 +19,7 @@ let settings = $state<DarkModeSpotlightSettings>(
 	getDarkModeSpotlightSettings(),
 );
 let isDark = $state(false);
+let isHome = $state(false);
 
 onMount(() => {
 	let renderer: THREE.WebGLRenderer;
@@ -306,7 +307,7 @@ onMount(() => {
 
 	function applySettings(next: DarkModeSpotlightSettings) {
 		const color = new THREE.Color(next.color);
-		const enabled = isDark && next.enabled;
+		const enabled = isHome && isDark && next.enabled;
 		const rangeProgress = THREE.MathUtils.clamp(
 			(next.range - DARK_MODE_SPOTLIGHT_RANGE_MIN) /
 				(DARK_MODE_SPOTLIGHT_RANGE_MAX - DARK_MODE_SPOTLIGHT_RANGE_MIN),
@@ -504,7 +505,7 @@ onMount(() => {
 		}
 		updateRig();
 		renderer.render(scene, camera);
-		if (isDark && settings.enabled && (pulling || stableFrames < 80)) {
+		if (isHome && isDark && settings.enabled && (pulling || stableFrames < 80)) {
 			animationFrame = requestAnimationFrame(animate);
 		}
 	}
@@ -584,7 +585,7 @@ onMount(() => {
 	}
 
 	function onPointerDown(event: PointerEvent) {
-		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
+		if (!isHome || !isDark || !settings.enabled || event.pointerType === "touch") return;
 		if (event.button === 2) {
 			if (!pointerWithinLight(event)) return;
 			cycleLightColor();
@@ -613,7 +614,7 @@ onMount(() => {
 	}
 
 	function onPointerMove(event: PointerEvent) {
-		if (!isDark || !settings.enabled || event.pointerType === "touch") return;
+		if (!isHome || !isDark || !settings.enabled || event.pointerType === "touch") return;
 		updatePointerTarget(event);
 		pointerTracking = true;
 		if (event.pointerId === rangePointerId) {
@@ -721,6 +722,14 @@ onMount(() => {
 		if (!isDark) renderer.clear();
 	}
 
+	function syncHome() {
+		const nextIsHome = document.body.classList.contains("home-landing-active");
+		if (nextIsHome === isHome) return;
+		isHome = nextIsHome;
+		if (!isHome) resetMotion();
+		applySettings(settings);
+	}
+
 	function syncSettings(event: Event) {
 		const next = (event as CustomEvent<DarkModeSpotlightSettings>).detail;
 		if (!next || typeof next !== "object") return;
@@ -740,7 +749,7 @@ onMount(() => {
 	}
 
 	function onContextMenu(event: MouseEvent) {
-		if (!isDark || !settings.enabled) {
+		if (!isHome || !isDark || !settings.enabled) {
 			suppressContextMenu = false;
 			return;
 		}
@@ -768,6 +777,11 @@ onMount(() => {
 		attributes: true,
 		attributeFilter: ["class"],
 	});
+	const homeObserver = new MutationObserver(syncHome);
+	homeObserver.observe(document.body, {
+		attributes: true,
+		attributeFilter: ["class"],
+	});
 	window.addEventListener(DARK_MODE_SPOTLIGHT_CHANGE_EVENT, syncSettings);
 	window.addEventListener("pointerdown", onPointerDown, { passive: true });
 	window.addEventListener("pointermove", onPointerMove, { passive: false });
@@ -780,6 +794,7 @@ onMount(() => {
 	window.addEventListener("blur", onWindowBlur);
 
 	resize();
+	syncHome();
 	syncTheme();
 	applySettings(settings);
 	wake();
@@ -790,6 +805,7 @@ onMount(() => {
 		window.clearTimeout(clickResetTimer);
 		document.documentElement.classList.remove("spotlight-range-adjusting");
 		observer.disconnect();
+		homeObserver.disconnect();
 		window.removeEventListener(DARK_MODE_SPOTLIGHT_CHANGE_EVENT, syncSettings);
 		window.removeEventListener("pointerdown", onPointerDown);
 		window.removeEventListener("pointermove", onPointerMove);
@@ -821,7 +837,7 @@ onMount(() => {
 <div
 	bind:this={layer}
 	class="dark-mode-spotlight"
-	class:is-disabled={!isDark || !settings.enabled}
+	class:is-disabled={!isHome || !isDark || !settings.enabled}
 	aria-hidden="true"
 >
 	<canvas bind:this={canvas} class="dark-mode-spotlight__canvas"></canvas>
@@ -839,7 +855,7 @@ onMount(() => {
 		--spotlight-pool-y: 19vmax;
 		position: fixed;
 		inset: 0;
-		z-index: 6;
+		z-index: 35;
 		overflow: hidden;
 		pointer-events: none;
 		isolation: isolate;
@@ -849,6 +865,11 @@ onMount(() => {
 
 	.dark-mode-spotlight.is-disabled {
 		opacity: 0;
+	}
+
+	:global(html.is-page-transitioning) .dark-mode-spotlight {
+		opacity: 0;
+		transition: none;
 	}
 
 	.dark-mode-spotlight__canvas,

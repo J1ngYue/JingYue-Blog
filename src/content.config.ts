@@ -40,6 +40,8 @@ const dynamicCollection = defineCollection({
 	loader: glob({ pattern: "**/*.md", base: "./src/content/dynamic" }),
 	schema: z.object({
 		published: z.date(),
+		pinned: z.boolean().optional().default(false),
+		tags: z.array(z.string()).optional().default([]),
 	}),
 });
 

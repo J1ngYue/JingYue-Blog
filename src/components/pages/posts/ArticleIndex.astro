@@ -50,12 +50,13 @@ const formatCardDate = (date: Date) =>
 			</button>
 			<nav class="article-index__category-tree">
 				{categories.map((category, categoryIndex) => (
-					<details class="article-index__category" open={categoryIndex === 0}>
-						<summary data-article-filter={category.name}>
+					<div class:list={["article-index__category", { "is-open": categoryIndex === 0 }]} data-open={categoryIndex === 0}>
+						<button type="button" class="article-index__category-summary" data-article-filter={category.name} aria-expanded={categoryIndex === 0}>
 							<Icon is:inline name={categoryIcon(category.name)} />
 							<span>{category.name}</span>
 							<small>{category.count}</small>
-						</summary>
+						</button>
+						<div class="article-index__category-content">
 						<div class="article-index__article-tree">
 							{category.posts.map((entry) => (
 								<a href={getPostUrlBySlug(entry.id)} title={entry.data.title}>
@@ -67,7 +68,8 @@ const formatCardDate = (date: Date) =>
 								</a>
 							))}
 						</div>
-					</details>
+						</div>
+					</div>
 				))}
 			</nav>
 		</div>
@@ -231,6 +233,7 @@ const formatCardDate = (date: Date) =>
 		const cards = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-article-card]"),
 		);
+		const grid = root.querySelector<HTMLElement>(".article-index__grid");
 		const count = root.querySelector<HTMLElement>("[data-article-visible-count]");
 		const empty = root.querySelector<HTMLElement>("[data-article-empty]");
 		const viewInput = root.querySelector<HTMLInputElement>("[data-article-view]");
@@ -238,6 +241,7 @@ const formatCardDate = (date: Date) =>
 			".article-index__view-switch",
 		);
 		let switchAnimationTimer: number | undefined;
+		let filterAnimationTimer: number | undefined;
 		const replayViewSwitchAnimation = () => {
 			if (!viewSwitch) return;
 			viewSwitch.classList.remove("is-switching");
@@ -282,13 +286,42 @@ const formatCardDate = (date: Date) =>
 			viewSwitch?.classList.remove("is-pointer-focus");
 		});
 
-		const applyFilter = (category: string, updateUrl = true) => {
-			let visible = 0;
-			cards.forEach((card) => {
-				const matches = !category || card.dataset.category === category;
-				card.hidden = !matches;
-				if (matches) visible += 1;
-			});
+		const applyFilter = (
+			category: string,
+			updateUrl = true,
+			animate = updateUrl,
+		) => {
+			if (filterAnimationTimer !== undefined) {
+				window.clearTimeout(filterAnimationTimer);
+				filterAnimationTimer = undefined;
+			}
+			const matchingCards = cards.filter(
+				(card) => !category || card.dataset.category === category,
+			);
+			const visible = matchingCards.length;
+			const finishFilter = () => {
+				cards.forEach((card) => {
+					const matches = matchingCards.includes(card);
+					card.hidden = !matches;
+					delete card.dataset.filterState;
+				});
+				grid?.classList.remove("is-filtering");
+				filterAnimationTimer = undefined;
+			};
+
+			if (animate) {
+				grid?.classList.add("is-filtering");
+				cards.forEach((card) => {
+					card.hidden = false;
+					card.dataset.filterState = matchingCards.includes(card)
+						? "entering"
+						: "leaving";
+				});
+				filterAnimationTimer = window.setTimeout(finishFilter, 320);
+			} else {
+				finishFilter();
+			}
+
 			buttons.forEach((button) => {
 				const active = (button.dataset.articleFilter || "") === category;
 				button.classList.toggle("is-active", active);
@@ -306,10 +339,69 @@ const formatCardDate = (date: Date) =>
 		};
 
 		buttons.forEach((button) => {
+			if (button.matches(".article-index__category-summary")) return;
 			button.addEventListener("click", () =>
 				applyFilter(button.dataset.articleFilter || ""),
 			);
 		});
+
+		for (const folder of root.querySelectorAll<HTMLElement>(
+			".article-index__category",
+		)) {
+			const summary = folder.querySelector<HTMLButtonElement>(
+				".article-index__category-summary",
+			);
+			const content = folder.querySelector<HTMLElement>(
+				".article-index__category-content",
+			);
+			let singleClickTimer: number | undefined;
+
+			const syncContentState = () => {
+				const open = folder.dataset.open === "true";
+				if (content) content.inert = !open;
+				summary?.setAttribute(
+					"aria-expanded",
+					String(open),
+				);
+			};
+
+			const toggleFolder = () => {
+				const open = folder.dataset.open !== "true";
+				folder.dataset.open = String(open);
+				folder.classList.toggle("is-open", open);
+				syncContentState();
+			};
+
+			summary?.addEventListener("click", (event) => {
+				event.preventDefault();
+				if (event.detail === 0) {
+					toggleFolder();
+					return;
+				}
+				if (event.detail > 1) {
+					if (singleClickTimer !== undefined) {
+						window.clearTimeout(singleClickTimer);
+						singleClickTimer = undefined;
+					}
+					return;
+				}
+				singleClickTimer = window.setTimeout(() => {
+					singleClickTimer = undefined;
+					toggleFolder();
+				}, 220);
+			});
+
+			summary?.addEventListener("dblclick", (event) => {
+				event.preventDefault();
+				if (singleClickTimer !== undefined) {
+					window.clearTimeout(singleClickTimer);
+					singleClickTimer = undefined;
+				}
+				applyFilter(summary.dataset.articleFilter || "");
+			});
+
+			syncContentState();
+		}
 
 		const requested = new URL(window.location.href).searchParams.get("category") || "";
 		applyFilter(requested, false);
@@ -317,8 +409,16 @@ const formatCardDate = (date: Date) =>
 			const requestedFilter = buttons.find(
 				(button) => button.dataset.articleFilter === requested,
 			);
-			const requestedGroup = requestedFilter?.closest("details");
-			if (requestedGroup) requestedGroup.open = true;
+			const requestedGroup = requestedFilter?.closest<HTMLElement>(".article-index__category");
+			if (requestedGroup) {
+				requestedGroup.dataset.open = "true";
+				requestedGroup.classList.add("is-open");
+				requestedGroup.querySelector<HTMLElement>(".article-index__category-summary")?.setAttribute("aria-expanded", "true");
+				const requestedContent = requestedGroup.querySelector<HTMLElement>(
+					".article-index__category-content",
+				);
+				if (requestedContent) requestedContent.inert = false;
+			}
 		}
 	}
 
@@ -443,7 +543,7 @@ const formatCardDate = (date: Date) =>
 		min-width: 0;
 	}
 
-	.article-index__category summary {
+	.article-index__category-summary {
 		display: grid;
 		grid-template-columns: 1.15rem minmax(0, 1fr) auto;
 		align-items: center;
@@ -451,22 +551,19 @@ const formatCardDate = (date: Date) =>
 		width: 100%;
 		min-height: 2.25rem;
 		padding: 0.38rem 0.34rem;
+		border: 0;
 		border-radius: 0.52rem;
 		background: transparent;
 		color: var(--text-75);
+		font: inherit;
 		font-size: 0.82rem;
 		font-weight: 700;
 		text-align: left;
 		cursor: pointer;
 		transition: background-color 180ms ease, color 180ms ease;
-		list-style: none;
 	}
 
-	.article-index__category summary::-webkit-details-marker {
-		display: none;
-	}
-
-	.article-index__category summary::after {
+	.article-index__category-summary::after {
 		width: 0.42rem;
 		height: 0.42rem;
 		border-right: 1.5px solid currentColor;
@@ -476,26 +573,56 @@ const formatCardDate = (date: Date) =>
 		transition: transform 180ms ease;
 	}
 
-	.article-index__category[open] summary::after {
+	.article-index__category.is-open .article-index__category-summary::after {
 		transform: rotate(225deg) translate(-0.08rem, -0.08rem);
 	}
 
-	.article-index__category summary:hover,
-	.article-index__category summary.is-active {
+	.article-index__category-summary:hover,
+	.article-index__category-summary.is-active {
 		background: color-mix(in srgb, var(--text-90) 8%, transparent);
 		color: var(--text-90);
 	}
 
-	.article-index__category summary small {
+	.article-index__category-summary small {
 		display: none;
+	}
+
+	.article-index__category-content {
+		display: grid;
+		grid-template-rows: 0fr;
+		min-height: 0;
+		overflow: hidden;
+		opacity: 0;
+		transition:
+			grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1),
+			opacity 280ms ease;
+	}
+
+	.article-index__category.is-open .article-index__category-content {
+		grid-template-rows: 1fr;
+		opacity: 1;
 	}
 
 	.article-index__article-tree {
 		position: relative;
 		display: grid;
+		min-height: 0;
 		gap: 0.08rem;
-		margin: 0.08rem 0 0.45rem 0.7rem;
+		margin-left: 0.7rem;
+		overflow: hidden;
 		padding-left: 0.58rem;
+		backface-visibility: hidden;
+		clip-path: inset(0 0 96% 0 round 0.4rem);
+		transform: perspective(48rem) rotateX(-5deg) translateY(-0.25rem);
+		transform-origin: top center;
+		transition:
+			clip-path 420ms cubic-bezier(0.22, 1, 0.36, 1),
+			transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.article-index__category.is-open .article-index__article-tree {
+		clip-path: inset(0 round 0.4rem);
+		transform: perspective(48rem) rotateX(0) translateY(0);
 	}
 
 	.article-index__article-tree::before {
@@ -519,6 +646,14 @@ const formatCardDate = (date: Date) =>
 		transition: background-color 160ms ease, color 160ms ease;
 	}
 
+	.article-index__article-tree a:first-of-type {
+		margin-top: 0.08rem;
+	}
+
+	.article-index__article-tree a:last-of-type {
+		margin-bottom: 0.45rem;
+	}
+
 	.article-index__article-tree a:hover,
 	.article-index__article-tree a:focus-visible {
 		background: color-mix(in srgb, var(--text-90) 10%, transparent);
@@ -527,7 +662,7 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__article-tree a svg,
-	.article-index__category summary svg {
+	.article-index__category-summary svg {
 		width: 0.95rem;
 		height: 0.95rem;
 		flex: 0 0 auto;
@@ -547,11 +682,11 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__all-filter:focus-visible,
-	.article-index__category summary:focus-visible,
+	.article-index__category-summary:focus-visible,
 	.article-index__article-tree a:focus-visible,
 	.article-index__mobile-filter button:focus-visible,
 	.article-index__header a:focus-visible {
-		outline: 0.14rem solid color-mix(in srgb, var(--primary) 65%, white);
+		outline: 0.14rem solid var(--text-90);
 		outline-offset: 0.12rem;
 	}
 
@@ -620,7 +755,7 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__view-switch:has(input:focus-visible):not(.is-pointer-focus) {
-		outline: 0.14rem solid color-mix(in srgb, var(--primary) 65%, white);
+		outline: 0.14rem solid var(--text-90);
 		outline-offset: 0.12rem;
 	}
 
@@ -974,13 +1109,17 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__result strong {
-		color: var(--primary);
+		color: var(--text-90);
 	}
 
 	.article-index__grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 1rem;
+	}
+
+	.article-index__grid.is-filtering {
+		pointer-events: none;
 	}
 
 	.article-index[data-view="list"] .article-index__grid {
@@ -999,8 +1138,44 @@ const formatCardDate = (date: Date) =>
 		transition: box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease;
 	}
 
+	.article-index__card[data-filter-state="leaving"] {
+		animation: article-filter-leave 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.article-index__card[data-filter-state="entering"] {
+		animation: article-filter-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	@keyframes article-filter-leave {
+		from {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+		to {
+			opacity: 0;
+			transform: translateY(0.55rem) scale(0.985);
+		}
+	}
+
+	@keyframes article-filter-enter {
+		from {
+			opacity: 0;
+			transform: translateY(-0.45rem) scale(0.985);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
+
 	.article-index__card.is-pinned {
-		border-color: color-mix(in srgb, var(--text-90) 17%, transparent);
+		border-color: transparent;
+		background:
+			linear-gradient(color-mix(in srgb, var(--card-bg) 94%, transparent), color-mix(in srgb, var(--card-bg) 94%, transparent)) padding-box,
+			conic-gradient(from 215deg, #ff6b91, #ffd36e, #71e7b5, #62c8ff, #927dff, #f477d0, #ff6b91) border-box;
+		box-shadow:
+			0 0.45rem 1.25rem rgb(22 33 38 / 5%),
+			0 0 0.85rem rgb(124 147 255 / 8%);
 	}
 
 	.article-index__card[hidden] {
@@ -1014,7 +1189,10 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__card.is-pinned:hover {
-		border-color: var(--text-90);
+		border-color: transparent;
+		box-shadow:
+			0 0.85rem 2rem rgb(23 43 49 / 11%),
+			0 0 1.15rem rgb(255 112 193 / 11%);
 	}
 
 	.article-index__card:focus-within {
@@ -1064,7 +1242,7 @@ const formatCardDate = (date: Date) =>
 		position: relative;
 		aspect-ratio: 16 / 9;
 		overflow: hidden;
-		background: color-mix(in srgb, var(--primary) 9%, var(--card-bg));
+		background: color-mix(in srgb, var(--text-90) 6%, var(--card-bg));
 	}
 
 	.article-index__cover > :global(picture),
@@ -1123,19 +1301,30 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__pinned {
+		position: relative;
+		isolation: isolate;
 		display: inline-flex;
 		min-width: max-content;
 		height: 1.55rem;
 		align-items: center;
 		gap: 0.26rem;
+		overflow: hidden;
 		padding: 0 0.5rem;
-		border: 1px solid #ef4444;
+		border: 1px solid rgb(255 255 255 / 68%);
 		border-radius: 0.42rem;
-		background: color-mix(in srgb, #ef4444 8%, var(--card-bg));
-		color: #ef4444;
+		background:
+			linear-gradient(115deg, rgb(255 255 255 / 78%) 0 13%, rgb(255 255 255 / 12%) 27%, rgb(255 255 255 / 66%) 43%, rgb(255 255 255 / 10%) 58%, rgb(255 255 255 / 52%) 78%, transparent 100%),
+			linear-gradient(135deg, #ff7c9f 0%, #ffd978 22%, #70e9bd 43%, #69ccff 62%, #9a83ff 80%, #f77bd0 100%);
+		background-blend-mode: soft-light, normal;
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 82%),
+			inset 0 -1px 0 rgb(31 38 43 / 14%),
+			0 0.18rem 0.48rem rgb(74 87 105 / 18%);
+		color: #15181b;
 		font-size: 0.68rem;
 		font-weight: 760;
 		line-height: 1;
+		text-shadow: 0 1px 0 rgb(255 255 255 / 72%);
 	}
 
 	.article-index__pinned svg {
@@ -1198,7 +1387,7 @@ const formatCardDate = (date: Date) =>
 	}
 
 	.article-index__meta strong {
-		color: var(--primary);
+		color: var(--text-90);
 	}
 
 	.article-index__meta > span:not(.article-index__date)::before {
@@ -1379,7 +1568,14 @@ const formatCardDate = (date: Date) =>
 		.article-index *::after {
 			animation: none !important;
 			scroll-behavior: auto !important;
-			transition-duration: 0.01ms !important;
+		}
+
+		.article-index__category-content {
+			transition-duration: 420ms, 280ms;
+		}
+
+		.article-index__article-tree {
+			transition-duration: 420ms, 420ms;
 		}
 
 		.article-index__view-switch input:checked ~ .article-index__skull {
@@ -1388,6 +1584,14 @@ const formatCardDate = (date: Date) =>
 
 		.article-index__view-switch input:not(:checked) ~ .article-index__skull {
 			transform: translateX(0);
+		}
+
+		.article-index__card[data-filter-state="leaving"] {
+			animation: article-filter-leave 300ms cubic-bezier(0.22, 1, 0.36, 1) both !important;
+		}
+
+		.article-index__card[data-filter-state="entering"] {
+			animation: article-filter-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both !important;
 		}
 
 		.article-index__view-switch input:checked ~ .article-index__skull > span {

@@ -40,18 +40,15 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			url: "/dynamic/",
 			icon: "material-symbols:local-cafe",
 			children: [
-				LinkPresets.Dynamic,
+				LinkPresets.Moments,
 				LinkPresets.Gallery,
 				LinkPresets.Guestbook,
 				{
 					name: "笔记本",
 					url: "/life/notebooks/",
-					icon: "material-symbols:menu-book-rounded",
+					icon: "material-symbols:menu-book-outline",
 				},
-				{
-					...LinkPresets.Friends,
-					name: "朋友圈",
-				},
+				LinkPresets.Circle,
 			],
 		},
 		{
@@ -123,6 +120,11 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:forum-rounded",
 		pageKey: "dynamic",
 	},
+	Moments: {
+		name: "说说",
+		url: "/moments/",
+		icon: "material-symbols:chat-bubble-outline",
+	},
 	Archive: {
 		name: "归档",
 		url: "/archive/",
@@ -144,6 +146,11 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:link-2-rounded",
 		pageKey: "friends",
 	},
+	Circle: {
+		name: "朋友圈",
+		url: "/circle/",
+		icon: "material-symbols:public",
+	},
 	Sponsor: {
 		name: "打赏",
 		url: "/sponsor/",
@@ -151,9 +158,9 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		pageKey: "sponsor",
 	},
 	Guestbook: {
-		name: "留言",
+		name: "留言板",
 		url: "/guestbook/",
-		icon: "material-symbols:chat",
+		icon: "material-symbols:edit-outline",
 		pageKey: "guestbook",
 	},
 	About: {
@@ -170,7 +177,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Gallery: {
 		name: "相册",
 		url: "/gallery/",
-		icon: "material-symbols:photo-library",
+		icon: "material-symbols:photo-album-outline",
 		pageKey: "gallery",
 	},
 	Anime: {

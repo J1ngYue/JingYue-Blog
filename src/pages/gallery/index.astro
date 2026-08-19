@@ -1,209 +1,595 @@
 ---
 import { Icon } from "astro-icon/components";
-import FeatureHubHeader from "@/components/controls/FeatureHubHeader.astro";
+import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
 import AlbumCard from "@/components/pages/gallery/AlbumCard.astro";
 import { galleryConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { getSortedPostsList } from "@/utils/content-utils";
 import { getAlbumCover, scanAlbumPhotos } from "@/utils/gallery-utils";
+import { url } from "@/utils/url-utils";
 
-// 检查页面是否启用
 if (!siteConfig.pages.gallery) {
 	return Astro.redirect("/404/");
 }
 
 const title = i18n(I18nKey.gallery);
 const description = i18n(I18nKey.galleryDescription);
-
-// 构建相册数据（扫描照片、获取封面）
+const posts = await getSortedPostsList();
 const albums = galleryConfig.albums.map((album) => {
 	const photos = scanAlbumPhotos(album.id);
 	const cover = getAlbumCover(album, photos);
 	return { ...album, cover, photoCount: photos.length };
 });
-
-// 收集所有标签用于筛选
-const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort();
+const allTags = [...new Set(albums.flatMap((album) => album.tags || []))].sort();
+const totalPhotos = albums.reduce((sum, album) => sum + album.photoCount, 0);
+const encryptedAlbums = albums.filter((album) => !!album.password).length;
+const collectionLinks = [
+	{
+		label: "相册",
+		href: url("/gallery/"),
+		icon: "material-symbols:photo-library-rounded",
+		active: true,
+	},
+	{
+		label: "追番",
+		href: url("/anime/"),
+		icon: "material-symbols:live-tv-rounded",
+		active: false,
+	},
+	{
+		label: "番组计划",
+		href: url("/bangumi/"),
+		icon: "material-symbols:movie-rounded",
+		active: false,
+	},
+];
 ---
 
-<MainGridLayout title={title} bannerTitle="我的" description={description}>
-  <FeatureHubHeader section="personal" active="gallery" />
-  <div
-    class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32"
-  >
-    <div class="card-base z-10 px-9 py-6 relative w-full">
-      <!-- 页面标题和描述 -->
-      <div class="mb-4">
-        <div class="flex items-center gap-3 mb-3">
-          <div
-            class="h-8 w-8 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70"
-          >
-            <Icon is:inline name="material-symbols:photo-library" class="text-[1.5rem]" />
-          </div>
-          <div class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-            {title}
-          </div>
-        </div>
-        {description && (
-          <p class="text-base text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4">
-            {description}
-          </p>
-        )}
-      </div>
+<MainGridLayout
+	title={title}
+	bannerTitle="我的收藏"
+	description={description}
+	contentOnly
+	plainContent
+>
+	<div class="gallery-replica-page onload-animation">
+		<ArchiveReplicaSidebar side="left" posts={posts} />
 
-      <!-- 搜索框 + 标签筛选 -->
-      {albums.length > 0 && (
-        <gallery-filter class="mb-6">
-          <div class="relative mb-3">
-            <Icon is:inline
-              name="material-symbols:search"
-              class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 text-lg pointer-events-none"
-            />
-            <input
-              type="text"
-              data-search
-              placeholder={i18n(I18nKey.searchAlbums)}
-              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-(--line-divider) bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:border-(--primary) focus:ring-1 focus:ring-(--primary) outline-none transition-all duration-200 text-sm"
-            />
-          </div>
-          {allTags.length > 0 && (
-            <div class="flex flex-wrap gap-2">
-              <button
-                data-tag="all"
-                class="category-pill px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200"
-                data-active
-              >
-                {i18n(I18nKey.all)}
-              </button>
-              {allTags.map((tag) => (
-                <button
-                  data-tag={tag}
-                  class="category-pill px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          )}
-        </gallery-filter>
-      )}
+		<main class="gallery-workbench" data-gallery-workbench>
+			<header class="gallery-workbench__header">
+				<div class="gallery-workbench__title">
+					<Icon is:inline name="material-symbols:photo-library-rounded" />
+					<div>
+						<h1>{title}</h1>
+						<p>{description}</p>
+					</div>
+				</div>
 
-      <!-- 相册卡片网格 -->
-      {albums.length > 0 ? (
-        <>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
-            {albums.map((album) => (
-              <AlbumCard
-                id={album.id}
-                name={album.name}
-                cover={album.cover}
-                description={album.description}
-                date={album.date}
-                location={album.location}
-                tags={album.tags}
-                photoCount={album.photoCount}
-                encrypted={!!album.password}
-              />
-            ))}
-          </div>
-          {/* 搜索无结果提示 */}
-          <div class="albums-empty hidden flex-col items-center justify-center py-12 text-neutral-400 dark:text-neutral-500">
-            <Icon is:inline name="material-symbols:search-off-rounded" class="text-4xl mb-3" />
-            <div class="text-sm">{i18n(I18nKey.searchNoResults)}</div>
-          </div>
-        </>
-      ) : (
-        <div class="flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
-          <Icon is:inline name="material-symbols:photo-library" class="text-6xl mb-4 opacity-50" />
-          <p class="text-lg">{i18n(I18nKey.galleryNoAlbums)}</p>
-        </div>
-      )}
-    </div>
-  </div>
+				<nav class="gallery-collection-nav" aria-label="我的收藏">
+					{collectionLinks.map((item) => (
+						<a
+							href={item.href}
+							class:list={{ "is-active": item.active }}
+							aria-current={item.active ? "page" : undefined}
+						>
+							<Icon is:inline name={item.icon} />
+							<span>{item.label}</span>
+						</a>
+					))}
+				</nav>
+			</header>
 
-  <script slot="head" is:inline>
-    if (!customElements.get("gallery-filter")) {
-      class GalleryFilter extends HTMLElement {
-        selectedTag = "all";
+			<section class="gallery-overview" aria-label="相册概览">
+				<div>
+					<Icon is:inline name="material-symbols:folder-open-rounded" />
+					<span><strong>{albums.length}</strong><small>本相册</small></span>
+				</div>
+				<div>
+					<Icon is:inline name="material-symbols:imagesmode-outline-rounded" />
+					<span><strong>{totalPhotos}</strong><small>张照片</small></span>
+				</div>
+				<div>
+					<Icon is:inline name="material-symbols:lock-outline" />
+					<span><strong>{encryptedAlbums}</strong><small>加密相册</small></span>
+				</div>
+			</section>
 
-        constructor() {
-          super();
-        }
+			{albums.length > 0 ? (
+				<gallery-filter class="gallery-filter">
+					<div class="gallery-filter__heading">
+						<div>
+							<h2>影像收藏</h2>
+							<p><span data-gallery-visible-count>{albums.length}</span> 本相册</p>
+						</div>
+						<label class="gallery-search">
+							<Icon is:inline name="material-symbols:search-rounded" aria-hidden="true" />
+							<span class="sr-only">{i18n(I18nKey.searchAlbums)}</span>
+							<input
+								type="search"
+								data-search
+								placeholder={i18n(I18nKey.searchAlbums)}
+								autocomplete="off"
+							/>
+						</label>
+					</div>
 
-        connectedCallback() {
-          this.addEventListener("click", this.handleClick);
-          const input = this.querySelector("[data-search]");
-          if (input) {
-            input.addEventListener("input", () => this.applyFilters());
-          }
-        }
+					{allTags.length > 0 && (
+						<div class="gallery-filter__tags" aria-label="相册标签">
+							<button type="button" data-tag="all" data-active>
+								{ i18n(I18nKey.all) }
+							</button>
+							{allTags.map((tag) => (
+								<button type="button" data-tag={tag}>{tag}</button>
+							))}
+						</div>
+					)}
 
-        disconnectedCallback() {
-          this.removeEventListener("click", this.handleClick);
-        }
+					<div class="gallery-album-grid">
+						{albums.map((album) => (
+							<AlbumCard
+								id={album.id}
+								name={album.name}
+								cover={album.cover}
+								description={album.description}
+								date={album.date}
+								location={album.location}
+								tags={album.tags}
+								photoCount={album.photoCount}
+								encrypted={!!album.password}
+							/>
+						))}
+					</div>
 
-        handleClick(e) {
-          const target = e.target;
-          const button = target.closest("button");
-          if (!button) return;
+					<div class="gallery-empty" data-gallery-empty hidden>
+						<Icon is:inline name="material-symbols:search-off-rounded" />
+						<strong>{i18n(I18nKey.searchNoResults)}</strong>
+						<p>换一个关键词或标签试试</p>
+					</div>
+				</gallery-filter>
+			) : (
+				<div class="gallery-empty">
+					<Icon is:inline name="material-symbols:photo-library-outline-rounded" />
+					<strong>{i18n(I18nKey.galleryNoAlbums)}</strong>
+				</div>
+			)}
+		</main>
 
-          this.selectedTag = button.dataset.tag;
-          const filters = this.querySelectorAll("button");
-
-          filters.forEach((f) => {
-            f.removeAttribute("data-active");
-          });
-          button.setAttribute("data-active", "");
-
-          this.applyFilters();
-        }
-
-        applyFilters() {
-          const container = this.closest(".card-base");
-          if (!container) return;
-
-          const input = this.querySelector("[data-search]");
-          const query = (input?.value || "").toLowerCase().trim();
-          const cards = container.querySelectorAll(".album-card");
-
-          let hasVisible = false;
-
-          cards.forEach((card) => {
-            const cardEl = card;
-            const tags = (cardEl.dataset.tags || "").split(",");
-            const name = (cardEl.querySelector("h3")?.textContent || "").toLowerCase();
-            const desc = (cardEl.querySelector("p")?.textContent || "").toLowerCase();
-            const location = (cardEl.querySelector(".inline-flex")?.textContent || "").toLowerCase();
-
-            const tagMatch =
-              this.selectedTag === "all" ||
-              (this.selectedTag && tags.includes(this.selectedTag));
-            const searchMatch =
-              !query ||
-              name.includes(query) ||
-              desc.includes(query) ||
-              location.includes(query) ||
-              tags.some((t) => t.toLowerCase().includes(query));
-
-            if (tagMatch && searchMatch) {
-              cardEl.style.display = "";
-              cardEl.classList.add("animate-fade-in-up");
-              hasVisible = true;
-            } else {
-              cardEl.style.display = "none";
-              cardEl.classList.remove("animate-fade-in-up");
-            }
-          });
-
-          const emptyEl = container.querySelector(".albums-empty");
-          if (emptyEl) {
-            emptyEl.classList.toggle("hidden", hasVisible);
-            emptyEl.classList.toggle("flex", !hasVisible);
-          }
-        }
-      }
-      customElements.define("gallery-filter", GalleryFilter);
-    }
-  </script>
+		<ArchiveReplicaSidebar side="right" posts={posts} />
+	</div>
 </MainGridLayout>
+
+<script>
+	class GalleryFilter extends HTMLElement {
+		selectedTag = "all";
+
+		connectedCallback() {
+			if (this.dataset.bound === "true") return;
+			this.dataset.bound = "true";
+			this.addEventListener("click", this.handleClick);
+			this.querySelector<HTMLInputElement>("[data-search]")?.addEventListener(
+				"input",
+				() => this.applyFilters(),
+			);
+		}
+
+		disconnectedCallback() {
+			this.removeEventListener("click", this.handleClick);
+		}
+
+		handleClick = (event: Event) => {
+			const target = event.target as HTMLElement;
+			const button = target.closest<HTMLButtonElement>("button[data-tag]");
+			if (!button) return;
+			this.selectedTag = button.dataset.tag || "all";
+			for (const filter of this.querySelectorAll("button[data-tag]")) {
+				filter.toggleAttribute("data-active", filter === button);
+			}
+			this.applyFilters();
+		};
+
+		applyFilters() {
+			const input = this.querySelector<HTMLInputElement>("[data-search]");
+			const query = (input?.value || "").toLocaleLowerCase().trim();
+			const cards = this.querySelectorAll<HTMLElement>(".album-card");
+			let visible = 0;
+
+			for (const card of cards) {
+				const tags = (card.dataset.tags || "")
+					.split(",")
+					.map((tag) => tag.trim());
+				const searchText = card.dataset.search || "";
+				const tagMatches =
+					this.selectedTag === "all" ||
+					tags.includes(this.selectedTag.trim());
+				const searchMatches = !query || searchText.includes(query);
+				card.hidden = !(tagMatches && searchMatches);
+				if (!card.hidden) visible += 1;
+			}
+
+			const count = this.querySelector<HTMLElement>("[data-gallery-visible-count]");
+			const empty = this.querySelector<HTMLElement>("[data-gallery-empty]");
+			if (count) count.textContent = String(visible);
+			if (empty) empty.hidden = visible > 0;
+		}
+	}
+
+	if (!customElements.get("gallery-filter")) {
+		customElements.define("gallery-filter", GalleryFilter);
+	}
+</script>
+
+<style>
+	.gallery-replica-page {
+		display: grid;
+		grid-template-columns: 17.5rem minmax(0, 61rem) 17.5rem;
+		gap: 1rem;
+		width: min(98rem, calc(100vw - 2rem));
+		min-width: 0;
+		margin-left: 50%;
+		transform: translateX(-50%);
+	}
+
+	:global(body:has(.gallery-replica-page) #main-column-wrapper) {
+		min-width: 0;
+		overflow: visible;
+	}
+
+	.gallery-workbench {
+		--gallery-text: #14181b;
+		--gallery-text-soft: #434b50;
+		--gallery-muted: #747e84;
+		--gallery-border: color-mix(in srgb, var(--gallery-text) 18%, transparent);
+		--gallery-surface: color-mix(in srgb, var(--card-bg) 96%, var(--gallery-text) 4%);
+		width: 100%;
+		min-width: 0;
+		padding: 1.5rem 0 3rem;
+		color: var(--gallery-text);
+	}
+
+	:global(html.dark) .gallery-workbench {
+		--gallery-text: #f4f6f7;
+		--gallery-text-soft: #d3d9dc;
+		--gallery-muted: #929da3;
+	}
+
+	.gallery-workbench__header {
+		display: flex;
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.gallery-workbench__title {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.85rem;
+	}
+
+	.gallery-workbench__title > :global(svg) {
+		width: 1.875rem;
+		height: 1.875rem;
+		margin-top: 0.08rem;
+		color: var(--gallery-text);
+	}
+
+	.gallery-workbench__title h1 {
+		margin: 0;
+		font-size: 1.875rem;
+		font-weight: 800;
+		line-height: 1.1;
+	}
+
+	.gallery-workbench__title p {
+		margin: 0.75rem 0 0;
+		color: var(--gallery-muted);
+		font-size: 1rem;
+		line-height: 1.65;
+	}
+
+	.gallery-collection-nav {
+		display: inline-flex;
+		gap: 0.25rem;
+		max-width: 100%;
+		padding: 0.25rem;
+		border: 1px solid var(--gallery-text);
+		border-radius: 999rem;
+	}
+
+	.gallery-collection-nav a {
+		display: inline-flex;
+		min-height: 2.25rem;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		padding: 0.5rem 0.8rem;
+		border-radius: 999rem;
+		color: var(--gallery-text-soft);
+		font-size: 0.8125rem;
+		font-weight: 700;
+		line-height: 1;
+		transition: background-color 180ms ease, color 180ms ease, opacity 180ms ease;
+	}
+
+	.gallery-collection-nav a:hover:not(.is-active) {
+		opacity: 0.68;
+	}
+
+	.gallery-collection-nav a.is-active {
+		background: var(--gallery-text);
+		color: var(--card-bg);
+	}
+
+	.gallery-collection-nav :global(svg) {
+		width: 1.05rem;
+		height: 1.05rem;
+		color: currentColor;
+	}
+
+	.gallery-overview {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		margin: 0.25rem 0 2rem;
+		border-block: 1px solid var(--gallery-border);
+	}
+
+	.gallery-overview > div {
+		display: flex;
+		min-width: 0;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 1rem 1.15rem;
+		border-right: 1px solid var(--gallery-border);
+	}
+
+	.gallery-overview > div:last-child {
+		border-right: 0;
+	}
+
+	.gallery-overview > div > :global(svg) {
+		width: 1.25rem;
+		height: 1.25rem;
+		flex: 0 0 auto;
+		color: var(--gallery-text);
+	}
+
+	.gallery-overview strong,
+	.gallery-overview small {
+		display: block;
+	}
+
+	.gallery-overview strong {
+		font-size: 1.35rem;
+		font-weight: 850;
+		line-height: 1;
+	}
+
+	.gallery-overview small {
+		margin-top: 0.28rem;
+		color: var(--gallery-muted);
+		font-size: 0.72rem;
+	}
+
+	.gallery-filter {
+		display: block;
+	}
+
+	.gallery-filter__heading {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+
+	.gallery-filter__heading h2 {
+		margin: 0;
+		font-size: 1.1rem;
+		font-weight: 800;
+	}
+
+	.gallery-filter__heading p {
+		margin: 0.25rem 0 0;
+		color: var(--gallery-muted);
+		font-size: 0.75rem;
+	}
+
+	.gallery-search {
+		display: flex;
+		width: min(15rem, 100%);
+		min-height: 2.5rem;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0 0.75rem;
+		border: 1px solid var(--gallery-border);
+		border-radius: 0.5rem;
+		background: var(--gallery-surface);
+		color: var(--gallery-muted);
+		transition: border-color 180ms ease, background-color 180ms ease;
+	}
+
+	.gallery-search:hover,
+	.gallery-search:has(input:focus-visible) {
+		border-color: var(--gallery-text);
+		background: var(--card-bg);
+	}
+
+	.gallery-search > :global(svg) {
+		width: 1.1rem;
+		height: 1.1rem;
+		flex: 0 0 auto;
+		color: currentColor;
+	}
+
+	.gallery-search input {
+		width: 100%;
+		min-width: 0;
+		border: 0;
+		outline: 0;
+		background: transparent;
+		color: var(--gallery-text);
+		font-family: inherit;
+		font-size: 0.8rem;
+		font-weight: 600;
+	}
+
+	.gallery-search input::placeholder {
+		color: var(--gallery-muted);
+	}
+
+	.gallery-filter__tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+		margin-bottom: 1rem;
+	}
+
+	.gallery-filter__tags button {
+		min-height: 2.25rem;
+		padding: 0.4rem 0.75rem;
+		border: 1px solid var(--gallery-border);
+		border-radius: 0.4rem;
+		background: var(--card-bg);
+		color: var(--gallery-text-soft);
+		font: inherit;
+		font-size: 0.78rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+	}
+
+	.gallery-filter__tags button:hover,
+	.gallery-filter__tags button[data-active] {
+		border-color: var(--gallery-text);
+		background: var(--gallery-text);
+		color: var(--card-bg);
+	}
+
+	.gallery-album-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+
+	.gallery-empty {
+		display: grid;
+		min-height: 15rem;
+		place-items: center;
+		align-content: center;
+		gap: 0.4rem;
+		color: var(--gallery-muted);
+		text-align: center;
+	}
+
+	.gallery-empty[hidden] {
+		display: none;
+	}
+
+	.gallery-empty :global(svg) {
+		width: 2.5rem;
+		height: 2.5rem;
+		color: var(--gallery-text);
+	}
+
+	.gallery-empty strong,
+	.gallery-empty p {
+		margin: 0;
+	}
+
+	.gallery-empty p {
+		font-size: 0.78rem;
+	}
+
+	.gallery-collection-nav a:focus-visible,
+	.gallery-search:has(input:focus-visible),
+	.gallery-filter__tags button:focus-visible,
+	:global(.gallery-workbench .album-card:focus-visible) {
+		outline: 3px solid var(--gallery-text);
+		outline-offset: 3px;
+	}
+
+	@media (max-width: 1399px) and (min-width: 1100px) {
+		.gallery-replica-page {
+			grid-template-columns: 14rem minmax(0, 1fr) 14rem;
+			width: min(92vw, 92rem);
+			max-width: 92rem;
+			justify-content: center;
+		}
+	}
+
+	@media (max-width: 1099px) and (min-width: 701px) {
+		.gallery-replica-page {
+			grid-template-columns: minmax(0, 61rem);
+			width: min(61rem, calc(100vw - 2rem));
+			justify-content: center;
+		}
+
+		.gallery-replica-page :global(.archive-side) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 700px) {
+		.gallery-replica-page {
+			grid-template-columns: minmax(0, 1fr);
+			width: calc(100vw - 1rem);
+		}
+
+		.gallery-replica-page :global(.archive-side) {
+			display: none;
+		}
+
+		.gallery-workbench {
+			padding: 1.25rem 0 2.5rem;
+		}
+
+		.gallery-overview {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.gallery-overview > div {
+			border-right: 0;
+			border-bottom: 1px solid var(--gallery-border);
+		}
+
+		.gallery-overview > div:last-child {
+			border-bottom: 0;
+		}
+
+		.gallery-filter__heading {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.gallery-search {
+			width: 100%;
+		}
+	}
+
+	@media (max-width: 540px) {
+		.gallery-collection-nav {
+			width: 100%;
+		}
+
+		.gallery-collection-nav a {
+			min-width: 0;
+			flex: 1;
+			padding-inline: 0.4rem;
+		}
+
+		.gallery-album-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.gallery-workbench *,
+		.gallery-workbench *::before,
+		.gallery-workbench *::after {
+			animation: none !important;
+			transition: none !important;
+		}
+	}
+</style>

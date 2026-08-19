@@ -1,0 +1,78 @@
+---
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import MomentsFeed from "@/components/pages/moments/MomentsFeed.svelte";
+import MomentsItemTemplate from "@/components/pages/moments/MomentsItemTemplate.astro";
+import {
+	commentConfig,
+	dynamicConfig,
+	profileConfig,
+	siteConfig,
+} from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import "@/styles/dynamic.css";
+import "@/styles/moments.css";
+import { url } from "@/utils/url-utils";
+
+if (!siteConfig.pages.dynamic) {
+	return Astro.redirect("/404/");
+}
+
+const itemsPerPage = Math.max(1, dynamicConfig.itemsPerPage ?? 10);
+const showComments = Boolean(
+	dynamicConfig.showComment !== false &&
+		commentConfig.type &&
+		commentConfig.type !== "none",
+);
+---
+
+<MainGridLayout title="说说" bannerTitle="动态" description="记录此刻，也收藏每一个平常日子。">
+	<section class="moments-page" aria-labelledby="moments-page-title">
+		<h1 id="moments-page-title" class="sr-only">说说</h1>
+		<header class="moments-profile">
+			<div class="moments-profile__cover" aria-hidden="true">
+				<ImageWrapper
+					src="assets/images/DesktopWallpaper/d5.avif"
+					alt=""
+					class="moments-profile__cover-image"
+					widths={[640, 960, 1280]}
+					sizes="min(100vw, 80rem)"
+					loading="eager"
+					fadeIn={false}
+				/>
+			</div>
+			<div class="moments-profile__body">
+				<div>
+					<strong>{profileConfig.name}</strong>
+					<span>{profileConfig.bio}</span>
+				</div>
+				<a href={url("/about/")} aria-label={`了解 ${profileConfig.name}`}>
+					<ImageWrapper
+						src={profileConfig.avatar || ""}
+						alt={profileConfig.name}
+						widths={[128]}
+						sizes="72px"
+						loading="eager"
+						siteAvatar
+						fadeIn={false}
+					/>
+				</a>
+			</div>
+		</header>
+
+		<MomentsFeed
+			client:load
+			source={url("/api/dynamic.json")}
+			author={profileConfig.name}
+			itemsPerPage={itemsPerPage}
+			showComments={showComments}
+			loadingText={i18n(I18nKey.dynamicLoading)}
+			emptyText={i18n(I18nKey.dynamicEmpty)}
+			allYearsText={i18n(I18nKey.dynamicAllYears)}
+			timezone={siteConfig.timezone || "UTC"}
+		/>
+
+		<MomentsItemTemplate />
+	</section>
+</MainGridLayout>

@@ -1,0 +1,26 @@
+---
+import CircleFeed from "@/components/pages/circle/CircleFeed.svelte";
+import { circleConfig } from "@/config";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { url } from "@/utils/url-utils";
+import "@/styles/circle.css";
+---
+
+<MainGridLayout
+	title={circleConfig.title}
+	bannerTitle="动态"
+	description={circleConfig.description}
+>
+	<section class="circle-page" aria-labelledby="circle-page-title">
+		<h1 id="circle-page-title" class="sr-only">{circleConfig.title}</h1>
+
+		<CircleFeed
+			client:load
+			dataUrl={circleConfig.dataUrl}
+			assetBaseUrl={circleConfig.assetBaseUrl}
+			pageSize={circleConfig.pageSize}
+			cacheTime={circleConfig.cacheTime}
+			friendsUrl={url("/friends/")}
+		/>
+	</section>
+</MainGridLayout>

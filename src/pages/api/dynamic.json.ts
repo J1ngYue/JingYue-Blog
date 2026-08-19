@@ -26,6 +26,8 @@ export async function GET() {
 			return {
 				id: dynamicSlug(entry.id),
 				published: entry.data.published.getTime(),
+				pinned: entry.data.pinned,
+				tags: entry.data.tags,
 				html: rendered.code,
 				images,
 				searchText: dynamicSearchText(entry),

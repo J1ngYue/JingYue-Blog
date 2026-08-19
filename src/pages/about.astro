@@ -29,6 +29,7 @@ const siteDays = Math.max(
 			86_400_000,
 	),
 );
+const showLocalAdminControls = import.meta.env.DEV;
 ---
 <MainGridLayout title={i18n(I18nKey.about)} bannerTitle="关于" description={i18n(I18nKey.about)}>
 	<div class="about-editorial">
@@ -69,41 +70,43 @@ const siteDays = Math.max(
 						<Icon is:inline name="material-symbols:auto-awesome-rounded" />
 					</span>
 				</div>
-				<div class="about-editorial__avatar-settings" data-profile-appearance-settings>
-					<input
-						id="site-avatar-file"
-						type="file"
-						accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-						data-avatar-input
-						aria-describedby="site-appearance-status"
-					/>
-					<label for="site-avatar-file">
-						<Icon is:inline name="material-symbols:add-photo-alternate-rounded" />
-						<span>更换头像</span>
-					</label>
-					<button type="button" data-avatar-reset hidden>
-						<Icon is:inline name="material-symbols:restart-alt-rounded" />
-						<span>恢复头像</span>
-					</button>
-					<input
-						id="site-profile-cover-file"
-						type="file"
-						accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-						data-cover-input
-						aria-describedby="site-appearance-status"
-					/>
-					<label for="site-profile-cover-file">
-						<Icon is:inline name="material-symbols:panorama-rounded" />
-						<span>更换封面</span>
-					</label>
-					<button type="button" data-cover-reset hidden>
-						<Icon is:inline name="material-symbols:restart-alt-rounded" />
-						<span>恢复封面</span>
-					</button>
-					<small id="site-appearance-status" data-appearance-status aria-live="polite">
-						头像与资料卡封面会同步到全站
-					</small>
-				</div>
+				{showLocalAdminControls && (
+					<div class="about-editorial__avatar-settings" data-profile-appearance-settings>
+						<input
+							id="site-avatar-file"
+							type="file"
+							accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+							data-avatar-input
+							aria-describedby="site-appearance-status"
+						/>
+						<label for="site-avatar-file">
+							<Icon is:inline name="material-symbols:add-photo-alternate-rounded" />
+							<span>更换头像</span>
+						</label>
+						<button type="button" data-avatar-reset hidden>
+							<Icon is:inline name="material-symbols:restart-alt-rounded" />
+							<span>恢复头像</span>
+						</button>
+						<input
+							id="site-profile-cover-file"
+							type="file"
+							accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+							data-cover-input
+							aria-describedby="site-appearance-status"
+						/>
+						<label for="site-profile-cover-file">
+							<Icon is:inline name="material-symbols:panorama-rounded" />
+							<span>更换封面</span>
+						</label>
+						<button type="button" data-cover-reset hidden>
+							<Icon is:inline name="material-symbols:restart-alt-rounded" />
+							<span>恢复封面</span>
+						</button>
+						<small id="site-appearance-status" data-appearance-status aria-live="polite">
+							头像与资料卡封面会同步到全站
+						</small>
+					</div>
+				)}
 				<strong>{profileConfig.name}</strong>
 				<span>记录代码、生活与闪光</span>
 			</div>

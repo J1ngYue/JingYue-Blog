@@ -1,0 +1,48 @@
+---
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import DynamicGallery from "@/components/pages/dynamic/DynamicGallery.astro";
+import DynamicInlineComments from "@/components/pages/dynamic/DynamicInlineComments.astro";
+import { profileConfig } from "@/config";
+import { url } from "@/utils/url-utils";
+---
+
+<template data-moment-template>
+	<moment-entry class="moment-entry" data-moment-entry>
+		<article>
+			<header class="moment-entry__header">
+				<a class="moment-entry__avatar" href={url("/about/")} aria-label={`了解 ${profileConfig.name}`}>
+					<ImageWrapper
+						src={profileConfig.avatar || ""}
+						alt={profileConfig.name}
+						widths={[80]}
+						sizes="40px"
+						loading="lazy"
+						siteAvatar
+						fadeIn={false}
+					/>
+				</a>
+				<div class="moment-entry__identity">
+					<strong data-moment-author>{profileConfig.name}</strong>
+					<a data-moment-permalink><time data-moment-time></time></a>
+				</div>
+				<span class="moment-entry__pin" data-moment-pin hidden>
+					<Icon is:inline name="material-symbols:keep-outline" />
+					置顶
+				</span>
+			</header>
+
+			<div class="moment-entry__content custom-md" data-moment-content></div>
+			<DynamicGallery sourceId="moment-template-content" />
+			<div class="moment-entry__tags" data-moment-tags hidden></div>
+
+			<footer class="moment-entry__footer">
+				<button type="button" class="moment-entry__share" data-moment-share aria-label="分享说说" title="分享">
+					<Icon is:inline name="material-symbols:share-outline" />
+					<span>分享</span>
+				</button>
+				<DynamicInlineComments src="" />
+			</footer>
+		</article>
+	</moment-entry>
+</template>

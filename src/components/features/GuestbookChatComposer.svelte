@@ -9,6 +9,7 @@ import {
 	X,
 } from "lucide-svelte";
 import { tick } from "svelte";
+import GoogleLogo from "@/components/common/GoogleLogo.svelte";
 import Icon from "@/components/common/Icon.svelte";
 import { commentConfig } from "@/config/commentConfig";
 import type {
@@ -74,6 +75,12 @@ const MAX_REMOTE_IMAGE_SIZE = 5 * 1024 * 1024;
 const MIN_MESSAGE_PANE_HEIGHT = 128;
 const RESIZE_KEYBOARD_STEP = 16;
 const emojiSources = commentConfig.waline?.emoji ?? [];
+const oauthProviders = commentConfig.waline?.oauthProviders ?? {};
+const hasWalineLogin = Boolean(commentConfig.waline?.serverURL);
+const providerAvailable = (provider: GuestbookLoginProvider) =>
+	provider === "github"
+		? hasWalineLogin || Boolean(oauthProviders.github?.trim())
+		: Boolean(oauthProviders[provider]?.trim());
 const imageUploadURL = commentConfig.waline?.imageUploadURL ?? "";
 const maxImageSize = imageUploadURL
 	? MAX_REMOTE_IMAGE_SIZE
@@ -826,7 +833,9 @@ async function handleImageSelection(event: Event) {
 				class="guestbook-login-provider guestbook-login-provider--qq"
 				type="button"
 				onclick={() => void selectLoginProvider("qq")}
-				disabled={loggingIn}
+				disabled={loggingIn || !providerAvailable("qq")}
+				aria-disabled={!providerAvailable("qq")}
+				title={providerAvailable("qq") ? "使用 QQ 登录" : "需要配置 QQ OAuth 服务"}
 			>
 				<span><Icon icon="simple-icons:tencentqq" size="xl" /></span>
 				<strong>QQ</strong>
@@ -835,7 +844,9 @@ async function handleImageSelection(event: Event) {
 				class="guestbook-login-provider guestbook-login-provider--wechat"
 				type="button"
 				onclick={() => void selectLoginProvider("wechat")}
-				disabled={loggingIn}
+				disabled={loggingIn || !providerAvailable("wechat")}
+				aria-disabled={!providerAvailable("wechat")}
+				title={providerAvailable("wechat") ? "使用微信登录" : "需要配置微信 OAuth 服务"}
 			>
 				<span><Icon icon="simple-icons:wechat" size="xl" /></span>
 				<strong>微信</strong>
@@ -844,21 +855,31 @@ async function handleImageSelection(event: Event) {
 				class="guestbook-login-provider guestbook-login-provider--google"
 				type="button"
 				onclick={() => void selectLoginProvider("google")}
-				disabled={loggingIn}
+				disabled={loggingIn || !providerAvailable("google")}
+				aria-disabled={!providerAvailable("google")}
+				title={providerAvailable("google") ? "使用 Google 登录" : "需要配置 Google OAuth 服务"}
 			>
-				<span><Icon icon="simple-icons:google" size="xl" /></span>
+				<span><GoogleLogo size={25} /></span>
 				<strong>Google</strong>
 			</button>
 			<button
 				class="guestbook-login-provider guestbook-login-provider--github"
 				type="button"
 				onclick={() => void selectLoginProvider("github")}
-				disabled={loggingIn}
+				disabled={loggingIn || !providerAvailable("github")}
+				aria-disabled={!providerAvailable("github")}
+				title={providerAvailable("github") ? "使用 GitHub 或 Waline 账号登录" : "需要配置 Waline 服务"}
 			>
 				<span><Icon icon="simple-icons:github" size="xl" /></span>
 				<strong>GitHub</strong>
 			</button>
 		</div>
+		{#if !hasWalineLogin}
+			<p class="guestbook-login-modal__setup">
+				站点尚未连接账号服务。部署 Waline 并设置
+				<code>PUBLIC_WALINE_SERVER_URL</code> 后，GitHub 与 Waline 账号登录即可使用。
+			</p>
+		{/if}
 		{#if composerError}
 			<p class="guestbook-login-modal__error" role="alert">
 				<TriangleAlert size={16} aria-hidden="true" />

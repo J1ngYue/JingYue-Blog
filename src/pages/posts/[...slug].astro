@@ -207,6 +207,7 @@ const currentCategoryCount = publicPosts.filter(
           tags={entry.data.tags}
           category={entry.data.category || undefined}
           id={entry.id}
+          pinned={entry.data.pinned}
         />
 
         <div class="post-reading-stats" aria-label="文章阅读信息">
@@ -619,6 +620,16 @@ const currentCategoryCount = publicPosts.filter(
     justify-content: center;
     margin-top: 1.15rem;
     gap: 0.8rem 1.2rem;
+  }
+
+  html:has([data-article-reading-rails]) .post-reading-meta .meta-icon {
+    background: color-mix(in srgb, var(--content-meta) 7%, transparent);
+    color: color-mix(in srgb, var(--content-meta) 82%, transparent);
+  }
+
+  html:not(.dark):has([data-article-reading-rails]) .post-reading-meta .meta-icon {
+    background: rgb(17 24 39 / 6%);
+    color: rgb(17 24 39 / 78%);
   }
 
   html:has([data-article-reading-rails]) .post-reading-stats {

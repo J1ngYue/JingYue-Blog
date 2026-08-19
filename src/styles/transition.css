@@ -7,44 +7,31 @@
    -------------------------------------------------------------------------- */
 
 /* Main Content Transition */
-.transition-main {
-    transition: opacity 180ms ease;
+.transition-swup-main,
+html.is-changing .transition-swup-main {
+    transition: opacity 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Leaving Animation */
-.transition-leaving {
-    transition: opacity 140ms ease;
-}
-
-/* State: Changing (Swup) */
-html.is-changing .transition-main {
-    transition: opacity 180ms ease;
-}
-
-html.is-leaving .transition-main {
-    transition: opacity 140ms ease;
-}
-
-/* State: Animating (Entering) */
-html.is-animating .transition-main {
+/* State: Animating */
+html.is-animating .transition-swup-main {
     opacity: 0;
     transform: none;
 }
 
-/* State: Leaving */
-html.is-animating.is-leaving .transition-leaving {
-    transform: none;
-    opacity: 0;
-}
-
-/* Swup Fade Fallback */
+/* Keep persistent shell containers visually stable while the main area swaps. */
 html.is-changing .transition-swup-fade {
-    transition: opacity 160ms ease;
+    transition: none;
 }
 
 html.is-animating .transition-swup-fade {
-    opacity: 0;
+    opacity: 1;
     transform: none;
+}
+
+/* Nested load animations must not create a second enter pass after Swup swaps. */
+html.is-changing #swup-container .onload-animation {
+    opacity: 1 !important;
+    animation: none !important;
 }
 
 /* --------------------------------------------------------------------------

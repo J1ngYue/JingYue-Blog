@@ -3,6 +3,7 @@ import GoogleAnalytics from "@components/analytics/GoogleAnalytics.astro";
 import La51Analytics from "@components/analytics/La51Analytics.astro";
 import MicrosoftClarity from "@components/analytics/MicrosoftClarity.astro";
 import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
+import DarkModeSpotlight from "@components/features/DarkModeSpotlight.svelte";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontSetup from "@components/features/FontSetup.astro";
 import LayoutStabilityAgent from "@components/features/LayoutStabilityAgent.astro";
@@ -73,6 +74,7 @@ let {
 // Swup can update the body for each page visit, but it's after the page transition, causing a delay for banner height change
 // so use Swup hooks instead to change the height immediately when a link is clicked
 const isHomePageCheck = isHomePage(Astro.url.pathname);
+const showLocalAdminControls = import.meta.env.DEV;
 
 // defines global css variables
 // why doing this in Layout instead of GlobalStyles: https://github.com/withastro/astro/issues/6728#issuecomment-1502203757
@@ -741,11 +743,12 @@ const siteLang = lang.replace("_", "-");
     <!-- 页面顶部渐变高光效果 - 只在full和semifull模式下显示 -->
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
-    <SiteAvatarManager />
-    <SiteProfileCoverManager />
+    {showLocalAdminControls && <SiteAvatarManager />}
+    {showLocalAdminControls && <SiteProfileCoverManager />}
     <LayoutStabilityAgent />
     <MusicManager />
     <MusicLibraryDialog />
+    <DarkModeSpotlight client:load />
     <slot />
 
 
@@ -1082,7 +1085,19 @@ function disableAnimation() {
     });
   }
 
+  function clearSwupOnloadAnimations() {
+    document
+      .querySelectorAll<HTMLElement>("#swup-container .onload-animation")
+      .forEach((element) => {
+        element.classList.remove("onload-animation");
+        element.style.removeProperty("opacity");
+      });
+  }
+
   const setup = () => {
+    if ((window as any).__fireflySwupHooksBound) return;
+    (window as any).__fireflySwupHooksBound = true;
+
     const homePath = new URL(url("/"), window.location.origin).pathname;
     const toNavigationUrl = (value: string) =>
       new URL(value, window.location.href);
@@ -1177,14 +1192,6 @@ function disableAnimation() {
       if (!isSamePage) {
         // 添加页面切换保护，防止导航栏闪烁
         document.documentElement.classList.add("is-page-transitioning");
-		// 切换模式时先隐藏外层容器，让页面位置变化在不可见状态下完成，避免视觉抖动。
-		const transitionShell = document.querySelector<HTMLElement>(
-			".w-full.z-30.pointer-events-none",
-		);
-		if (transitionShell) {
-			transitionShell.style.setProperty("visibility", "hidden", "important");
-			transitionShell.style.setProperty("opacity", "0", "important");
-		}
       }
 
       const navbar = document.getElementById("navbar-wrapper");
@@ -1198,6 +1205,7 @@ function disableAnimation() {
       }
     });
     window.swup.hooks.on("content:replace", () => {
+      clearSwupOnloadAnimations();
       syncHomeLandingLayout();
       initWallpaperMode();
       const isHome = pathsEqual(window.location.pathname, url("/"));
@@ -1596,8 +1604,16 @@ function disableAnimation() {
   };
   if (window?.swup?.hooks) {
     setup();
-  } else {
-    document.addEventListener("swup:enable", setup);
+  } else if (!(window as any).__fireflySwupSetupWaiting) {
+    (window as any).__fireflySwupSetupWaiting = true;
+    document.addEventListener(
+      "swup:enable",
+      () => {
+        (window as any).__fireflySwupSetupWaiting = false;
+        setup();
+      },
+      { once: true },
+    );
   }
 
   document.addEventListener("astro:page-load", scheduleContentOverflowEnhancements);
