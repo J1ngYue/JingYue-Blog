@@ -20,6 +20,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.23",
+		date: "2026-08-20",
+		time: "14:42",
+		type: "fix",
+		title: "代码质量检查修复",
+		summary: "统一既有页面格式与导入顺序，恢复代码质量工作流。",
+		changes: [
+			"按 Biome 规则整理灯光、朋友圈、网站导航、相册和标签页面格式。",
+			"统一配置出口的导出顺序，消除 GitHub Code quality 检查错误。",
+		],
+	},
+	{
 		version: "v6.14.22",
 		date: "2026-08-20",
 		time: "14:28",

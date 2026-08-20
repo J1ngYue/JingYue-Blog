@@ -22,7 +22,9 @@ const albums = galleryConfig.albums.map((album) => {
 	const cover = getAlbumCover(album, photos);
 	return { ...album, cover, photoCount: photos.length };
 });
-const allTags = [...new Set(albums.flatMap((album) => album.tags || []))].sort();
+const allTags = [
+	...new Set(albums.flatMap((album) => album.tags || [])),
+].sort();
 const totalPhotos = albums.reduce((sum, album) => sum + album.photoCount, 0);
 const encryptedAlbums = albums.filter((album) => !!album.password).length;
 const collectionLinks = [

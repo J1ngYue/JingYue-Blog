@@ -7,17 +7,16 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPostsList, getTagList } from "@/utils/content-utils";
 import { getTagUrl } from "@/utils/url-utils";
 
-const [tags, posts] = await Promise.all([
-	getTagList(),
-	getSortedPostsList(),
-]);
+const [tags, posts] = await Promise.all([getTagList(), getSortedPostsList()]);
 const sortedTags = tags
 	.slice()
 	.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"));
 const topTags = sortedTags.slice(0, 10);
 const topMaxCount = topTags[0]?.count ?? 1;
 const totalTagAssignments = tags.reduce((sum, tag) => sum + tag.count, 0);
-const taggedPostCount = posts.filter((post) => (post.data.tags?.length ?? 0) > 0).length;
+const taggedPostCount = posts.filter(
+	(post) => (post.data.tags?.length ?? 0) > 0,
+).length;
 const averageTagsPerPost = posts.length
 	? (totalTagAssignments / posts.length).toFixed(1)
 	: "0.0";

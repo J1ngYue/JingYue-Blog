@@ -1,6 +1,4 @@
 <script lang="ts">
-import { onMount, tick } from "svelte";
-import CircleFishingScene from "./CircleFishingScene.svelte";
 import {
 	Activity,
 	BookOpen,
@@ -13,6 +11,8 @@ import {
 	Users,
 	X,
 } from "lucide-svelte";
+import { onMount, tick } from "svelte";
+import CircleFishingScene from "./CircleFishingScene.svelte";
 
 type CircleArticle = {
 	author?: string;

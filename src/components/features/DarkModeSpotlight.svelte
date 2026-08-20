@@ -505,7 +505,12 @@ onMount(() => {
 		}
 		updateRig();
 		renderer.render(scene, camera);
-		if (isHome && isDark && settings.enabled && (pulling || stableFrames < 80)) {
+		if (
+			isHome &&
+			isDark &&
+			settings.enabled &&
+			(pulling || stableFrames < 80)
+		) {
 			animationFrame = requestAnimationFrame(animate);
 		}
 	}
@@ -585,7 +590,13 @@ onMount(() => {
 	}
 
 	function onPointerDown(event: PointerEvent) {
-		if (!isHome || !isDark || !settings.enabled || event.pointerType === "touch") return;
+		if (
+			!isHome ||
+			!isDark ||
+			!settings.enabled ||
+			event.pointerType === "touch"
+		)
+			return;
 		if (event.button === 2) {
 			if (!pointerWithinLight(event)) return;
 			cycleLightColor();
@@ -614,7 +625,13 @@ onMount(() => {
 	}
 
 	function onPointerMove(event: PointerEvent) {
-		if (!isHome || !isDark || !settings.enabled || event.pointerType === "touch") return;
+		if (
+			!isHome ||
+			!isDark ||
+			!settings.enabled ||
+			event.pointerType === "touch"
+		)
+			return;
 		updatePointerTarget(event);
 		pointerTracking = true;
 		if (event.pointerId === rangePointerId) {

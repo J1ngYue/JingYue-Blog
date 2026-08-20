@@ -8,27 +8,27 @@ import { siteConfig } from "@/config/siteConfig";
 import { url } from "@/utils/url-utils";
 
 const categoryMeta = {
-	"我的网站": {
+	我的网站: {
 		icon: "material-symbols:space-dashboard-outline-rounded",
 		description: "站内内容与互动入口",
 	},
-	"常用网站": {
+	常用网站: {
 		icon: "material-symbols:star-outline-rounded",
 		description: "日常访问的网络服务",
 	},
-	"资源网站": {
+	资源网站: {
 		icon: "material-symbols:inventory-2-outline-rounded",
 		description: "主题、素材与开发资源",
 	},
-	"工具网站": {
+	工具网站: {
 		icon: "material-symbols:construction-rounded",
 		description: "提升效率的实用工具",
 	},
-	"学习网站": {
+	学习网站: {
 		icon: "material-symbols:school-outline-rounded",
 		description: "系统课程与技术教程",
 	},
-	"文档": {
+	文档: {
 		icon: "material-symbols:description-outline-rounded",
 		description: "常用框架官方参考",
 	},
@@ -44,7 +44,9 @@ const categoryCounts = new Map(
 		linkDirectoryItems.filter((item) => item.category === category).length,
 	]),
 );
-const internalCount = linkDirectoryItems.filter((item) => !item.external).length;
+const internalCount = linkDirectoryItems.filter(
+	(item) => !item.external,
+).length;
 const externalCount = linkDirectoryItems.length - internalCount;
 
 const getLinkHref = (href: string, external?: boolean) =>
