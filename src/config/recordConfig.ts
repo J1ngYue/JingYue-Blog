@@ -20,6 +20,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.25",
+		date: "2026-08-20",
+		time: "16:40",
+		type: "fix",
+		title: "留言板开发加载修复",
+		summary: "绕过失效的 Waline 开发缓存，避免留言板停留在加载状态。",
+		changes: [
+			"将纯 ESM 的 Waline API 客户端从 Vite 依赖预构建中排除，避免缓存哈希失效导致组件无法挂载。",
+			"保留生产打包与 Waline 留言功能，未配置服务时仍使用当前设备本地模式。",
+		],
+	},
+	{
 		version: "v6.14.24",
 		date: "2026-08-20",
 		time: "15:55",

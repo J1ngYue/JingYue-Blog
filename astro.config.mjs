@@ -16,6 +16,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/contrib/mhchem.mjs"; // 加载 mhchem 扩展
 import cloudflare from "@astrojs/cloudflare";
 import mdx from "@astrojs/mdx";
+import { fontProviders } from "astro/config";
 import { pluginCollapsible } from "expressive-code-collapsible"; /* Collapsible */
 import { pluginLanguageBadge } from "expressive-code-language-badge"; /* Language Badge */
 import rehypeCallouts from "rehype-callouts";
@@ -32,16 +33,14 @@ import {
 	plantumlConfig,
 	siteConfig,
 } from "./src/config";
-import { collectUsedFontCssVars } from "./src/utils/fontHelper";
 import I18nKey from "./src/i18n/i18nKey";
 import { i18n } from "./src/i18n/translation";
-import { fontProviders } from "astro/config";
 import { GithubCardComponent } from "./src/plugins/rehype-component-github-card.mjs";
+import { rehypeDiagramPanZoom } from "./src/plugins/rehype-diagram-panzoom.mjs";
 import rehypeEmailProtection from "./src/plugins/rehype-email-protection.mjs";
 import rehypeExternalLinks from "./src/plugins/rehype-external-links.mjs";
 import rehypeFigure from "./src/plugins/rehype-figure.mjs";
 import rehypeImageReferrerPolicy from "./src/plugins/rehype-image-referrerpolicy.mjs";
-import { rehypeDiagramPanZoom } from "./src/plugins/rehype-diagram-panzoom.mjs";
 import { rehypeMermaid } from "./src/plugins/rehype-mermaid.mjs";
 import { rehypePlantuml } from "./src/plugins/rehype-plantuml.mjs";
 import { parseDirectiveNode } from "./src/plugins/remark-directive-rehype.js";
@@ -50,6 +49,7 @@ import { remarkImageGrid } from "./src/plugins/remark-image-grid.js";
 import { remarkMermaid } from "./src/plugins/remark-mermaid.js";
 import { remarkPlantuml } from "./src/plugins/remark-plantuml.js";
 import { remarkReadingTime } from "./src/plugins/remark-reading-time.mjs";
+import { collectUsedFontCssVars } from "./src/utils/fontHelper";
 
 if (process.env.NODE_ENV === "development") {
 	setMaxListeners(20);
@@ -339,6 +339,9 @@ export default defineConfig({
 	},
 	vite: {
 		plugins: [tailwindcss()],
+		optimizeDeps: {
+			exclude: ["@waline/api"],
+		},
 		server: {
 			watch: {
 				ignored: ["**/package/**", "**/Firefly-docs/**"],
