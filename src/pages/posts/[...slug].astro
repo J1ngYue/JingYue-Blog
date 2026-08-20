@@ -458,7 +458,7 @@ const currentCategoryCount = publicPosts.filter(
             <div class="transition h-9 w-9 rounded-lg overflow-hidden relative flex items-center justify-center mr-0">
               <Icon is:inline
                 name="material-symbols:history-rounded"
-                class="text-4xl text-(--primary) transition-transform group-hover:translate-x-0.5 bg-(--enter-btn-bg) p-2 rounded-md"
+				class="text-4xl text-(--ui-icon-color) transition-transform group-hover:translate-x-0.5 bg-(--enter-btn-bg) p-2 rounded-md"
               />
             </div>
 
@@ -518,7 +518,7 @@ const currentCategoryCount = publicPosts.filter(
       <div class="btn-card rounded-2xl w-full h-15 max-w-full px-4 flex items-center justify-start! gap-4">
         <Icon is:inline
           name="material-symbols:chevron-left-rounded"
-          class="text-[2rem] text-(--primary)"
+          class="text-[2rem] text-(--ui-icon-color)"
         />
         <div class="overflow-hidden transition text-ellipsis whitespace-nowrap max-w-[calc(100%-3rem)] text-black/75 dark:text-white/75">
           {entry.data.nextTitle || i18n(I18nKey.home)}
@@ -536,7 +536,7 @@ const currentCategoryCount = publicPosts.filter(
         </div>
         <Icon is:inline
           name="material-symbols:chevron-right-rounded"
-          class="text-[2rem] text-(--primary)"
+          class="text-[2rem] text-(--ui-icon-color)"
         />
       </div>
     </a>
@@ -669,8 +669,8 @@ const currentCategoryCount = publicPosts.filter(
     height: 2.15rem;
     padding: 0.5rem;
     border-radius: 0.65rem;
-    background: color-mix(in srgb, var(--primary) 14%, transparent);
-    color: var(--primary);
+    background: var(--ui-icon-soft-bg);
+    color: var(--ui-icon-color);
   }
 
   html:has([data-article-reading-rails]) .post-reading-summary strong {

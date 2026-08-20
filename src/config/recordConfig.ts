@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.24",
+		date: "2026-08-20",
+		time: "15:55",
+		type: "optimize",
+		title: "全站功能图标黑白统一",
+		summary: "将主题蓝功能图标改为黑白，并把导航栏统一为描边图标。",
+		changes: [
+			"顶部、下拉与移动导航统一使用 Material Symbols 描边图标，浅色显示黑线，深色显示白线。",
+			"清理搜索、壁纸、音乐库、分页、站点统计与空状态中的主题蓝色功能图标。",
+			"保留外部站点 favicon、品牌标识以及告警和评分图标的语义配色。",
+		],
+	},
+	{
 		version: "v6.14.23",
 		date: "2026-08-20",
 		time: "14:42",

@@ -23,12 +23,12 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		{
 			name: "文章",
 			url: "/posts/",
-			icon: "material-symbols:article-rounded",
+			icon: "material-symbols:article-outline-rounded",
 			children: [
 				{
 					name: "文章列表",
 					url: "/posts/",
-					icon: "material-symbols:article-rounded",
+					icon: "material-symbols:article-outline-rounded",
 				},
 				LinkPresets.Archive,
 				LinkPresets.Categories,
@@ -38,7 +38,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		{
 			name: "动态",
 			url: "/dynamic/",
-			icon: "material-symbols:local-cafe",
+			icon: "material-symbols:local-cafe-outline-rounded",
 			children: [
 				LinkPresets.Moments,
 				LinkPresets.Gallery,
@@ -54,17 +54,17 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		{
 			name: "记录",
 			url: "/books/",
-			icon: "material-symbols:home-work-rounded",
+			icon: "material-symbols:home-work-outline-rounded",
 			children: [
 				{
 					name: "书架",
 					url: "/books/",
-					icon: "material-symbols:book-4",
+					icon: "material-symbols:book-4-outline-rounded",
 				},
 				{
 					name: "影视与游戏",
 					url: "/movies-games/",
-					icon: "material-symbols:movie",
+					icon: "material-symbols:movie-outline-rounded",
 				},
 				{
 					name: "音乐",
@@ -79,19 +79,19 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				{
 					name: "足迹",
 					url: "/life/places/",
-					icon: "material-symbols:location-on",
+					icon: "material-symbols:location-on-outline-rounded",
 				},
 				{
 					name: "应用展示",
 					url: "/apps/",
-					icon: "material-symbols:apps",
+					icon: "material-symbols:grid-view-outline-rounded",
 				},
 			],
 		},
 		{
 			name: "关于",
 			url: "/about/",
-			icon: "material-symbols:info-rounded",
+			icon: "material-symbols:info-outline-rounded",
 			children: [LinkPresets.About, LinkPresets.Friends, LinkPresets.Sponsor],
 		},
 	];
@@ -112,12 +112,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Home: {
 		name: "主页",
 		url: "/",
-		icon: "material-symbols:home",
+		icon: "material-symbols:home-outline-rounded",
 	},
 	Dynamic: {
 		name: "动态",
 		url: "/dynamic/",
-		icon: "material-symbols:forum-rounded",
+		icon: "material-symbols:forum-outline-rounded",
 		pageKey: "dynamic",
 	},
 	Moments: {
@@ -128,12 +128,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Archive: {
 		name: "归档",
 		url: "/archive/",
-		icon: "material-symbols:archive",
+		icon: "material-symbols:archive-outline-rounded",
 	},
 	Categories: {
 		name: "分类",
 		url: "/categories/",
-		icon: "material-symbols:folder-open-rounded",
+		icon: "material-symbols:folder-open-outline-rounded",
 	},
 	Tags: {
 		name: "标签",
@@ -154,7 +154,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Sponsor: {
 		name: "打赏",
 		url: "/sponsor/",
-		icon: "material-symbols:favorite",
+		icon: "material-symbols:favorite-outline-rounded",
 		pageKey: "sponsor",
 	},
 	Guestbook: {
@@ -166,12 +166,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	About: {
 		name: "关于我",
 		url: "/about/",
-		icon: "material-symbols:person",
+		icon: "material-symbols:person-outline-rounded",
 	},
 	Bangumi: {
 		name: "番组计划",
 		url: "/bangumi/",
-		icon: "material-symbols:movie",
+		icon: "material-symbols:movie-outline-rounded",
 		pageKey: "bangumi",
 	},
 	Gallery: {
@@ -183,7 +183,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Anime: {
 		name: "追番",
 		url: "/anime/",
-		icon: "material-symbols:live-tv",
+		icon: "material-symbols:live-tv-outline-rounded",
 		pageKey: "anime",
 	},
 };

@@ -61,6 +61,22 @@ body {
     line-height: 1.5;
 }
 
+:root {
+    --ui-icon-color: #27272a;
+    --ui-icon-muted: #52525b;
+    --ui-icon-surface: #fff;
+    --ui-icon-soft-bg: #f4f4f5;
+    --ui-icon-border: #d4d4d8;
+}
+
+:root.dark {
+    --ui-icon-color: #fafafa;
+    --ui-icon-muted: #d4d4d8;
+    --ui-icon-surface: #09090b;
+    --ui-icon-soft-bg: #18181b;
+    --ui-icon-border: #3f3f46;
+}
+
 /* 页面顶部渐变高光效果 */
 .top-gradient-highlight {
     position: fixed;

@@ -549,7 +549,7 @@ $: if (initialized) queueSearch(keyword);
 		width: 1rem;
 		height: 1rem;
 		flex: 0 0 auto;
-		color: var(--primary);
+		color: var(--ui-icon-color);
 		opacity: 0;
 		transform: translateX(-0.25rem);
 		transition:

@@ -48,7 +48,7 @@ const widgetId =
     <!-- Circular Cover -->
     <div class="relative shrink-0 w-14 h-14 group">
             <div class="w-full h-full rounded-full overflow-hidden shadow-lg border-2 border-white dark:border-neutral-700 relative z-10 bg-(--primary)/10 flex items-center justify-center">
-            <Icon is:inline name="material-symbols:music-note-rounded" class="text-2xl text-(--primary) opacity-40 absolute" aria-hidden="true" />
+            <Icon is:inline name="material-symbols:music-note-rounded" class="text-2xl text-(--ui-icon-color) opacity-40 absolute" aria-hidden="true" />
             <img class="music-cover w-full h-full object-cover animate-spin-slow relative z-10 opacity-0 transition-opacity duration-300" src="" alt={i18n(I18nKey.musicCover)} style="animation-play-state: paused;" />
             </div>
     </div>
@@ -1084,6 +1084,12 @@ const widgetId =
 </script>
 
 <style>
+	.music-player-widget :global(button svg),
+	.music-player-widget :global(.music-loading svg),
+	.music-player-widget :global(.eq-play-icon) {
+		color: var(--ui-icon-color) !important;
+	}
+
     @keyframes spin-slow {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }

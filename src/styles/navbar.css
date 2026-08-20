@@ -1044,6 +1044,19 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 }
 
+#navbar .navbar-icon,
+#navbar .dropdown-arrow {
+    color: var(--ui-icon-color) !important;
+}
+
+#navbar :is(#nav-menu-switch, #search-switch),
+#navbar :is(#nav-menu-switch, #search-switch):hover,
+#navbar :is(#nav-menu-switch, #search-switch):focus-visible {
+    border-color: var(--ui-icon-border) !important;
+    background: var(--ui-icon-surface) !important;
+    color: var(--ui-icon-color) !important;
+}
+
 /* ============================================
  * 移动端 - 亮色主题 - Banner模式
  * 适用: 移动端(≤1023px) + Banner模式 + 亮色主题 + 仅首页生效

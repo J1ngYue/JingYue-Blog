@@ -46,7 +46,7 @@ function goToPage(page: number) {
     <div class="mobile-pagination items-center gap-3">
       <button
         type="button"
-        class="btn-card overflow-hidden rounded-(--radius-large) text-(--primary) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="btn-card overflow-hidden rounded-(--radius-large) text-(--ui-icon-color) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
         onclick={() => goToPage(currentPage - 1)}
         disabled={currentPage === 1}
         aria-label="上一页"
@@ -62,7 +62,7 @@ function goToPage(page: number) {
 
       <button
         type="button"
-        class="btn-card overflow-hidden rounded-(--radius-large) text-(--primary) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="btn-card overflow-hidden rounded-(--radius-large) text-(--ui-icon-color) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
         onclick={() => goToPage(currentPage + 1)}
         disabled={currentPage === totalPages}
         aria-label="下一页"
@@ -75,7 +75,7 @@ function goToPage(page: number) {
     <div class="desktop-pagination items-center gap-3">
       <button
         type="button"
-        class="btn-card overflow-hidden rounded-(--radius-large) text-(--primary) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="btn-card overflow-hidden rounded-(--radius-large) text-(--ui-icon-color) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
         onclick={() => goToPage(currentPage - 1)}
         disabled={currentPage === 1}
         aria-label="上一页"
@@ -103,7 +103,7 @@ function goToPage(page: number) {
 
       <button
         type="button"
-        class="btn-card overflow-hidden rounded-(--radius-large) text-(--primary) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="btn-card overflow-hidden rounded-(--radius-large) text-(--ui-icon-color) w-11 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
         onclick={() => goToPage(currentPage + 1)}
         disabled={currentPage === totalPages}
         aria-label="下一页"

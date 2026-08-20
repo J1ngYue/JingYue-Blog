@@ -159,7 +159,7 @@ onMount(() => {
 			<div class="search-loading">
 				<Icon
 					icon="svg-spinners:ring-resize"
-					class="text-4xl text-(--primary)"
+					class="text-4xl text-(--ui-icon-color)"
 				/>
 			</div>
 		{:else if results.length > 0}
@@ -295,7 +295,7 @@ onMount(() => {
 
 	.search-page-input-wrap button:hover {
 		background: var(--btn-plain-bg-hover);
-		color: var(--primary);
+		color: var(--ui-icon-color);
 	}
 
 	.search-result-status {

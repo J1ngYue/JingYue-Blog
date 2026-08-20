@@ -911,7 +911,7 @@ onMount(() => {
 	.wallpaper-theme-control header :global(svg) {
 		width: 1rem;
 		height: 1rem;
-		color: var(--primary);
+		color: var(--ui-icon-color);
 	}
 
 	.wallpaper-theme-control output {
@@ -1354,7 +1354,7 @@ onMount(() => {
 	.wallpaper-empty :global(svg) {
 		width: 1.7rem;
 		height: 1.7rem;
-		color: var(--primary);
+		color: var(--ui-icon-color);
 	}
 
 	.wallpaper-empty span {
@@ -1634,7 +1634,7 @@ onMount(() => {
 	.home-cover-local-heading :global(svg) {
 		width: 1.05rem;
 		height: 1.05rem;
-		color: color-mix(in oklch, var(--primary) 72%, white);
+		color: var(--ui-icon-color);
 	}
 
 	.home-cover-theme-heading output {

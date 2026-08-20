@@ -1301,9 +1301,9 @@ onDestroy(() => {
 	:global(html:not(.dark)) .immersive-music__playlist-header button:focus-visible,
 	:global(html:not(.dark)) .immersive-music__sync-heading button:hover,
 	:global(html:not(.dark)) .immersive-music__sync-heading button:focus-visible {
-		border-color: rgb(25 181 196 / 36%);
-		background: rgb(236 252 255 / 92%);
-		color: #087f91 !important;
+		border-color: var(--ui-icon-border);
+		background: var(--ui-icon-soft-bg);
+		color: var(--ui-icon-color) !important;
 	}
 
 	:global(html:not(.dark)) .immersive-music__sync {

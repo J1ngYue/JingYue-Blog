@@ -24,7 +24,7 @@ const noRandomPostsText = i18n(I18nKey.noRandomPosts);
     <div class="flex items-center gap-2 pb-3 mb-1 border-b border-(--line-divider)">
       <Icon is:inline
         name="material-symbols:signpost"
-        class="text-xl text-(--primary)"
+        class="text-xl text-(--ui-icon-color)"
       />
       <span class="text-base font-bold text-black/75 dark:text-white/75 transition">
         {i18n(I18nKey.relatedPosts)}
@@ -61,7 +61,7 @@ const noRandomPostsText = i18n(I18nKey.noRandomPosts);
           </div>
           <Icon is:inline
             name="material-symbols:chevron-right-rounded"
-            class="shrink-0 text-xl text-black/15 dark:text-white/15 transition group-hover:text-(--primary) group-hover:translate-x-0.5"
+            class="shrink-0 text-xl text-black/15 dark:text-white/15 transition group-hover:text-(--ui-icon-color) group-hover:translate-x-0.5"
           />
         </a>
       ))
@@ -78,7 +78,7 @@ const noRandomPostsText = i18n(I18nKey.noRandomPosts);
     <div class="flex items-center gap-2 pb-3 mb-1 border-b border-(--line-divider)">
       <Icon is:inline
         name="material-symbols:recommend"
-        class="text-xl text-(--primary)"
+        class="text-xl text-(--ui-icon-color)"
       />
       <span class="text-base font-bold text-black/75 dark:text-white/75 transition">
         {i18n(I18nKey.randomPosts)}
@@ -187,7 +187,7 @@ function renderRandomPosts() {
       svg.setAttribute('width', '24');
       svg.setAttribute('height', '24');
       svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('class', 'shrink-0 text-xl text-black/15 dark:text-white/15 transition group-hover:text-(--primary) group-hover:translate-x-0.5');
+      svg.setAttribute('class', 'shrink-0 text-xl text-black/15 dark:text-white/15 transition group-hover:text-(--ui-icon-color) group-hover:translate-x-0.5');
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('fill', 'currentColor');
       path.setAttribute('d', 'M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z');

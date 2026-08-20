@@ -679,10 +679,10 @@ onMount(() => {
 		place-items: center;
 		width: 2.2rem;
 		height: 2.2rem;
-		border: 1px solid color-mix(in oklch, var(--primary) 42%, rgba(255, 255, 255, 0.16));
+		border: 1px solid var(--ui-icon-border);
 		border-radius: 0.68rem;
-		background: color-mix(in oklch, var(--primary) 24%, rgba(255, 255, 255, 0.1));
-		color: color-mix(in oklch, var(--primary) 82%, white);
+		background: var(--ui-icon-soft-bg);
+		color: var(--ui-icon-color);
 	}
 
 	.local-cover-action-icon :global(svg) {
@@ -928,7 +928,7 @@ onMount(() => {
 
 	.local-cover-feedback :global(svg) {
 		margin-top: 0.02rem;
-		color: color-mix(in oklch, var(--primary) 72%, white);
+		color: var(--ui-icon-color);
 	}
 
 	.local-cover-feedback .is-success {
@@ -978,8 +978,8 @@ onMount(() => {
 	}
 
 	:global(html:not(.dark)) .local-cover-action-icon {
-		background: color-mix(in oklch, var(--primary) 13%, white);
-		color: color-mix(in oklch, var(--primary) 78%, #285c4e);
+		background: var(--ui-icon-soft-bg);
+		color: var(--ui-icon-color);
 	}
 
 	:global(html:not(.dark)) .local-cover-history {

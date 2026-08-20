@@ -174,7 +174,7 @@ const detailItems: {
         mainItems.map((item: { icon: string; label: string; value: string; href?: string }) => (
           <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50">
             <div class="flex items-center gap-2.5">
-              <div class="text-(--primary) text-lg">
+              <div class="text-(--ui-icon-color) text-lg">
                 <Icon is:inline name={item.icon} />
               </div>
               <span class="text-neutral-700 dark:text-neutral-300 font-medium text-sm">
@@ -218,7 +218,7 @@ const detailItems: {
                   "flex flex-col items-center gap-1 py-2 px-1 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50",
                   { "col-span-2": item.fullWidth }
                 ]}>
-                  <div class="text-(--primary) text-lg">
+                  <div class="text-(--ui-icon-color) text-lg">
                     <Icon is:inline name={item.icon} />
                   </div>
                   <span class="text-xs text-neutral-500 dark:text-neutral-400">
@@ -244,7 +244,7 @@ const detailItems: {
       >
         <Icon
           name="material-symbols:keyboard-arrow-down-rounded" is:inline
-          class="site-info-toggle-icon w-6 h-6 transition-transform duration-200"
+          class="site-info-toggle-icon w-6 h-6 text-(--ui-icon-color) transition-transform duration-200"
         />
         <span class="site-info-toggle-text"></span>
       </button>

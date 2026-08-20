@@ -27,7 +27,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "记录代码、生活与闪光的片刻",
 		href: "/",
 		category: "我的网站",
-		icon: "material-symbols:home-rounded",
+		icon: "material-symbols:home-outline-rounded",
 		iconColor: "#4f8ef7",
 	},
 	{
@@ -35,7 +35,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "按卡片浏览站内全部文章",
 		href: "/posts/",
 		category: "我的网站",
-		icon: "material-symbols:article-rounded",
+		icon: "material-symbols:article-outline-rounded",
 		iconColor: "#6366f1",
 	},
 	{
@@ -43,7 +43,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "按时间与分类回看内容记录",
 		href: "/archive/",
 		category: "我的网站",
-		icon: "material-symbols:archive-rounded",
+		icon: "material-symbols:archive-outline-rounded",
 		iconColor: "#10b981",
 	},
 	{
@@ -51,7 +51,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "收藏值得记住的光影片刻",
 		href: "/gallery/",
 		category: "我的网站",
-		icon: "material-symbols:photo-library-rounded",
+		icon: "material-symbols:photo-library-outline-rounded",
 		iconColor: "#ec4899",
 	},
 	{
@@ -59,7 +59,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "拜访朋友们的小世界",
 		href: "/friends/",
 		category: "我的网站",
-		icon: "material-symbols:group-rounded",
+		icon: "material-symbols:group-outline-rounded",
 		iconColor: "#f59e0b",
 	},
 	{
@@ -67,7 +67,7 @@ export const linkDirectoryItems: LinkDirectoryItem[] = [
 		description: "留下问候与想说的话",
 		href: "/guestbook/",
 		category: "我的网站",
-		icon: "material-symbols:chat-rounded",
+		icon: "material-symbols:chat-outline-rounded",
 		iconColor: "#06b6d4",
 	},
 	{

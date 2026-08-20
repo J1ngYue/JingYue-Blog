@@ -99,6 +99,11 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 		@apply min-w-[12rem];
 	}
 
+	:global(.navbar-icon),
+	:global(.dropdown-arrow) {
+		color: var(--ui-icon-color);
+	}
+
 	/* 移动端隐藏下拉菜单 */
 	@media (max-width: 768px) {
 		.dropdown-container {
