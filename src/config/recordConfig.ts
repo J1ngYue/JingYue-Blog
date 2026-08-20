@@ -20,6 +20,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.22",
+		date: "2026-08-20",
+		time: "14:28",
+		type: "fix",
+		title: "Cloudflare 视频部署修复",
+		summary: "压缩默认动态壁纸并清理无效 npm 配置，恢复 Cloudflare 部署。",
+		changes: [
+			"保持蓝色忧郁壁纸的 2560×1440 分辨率、30 FPS 与原访问路径，将文件压缩至 Cloudflare 单资源限制以内。",
+			"移除 npm 无法识别的 manage-package-manager-versions 项目配置，消除构建警告。",
+		],
+	},
+	{
 		version: "v6.14.21",
 		date: "2026-08-19",
 		time: "16:35",
