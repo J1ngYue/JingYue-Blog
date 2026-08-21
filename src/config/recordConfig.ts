@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.34",
+		date: "2026-08-21",
+		time: "18:00",
+		type: "optimize",
+		title: "笔记本翻页质感与速度优化",
+		summary: "修复翻页上沿裁剪，并让纸张以更快、更柔和的节奏展开。",
+		changes: [
+			"扩大书架顶部安全区，封面和纸页展开后不再被容器上沿裁切。",
+			"将连续三页的完整展开时间缩短至约 0.44 秒，减少悬浮等待。",
+			"改用快速起步、柔和落位的缓动，并加入轻微纸面弯折。",
+			"为内页增加暖白纸色、圆润页角、边缘高光和更柔和的阴影。",
+		],
+	},
+	{
 		version: "v6.14.33",
 		date: "2026-08-21",
 		time: "17:42",
