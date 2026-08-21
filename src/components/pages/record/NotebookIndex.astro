@@ -108,6 +108,11 @@ const formatShortDate = (date: Date) =>
 					>
 						<div class="notebook-book__volume">
 							<span class="notebook-book__pages" aria-hidden="true"></span>
+							<span class="notebook-book__inside" aria-hidden="true">
+								<small>JINGYUE NOTES</small>
+								<strong>{latest?.data.title || notebook.title}</strong>
+								<span>{count > 0 ? `收录 ${count} 篇笔记` : "等待写下第一页"}</span>
+							</span>
 							<div class="notebook-book__cover">
 								<div class="notebook-book__image">
 									<ImageWrapper
@@ -154,6 +159,15 @@ const formatShortDate = (date: Date) =>
 
 				return (
 					<article class="notebook-note-card">
+						<span class="notebook-note-card__backdrop" aria-hidden="true">
+							<ImageWrapper
+								src={notebook.cover}
+								alt=""
+								widths={[480, 720]}
+								sizes="36rem"
+								fadeIn={false}
+							/>
+						</span>
 						<header>
 							<span class="notebook-note-card__avatar" aria-hidden="true">
 								<ImageWrapper
@@ -177,6 +191,10 @@ const formatShortDate = (date: Date) =>
 							href={`/life/notebooks/${notebook.slug}/${note.data.slug}/`}
 						>
 							<p>{note.data.description}</p>
+							<span>{notebook.description}</span>
+							<ul aria-label="笔记标签">
+								{note.data.tags.slice(0, 3).map((tag) => <li>#{tag}</li>)}
+							</ul>
 						</a>
 
 						<footer>
@@ -254,6 +272,7 @@ const formatShortDate = (date: Date) =>
 		--notebook-muted: var(--record-muted, #747474);
 		--notebook-line: color-mix(in srgb, var(--notebook-ink) 17%, transparent);
 		min-width: 0;
+		font-family: var(--font-navbar-title, inherit);
 	}
 
 	.notebook-highlight,
@@ -431,7 +450,7 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-shelf__scroller {
 		display: flex;
-		gap: 2rem;
+		gap: 2.25rem;
 		overflow-x: auto;
 		overflow-y: hidden;
 		padding: 0.65rem 0.65rem 1.45rem 0.35rem;
@@ -449,8 +468,8 @@ const formatShortDate = (date: Date) =>
 	.notebook-book {
 		position: relative;
 		z-index: 1;
-		width: 14rem;
-		flex: 0 0 14rem;
+		width: 14.75rem;
+		flex: 0 0 14.75rem;
 		color: inherit;
 		cursor: pointer;
 		scroll-snap-align: start;
@@ -463,7 +482,7 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-book__volume {
 		position: relative;
-		height: 17rem;
+		height: 18.2rem;
 		perspective: 90rem;
 		transform-style: preserve-3d;
 		transition: filter 240ms ease, transform 240ms ease;
@@ -481,15 +500,15 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-book__cover {
 		position: absolute;
-		inset: 0 0.12rem 0.3rem 0;
-		z-index: 2;
+		inset: 0 0.18rem 0.34rem 0;
+		z-index: 3;
 		display: grid;
 		overflow: hidden;
 		border: 1px solid color-mix(in srgb, var(--notebook-ink) 24%, transparent);
-		border-radius: 0.35rem 0.5rem 0.5rem 0.35rem;
+		border-radius: 0.18rem 0.48rem 0.48rem 0.18rem;
 		background: var(--card-bg);
 		box-shadow: 0 0.45rem 0.9rem rgb(0 0 0 / 11%);
-		grid-template-rows: 9.3rem minmax(0, 1fr);
+		grid-template-rows: 10.15rem minmax(0, 1fr);
 		transform-origin: left center;
 		transform-style: preserve-3d;
 		transition: box-shadow 260ms ease, transform 260ms cubic-bezier(0.22, 0.72, 0.18, 1);
@@ -497,8 +516,48 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-book:hover .notebook-book__cover,
 	.notebook-book:focus-visible .notebook-book__cover {
-		box-shadow: 0.35rem 0.5rem 0.9rem rgb(0 0 0 / 13%);
-		transform: translateX(-0.32rem) rotateY(-14deg);
+		box-shadow: 0.7rem 0.55rem 1rem rgb(0 0 0 / 17%);
+		transform: translateX(-0.45rem) rotateY(-54deg);
+	}
+
+	.notebook-book__inside {
+		position: absolute;
+		inset: 0.34rem 0.2rem 0.55rem 0.72rem;
+		z-index: 2;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		border: 1px solid color-mix(in srgb, var(--notebook-ink) 17%, transparent);
+		border-radius: 0 0.4rem 0.4rem 0;
+		padding: 1.1rem 0.75rem 1.2rem 7.35rem;
+		background:
+			linear-gradient(90deg, rgb(0 0 0 / 9%), transparent 18%),
+			repeating-linear-gradient(to bottom, transparent 0 1.35rem, color-mix(in srgb, var(--notebook-ink) 8%, transparent) 1.38rem),
+			color-mix(in srgb, var(--card-bg) 96%, #f4efe4);
+		box-shadow: inset 0.35rem 0 0.8rem rgb(0 0 0 / 8%);
+		color: var(--notebook-ink);
+	}
+
+	.notebook-book__inside small {
+		margin-bottom: 0.45rem;
+		color: var(--notebook-muted);
+		font-size: 0.55rem;
+		letter-spacing: 0;
+	}
+
+	.notebook-book__inside strong {
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		font-size: 0.85rem;
+		line-height: 1.45;
+	}
+
+	.notebook-book__inside > span {
+		margin-top: 0.45rem;
+		color: var(--notebook-muted);
+		font-size: 0.66rem;
 	}
 
 	.notebook-book__image {
@@ -510,7 +569,9 @@ const formatShortDate = (date: Date) =>
 	.notebook-book__image::after {
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(to bottom, transparent 58%, rgb(0 0 0 / 20%));
+		background:
+			linear-gradient(90deg, rgb(0 0 0 / 22%), transparent 9%, transparent 90%, rgb(0 0 0 / 8%)),
+			linear-gradient(to bottom, transparent 58%, rgb(0 0 0 / 22%));
 		content: "";
 	}
 
@@ -536,8 +597,20 @@ const formatShortDate = (date: Date) =>
 		display: flex;
 		min-height: 0;
 		flex-direction: column;
-		padding: 0.68rem 0.8rem 0.65rem 1rem;
-		background: color-mix(in srgb, var(--card-bg) 98%, transparent);
+		padding: 0.78rem 0.88rem 0.72rem 1.18rem;
+		background:
+			linear-gradient(90deg, rgb(0 0 0 / 7%), transparent 8%),
+			color-mix(in srgb, var(--card-bg) 98%, transparent);
+	}
+
+	.notebook-book__paper::before {
+		position: absolute;
+		top: 0;
+		right: 0;
+		left: 0;
+		height: 0.12rem;
+		background: color-mix(in srgb, var(--notebook-ink) 72%, transparent);
+		content: "";
 	}
 
 	.notebook-book__paper h3 {
@@ -581,21 +654,23 @@ const formatShortDate = (date: Date) =>
 		bottom: 0;
 		left: 0;
 		z-index: 4;
-		width: 0.34rem;
-		border-right: 1px solid rgb(255 255 255 / 30%);
-		background: rgb(0 0 0 / 28%);
-		box-shadow: 0.18rem 0 0.45rem rgb(0 0 0 / 22%);
+		width: 0.72rem;
+		border-right: 1px solid rgb(255 255 255 / 38%);
+		background:
+			linear-gradient(90deg, rgb(0 0 0 / 48%), rgb(255 255 255 / 22%) 34%, rgb(0 0 0 / 24%) 72%, transparent),
+			repeating-linear-gradient(to right, transparent 0 0.18rem, rgb(255 255 255 / 18%) 0.2rem 0.22rem);
+		box-shadow: 0.2rem 0 0.55rem rgb(0 0 0 / 28%);
 	}
 
 	.notebook-book__pages {
 		position: absolute;
-		inset: 0.24rem 0.08rem 0.04rem 0.5rem;
+		inset: 0.3rem 0.05rem 0.04rem 0.62rem;
 		z-index: 1;
 		border: 1px solid var(--notebook-line);
 		border-radius: 0 0.38rem 0.38rem 0;
 		background: repeating-linear-gradient(to bottom, #f8f8f5 0, #f8f8f5 2px, #deded7 3px, #f8f8f5 4px);
 		box-shadow: 0.35rem 0.35rem 0.65rem rgb(0 0 0 / 11%);
-		transform: translate(0.22rem, 0.24rem);
+		transform: translate(0.34rem, 0.3rem);
 	}
 
 	.notebook-recent__grid {
@@ -605,21 +680,62 @@ const formatShortDate = (date: Date) =>
 	}
 
 	.notebook-note-card {
+		position: relative;
+		isolation: isolate;
 		display: flex;
 		min-width: 0;
-		min-height: 9.8rem;
+		min-height: 12.2rem;
 		flex-direction: column;
 		border: 1px solid var(--notebook-line);
 		border-radius: 0.5rem;
 		padding: 0.85rem 0.9rem 0.78rem;
 		background: color-mix(in srgb, var(--card-bg) 97%, transparent);
+		overflow: hidden;
 		transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+	}
+
+	.notebook-note-card::after {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		content: "";
+		pointer-events: none;
+	}
+
+	.notebook-note-card__backdrop {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		display: block;
+		opacity: 0.16;
+		pointer-events: none;
+		transition: opacity 180ms ease, transform 260ms ease;
+	}
+
+	.notebook-note-card__backdrop > :global(div:first-child) {
+		position: absolute;
+		inset: 0;
+	}
+
+	.notebook-note-card__backdrop :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.notebook-note-card::after {
+		background: linear-gradient(90deg, var(--card-bg) 0 42%, color-mix(in srgb, var(--card-bg) 78%, transparent) 72%, color-mix(in srgb, var(--card-bg) 55%, transparent));
 	}
 
 	.notebook-note-card:hover {
 		border-color: var(--notebook-ink);
 		box-shadow: 0 0.55rem 1.15rem rgb(0 0 0 / 7%);
 		background: var(--card-bg);
+	}
+
+	.notebook-note-card:hover .notebook-note-card__backdrop {
+		opacity: 0.24;
+		transform: scale(1.025);
 	}
 
 	.notebook-note-card header {
@@ -685,9 +801,38 @@ const formatShortDate = (date: Date) =>
 		overflow: hidden;
 		margin: 0;
 		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
-		font-size: 0.86rem;
+		-webkit-line-clamp: 3;
+		font-size: 0.9rem;
 		line-height: 1.55;
+	}
+
+	.notebook-note-card__body > span {
+		display: -webkit-box;
+		overflow: hidden;
+		margin-top: 0.38rem;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		color: var(--notebook-muted);
+		font-size: 0.78rem;
+		line-height: 1.5;
+	}
+
+	.notebook-note-card__body ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.32rem;
+		margin: 0.55rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.notebook-note-card__body li {
+		border: 1px solid color-mix(in srgb, var(--notebook-ink) 14%, transparent);
+		border-radius: 999px;
+		padding: 0.12rem 0.38rem;
+		background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+		color: var(--notebook-muted);
+		font-size: 0.68rem;
 	}
 
 	.notebook-note-card__body:hover p {
@@ -763,7 +908,7 @@ const formatShortDate = (date: Date) =>
 		}
 
 		.notebook-book__volume {
-			height: 16.4rem;
+			height: 17.4rem;
 		}
 
 		.notebook-recent__grid {
@@ -771,7 +916,7 @@ const formatShortDate = (date: Date) =>
 		}
 
 		.notebook-note-card {
-			min-height: 9.5rem;
+			min-height: 11.6rem;
 		}
 	}
 
