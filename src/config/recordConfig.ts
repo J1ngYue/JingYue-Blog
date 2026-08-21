@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.37",
+		date: "2026-08-21",
+		time: "19:15",
+		type: "optimize",
+		title: "工程手记信息密度完善",
+		summary: "移除黑色填充并补齐集合页的内容与语义图标。",
+		changes: [
+			"选中、篇数、活跃月份和笔记悬浮状态统一改为白底黑框。",
+			"为六个笔记本加入对应的黑白描边图标。",
+			"月份格补充笔记图标与每月篇数，不再显示为空矩形。",
+			"笔记行补充日期和文档图标，保留标题、摘要与跳转功能。",
+		],
+	},
+	{
 		version: "v6.14.36",
 		date: "2026-08-21",
 		time: "18:40",
