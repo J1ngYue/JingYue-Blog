@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.28",
+		date: "2026-08-21",
+		time: "14:55",
+		type: "optimize",
+		title: "笔记本书架交互精修",
+		summary: "按参考页面重新校准书本翻页、笔记卡片与黑白图标。",
+		changes: [
+			"书本悬浮改为沿书脊轻微推开并露出右侧纸页，避免封面过度翻转。",
+			"书本封面恢复图片与下方摘要的分区排版，统一书脊、页边和阴影层次。",
+			"最新笔记改为紧凑双列信息卡，分类与阅读入口使用黑白描边胶囊。",
+			"笔记本页的书签、统计、历史和操作图标统一使用黑白描边样式。",
+		],
+	},
+	{
 		version: "v6.14.27",
 		date: "2026-08-21",
 		time: "14:36",

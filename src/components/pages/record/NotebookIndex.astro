@@ -49,7 +49,7 @@ const formatShortDate = (date: Date) =>
 			href={`/life/notebooks/${featuredNotebook.slug}/${latestNote.data.slug}/`}
 		>
 			<span class="notebook-highlight__icon" aria-hidden="true">
-				<Icon is:inline name="material-symbols:auto-awesome-rounded" />
+				<Icon is:inline name="material-symbols:bookmark-outline-rounded" />
 			</span>
 			<strong>{latestNote.data.title}</strong>
 			<span>{featuredNotebook.title}</span>
@@ -107,9 +107,18 @@ const formatShortDate = (date: Date) =>
 						aria-label={`${notebook.title}，${count} 篇笔记`}
 					>
 						<div class="notebook-book__volume">
-							<div class="notebook-book__back">
-								<div class="notebook-book__inside">
-									<span>JINGYUE NOTEBOOK</span>
+							<span class="notebook-book__pages" aria-hidden="true"></span>
+							<div class="notebook-book__cover">
+								<div class="notebook-book__image">
+									<ImageWrapper
+										src={notebook.cover}
+										alt={notebook.title}
+										widths={[360, 540]}
+										sizes="14rem"
+										fadeIn={false}
+									/>
+								</div>
+								<div class="notebook-book__paper">
 									<h3>{notebook.title}</h3>
 									<p>{notebook.description}</p>
 									<footer>
@@ -120,24 +129,8 @@ const formatShortDate = (date: Date) =>
 										</time>
 									</footer>
 								</div>
-							</div>
-							<div class="notebook-book__front">
-								<div class="notebook-book__front-image">
-									<ImageWrapper
-										src={notebook.cover}
-										alt={notebook.title}
-										widths={[420, 640]}
-										sizes="15.5rem"
-									/>
-								</div>
-								<div class="notebook-book__front-copy">
-									<span>NOTEBOOK</span>
-									<strong>{notebook.title}</strong>
-									<small>{count} NOTES</small>
-								</div>
 								<span class="notebook-book__spine" aria-hidden="true"></span>
 							</div>
-							<span class="notebook-book__pages" aria-hidden="true"></span>
 						</div>
 					</a>
 				);
@@ -203,7 +196,7 @@ const formatShortDate = (date: Date) =>
 	</section>
 
 	<p class="notebook-footnote">
-		<Icon is:inline name="material-symbols:auto-awesome-rounded" />
+		<Icon is:inline name="material-symbols:star-outline-rounded" />
 		每一页都是成长的足迹
 	</p>
 </section>
@@ -269,7 +262,7 @@ const formatShortDate = (date: Date) =>
 	.notebook-section-heading,
 	.notebook-section-heading > div,
 	.notebook-shelf__controls,
-	.notebook-book__inside footer,
+	.notebook-book__paper footer,
 	.notebook-note-card header,
 	.notebook-note-card footer,
 	.notebook-note-card footer a,
@@ -300,9 +293,10 @@ const formatShortDate = (date: Date) =>
 		width: 2rem;
 		height: 2rem;
 		flex: 0 0 auto;
+		border: 1px solid var(--notebook-ink);
 		border-radius: 50%;
-		background: var(--notebook-ink);
-		color: var(--card-bg);
+		background: var(--card-bg);
+		color: var(--notebook-ink);
 	}
 
 	.notebook-highlight__icon :global(svg) {
@@ -437,10 +431,10 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-shelf__scroller {
 		display: flex;
-		gap: 1.65rem;
+		gap: 2rem;
 		overflow-x: auto;
 		overflow-y: hidden;
-		padding: 0.65rem 0.4rem 1.6rem;
+		padding: 0.65rem 0.65rem 1.45rem 0.35rem;
 		scroll-behavior: smooth;
 		scroll-snap-type: x mandatory;
 		scrollbar-color: color-mix(in srgb, var(--notebook-ink) 28%, transparent) transparent;
@@ -455,9 +449,10 @@ const formatShortDate = (date: Date) =>
 	.notebook-book {
 		position: relative;
 		z-index: 1;
-		width: 15.5rem;
-		flex: 0 0 15.5rem;
+		width: 14rem;
+		flex: 0 0 14rem;
 		color: inherit;
+		cursor: pointer;
 		scroll-snap-align: start;
 	}
 
@@ -468,167 +463,116 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-book__volume {
 		position: relative;
-		height: 19rem;
+		height: 17rem;
 		perspective: 90rem;
 		transform-style: preserve-3d;
-		transition: filter 280ms ease, transform 280ms ease;
+		transition: filter 240ms ease, transform 240ms ease;
 	}
 
 	.notebook-book:hover .notebook-book__volume,
 	.notebook-book:focus-visible .notebook-book__volume {
-		filter: drop-shadow(0 0.9rem 1rem rgb(0 0 0 / 18%));
-		transform: translateY(-0.24rem);
+		filter: drop-shadow(0 0.7rem 0.8rem rgb(0 0 0 / 16%));
+		transform: translateY(-0.16rem);
 	}
 
 	.notebook-book:focus-visible {
 		outline: none;
 	}
 
-	.notebook-book__back,
-	.notebook-book__front {
+	.notebook-book__cover {
 		position: absolute;
-		inset: 0.18rem 0.25rem 0.32rem 0;
+		inset: 0 0.12rem 0.3rem 0;
+		z-index: 2;
+		display: grid;
 		overflow: hidden;
-		border: 1px solid color-mix(in srgb, var(--notebook-ink) 32%, transparent);
-		border-radius: 0.35rem 0.55rem 0.55rem 0.35rem;
-	}
-
-	.notebook-book__back {
-		z-index: 1;
-		padding: 0.7rem 0.75rem 0.7rem 1.35rem;
+		border: 1px solid color-mix(in srgb, var(--notebook-ink) 24%, transparent);
+		border-radius: 0.35rem 0.5rem 0.5rem 0.35rem;
 		background: var(--card-bg);
-		box-shadow: inset 0.35rem 0 0.75rem rgb(0 0 0 / 8%);
-	}
-
-	.notebook-book__inside {
-		display: flex;
-		height: 100%;
-		flex-direction: column;
-		border: 1px solid var(--notebook-line);
-		border-radius: 0.2rem 0.4rem 0.4rem 0.2rem;
-		padding: 1.4rem 1.15rem 1.1rem;
-		background:
-			repeating-linear-gradient(to bottom, transparent 0, transparent 1.72rem, color-mix(in srgb, var(--notebook-ink) 8%, transparent) 1.75rem),
-			color-mix(in srgb, var(--card-bg) 97%, #f7f3e8);
-	}
-
-	.notebook-book__inside > span {
-		color: var(--notebook-muted);
-		font-size: 0.69rem;
-		font-weight: 750;
-		letter-spacing: 0;
-	}
-
-	.notebook-book__inside h3 {
-		margin: 0.72rem 0 0;
-		font-size: 1.28rem;
-		font-weight: 850;
-		line-height: 1.35;
-	}
-
-	.notebook-book__inside p {
-		display: -webkit-box;
-		overflow: hidden;
-		margin: 0.65rem 0 0;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 4;
-		color: var(--notebook-muted);
-		font-size: 0.88rem;
-		line-height: 1.65;
-	}
-
-	.notebook-book__inside footer {
-		gap: 0.4rem;
-		margin-top: auto;
-		color: var(--notebook-muted);
-		font-size: 0.75rem;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.notebook-book__inside footer i {
-		width: 0.2rem;
-		height: 0.2rem;
-		border-radius: 50%;
-		background: currentColor;
-	}
-
-	.notebook-book__front {
-		z-index: 3;
+		box-shadow: 0 0.45rem 0.9rem rgb(0 0 0 / 11%);
+		grid-template-rows: 9.3rem minmax(0, 1fr);
 		transform-origin: left center;
 		transform-style: preserve-3d;
-		background: #151515;
-		box-shadow: 0 0.55rem 1.2rem rgb(0 0 0 / 18%);
-		transition: box-shadow 650ms ease, transform 650ms cubic-bezier(0.22, 0.72, 0.18, 1);
+		transition: box-shadow 260ms ease, transform 260ms cubic-bezier(0.22, 0.72, 0.18, 1);
 	}
 
-	.notebook-book:hover .notebook-book__front,
-	.notebook-book:focus-visible .notebook-book__front {
-		box-shadow: 0.45rem 0.3rem 0.9rem rgb(0 0 0 / 14%);
-		transform: rotateY(-82deg);
+	.notebook-book:hover .notebook-book__cover,
+	.notebook-book:focus-visible .notebook-book__cover {
+		box-shadow: 0.35rem 0.5rem 0.9rem rgb(0 0 0 / 13%);
+		transform: translateX(-0.32rem) rotateY(-14deg);
 	}
 
-	.notebook-book__front-image {
+	.notebook-book__image {
 		position: relative;
-		height: 100%;
 		overflow: hidden;
 		background: var(--btn-regular-bg);
-		backface-visibility: hidden;
 	}
 
-	.notebook-book__front-image::after {
+	.notebook-book__image::after {
 		position: absolute;
 		inset: 0;
-		background:
-			linear-gradient(90deg, rgb(0 0 0 / 34%), transparent 15%, transparent 76%, rgb(0 0 0 / 24%)),
-			linear-gradient(to bottom, rgb(0 0 0 / 8%), transparent 45%, rgb(0 0 0 / 58%));
+		background: linear-gradient(to bottom, transparent 58%, rgb(0 0 0 / 20%));
 		content: "";
 	}
 
-	.notebook-book__front-image > :global(div:first-child) {
+	.notebook-book__image > :global(div:first-child) {
 		position: absolute;
 		inset: 0;
 	}
 
-	.notebook-book__front-image :global(img) {
+	.notebook-book__image :global(img) {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		transition: transform 650ms ease;
+		transition: transform 260ms ease;
 	}
 
-	.notebook-book:hover .notebook-book__front-image :global(img) {
-		transform: scale(1.035);
+	.notebook-book:hover .notebook-book__image :global(img),
+	.notebook-book:focus-visible .notebook-book__image :global(img) {
+		transform: scale(1.025);
 	}
 
-	.notebook-book__front-copy {
-		position: absolute;
-		inset: 0;
-		z-index: 2;
+	.notebook-book__paper {
+		position: relative;
 		display: flex;
-		justify-content: flex-end;
+		min-height: 0;
 		flex-direction: column;
-		padding: 1.45rem 1.35rem 1.35rem 1.7rem;
-		color: #fff;
-		text-shadow: 0 0.12rem 0.4rem rgb(0 0 0 / 45%);
-		backface-visibility: hidden;
+		padding: 0.68rem 0.8rem 0.65rem 1rem;
+		background: color-mix(in srgb, var(--card-bg) 98%, transparent);
 	}
 
-	.notebook-book__front-copy > span {
+	.notebook-book__paper h3 {
+		overflow: hidden;
+		margin: 0;
+		font-size: 1.03rem;
+		font-weight: 800;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.notebook-book__paper p {
+		display: -webkit-box;
+		overflow: hidden;
+		margin: 0.28rem 0 0;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		color: var(--notebook-muted);
+		font-size: 0.76rem;
+		line-height: 1.5;
+	}
+
+	.notebook-book__paper footer {
+		gap: 0.35rem;
+		margin-top: auto;
+		color: var(--notebook-muted);
 		font-size: 0.68rem;
-		font-weight: 750;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.notebook-book__front-copy strong {
-		margin-top: 0.25rem;
-		font-size: 1.5rem;
-		font-weight: 850;
-		line-height: 1.25;
-	}
-
-	.notebook-book__front-copy small {
-		margin-top: 0.45rem;
-		font-size: 0.72rem;
-		font-weight: 700;
+	.notebook-book__paper footer i {
+		width: 0.18rem;
+		height: 0.18rem;
+		border-radius: 50%;
+		background: currentColor;
 	}
 
 	.notebook-book__spine {
@@ -637,21 +581,21 @@ const formatShortDate = (date: Date) =>
 		bottom: 0;
 		left: 0;
 		z-index: 4;
-		width: 0.52rem;
+		width: 0.34rem;
 		border-right: 1px solid rgb(255 255 255 / 30%);
 		background: rgb(0 0 0 / 28%);
 		box-shadow: 0.18rem 0 0.45rem rgb(0 0 0 / 22%);
-		backface-visibility: hidden;
 	}
 
 	.notebook-book__pages {
 		position: absolute;
-		inset: 0.38rem 0 0 0.5rem;
-		z-index: 0;
+		inset: 0.24rem 0.08rem 0.04rem 0.5rem;
+		z-index: 1;
 		border: 1px solid var(--notebook-line);
-		border-radius: 0 0.45rem 0.45rem 0;
+		border-radius: 0 0.38rem 0.38rem 0;
 		background: repeating-linear-gradient(to bottom, #f8f8f5 0, #f8f8f5 2px, #deded7 3px, #f8f8f5 4px);
-		transform: translate(0.35rem, 0.32rem);
+		box-shadow: 0.35rem 0.35rem 0.65rem rgb(0 0 0 / 11%);
+		transform: translate(0.22rem, 0.24rem);
 	}
 
 	.notebook-recent__grid {
@@ -663,19 +607,19 @@ const formatShortDate = (date: Date) =>
 	.notebook-note-card {
 		display: flex;
 		min-width: 0;
-		min-height: 12rem;
+		min-height: 9.8rem;
 		flex-direction: column;
 		border: 1px solid var(--notebook-line);
 		border-radius: 0.5rem;
-		padding: 1.1rem;
+		padding: 0.85rem 0.9rem 0.78rem;
 		background: color-mix(in srgb, var(--card-bg) 97%, transparent);
-		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+		transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 	}
 
 	.notebook-note-card:hover {
 		border-color: var(--notebook-ink);
-		box-shadow: 0 0.65rem 1.4rem rgb(0 0 0 / 8%);
-		transform: translateY(-0.15rem);
+		box-shadow: 0 0.55rem 1.15rem rgb(0 0 0 / 7%);
+		background: var(--card-bg);
 	}
 
 	.notebook-note-card header {
@@ -685,8 +629,8 @@ const formatShortDate = (date: Date) =>
 	.notebook-note-card__avatar {
 		position: relative;
 		display: block;
-		width: 2.7rem;
-		height: 2.7rem;
+		width: 2.35rem;
+		height: 2.35rem;
 		overflow: hidden;
 		flex: 0 0 auto;
 		border: 1px solid var(--notebook-line);
@@ -713,7 +657,7 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-note-card__identity strong {
 		overflow: hidden;
-		font-size: 0.95rem;
+		font-size: 0.9rem;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -732,7 +676,7 @@ const formatShortDate = (date: Date) =>
 	.notebook-note-card__body {
 		display: block;
 		flex: 1;
-		padding: 0.8rem 0 0.7rem;
+		padding: 0.62rem 0 0.55rem;
 		color: inherit;
 	}
 
@@ -741,9 +685,9 @@ const formatShortDate = (date: Date) =>
 		overflow: hidden;
 		margin: 0;
 		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 3;
-		font-size: 0.94rem;
-		line-height: 1.65;
+		-webkit-line-clamp: 2;
+		font-size: 0.86rem;
+		line-height: 1.55;
 	}
 
 	.notebook-note-card__body:hover p {
@@ -755,14 +699,16 @@ const formatShortDate = (date: Date) =>
 	.notebook-note-card footer {
 		justify-content: space-between;
 		gap: 0.75rem;
-		border-top: 1px dashed var(--notebook-line);
-		padding-top: 0.55rem;
+		padding-top: 0.25rem;
 		color: var(--notebook-muted);
 		font-size: 0.76rem;
 	}
 
 	.notebook-note-card footer > span {
 		overflow: hidden;
+		border: 1px solid var(--notebook-line);
+		border-radius: 999px;
+		padding: 0.18rem 0.48rem;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -770,11 +716,17 @@ const formatShortDate = (date: Date) =>
 	.notebook-note-card footer a {
 		gap: 0.22rem;
 		flex: 0 0 auto;
+		border: 1px solid var(--notebook-line);
+		border-radius: 999px;
+		padding: 0.18rem 0.48rem;
 		color: inherit;
 	}
 
-	.notebook-note-card footer a:hover {
-		color: var(--notebook-ink);
+	.notebook-note-card footer a:hover,
+	.notebook-note-card footer a:focus-visible {
+		border-color: var(--notebook-ink);
+		background: var(--notebook-ink);
+		color: var(--card-bg);
 	}
 
 	.notebook-note-card footer :global(svg) {
@@ -806,12 +758,12 @@ const formatShortDate = (date: Date) =>
 		}
 
 		.notebook-book {
-			width: min(15rem, 78vw);
-			flex-basis: min(15rem, 78vw);
+			width: min(13.5rem, 68vw);
+			flex-basis: min(13.5rem, 68vw);
 		}
 
 		.notebook-book__volume {
-			height: 15rem;
+			height: 16.4rem;
 		}
 
 		.notebook-recent__grid {
@@ -826,8 +778,8 @@ const formatShortDate = (date: Date) =>
 	@media (prefers-reduced-motion: reduce) {
 		.notebook-highlight,
 		.notebook-book__volume,
-		.notebook-book__front,
-		.notebook-book__front-image :global(img),
+		.notebook-book__cover,
+		.notebook-book__image :global(img),
 		.notebook-note-card {
 			transition: none;
 		}
