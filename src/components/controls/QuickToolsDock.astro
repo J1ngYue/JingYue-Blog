@@ -52,7 +52,7 @@ const quickLinks = [
 ];
 ---
 
-<div id="quick-tools-dock" class="quick-tools-dock">
+<div id="quick-tools-dock" class="quick-tools-dock" data-collapsed="true">
 	<div
 		id="quick-tools-menu"
 		class="quick-tools-menu"
@@ -115,7 +115,12 @@ const quickLinks = [
 				</button>
 			)}
 		</div>
-		<div id="quick-tools-actions" class="quick-tools-actions-shell">
+		<div
+			id="quick-tools-actions"
+			class="quick-tools-actions-shell"
+			aria-hidden="true"
+			inert
+		>
 			<div class="quick-tools-actions">
 				{hasDisplaySettings && (
 				<button
@@ -171,10 +176,10 @@ const quickLinks = [
 			id="quick-tools-collapse"
 			class="quick-tools-button quick-tools-collapse"
 			type="button"
-			data-tooltip="收起快捷工具"
-			aria-label="收起快捷工具"
+			data-tooltip="展开快捷工具"
+			aria-label="展开快捷工具"
 			aria-controls="quick-tools-actions"
-			aria-expanded="true"
+			aria-expanded="false"
 		>
 			<span class="quick-tools-collapse-icon" aria-hidden="true">
 				<Icon is:inline name="material-symbols:keyboard-arrow-up-rounded" />
@@ -204,7 +209,6 @@ const quickLinks = [
 		const musicButton = dock.querySelector<HTMLElement>("[data-quick-tools-music]");
 		const musicMiniPanel = document.getElementById("music-mini-panel");
 		const musicPanel = document.getElementById("music-nav-panel");
-		const collapsedStorageKey = "jingyue:quick-tools-collapsed";
 
 		const setActionsCollapsed = (collapsed: boolean) => {
 			dock.dataset.collapsed = String(collapsed);
@@ -221,19 +225,13 @@ const quickLinks = [
 			);
 		};
 
-		let actionsCollapsed = false;
-		try {
-			actionsCollapsed = localStorage.getItem(collapsedStorageKey) === "true";
-		} catch {}
+		let actionsCollapsed = true;
 		setActionsCollapsed(actionsCollapsed);
 
 		collapseButton?.addEventListener("click", (event) => {
 			event.stopPropagation();
 			actionsCollapsed = !actionsCollapsed;
 			setActionsCollapsed(actionsCollapsed);
-			try {
-				localStorage.setItem(collapsedStorageKey, String(actionsCollapsed));
-			} catch {}
 		});
 		if (musicMiniPanel && musicMiniPanel.parentElement !== document.body) {
 			document.body.appendChild(musicMiniPanel);
@@ -498,6 +496,8 @@ const quickLinks = [
 			if (dock.dataset.swupBound === "true" || !window.swup?.hooks) return;
 			dock.dataset.swupBound = "true";
 			window.swup.hooks.on("visit:start", () => {
+				actionsCollapsed = true;
+				setActionsCollapsed(true);
 				setMenuOpen(false);
 				setMusicOpen(false);
 				setImmersiveOpen(false);

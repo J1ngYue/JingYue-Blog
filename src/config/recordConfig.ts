@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.30",
+		date: "2026-08-21",
+		time: "15:49",
+		type: "optimize",
+		title: "快捷工具栏默认收起",
+		summary: "页面首次打开及站内切页后，右侧快捷工具栏默认保持收起。",
+		changes: [
+			"快捷工具栏首帧直接使用收起状态，避免完整按钮列短暂闪现。",
+			"移除旧的展开状态缓存覆盖，进入新页面时自动恢复收起布局。",
+			"保留当前页面内的丝滑展开、收起动画及全部快捷功能。",
+		],
+	},
+	{
 		version: "v6.14.29",
 		date: "2026-08-21",
 		time: "15:36",
