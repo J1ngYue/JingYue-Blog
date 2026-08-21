@@ -1,6 +1,8 @@
 ---
+import { getCollection } from "astro:content";
 import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
+import { notebookDefinitions } from "@/config/notebookConfig";
 import { getSortedPosts } from "@/utils/content-utils";
 import { computeTocItems } from "@/utils/toc-shared";
 import { getPostUrlBySlug } from "@/utils/url-utils";
@@ -10,6 +12,7 @@ interface Props {
 	currentId: string;
 	currentCategory?: string;
 	encrypted?: boolean;
+	libraryMode?: "posts" | "notebooks";
 }
 
 const {
@@ -17,25 +20,70 @@ const {
 	currentId,
 	currentCategory = "未分类",
 	encrypted = false,
+	libraryMode = "posts",
 } = Astro.props;
 
 const tocItems = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
-const posts = (await getSortedPosts()).filter(
-	(entry) => entry.data.draft !== true,
-);
-const categoryPosts = new Map<string, typeof posts>();
-
-for (const entry of posts) {
-	const category = entry.data.category || "未分类";
-	const entries = categoryPosts.get(category) || [];
-	entries.push(entry);
-	categoryPosts.set(category, entries);
+interface LibraryEntry {
+	id: string;
+	title: string;
+	href: string;
+	published: Date;
 }
 
-const categories = Array.from(categoryPosts, ([name, entries]) => ({
-	name,
-	entries,
-})).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+interface LibraryGroup {
+	name: string;
+	entries: LibraryEntry[];
+}
+
+let libraryGroups: LibraryGroup[];
+
+if (libraryMode === "notebooks") {
+	const notes = (
+		await getCollection("notebooks", ({ data }) => !data.draft)
+	).sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
+	libraryGroups = notebookDefinitions
+		.map((notebook) => ({
+			name: notebook.title,
+			entries: notes
+				.filter((note) => note.data.notebook === notebook.slug)
+				.map((note) => ({
+					id: note.id,
+					title: note.data.title,
+					href: `/life/notebooks/${notebook.slug}/${note.data.slug}/`,
+					published: note.data.published,
+				})),
+		}))
+		.filter((group) => group.entries.length > 0);
+} else {
+	const posts = (await getSortedPosts()).filter(
+		(entry) => entry.data.draft !== true,
+	);
+	const categoryPosts = new Map<string, typeof posts>();
+
+	for (const entry of posts) {
+		const category = entry.data.category || "未分类";
+		const entries = categoryPosts.get(category) || [];
+		entries.push(entry);
+		categoryPosts.set(category, entries);
+	}
+
+	libraryGroups = Array.from(categoryPosts, ([name, entries]) => ({
+		name,
+		entries: entries.map((entry) => ({
+			id: entry.id,
+			title: entry.data.title,
+			href: getPostUrlBySlug(entry.id),
+			published: entry.data.published,
+		})),
+	})).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+}
+
+const libraryItemCount = libraryGroups.reduce(
+	(total, group) => total + group.entries.length,
+	0,
+);
+const libraryTitle = libraryMode === "notebooks" ? "全部笔记" : "全部文章";
 
 const formatDate = (date: Date) =>
 	new Intl.DateTimeFormat("en-CA").format(date);
@@ -90,15 +138,15 @@ const formatDate = (date: Date) =>
 
 	</aside>
 
-	<aside class="article-reading-library" data-article-reading-library aria-label="全部文章">
+	<aside class="article-reading-library" data-article-reading-library aria-label={libraryTitle}>
 		<button
 			type="button"
 			class="article-reading-library__trigger"
 			data-article-library-trigger
 			aria-expanded="false"
 			aria-controls="article-reading-library-panel"
-			aria-label="查看全部文章"
-			title="全部文章"
+			aria-label={`查看${libraryTitle}`}
+			title={libraryTitle}
 		>
 			<Icon is:inline name="material-symbols:library-books-rounded" />
 		</button>
@@ -106,29 +154,29 @@ const formatDate = (date: Date) =>
 		<section class="article-reading-library__panel" id="article-reading-library-panel">
 			<header>
 				<i aria-hidden="true"></i>
-				<h2>全部文章</h2>
-				<small>{posts.length}</small>
+				<h2>{libraryTitle}</h2>
+				<small>{libraryItemCount}</small>
 			</header>
 
-			<nav class="article-reading-library__tree" aria-label="文章分类与文章">
-				{categories.map((category) => (
-					<details open={category.name === currentCategory}>
+			<nav class="article-reading-library__tree" aria-label={`${libraryTitle}分类`}>
+				{libraryGroups.map((group) => (
+					<details open={group.name === currentCategory}>
 						<summary>
 							<Icon is:inline name="material-symbols:folder-rounded" />
-							<span>{category.name}</span>
-							<small>{category.entries.length}</small>
+							<span>{group.name}</span>
+							<small>{group.entries.length}</small>
 						</summary>
 						<div>
-							{category.entries.map((entry) => (
+							{group.entries.map((entry) => (
 								<a
-									href={getPostUrlBySlug(entry.id)}
+									href={entry.href}
 									class:list={{ "is-current": entry.id === currentId }}
 									aria-current={entry.id === currentId ? "page" : undefined}
-									title={entry.data.title}
+									title={entry.title}
 								>
 									<Icon is:inline name="material-symbols:description-outline-rounded" />
-									<span>{entry.data.title}</span>
-									<time datetime={entry.data.published.toISOString()}>{formatDate(entry.data.published)}</time>
+									<span>{entry.title}</span>
+									<time datetime={entry.published.toISOString()}>{formatDate(entry.published)}</time>
 								</a>
 							))}
 						</div>

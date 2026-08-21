@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.33",
+		date: "2026-08-21",
+		time: "17:42",
+		type: "optimize",
+		title: "笔记与文章阅读界面统一",
+		summary: "笔记详情页完整复用文章阅读页的内容结构与阅读侧轨。",
+		changes: [
+			"将文章标题、元信息、字数、阅读时长、摘要与正文样式提取为共享阅读样式。",
+			"笔记详情页接入同款居中标题、摘要卡片、正文排版和相邻内容导航。",
+			"左侧阅读目录沿用文章页的自动收起逻辑，按笔记的 Markdown 标题生成章节。",
+			"右侧悬浮内容树切换为全部笔记，按六个笔记本分组并标记当前笔记。",
+		],
+	},
+	{
 		version: "v6.14.32",
 		date: "2026-08-21",
 		time: "16:39",

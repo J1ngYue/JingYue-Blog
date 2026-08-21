@@ -2,9 +2,13 @@
 import { getCollection, render } from "astro:content";
 import { Icon } from "astro-icon/components";
 import Markdown from "@/components/common/Markdown.astro";
-import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import ArticleReadingRails from "@/components/features/ArticleReadingRails.astro";
+import PostMetadata from "@/components/layout/PostMeta.astro";
 import { getNotebookDefinition } from "@/config/notebookConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import "@/styles/article-reading.css";
 
 export async function getStaticPaths() {
 	const notes = await getCollection("notebooks", ({ data }) => !data.draft);
@@ -22,7 +26,8 @@ export async function getStaticPaths() {
 }
 
 const { note, notebook } = Astro.props;
-const { Content } = await render(note);
+const { Content, headings } = await render(note);
+const { remarkPluginFrontmatter } = await render(note);
 const notebookNotes = (
 	await getCollection(
 		"notebooks",
@@ -36,212 +41,131 @@ const nextNote =
 	currentIndex < notebookNotes.length - 1
 		? notebookNotes[currentIndex + 1]
 		: undefined;
-const dateText = new Intl.DateTimeFormat("zh-CN", {
-	year: "numeric",
-	month: "long",
-	day: "numeric",
-	timeZone: "Asia/Shanghai",
-}).format(note.data.published);
+const notePath = `/life/notebooks/${notebook.slug}/${note.data.slug}/`;
+const bannerPostMeta = {
+	title: note.data.title,
+	published: note.data.published,
+	updated: note.data.updated,
+	words: remarkPluginFrontmatter.words,
+	minutes: remarkPluginFrontmatter.minutes,
+};
 ---
 
 <MainGridLayout
+	banner={notebook.cover}
 	title={note.data.title}
-	bannerTitle="动态"
 	description={note.data.description}
-	articleHub
-	contentOnly
-	plainContent
+	setOGTypeArticle={true}
+	postSlug={note.id}
+	headings={headings}
+	bannerPostMeta={bannerPostMeta}
 >
-	<RecordPageShell
-		title={note.data.title}
-		description={note.data.description}
-		icon="material-symbols:edit-note-rounded"
-		showSidebars={false}
-	>
-		<article class="notebook-note">
-			<nav class="notebook-note__breadcrumb" aria-label="面包屑">
+	<ArticleReadingRails
+		headings={headings}
+		currentId={note.id}
+		currentCategory={notebook.title}
+		libraryMode="notebooks"
+	/>
+
+	<div class="post-reading-shell flex w-full rounded-(--radius-large) overflow-hidden relative mb-4">
+		<div id="post-container" class="card-base z-10 px-6 md:px-9 pt-6 pb-4 relative w-full">
+			<nav class="post-reading-breadcrumb onload-animation" aria-label="笔记位置">
 				<a href="/life/notebooks/">笔记本</a>
 				<Icon is:inline name="material-symbols:chevron-right-rounded" />
-				<a href={`/life/notebooks/${notebook.slug}/`}>{notebook.title}</a>
+				<a href={`/life/notebooks/${notebook.slug}/`}>
+					{notebook.title}<small>{notebookNotes.length}</small>
+				</a>
 				<Icon is:inline name="material-symbols:chevron-right-rounded" />
-				<span aria-current="page">{note.data.title}</span>
+				<span aria-current="page">此笔记</span>
 			</nav>
 
-			<div class="notebook-note__meta">
-				<time datetime={note.data.published.toISOString()}>
-					<Icon is:inline name="material-symbols:calendar-month-rounded" />
-					{dateText}
-				</time>
-				<span>
-					<Icon is:inline name="material-symbols:menu-book-rounded" />
-					{notebook.title}
-				</span>
-			</div>
+			<header class="post-reading-header onload-animation">
+				<h1
+					data-pagefind-body
+					data-pagefind-weight="10"
+					data-pagefind-meta="title"
+					class="post-reading-title"
+				>
+					{note.data.title}
+				</h1>
 
-			{note.data.tags.length > 0 && (
-				<ul class="notebook-note__tags" aria-label="笔记标签">
-					{note.data.tags.map((tag) => <li>#{tag}</li>)}
-				</ul>
+				<PostMetadata
+					className="post-reading-meta"
+					published={note.data.published}
+					updated={note.data.updated}
+					tags={note.data.tags}
+					showCategory={false}
+					id={note.id}
+					customPath={notePath}
+				/>
+
+				<div class="post-reading-stats" aria-label="笔记阅读信息">
+					<span>
+						<Icon is:inline name="material-symbols:notes-rounded" />
+						{remarkPluginFrontmatter.words} {i18n(I18nKey.wordsCount)}
+					</span>
+					<span>
+						<Icon is:inline name="material-symbols:schedule-outline-rounded" />
+						{remarkPluginFrontmatter.minutes} {i18n(
+							remarkPluginFrontmatter.minutes === 1
+								? I18nKey.minuteCount
+								: I18nKey.minutesCount,
+						)}
+					</span>
+					<span>
+						<Icon is:inline name="material-symbols:menu-book-outline-rounded" />
+						{notebook.title}
+					</span>
+				</div>
+			</header>
+
+			{note.data.description && (
+				<aside class="post-reading-summary onload-animation" aria-label="笔记摘要">
+					<Icon is:inline name="material-symbols:format-quote-rounded" />
+					<div>
+						<strong>笔记摘要</strong>
+						<p>{note.data.description}</p>
+					</div>
+				</aside>
 			)}
 
-			<Markdown class="notebook-note__content markdown-content">
+			<Markdown class="mb-6 markdown-content onload-animation">
 				<Content />
 			</Markdown>
+		</div>
+	</div>
 
-			<nav class="notebook-note__pager" aria-label="相邻笔记">
-				{previousNote ? (
-					<a href={`/life/notebooks/${notebook.slug}/${previousNote.data.slug}/`}>
-						<Icon is:inline name="material-symbols:arrow-back-rounded" />
-						<span><small>上一篇</small><strong>{previousNote.data.title}</strong></span>
-					</a>
-				) : <span></span>}
-				{nextNote && (
-					<a href={`/life/notebooks/${notebook.slug}/${nextNote.data.slug}/`}>
-						<span><small>下一篇</small><strong>{nextNote.data.title}</strong></span>
-						<Icon is:inline name="material-symbols:arrow-forward-rounded" />
-					</a>
-				)}
-			</nav>
-		</article>
-	</RecordPageShell>
+	<nav class="flex flex-col md:flex-row justify-between mb-4 gap-4 overflow-hidden w-full" aria-label="相邻笔记">
+		{previousNote ? (
+			<a
+				href={`/life/notebooks/${notebook.slug}/${previousNote.data.slug}/`}
+				class="w-full font-bold overflow-hidden active:scale-95"
+			>
+				<div class="btn-card rounded-2xl w-full h-15 max-w-full px-4 flex items-center justify-start! gap-4">
+					<Icon is:inline name="material-symbols:chevron-left-rounded" class="text-[2rem] text-(--ui-icon-color)" />
+					<div class="overflow-hidden transition text-ellipsis whitespace-nowrap max-w-[calc(100%-3rem)] text-black/75 dark:text-white/75">
+						{previousNote.data.title}
+					</div>
+				</div>
+			</a>
+		) : (
+			<span class="w-full"></span>
+		)}
+
+		{nextNote ? (
+			<a
+				href={`/life/notebooks/${notebook.slug}/${nextNote.data.slug}/`}
+				class="w-full font-bold overflow-hidden active:scale-95"
+			>
+				<div class="btn-card rounded-2xl w-full h-15 max-w-full px-4 flex items-center justify-end! gap-4">
+					<div class="overflow-hidden transition text-ellipsis whitespace-nowrap max-w-[calc(100%-3rem)] text-black/75 dark:text-white/75">
+						{nextNote.data.title}
+					</div>
+					<Icon is:inline name="material-symbols:chevron-right-rounded" class="text-[2rem] text-(--ui-icon-color)" />
+				</div>
+			</a>
+		) : (
+			<span class="w-full"></span>
+		)}
+	</nav>
 </MainGridLayout>
-
-<style>
-	.notebook-note {
-		min-width: 0;
-	}
-
-	.notebook-note__breadcrumb,
-	.notebook-note__meta,
-	.notebook-note__meta time,
-	.notebook-note__meta span {
-		display: flex;
-		align-items: center;
-	}
-
-	.notebook-note__breadcrumb {
-		gap: 0.3rem;
-		overflow: hidden;
-		margin-bottom: 0.9rem;
-		color: var(--content-meta);
-		font-size: 0.74rem;
-		white-space: nowrap;
-	}
-
-	.notebook-note__breadcrumb a,
-	.notebook-note__breadcrumb span {
-		overflow: hidden;
-		color: inherit;
-		text-overflow: ellipsis;
-	}
-
-	.notebook-note__breadcrumb a:hover {
-		color: var(--primary);
-	}
-
-	.notebook-note__breadcrumb :global(svg) {
-		width: 0.9rem;
-		height: 0.9rem;
-		flex: 0 0 auto;
-	}
-
-	.notebook-note__meta {
-		flex-wrap: wrap;
-		gap: 0.75rem;
-		border-bottom: 1px solid var(--line-divider);
-		padding-bottom: 0.85rem;
-		color: var(--content-meta);
-		font-size: 0.72rem;
-	}
-
-	.notebook-note__meta time,
-	.notebook-note__meta span {
-		gap: 0.3rem;
-	}
-
-	.notebook-note__meta :global(svg) {
-		width: 0.95rem;
-		height: 0.95rem;
-	}
-
-	.notebook-note__tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.4rem;
-		margin: 0.85rem 0 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.notebook-note__tags li {
-		border-radius: 999px;
-		background: var(--btn-regular-bg);
-		padding: 0.25rem 0.55rem;
-		color: var(--primary);
-		font-size: 0.68rem;
-	}
-
-	.notebook-note__content {
-		margin-top: 1.5rem;
-	}
-
-	.notebook-note__pager {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 0.75rem;
-		margin-top: 2.5rem;
-		border-top: 1px solid var(--line-divider);
-		padding-top: 1rem;
-	}
-
-	.notebook-note__pager a {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		min-width: 0;
-		border: 1px solid var(--line-divider);
-		border-radius: 0.65rem;
-		padding: 0.7rem;
-		color: inherit;
-		transition: border-color 150ms ease, background-color 150ms ease;
-	}
-
-	.notebook-note__pager a:last-child {
-		justify-content: flex-end;
-		text-align: right;
-	}
-
-	.notebook-note__pager a:hover {
-		border-color: color-mix(in srgb, var(--primary) 55%, var(--line-divider));
-		background: var(--btn-plain-bg-hover);
-	}
-
-	.notebook-note__pager a > span {
-		display: grid;
-		min-width: 0;
-	}
-
-	.notebook-note__pager small {
-		color: var(--content-meta);
-		font-size: 0.62rem;
-	}
-
-	.notebook-note__pager strong {
-		overflow: hidden;
-		font-size: 0.75rem;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.notebook-note__pager :global(svg) {
-		width: 1rem;
-		height: 1rem;
-		flex: 0 0 auto;
-	}
-
-	@media (max-width: 600px) {
-		.notebook-note__pager {
-			grid-template-columns: minmax(0, 1fr);
-		}
-	}
-</style>
