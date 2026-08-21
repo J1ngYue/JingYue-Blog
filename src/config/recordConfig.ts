@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.36",
+		date: "2026-08-21",
+		time: "18:40",
+		type: "optimize",
+		title: "工程手记界面风格统一",
+		summary: "将工程手记集合页统一为黑白描边与纸面质感。",
+		changes: [
+			"标题换用黑色描边的打开书本图标，与笔记本入口保持一致。",
+			"移除年度笔记足迹中的主题色填充，改为黑白灰层级。",
+			"统一笔记本切换项和笔记列表的描边、纸面与黑底悬浮状态。",
+			"保留全宽无侧栏布局、月份统计、时间线和全部切换功能。",
+		],
+	},
+	{
 		version: "v6.14.35",
 		date: "2026-08-21",
 		time: "18:15",

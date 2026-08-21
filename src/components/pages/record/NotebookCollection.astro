@@ -132,6 +132,10 @@ const formatDate = (date: Date) =>
 <style>
 	.notebook-collection {
 		--timeline-line: color-mix(in srgb, var(--record-ink) 19%, transparent);
+		--notebook-outline: color-mix(in srgb, var(--record-ink) 30%, transparent);
+		--notebook-paper: color-mix(in srgb, var(--card-bg) 97%, transparent);
+		--notebook-active-bg: #111;
+		--notebook-active-text: #fff;
 		min-width: 0;
 	}
 
@@ -150,7 +154,7 @@ const formatDate = (date: Date) =>
 	}
 
 	.notebook-breadcrumb a:hover {
-		color: var(--primary);
+		color: var(--record-ink);
 	}
 
 	.notebook-breadcrumb :global(svg) {
@@ -168,37 +172,41 @@ const formatDate = (date: Date) =>
 
 	.notebook-switcher a {
 		flex: 0 0 auto;
-		border: 1px solid var(--line-divider);
-		border-radius: 999px;
-		padding: 0.42rem 0.75rem;
-		color: var(--content-meta);
-		font-size: 0.74rem;
+		border: 1px solid var(--notebook-outline);
+		border-radius: 0.4rem;
+		padding: 0.46rem 0.8rem;
+		background: var(--notebook-paper);
+		color: var(--record-ink);
+		font-size: 0.8rem;
+		font-weight: 650;
 		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 	}
 
 	.notebook-switcher a:hover,
 	.notebook-switcher a:focus-visible {
-		border-color: color-mix(in srgb, var(--primary) 55%, var(--line-divider));
-		color: var(--primary);
+		border-color: var(--notebook-active-bg);
+		background: var(--notebook-active-bg);
+		color: var(--notebook-active-text);
 	}
 
 	.notebook-switcher a:focus-visible {
-		outline: 0.12rem solid var(--primary);
+		outline: 0.12rem solid var(--record-ink);
 		outline-offset: 0.12rem;
 	}
 
 	.notebook-switcher a.is-active {
-		border-color: var(--record-ink);
-		background: var(--record-ink);
-		color: var(--card-bg);
+		border-color: var(--notebook-active-bg);
+		background: var(--notebook-active-bg);
+		color: var(--notebook-active-text);
 	}
 
 	.notebook-activity {
 		margin-top: 0.5rem;
-		border: 1px solid var(--line-divider);
-		border-radius: 0.75rem;
+		border: 1px solid var(--notebook-outline);
+		border-radius: 0.55rem;
 		padding: 1rem;
-		background: color-mix(in srgb, var(--card-bg) 95%, transparent);
+		background: var(--notebook-paper);
+		box-shadow: 0 0.45rem 1rem rgb(0 0 0 / 4%);
 	}
 
 	.notebook-activity header {
@@ -210,11 +218,11 @@ const formatDate = (date: Date) =>
 
 	.notebook-activity header p {
 		margin: 0;
-		color: var(--primary);
-		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		color: var(--record-ink);
+		font-family: inherit;
 		font-size: 0.62rem;
 		font-weight: 750;
-		letter-spacing: 0.15em;
+		letter-spacing: 0;
 	}
 
 	.notebook-activity header h2 {
@@ -224,10 +232,11 @@ const formatDate = (date: Date) =>
 	}
 
 	.notebook-activity header > span {
-		border-radius: 999px;
-		background: var(--btn-regular-bg);
+		border: 1px solid var(--notebook-active-bg);
+		border-radius: 0.35rem;
+		background: var(--notebook-active-bg);
 		padding: 0.3rem 0.65rem;
-		color: var(--content-meta);
+		color: var(--notebook-active-text);
 		font-size: 0.7rem;
 	}
 
@@ -247,15 +256,15 @@ const formatDate = (date: Date) =>
 	.notebook-activity__month i {
 		display: block;
 		min-height: 2.3rem;
-		border: 1px solid var(--line-divider);
-		border-radius: 0.4rem;
-		background: var(--btn-regular-bg);
+		border: 1px solid var(--notebook-outline);
+		border-radius: 0.25rem;
+		background: var(--notebook-paper);
 	}
 
 	.notebook-activity__month.has-notes i {
-		border-color: color-mix(in srgb, var(--primary) 45%, var(--line-divider));
-		background: color-mix(in srgb, var(--primary) calc(var(--activity-level) * 100%), var(--btn-regular-bg));
-		box-shadow: 0 0.35rem 0.85rem color-mix(in srgb, var(--primary) 14%, transparent);
+		border-color: var(--record-ink);
+		background: color-mix(in srgb, var(--record-ink) calc(var(--activity-level) * 75%), var(--card-bg));
+		box-shadow: 0 0.35rem 0.85rem rgb(0 0 0 / 10%);
 	}
 
 	.notebook-activity__month span {
@@ -321,7 +330,7 @@ const formatDate = (date: Date) =>
 
 	.notebook-timeline__group > div {
 		display: grid;
-		gap: 0.25rem;
+		gap: 0.55rem;
 	}
 
 	.notebook-timeline__entry {
@@ -330,11 +339,13 @@ const formatDate = (date: Date) =>
 		grid-template-columns: 3.4rem 2.5rem minmax(0, 1fr) 1.25rem;
 		align-items: center;
 		gap: 0.65rem;
-		min-height: 3.4rem;
+		min-height: 4rem;
+		border: 1px solid var(--notebook-outline);
 		border-radius: 0.5rem;
-		padding: 0.35rem 0.5rem;
+		padding: 0.55rem 0.7rem;
+		background: var(--notebook-paper);
 		color: inherit;
-		transition: background-color 150ms ease, transform 150ms ease;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
 	}
 
 	.notebook-timeline__entry::before {
@@ -347,13 +358,26 @@ const formatDate = (date: Date) =>
 	}
 
 	.notebook-timeline__entry:hover {
-		background: var(--btn-plain-bg-hover);
-		transform: translateX(0.15rem);
+		border-color: var(--notebook-active-bg);
+		background: var(--notebook-active-bg);
+		box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 10%);
+		color: var(--notebook-active-text);
 	}
 
 	.notebook-timeline__entry:focus-visible {
-		outline: 0.12rem solid var(--primary);
+		outline: 0.12rem solid var(--record-ink);
 		outline-offset: 0.12rem;
+	}
+
+	.notebook-timeline__entry:hover time,
+	.notebook-timeline__entry:hover .notebook-timeline__content small,
+	.notebook-timeline__entry:hover :global(svg) {
+		color: var(--notebook-active-text);
+	}
+
+	.notebook-timeline__entry:hover .notebook-timeline__type {
+		border-color: color-mix(in srgb, var(--notebook-active-text) 45%, transparent);
+		color: var(--notebook-active-text);
 	}
 
 	.notebook-timeline__entry time {
