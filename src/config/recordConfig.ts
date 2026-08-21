@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.32",
+		date: "2026-08-21",
+		time: "16:39",
+		type: "optimize",
+		title: "翻页位置与内页内容优化",
+		summary: "固定书本位置、加快连续翻页，并为每张内页补充实际文字。",
+		changes: [
+			"移除悬浮时整本书的横向与纵向位移，翻页过程中书脊始终保持原位。",
+			"缩短封面和三张内页的动画间隔，完整翻页在约一秒内完成。",
+			"内页增加最近笔记、发布日期、笔记数量、主题说明与书写提示。",
+			"收页继续采用反向顺序，并同步缩短等待时间。",
+		],
+	},
+	{
 		version: "v6.14.31",
 		date: "2026-08-21",
 		time: "16:06",

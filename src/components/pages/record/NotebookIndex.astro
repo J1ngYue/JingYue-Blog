@@ -113,9 +113,21 @@ const formatShortDate = (date: Date) =>
 								<strong>{latest?.data.title || notebook.title}</strong>
 								<span>{count > 0 ? `收录 ${count} 篇笔记` : "等待写下第一页"}</span>
 							</span>
-							<span class="notebook-book__leaf notebook-book__leaf--one" aria-hidden="true"></span>
-							<span class="notebook-book__leaf notebook-book__leaf--two" aria-hidden="true"></span>
-							<span class="notebook-book__leaf notebook-book__leaf--three" aria-hidden="true"></span>
+							<span class="notebook-book__leaf notebook-book__leaf--one" aria-hidden="true">
+								<small>RECENT NOTE</small>
+								<strong>{latest?.data.title || "等待写下第一页"}</strong>
+								<em>{latest ? formatShortDate(latest.data.published) : notebook.title}</em>
+							</span>
+							<span class="notebook-book__leaf notebook-book__leaf--two" aria-hidden="true">
+								<small>COLLECTION</small>
+								<strong>{count} 篇笔记</strong>
+								<em>{notebook.description}</em>
+							</span>
+							<span class="notebook-book__leaf notebook-book__leaf--three" aria-hidden="true">
+								<small>JINGYUE NOTES</small>
+								<strong>{notebook.title}</strong>
+								<em>把片刻的想法整理成可以再次翻阅的文字。</em>
+							</span>
 							<div class="notebook-book__cover">
 								<div class="notebook-book__image">
 									<ImageWrapper
@@ -488,13 +500,12 @@ const formatShortDate = (date: Date) =>
 		height: 18.2rem;
 		perspective: 90rem;
 		transform-style: preserve-3d;
-		transition: filter 420ms ease, transform 680ms cubic-bezier(0.2, 0.72, 0.16, 1);
+		transition: filter 240ms ease;
 	}
 
 	.notebook-book:hover .notebook-book__volume,
 	.notebook-book:focus-visible .notebook-book__volume {
 		filter: drop-shadow(0 0.7rem 0.8rem rgb(0 0 0 / 16%));
-		transform: translate(4.4rem, -0.2rem);
 	}
 
 	.notebook-book:focus-visible {
@@ -515,14 +526,14 @@ const formatShortDate = (date: Date) =>
 		transform-origin: left center;
 		transform-style: preserve-3d;
 		transition:
-			box-shadow 420ms ease 420ms,
-			transform 680ms cubic-bezier(0.2, 0.72, 0.16, 1) 420ms;
+			box-shadow 280ms ease 180ms,
+			transform 360ms cubic-bezier(0.2, 0.72, 0.16, 1) 180ms;
 	}
 
 	.notebook-book:hover .notebook-book__cover,
 	.notebook-book:focus-visible .notebook-book__cover {
 		box-shadow: 0.95rem 0.7rem 1.25rem rgb(0 0 0 / 19%);
-		transform: translateX(-0.62rem) rotateY(-72deg);
+		transform: translateX(-0.42rem) rotateY(-66deg);
 		transition-delay: 0ms;
 	}
 
@@ -569,16 +580,18 @@ const formatShortDate = (date: Date) =>
 	.notebook-book__leaf {
 		position: absolute;
 		inset: 0.42rem 0.28rem 0.62rem 0.72rem;
-		display: block;
+		display: flex;
+		flex-direction: column;
 		border: 1px solid color-mix(in srgb, var(--notebook-ink) 13%, transparent);
 		border-left: 0;
 		border-radius: 0 0.38rem 0.38rem 0;
+		padding: 1rem 0.82rem 0.9rem 7.1rem;
 		background:
-			linear-gradient(90deg, rgb(0 0 0 / 8%), transparent 12%),
+			linear-gradient(90deg, rgb(0 0 0 / 9%), transparent 13%),
 			repeating-linear-gradient(
 				to bottom,
-				transparent 0 1.38rem,
-				color-mix(in srgb, var(--notebook-ink) 7%, transparent) 1.41rem 1.44rem
+				transparent 0 1.48rem,
+				color-mix(in srgb, var(--notebook-ink) 7%, transparent) 1.51rem 1.54rem
 			),
 			color-mix(in srgb, var(--card-bg) 97%, #f3ecdc);
 		box-shadow: inset 0.3rem 0 0.55rem rgb(0 0 0 / 7%);
@@ -587,32 +600,48 @@ const formatShortDate = (date: Date) =>
 		transform-origin: left center;
 		transform-style: preserve-3d;
 		transition-property: transform, box-shadow;
-		transition-duration: 620ms, 420ms;
+		transition-duration: 360ms, 260ms;
 		transition-timing-function: cubic-bezier(0.18, 0.72, 0.16, 1), ease;
 	}
 
-	.notebook-book__leaf::after {
-		position: absolute;
-		inset: 0.55rem 0.58rem auto auto;
-		width: 2.8rem;
-		height: 0.16rem;
-		border-radius: 999px;
-		background: color-mix(in srgb, var(--notebook-ink) 10%, transparent);
-		box-shadow:
-			0 0.62rem 0 color-mix(in srgb, var(--notebook-ink) 8%, transparent),
-			0 1.24rem 0 color-mix(in srgb, var(--notebook-ink) 6%, transparent);
-		content: "";
+	.notebook-book__leaf small {
+		color: var(--notebook-muted);
+		font-size: 0.54rem;
+		font-weight: 750;
+		letter-spacing: 0;
+	}
+
+	.notebook-book__leaf strong {
+		display: -webkit-box;
+		overflow: hidden;
+		margin-top: 0.48rem;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		font-size: 0.84rem;
+		line-height: 1.45;
+	}
+
+	.notebook-book__leaf em {
+		display: -webkit-box;
+		overflow: hidden;
+		margin-top: auto;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		color: var(--notebook-muted);
+		font-size: 0.62rem;
+		font-style: normal;
+		line-height: 1.5;
 	}
 
 	.notebook-book__leaf--one {
 		z-index: 28;
-		transition-delay: 360ms, 360ms;
+		transition-delay: 140ms, 140ms;
 	}
 
 	.notebook-book__leaf--two {
 		z-index: 27;
 		inset: 0.46rem 0.31rem 0.66rem 0.74rem;
-		transition-delay: 180ms, 180ms;
+		transition-delay: 70ms, 70ms;
 	}
 
 	.notebook-book__leaf--three {
@@ -624,22 +653,22 @@ const formatShortDate = (date: Date) =>
 	.notebook-book:hover .notebook-book__leaf--one,
 	.notebook-book:focus-visible .notebook-book__leaf--one {
 		box-shadow: 0.55rem 0.25rem 0.7rem rgb(0 0 0 / 13%);
-		transform: translateX(-0.1rem) rotateY(-62deg);
-		transition-delay: 300ms;
+		transform: translateX(-0.08rem) rotateY(-58deg);
+		transition-delay: 160ms;
 	}
 
 	.notebook-book:hover .notebook-book__leaf--two,
 	.notebook-book:focus-visible .notebook-book__leaf--two {
 		box-shadow: 0.45rem 0.22rem 0.62rem rgb(0 0 0 / 11%);
-		transform: translateX(-0.06rem) rotateY(-45deg);
-		transition-delay: 850ms;
+		transform: translateX(-0.05rem) rotateY(-43deg);
+		transition-delay: 430ms;
 	}
 
 	.notebook-book:hover .notebook-book__leaf--three,
 	.notebook-book:focus-visible .notebook-book__leaf--three {
 		box-shadow: 0.35rem 0.18rem 0.52rem rgb(0 0 0 / 9%);
 		transform: translateX(-0.03rem) rotateY(-28deg);
-		transition-delay: 1400ms;
+		transition-delay: 700ms;
 	}
 
 	.notebook-book__image {
