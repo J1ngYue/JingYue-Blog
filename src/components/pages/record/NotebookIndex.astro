@@ -528,8 +528,8 @@ const formatShortDate = (date: Date) =>
 		transform-origin: left center;
 		transform-style: preserve-3d;
 		transition:
-			box-shadow 200ms ease-in 85ms,
-			transform 240ms cubic-bezier(0.16, 1, 0.3, 1) 85ms;
+			box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1) 220ms,
+			transform 320ms cubic-bezier(0.4, 0, 0.2, 1) 220ms;
 	}
 
 	.notebook-book:hover .notebook-book__cover,
@@ -537,6 +537,8 @@ const formatShortDate = (date: Date) =>
 		box-shadow: 0.95rem 0.7rem 1.25rem rgb(0 0 0 / 19%);
 		transform: translateX(-0.42rem) rotateY(-66deg);
 		transition-delay: 0ms;
+		transition-duration: 200ms, 240ms;
+		transition-timing-function: ease-out, cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.notebook-book__inside {
@@ -609,8 +611,8 @@ const formatShortDate = (date: Date) =>
 		transform-origin: 0.18rem center;
 		transform-style: preserve-3d;
 		transition-property: transform, box-shadow;
-		transition-duration: 250ms, 190ms;
-		transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1), ease-out;
+		transition-duration: 320ms, 250ms;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1), ease-in-out;
 		will-change: transform;
 	}
 
@@ -656,13 +658,13 @@ const formatShortDate = (date: Date) =>
 
 	.notebook-book__leaf--one {
 		z-index: 28;
-		transition-delay: 65ms, 65ms;
+		transition-delay: 130ms, 130ms;
 	}
 
 	.notebook-book__leaf--two {
 		z-index: 27;
 		inset: 0.46rem 0.31rem 0.66rem 0.74rem;
-		transition-delay: 30ms, 30ms;
+		transition-delay: 65ms, 65ms;
 	}
 
 	.notebook-book__leaf--three {
@@ -675,21 +677,27 @@ const formatShortDate = (date: Date) =>
 	.notebook-book:focus-visible .notebook-book__leaf--one {
 		box-shadow: 0.5rem 0.22rem 0.66rem rgb(0 0 0 / 11%);
 		transform: translateX(-0.08rem) rotateY(-58deg) skewY(-0.35deg) scaleX(0.985);
+		transition-duration: 250ms, 190ms;
 		transition-delay: 45ms;
+		transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1), ease-out;
 	}
 
 	.notebook-book:hover .notebook-book__leaf--two,
 	.notebook-book:focus-visible .notebook-book__leaf--two {
 		box-shadow: 0.4rem 0.2rem 0.58rem rgb(0 0 0 / 9%);
 		transform: translateX(-0.05rem) rotateY(-43deg) skewY(-0.22deg) scaleX(0.99);
+		transition-duration: 250ms, 190ms;
 		transition-delay: 115ms;
+		transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1), ease-out;
 	}
 
 	.notebook-book:hover .notebook-book__leaf--three,
 	.notebook-book:focus-visible .notebook-book__leaf--three {
 		box-shadow: 0.3rem 0.16rem 0.48rem rgb(0 0 0 / 8%);
 		transform: translateX(-0.03rem) rotateY(-28deg) skewY(-0.12deg) scaleX(0.995);
+		transition-duration: 250ms, 190ms;
 		transition-delay: 185ms;
+		transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1), ease-out;
 	}
 
 	.notebook-book__image {

@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.35",
+		date: "2026-08-21",
+		time: "18:15",
+		type: "optimize",
+		title: "笔记本合页动画柔化",
+		summary: "重新编排纸页与封面的收合顺序，让书本自然合拢。",
+		changes: [
+			"三张纸页按由内到外的顺序错峰回落，避免同时硬收。",
+			"延后封面闭合时机，等待纸页基本归位后再柔和覆盖。",
+			"关闭阶段改用更平缓的缓动曲线，打开阶段继续保持快速响应。",
+		],
+	},
+	{
 		version: "v6.14.34",
 		date: "2026-08-21",
 		time: "18:00",
