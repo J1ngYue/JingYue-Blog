@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.26",
+		date: "2026-08-21",
+		time: "14:02",
+		type: "feature",
+		title: "笔记本书架界面重制",
+		summary: "重做笔记本首页，并移除笔记页面内置左右侧栏。",
+		changes: [
+			"笔记本首页改为焦点笔记、统计栏、立体横向书架与双列最新笔记布局。",
+			"书架增加左右平滑滚动控制，保留六类笔记与现有 Markdown 内容。",
+			"笔记本首页、分类页和详情页统一使用无左右个人栏的单列内容布局。",
+			"移动端改为单列最新笔记，并限制书册尺寸避免横向页面溢出。",
+		],
+	},
+	{
 		version: "v6.14.25",
 		date: "2026-08-20",
 		time: "16:40",

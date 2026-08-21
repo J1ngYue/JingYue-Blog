@@ -2,15 +2,19 @@
 import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
-import { notebookDefinitions } from "@/config/notebookConfig";
+import {
+	getNotebookDefinition,
+	notebookDefinitions,
+} from "@/config/notebookConfig";
 
 const notes = (await getCollection("notebooks"))
 	.filter((note) => !note.data.draft)
 	.sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
 const latestNote = notes[0];
-const featuredNotebook = notebookDefinitions.find(
-	(notebook) => notebook.slug === latestNote?.data.notebook,
-);
+const featuredNotebook = latestNote
+	? getNotebookDefinition(latestNote.data.notebook)
+	: undefined;
+const latestNotes = notes.slice(0, 10);
 
 const noteCounts = new Map<string, number>();
 for (const note of notes) {
@@ -29,318 +33,732 @@ const formatDate = (date: Date) =>
 	})
 		.format(date)
 		.replaceAll("/", "-");
+
+const formatShortDate = (date: Date) =>
+	new Intl.DateTimeFormat("zh-CN", {
+		month: "long",
+		day: "numeric",
+		timeZone: "Asia/Shanghai",
+	}).format(date);
 ---
 
-<section class="notebook-overview" aria-label="笔记本概览">
+<section class="notebook-overview" aria-label="笔记本概览" data-notebook-overview>
 	{featuredNotebook && latestNote && (
-		<a class="notebook-featured" href={`/life/notebooks/${featuredNotebook.slug}/`}>
-			<span class="notebook-featured__message">
+		<a
+			class="notebook-highlight"
+			href={`/life/notebooks/${featuredNotebook.slug}/${latestNote.data.slug}/`}
+		>
+			<span class="notebook-highlight__icon" aria-hidden="true">
 				<Icon is:inline name="material-symbols:auto-awesome-rounded" />
-				<span>把每一次复盘，都变成下一次出发的路标</span>
 			</span>
-			<strong>{featuredNotebook.title}</strong>
+			<strong>{latestNote.data.title}</strong>
+			<span>{featuredNotebook.title}</span>
+			<Icon is:inline name="material-symbols:arrow-forward-rounded" />
 		</a>
 	)}
 
 	<div class="notebook-stats" aria-label="笔记本统计">
-		<span><Icon is:inline name="material-symbols:menu-book-rounded" /><strong>{notebookDefinitions.length}</strong> 本</span>
+		<span>
+			<Icon is:inline name="material-symbols:menu-book-outline-rounded" />
+			<strong>{notebookDefinitions.length}</strong> 本
+		</span>
 		<i aria-hidden="true"></i>
-		<span><Icon is:inline name="material-symbols:stylus-note-rounded" /><strong>{notes.length}</strong> 篇</span>
+		<span>
+			<Icon is:inline name="material-symbols:edit-note-outline-rounded" />
+			<strong>{notes.length}</strong> 篇
+		</span>
 		<i aria-hidden="true"></i>
 		{latestNote && (
 			<time datetime={latestNote.data.published.toISOString()}>
-				<Icon is:inline name="material-symbols:schedule-rounded" />
+				<Icon is:inline name="material-symbols:schedule-outline-rounded" />
 				{formatDate(latestNote.data.published)}
 			</time>
 		)}
 	</div>
 
-	<div class="notebook-grid">
-		{notebookDefinitions.map((notebook) => {
-			const notebookNotes = notes.filter((note) => note.data.notebook === notebook.slug);
-			const latest = notebookNotes[0];
-			const count = noteCounts.get(notebook.slug) || 0;
-			return (
-				<a class="notebook-card" href={`/life/notebooks/${notebook.slug}/`}>
-					<div class="notebook-card__cover">
-						<ImageWrapper
-							src={notebook.cover}
-							alt={`${notebook.title}封面`}
-							widths={[480, 720]}
-							sizes="(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 320px"
-						/>
-						<span aria-hidden="true"><Icon is:inline name="material-symbols:arrow-outward-rounded" /></span>
-					</div>
-					<div class="notebook-card__body">
-						<div class="notebook-card__title">
-							<h2>{notebook.title}</h2>
-							<span>{count} 篇</span>
+	<section class="notebook-shelf" aria-labelledby="notebook-shelf-title">
+		<header class="notebook-section-heading">
+			<div>
+				<span aria-hidden="true"></span>
+				<h2 id="notebook-shelf-title">我的笔记本</h2>
+			</div>
+			<nav class="notebook-shelf__controls" aria-label="滚动笔记本列表">
+				<button type="button" aria-label="向左滚动" data-notebook-scroll="previous">
+					<Icon is:inline name="material-symbols:chevron-left-rounded" />
+				</button>
+				<button type="button" aria-label="向右滚动" data-notebook-scroll="next">
+					<Icon is:inline name="material-symbols:chevron-right-rounded" />
+				</button>
+			</nav>
+		</header>
+
+		<div class="notebook-shelf__scroller" data-notebook-shelf tabindex="0">
+			{notebookDefinitions.map((notebook) => {
+				const notebookNotes = notes.filter(
+					(note) => note.data.notebook === notebook.slug,
+				);
+				const latest = notebookNotes[0];
+				const count = noteCounts.get(notebook.slug) || 0;
+
+				return (
+					<a
+						class="notebook-book"
+						href={`/life/notebooks/${notebook.slug}/`}
+						aria-label={`${notebook.title}，${count} 篇笔记`}
+					>
+						<div class="notebook-book__volume">
+							<div class="notebook-book__cover">
+								<div class="notebook-book__image">
+									<ImageWrapper
+										src={notebook.cover}
+										alt={notebook.title}
+										widths={[360, 540]}
+										sizes="17rem"
+									/>
+								</div>
+								<div class="notebook-book__paper">
+									<h3>{notebook.title}</h3>
+									<p>{notebook.description}</p>
+									<footer>
+										<span>{count} 篇</span>
+										<i aria-hidden="true"></i>
+										<time datetime={latest?.data.published.toISOString()}>
+											{latest
+												? formatDate(latest.data.published)
+												: "等待记录"}
+										</time>
+									</footer>
+								</div>
+								<span class="notebook-book__spine" aria-hidden="true"></span>
+							</div>
+							<span class="notebook-book__pages" aria-hidden="true"></span>
 						</div>
-						<p>{notebook.description}</p>
+					</a>
+				);
+			})}
+		</div>
+	</section>
+
+	<section class="notebook-recent" aria-labelledby="notebook-recent-title">
+		<header class="notebook-section-heading notebook-section-heading--recent">
+			<div>
+				<Icon is:inline name="material-symbols:history-rounded" aria-hidden="true" />
+				<h2 id="notebook-recent-title">最新笔记</h2>
+				<p>最近更新，继续加油</p>
+			</div>
+		</header>
+
+		<div class="notebook-recent__grid">
+			{latestNotes.map((note) => {
+				const notebook = getNotebookDefinition(note.data.notebook);
+				if (!notebook) return null;
+
+				return (
+					<article class="notebook-note-card">
+						<header>
+							<span class="notebook-note-card__avatar" aria-hidden="true">
+								<ImageWrapper
+									src={notebook.cover}
+									alt=""
+									widths={[96]}
+									sizes="2.35rem"
+								/>
+							</span>
+							<span class="notebook-note-card__identity">
+								<strong>{note.data.title}</strong>
+								<time datetime={note.data.published.toISOString()}>
+									<Icon is:inline name="material-symbols:schedule-outline-rounded" />
+									{formatShortDate(note.data.published)}
+								</time>
+							</span>
+						</header>
+
+						<a
+							class="notebook-note-card__body"
+							href={`/life/notebooks/${notebook.slug}/${note.data.slug}/`}
+						>
+							<p>{note.data.description}</p>
+						</a>
+
 						<footer>
-							<Icon is:inline name="material-symbols:schedule-rounded" />
-							{latest ? formatDate(latest.data.published) : "等待第一篇笔记"}
+							<span>#{notebook.title}</span>
+							<a
+								href={`/life/notebooks/${notebook.slug}/${note.data.slug}/`}
+								aria-label={`阅读${note.data.title}`}
+							>
+								<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+								阅读
+							</a>
 						</footer>
-					</div>
-				</a>
-			);
-		})}
-	</div>
+					</article>
+				);
+			})}
+		</div>
+	</section>
 
 	<p class="notebook-footnote">
 		<Icon is:inline name="material-symbols:auto-awesome-rounded" />
-		每一页，都是成长留下的足迹
+		每一页都是成长的足迹
 	</p>
 </section>
 
+<script is:inline data-swup-ignore-script>
+	(function bindNotebookShelf() {
+		function syncShelf(shelf) {
+			if (!(shelf instanceof HTMLElement)) return;
+			var root = shelf.closest("[data-notebook-overview]");
+			if (!root) return;
+			var maxScroll = Math.max(0, shelf.scrollWidth - shelf.clientWidth);
+			var previous = root.querySelector('[data-notebook-scroll="previous"]');
+			var next = root.querySelector('[data-notebook-scroll="next"]');
+			if (previous instanceof HTMLButtonElement) previous.disabled = shelf.scrollLeft <= 2;
+			if (next instanceof HTMLButtonElement) next.disabled = shelf.scrollLeft >= maxScroll - 2;
+		}
+
+		function syncAllShelves() {
+			document.querySelectorAll("[data-notebook-shelf]").forEach(syncShelf);
+		}
+
+		if (!window.__jingyueNotebookShelfBound) {
+			window.__jingyueNotebookShelfBound = true;
+			document.addEventListener("click", function (event) {
+				if (!(event.target instanceof Element)) return;
+				var button = event.target.closest("[data-notebook-scroll]");
+				if (!(button instanceof HTMLButtonElement)) return;
+				var root = button.closest("[data-notebook-overview]");
+				var shelf = root && root.querySelector("[data-notebook-shelf]");
+				if (!(shelf instanceof HTMLElement)) return;
+				var direction = button.dataset.notebookScroll === "previous" ? -1 : 1;
+				shelf.scrollBy({
+					left: direction * Math.max(240, shelf.clientWidth * 0.82),
+					behavior: "smooth",
+				});
+				window.setTimeout(function () { syncShelf(shelf); }, 420);
+			});
+			document.addEventListener("scroll", function (event) {
+				if (event.target instanceof HTMLElement && event.target.matches("[data-notebook-shelf]")) {
+					syncShelf(event.target);
+				}
+			}, true);
+			window.addEventListener("resize", syncAllShelves, { passive: true });
+			document.addEventListener("astro:page-load", syncAllShelves);
+			document.addEventListener("swup:contentReplaced", syncAllShelves);
+		}
+
+		syncAllShelves();
+	})();
+</script>
+
 <style>
 	.notebook-overview {
-		--notebook-border: color-mix(in srgb, var(--record-ink) 17%, transparent);
+		--notebook-ink: var(--record-ink, #151515);
+		--notebook-muted: var(--record-muted, #747474);
+		--notebook-line: color-mix(in srgb, var(--notebook-ink) 17%, transparent);
 		min-width: 0;
 	}
 
-	.notebook-featured {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		min-height: 3.25rem;
-		padding: 0.7rem 0.85rem;
-		border-bottom: 1px solid var(--line-divider);
-		color: inherit;
-		transition: color 180ms ease, background-color 180ms ease;
-	}
-
-	.notebook-featured:hover {
-		background: color-mix(in srgb, var(--primary) 6%, transparent);
-		color: var(--primary);
-	}
-
-	.notebook-featured__message,
-	.notebook-stats span,
-	.notebook-stats time,
-	.notebook-card footer,
+	.notebook-highlight,
+	.notebook-stats,
+	.notebook-highlight__icon,
+	.notebook-section-heading,
+	.notebook-section-heading > div,
+	.notebook-shelf__controls,
+	.notebook-book__paper footer,
+	.notebook-note-card header,
+	.notebook-note-card footer,
+	.notebook-note-card footer a,
+	.notebook-note-card__identity time,
 	.notebook-footnote {
 		display: flex;
 		align-items: center;
 	}
 
-	.notebook-featured__message {
-		gap: 0.5rem;
-		color: var(--content-meta);
-		font-size: 0.82rem;
+	.notebook-highlight {
+		gap: 0.55rem;
+		min-height: 3rem;
+		border: 1px solid var(--notebook-line);
+		border-radius: 0.5rem;
+		padding: 0.62rem 0.75rem;
+		color: inherit;
+		transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
 	}
 
-	.notebook-featured__message :global(svg) {
-		width: 1.05rem;
-		height: 1.05rem;
-		color: var(--ui-icon-color);
+	.notebook-highlight:hover {
+		border-color: var(--notebook-ink);
+		background: var(--btn-plain-bg-hover);
+		transform: translateX(0.15rem);
 	}
 
-	.notebook-featured strong {
+	.notebook-highlight__icon {
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
 		flex: 0 0 auto;
-		border-radius: 999px;
-		background: var(--btn-regular-bg);
-		padding: 0.28rem 0.7rem;
+		border-radius: 50%;
+		background: var(--notebook-ink);
+		color: var(--card-bg);
+	}
+
+	.notebook-highlight__icon :global(svg) {
+		width: 0.95rem;
+		height: 0.95rem;
+	}
+
+	.notebook-highlight strong {
+		overflow: hidden;
+		font-size: 0.84rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.notebook-highlight > span:not(.notebook-highlight__icon) {
+		margin-left: auto;
+		color: var(--notebook-muted);
 		font-size: 0.72rem;
+		white-space: nowrap;
+	}
+
+	.notebook-highlight > :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		flex: 0 0 auto;
 	}
 
 	.notebook-stats {
-		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-		padding: 0.9rem 0.85rem 1.4rem;
-		color: var(--content-meta);
-		font-size: 0.78rem;
+		flex-wrap: wrap;
+		gap: 0.62rem;
+		padding: 0.85rem 0.2rem 0;
+		color: var(--notebook-muted);
+		font-size: 0.74rem;
 		font-variant-numeric: tabular-nums;
 	}
 
 	.notebook-stats span,
 	.notebook-stats time {
-		gap: 0.3rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.28rem;
 	}
 
 	.notebook-stats strong {
-		color: var(--record-ink);
-		font-size: 0.88rem;
+		color: var(--notebook-ink);
+		font-size: 0.84rem;
 	}
 
 	.notebook-stats i {
 		width: 0.2rem;
 		height: 0.2rem;
 		border-radius: 50%;
-		background: var(--content-meta);
+		background: currentColor;
 	}
 
 	.notebook-stats :global(svg) {
-		width: 1rem;
-		height: 1rem;
+		width: 0.95rem;
+		height: 0.95rem;
 	}
 
-	.notebook-grid {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 1.05rem;
+	.notebook-shelf,
+	.notebook-recent {
+		margin-top: 2rem;
 	}
 
-	.notebook-card {
-		display: block;
-		min-width: 0;
-		overflow: hidden;
-		border: 1px solid var(--notebook-border);
-		border-radius: 0.75rem;
-		background: color-mix(in srgb, var(--card-bg) 96%, transparent);
-		color: inherit;
-		box-shadow: 0 0.45rem 1.25rem rgb(0 0 0 / 5%);
-		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-	}
-
-	.notebook-card:hover {
-		border-color: color-mix(in srgb, var(--primary) 52%, var(--notebook-border));
-		box-shadow: 0 0.75rem 1.75rem color-mix(in srgb, var(--primary) 13%, transparent);
-		transform: translateY(-0.2rem);
-	}
-
-	.notebook-card:focus-visible {
-		outline: 0.16rem solid var(--primary);
-		outline-offset: 0.18rem;
-	}
-
-	.notebook-card__cover {
-		position: relative;
-		height: 0;
-		overflow: hidden;
-		padding-bottom: 55%;
-		background: var(--btn-regular-bg);
-	}
-
-	.notebook-card__cover > :global(div:first-child) {
-		position: absolute;
-		inset: 0;
-	}
-
-	.notebook-card__cover::after {
-		position: absolute;
-		inset: auto 0 0;
-		height: 42%;
-		background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--card-bg) 94%, transparent));
-		content: "";
-	}
-
-	.notebook-card__cover > span {
-		position: absolute;
-		right: 0.65rem;
-		bottom: 0.65rem;
-		z-index: 2;
-		display: grid;
-		width: 2rem;
-		height: 2rem;
-		place-items: center;
-		border: 1px solid rgb(255 255 255 / 54%);
-		border-radius: 50%;
-		background: rgb(255 255 255 / 82%);
-		color: #15202a;
-		backdrop-filter: blur(0.5rem);
-		transition: transform 180ms ease;
-	}
-
-	.notebook-card:hover .notebook-card__cover > span {
-		transform: rotate(-10deg) scale(1.07);
-	}
-
-	.notebook-card__cover :global(svg) {
-		width: 1.05rem;
-		height: 1.05rem;
-	}
-
-	.notebook-card__body {
-		padding: 0.8rem 0.9rem 0.85rem;
-	}
-
-	.notebook-card__title {
-		display: flex;
-		align-items: center;
+	.notebook-section-heading {
 		justify-content: space-between;
-		gap: 0.75rem;
+		gap: 1rem;
+		margin-bottom: 0.8rem;
 	}
 
-	.notebook-card h2 {
+	.notebook-section-heading > div {
+		gap: 0.55rem;
+		min-width: 0;
+	}
+
+	.notebook-section-heading > div > span {
+		width: 0.22rem;
+		height: 1.2rem;
+		background: var(--notebook-ink);
+	}
+
+	.notebook-section-heading h2 {
 		margin: 0;
 		font-size: 1rem;
 		font-weight: 800;
 	}
 
-	.notebook-card__title > span {
-		flex: 0 0 auto;
-		color: var(--content-meta);
+	.notebook-section-heading p {
+		margin: 0 0 0 0.25rem;
+		color: var(--notebook-muted);
 		font-size: 0.7rem;
 	}
 
-	.notebook-card p {
+	.notebook-section-heading--recent > div > :global(svg) {
+		width: 1.12rem;
+		height: 1.12rem;
+	}
+
+	.notebook-shelf__controls {
+		gap: 0.35rem;
+	}
+
+	.notebook-shelf__controls button {
+		display: grid;
+		width: 2rem;
+		height: 2rem;
+		place-items: center;
+		border: 1px solid var(--notebook-line);
+		border-radius: 50%;
+		background: var(--card-bg);
+		color: var(--notebook-ink);
+		transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+	}
+
+	.notebook-shelf__controls button:hover:not(:disabled),
+	.notebook-shelf__controls button:focus-visible:not(:disabled) {
+		border-color: var(--notebook-ink);
+		background: var(--notebook-ink);
+		color: var(--card-bg);
+	}
+
+	.notebook-shelf__controls button:disabled {
+		cursor: default;
+		opacity: 0.34;
+	}
+
+	.notebook-shelf__controls :global(svg) {
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+
+	.notebook-shelf__scroller {
+		display: flex;
+		gap: 1.15rem;
+		overflow-x: auto;
+		overflow-y: hidden;
+		padding: 0.45rem 0.3rem 1.35rem;
+		scroll-behavior: smooth;
+		scroll-snap-type: x mandatory;
+		scrollbar-color: color-mix(in srgb, var(--notebook-ink) 28%, transparent) transparent;
+		scrollbar-width: thin;
+	}
+
+	.notebook-shelf__scroller:focus-visible {
+		outline: 0.12rem solid var(--notebook-ink);
+		outline-offset: 0.18rem;
+	}
+
+	.notebook-book {
+		width: 16.5rem;
+		flex: 0 0 16.5rem;
+		color: inherit;
+		perspective: 70rem;
+		scroll-snap-align: start;
+	}
+
+	.notebook-book__volume {
+		position: relative;
+		height: 14.4rem;
+		padding: 0 0.28rem 0.32rem 0;
+		transform: rotateY(-3deg);
+		transform-origin: left center;
+		transition: filter 220ms ease, transform 220ms ease;
+	}
+
+	.notebook-book:hover .notebook-book__volume,
+	.notebook-book:focus-visible .notebook-book__volume {
+		filter: drop-shadow(0 0.8rem 0.85rem rgb(0 0 0 / 16%));
+		transform: translateY(-0.28rem) rotateY(0deg);
+	}
+
+	.notebook-book:focus-visible {
+		outline: none;
+	}
+
+	.notebook-book__cover {
+		position: relative;
+		z-index: 2;
+		display: grid;
+		height: 100%;
+		overflow: hidden;
+		border: 1px solid color-mix(in srgb, var(--notebook-ink) 28%, transparent);
+		border-radius: 0.45rem;
+		background: var(--card-bg);
+		box-shadow: 0 0.55rem 1.15rem rgb(0 0 0 / 10%);
+		grid-template-rows: 7.1rem minmax(0, 1fr);
+	}
+
+	.notebook-book__image {
+		position: relative;
+		overflow: hidden;
+		background: var(--btn-regular-bg);
+	}
+
+	.notebook-book__image::after {
+		position: absolute;
+		inset: auto 0 0;
+		height: 45%;
+		background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 24%));
+		content: "";
+	}
+
+	.notebook-book__image > :global(div:first-child) {
+		position: absolute;
+		inset: 0;
+	}
+
+	.notebook-book__image :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 320ms ease;
+	}
+
+	.notebook-book:hover .notebook-book__image :global(img) {
+		transform: scale(1.045);
+	}
+
+	.notebook-book__paper {
+		position: relative;
+		display: flex;
+		min-height: 0;
+		flex-direction: column;
+		padding: 0.75rem 0.82rem 0.68rem 1rem;
+		background:
+			linear-gradient(90deg, rgb(0 0 0 / 5%), transparent 1rem),
+			color-mix(in srgb, var(--card-bg) 98%, transparent);
+	}
+
+	.notebook-book__paper h3 {
+		overflow: hidden;
+		margin: 0;
+		font-size: 0.96rem;
+		font-weight: 800;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.notebook-book__paper p {
 		display: -webkit-box;
 		overflow: hidden;
-		min-height: 2.6em;
-		margin: 0.35rem 0 0;
+		margin: 0.28rem 0 0;
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 2;
-		color: var(--content-meta);
-		font-size: 0.75rem;
+		color: var(--notebook-muted);
+		font-size: 0.7rem;
 		line-height: 1.45;
 	}
 
-	.notebook-card footer {
-		gap: 0.28rem;
-		margin-top: 0.55rem;
-		color: var(--content-meta);
-		font-size: 0.68rem;
+	.notebook-book__paper footer {
+		gap: 0.35rem;
+		margin-top: auto;
+		color: var(--notebook-muted);
+		font-size: 0.64rem;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.notebook-card footer :global(svg) {
-		width: 0.9rem;
-		height: 0.9rem;
+	.notebook-book__paper footer i {
+		width: 0.18rem;
+		height: 0.18rem;
+		border-radius: 50%;
+		background: currentColor;
+	}
+
+	.notebook-book__spine {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 4;
+		width: 0.38rem;
+		border-right: 1px solid rgb(255 255 255 / 30%);
+		background: rgb(0 0 0 / 28%);
+		box-shadow: 0.18rem 0 0.45rem rgb(0 0 0 / 22%);
+	}
+
+	.notebook-book__pages {
+		position: absolute;
+		inset: 0.25rem 0 0 0.38rem;
+		z-index: 1;
+		border: 1px solid var(--notebook-line);
+		border-radius: 0 0.45rem 0.45rem 0;
+		background: repeating-linear-gradient(to bottom, #f8f8f5 0, #f8f8f5 2px, #deded7 3px, #f8f8f5 4px);
+		transform: translate(0.27rem, 0.3rem);
+	}
+
+	.notebook-recent__grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.72rem;
+	}
+
+	.notebook-note-card {
+		display: flex;
+		min-width: 0;
+		min-height: 10.4rem;
+		flex-direction: column;
+		border: 1px solid var(--notebook-line);
+		border-radius: 0.5rem;
+		padding: 0.88rem;
+		background: color-mix(in srgb, var(--card-bg) 97%, transparent);
+		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+	}
+
+	.notebook-note-card:hover {
+		border-color: var(--notebook-ink);
+		box-shadow: 0 0.65rem 1.4rem rgb(0 0 0 / 8%);
+		transform: translateY(-0.15rem);
+	}
+
+	.notebook-note-card header {
+		gap: 0.58rem;
+	}
+
+	.notebook-note-card__avatar {
+		position: relative;
+		display: block;
+		width: 2.35rem;
+		height: 2.35rem;
+		overflow: hidden;
+		flex: 0 0 auto;
+		border: 1px solid var(--notebook-line);
+		border-radius: 50%;
+		background: var(--btn-regular-bg);
+	}
+
+	.notebook-note-card__avatar > :global(div:first-child) {
+		position: absolute;
+		inset: 0;
+	}
+
+	.notebook-note-card__avatar :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.notebook-note-card__identity {
+		display: grid;
+		min-width: 0;
+		gap: 0.12rem;
+	}
+
+	.notebook-note-card__identity strong {
+		overflow: hidden;
+		font-size: 0.78rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.notebook-note-card__identity time {
+		gap: 0.25rem;
+		color: var(--notebook-muted);
+		font-size: 0.64rem;
+	}
+
+	.notebook-note-card__identity time :global(svg) {
+		width: 0.78rem;
+		height: 0.78rem;
+	}
+
+	.notebook-note-card__body {
+		display: block;
+		flex: 1;
+		padding: 0.68rem 0 0.58rem;
+		color: inherit;
+	}
+
+	.notebook-note-card__body p {
+		display: -webkit-box;
+		overflow: hidden;
+		margin: 0;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		font-size: 0.77rem;
+		line-height: 1.6;
+	}
+
+	.notebook-note-card__body:hover p {
+		text-decoration: underline;
+		text-decoration-color: color-mix(in srgb, var(--notebook-ink) 36%, transparent);
+		text-underline-offset: 0.18rem;
+	}
+
+	.notebook-note-card footer {
+		justify-content: space-between;
+		gap: 0.75rem;
+		border-top: 1px dashed var(--notebook-line);
+		padding-top: 0.55rem;
+		color: var(--notebook-muted);
+		font-size: 0.64rem;
+	}
+
+	.notebook-note-card footer > span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.notebook-note-card footer a {
+		gap: 0.22rem;
+		flex: 0 0 auto;
+		color: inherit;
+	}
+
+	.notebook-note-card footer a:hover {
+		color: var(--notebook-ink);
+	}
+
+	.notebook-note-card footer :global(svg) {
+		width: 0.86rem;
+		height: 0.86rem;
 	}
 
 	.notebook-footnote {
 		justify-content: center;
-		gap: 0.45rem;
-		margin: 2rem 0 0;
-		color: var(--content-meta);
-		font-size: 0.76rem;
+		gap: 0.4rem;
+		margin: 2.1rem 0 0;
+		color: var(--notebook-muted);
+		font-size: 0.72rem;
 	}
 
 	.notebook-footnote :global(svg) {
-		width: 1rem;
-		height: 1rem;
-		color: var(--ui-icon-color);
+		width: 0.95rem;
+		height: 0.95rem;
 	}
 
-	@media (max-width: 900px) {
-		.notebook-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
+	:global(html.dark) .notebook-book__pages {
+		background: repeating-linear-gradient(to bottom, #303030 0, #303030 2px, #171717 3px, #303030 4px);
 	}
 
-	@media (max-width: 600px) {
-		.notebook-featured {
-			align-items: flex-start;
-			flex-direction: column;
+	@media (max-width: 700px) {
+		.notebook-highlight > span:not(.notebook-highlight__icon),
+		.notebook-section-heading p {
+			display: none;
 		}
 
-		.notebook-grid {
+		.notebook-book {
+			width: min(15rem, 78vw);
+			flex-basis: min(15rem, 78vw);
+		}
+
+		.notebook-recent__grid {
 			grid-template-columns: minmax(0, 1fr);
 		}
 
-		.notebook-stats {
-			flex-wrap: wrap;
-			padding-right: 0.25rem;
-			padding-left: 0.25rem;
+		.notebook-note-card {
+			min-height: 9.5rem;
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.notebook-card,
-		.notebook-card__cover > span {
+		.notebook-highlight,
+		.notebook-book__volume,
+		.notebook-book__image :global(img),
+		.notebook-note-card {
 			transition: none;
+		}
+
+		.notebook-shelf__scroller {
+			scroll-behavior: auto;
 		}
 	}
 </style>

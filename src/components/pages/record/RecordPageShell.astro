@@ -8,14 +8,21 @@ interface Props {
 	description: string;
 	icon: string;
 	updatedAt?: string;
+	showSidebars?: boolean;
 }
 
-const { title, description, icon, updatedAt } = Astro.props;
-const posts = await getSortedPostsList();
+const {
+	title,
+	description,
+	icon,
+	updatedAt,
+	showSidebars = true,
+} = Astro.props;
+const posts = showSidebars ? await getSortedPostsList() : [];
 ---
 
-<div class="record-replica-page onload-animation">
-	<ArchiveReplicaSidebar side="left" posts={posts} />
+<div class:list={["record-replica-page onload-animation", !showSidebars && "is-single-column"]}>
+	{showSidebars && <ArchiveReplicaSidebar side="left" posts={posts} />}
 
 	<article class="record-page" aria-labelledby="record-page-title">
 		<header class="record-page__header">
@@ -37,7 +44,7 @@ const posts = await getSortedPostsList();
 		</div>
 	</article>
 
-	<ArchiveReplicaSidebar side="right" posts={posts} />
+	{showSidebars && <ArchiveReplicaSidebar side="right" posts={posts} />}
 </div>
 
 <style>
@@ -80,6 +87,12 @@ const posts = await getSortedPostsList();
 		padding: 1.5rem 2.25rem 4rem;
 		background: color-mix(in srgb, var(--card-bg) 97%, transparent);
 		backdrop-filter: blur(1.25rem);
+	}
+
+	.record-replica-page.is-single-column {
+		grid-template-columns: minmax(0, 61rem);
+		justify-content: center;
+		width: min(61rem, calc(100vw - 2rem));
 	}
 
 	.record-page__header {
