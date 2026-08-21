@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.31",
+		date: "2026-08-21",
+		time: "16:06",
+		type: "optimize",
+		title: "笔记本连续翻页交互",
+		summary: "根据悬浮停留时间依次翻动书页，并扩大书本的展开幅度。",
+		changes: [
+			"封面打开角度提升至更明显的展开状态，并在开合过程中为左侧封面留出空间。",
+			"加入三张独立纸页，短暂停留翻一页，继续悬浮时按节奏依次翻开后续页面。",
+			"鼠标移开后按相反顺序逐页收回，最后平滑合上封面。",
+			"减少动态效果模式下关闭书本位移与翻页过渡。",
+		],
+	},
+	{
 		version: "v6.14.30",
 		date: "2026-08-21",
 		time: "15:49",
