@@ -183,6 +183,18 @@ function resetHue() {
 	commitHue();
 }
 
+function openWallpaperPicker() {
+	document
+		.getElementById("display-setting")
+		?.classList.add("float-panel-closed");
+	window.dispatchEvent(
+		new CustomEvent("jingyue:floating-panel-open", {
+			detail: { panel: "wallpaper" },
+		}),
+	);
+	window.dispatchEvent(new Event("firefly:open-wallpaper-picker"));
+}
+
 function updateHue(value: number) {
 	if (!Number.isFinite(value)) return;
 	hue = Math.round(Math.min(360, Math.max(0, value)));
@@ -703,6 +715,17 @@ onMount(() => {
                 </div>
             </button>
         </div>
+        {#if isWallpaperSwitchable}
+            <button
+                type="button"
+                class="wallpaper-picker-entry"
+                onclick={openWallpaperPicker}
+            >
+				<Icon icon="material-symbols:wallpaper" class="text-[1.15rem]"></Icon>
+                <span>{isMobileWidth ? "选择手机壁纸" : "选择页面壁纸"}</span>
+                <Icon icon="material-symbols:arrow-forward-ios-rounded" class="text-[0.75rem]"></Icon>
+            </button>
+        {/if}
         <div class="wallpaper-settings-shell rounded-xl p-3 space-y-2.5">
             {#if isWallpaperSwitchable}
                 <div class="wallpaper-mode-grid grid grid-cols-3 gap-1.5">
@@ -1230,6 +1253,34 @@ onMount(() => {
             background linear-gradient(145deg, rgba(137, 196, 137, 0.14), rgba(246, 252, 246, 0.07))
             box-shadow inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 28px rgba(23, 45, 32, 0.06)
             backdrop-filter blur(10px)
+
+        .wallpaper-picker-entry
+            display flex
+            align-items center
+            gap 0.6rem
+            width 100%
+            min-height 2.85rem
+            margin-bottom 0.65rem
+            padding 0.55rem 0.8rem
+            border 1.5px solid rgba(72, 151, 76, 0.28)
+            border-radius 0.75rem
+            background var(--btn-regular-bg)
+            color var(--btn-content)
+            font-size 0.78rem
+            font-weight 750
+            cursor pointer
+            transition border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease
+
+            span
+                flex 1
+                text-align left
+
+            &:hover,
+            &:focus-visible
+                border-color var(--primary)
+                background var(--btn-regular-bg-hover)
+                box-shadow 0 0 0 2px rgba(72, 151, 76, 0.16)
+                outline none
 
         .wallpaper-mode-grid
             padding 0.3rem

@@ -320,6 +320,11 @@ onMount(() => {
 		.local-wallpaper-layer video {
 			object-position: 50% 38%;
 		}
+
+		.local-wallpaper-home img,
+		.local-wallpaper-home video {
+			object-position: 50% 50%;
+		}
 	}
 
 	@media (min-width: 641px) and (max-width: 1023px) {

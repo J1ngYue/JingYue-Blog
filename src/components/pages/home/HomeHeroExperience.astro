@@ -954,6 +954,22 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	}
 
 	@media (max-width: 520px) {
+		.home-camera-hud {
+			display: none;
+		}
+
+		.home-dialogue-launch {
+			right: 0.75rem;
+			bottom: calc(6.25rem + env(safe-area-inset-bottom));
+		}
+
+		.home-hero-dialogue {
+			bottom: calc(6.15rem + env(safe-area-inset-bottom));
+			width: calc(100vw - 1rem);
+			min-height: 10.25rem;
+			border-radius: 1rem;
+		}
+
 		.home-hero-dialogue__speaker {
 			top: -1.22rem;
 			left: 0.8rem;
@@ -964,6 +980,29 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		.home-hero-dialogue__controls {
 			top: -1rem;
 			right: 0.45rem;
+		}
+
+		.home-hero-dialogue__controls button {
+			width: 2.15rem;
+			height: 2.15rem;
+			min-height: 2.15rem;
+			justify-content: center;
+			padding: 0;
+		}
+
+		.home-hero-dialogue__body {
+			min-height: 6.8rem;
+			padding: 2.75rem 1rem 0.45rem;
+		}
+
+		.home-hero-dialogue__text {
+			font-size: clamp(0.92rem, 4vw, 1.06rem);
+			line-height: 1.58;
+		}
+
+		.home-hero-dialogue__footer {
+			min-height: 2.7rem;
+			padding: 0.25rem 1rem 0.65rem;
 		}
 	}
 

@@ -182,6 +182,29 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		</a>
 	</nav>
 
+	<nav class="home-mobile-dock" aria-label="手机端快捷导航">
+		<a href="/" aria-current="page">
+			<Icon is:inline name="material-symbols:home-outline-rounded" />
+			<span>首页</span>
+		</a>
+		<button type="button" data-home-quick-tool="search" aria-label="打开站内搜索">
+			<Icon is:inline name="material-symbols:search-rounded" />
+			<span>搜索</span>
+		</button>
+		<button class="home-mobile-dock__menu" type="button" data-home-quick-tool="navigation" aria-label="打开快捷导航">
+			<Icon is:inline name="material-symbols:menu-rounded" />
+			<span>菜单</span>
+		</button>
+		<button type="button" data-home-quick-tool="settings" aria-label="打开主题与壁纸设置">
+			<Icon is:inline name="material-symbols:light-mode-outline-rounded" />
+			<span>主题</span>
+		</button>
+		<button type="button" data-home-mobile-back aria-label="返回上一页">
+			<Icon is:inline name="material-symbols:keyboard-return-rounded" />
+			<span>返回</span>
+		</button>
+	</nav>
+
 	<section
 		id="home-hero"
 		class="home-hero"
@@ -256,6 +279,25 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				<HomeHeroExperience avatar={profileAvatar} />
 
 				<div class="home-cover-scene" data-home-cover-scene>
+					<div class="home-mobile-profile" aria-label="JingYue 个人介绍">
+						<p class="home-mobile-profile__role">【技术博主 / 生活记录者】</p>
+						<strong class="home-mobile-profile__title">{siteConfig.title}</strong>
+						<span class="home-mobile-profile__badge">{siteConfig.title} 的个人博客</span>
+						<div class="home-mobile-profile__avatar">
+							<ImageWrapper
+								src={profileAvatar}
+								alt={`${profileConfig.name} 的头像`}
+								loading="eager"
+								widths={[96, 144, 192]}
+								sizes="5.5rem"
+								fadeIn={false}
+								siteAvatar
+							/>
+							<span><i aria-hidden="true"></i>在线</span>
+						</div>
+						<p class="home-mobile-profile__welcome">如果你喜欢，那么欢迎来到我的世界！</p>
+					</div>
+
 					<div class="home-hero-content">
 						<p class="home-hero-eyebrow">JINGYUE · PERSONAL SPACE</p>
 						<p class="home-hero-subtitle">{siteConfig.subtitle}</p>
@@ -594,6 +636,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const themePresets = Array.from(root.querySelectorAll("[data-home-cover-theme-preset]"));
 		const themeReset = root.querySelector("[data-home-cover-theme-reset]");
 		const homeQuickTools = Array.from(root.querySelectorAll("[data-home-quick-tool]"));
+		const mobileBackButton = root.querySelector("[data-home-mobile-back]");
 		const coverImages = Array.from(
 			root.querySelectorAll("[id^='home-cover-desktop-'], [id^='home-cover-mobile-']"),
 		);
@@ -1002,13 +1045,21 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		};
 
 		const handleHomeQuickTool = (event) => {
+			event.stopPropagation();
 			const action = event.currentTarget?.dataset.homeQuickTool;
 			const targetId = {
 				navigation: "quick-tools-navigation",
-				search: "quick-tools-search",
+				search: "search-switch",
 				settings: "display-settings-switch",
 			}[action];
 			if (targetId) document.getElementById(targetId)?.click();
+		};
+		const handleMobileBack = () => {
+			if (window.history.length > 1) {
+				window.history.back();
+				return;
+			}
+			window.scrollTo({ top: 0, behavior: reducedMotion.matches ? "auto" : "smooth" });
 		};
 
 		homeQuickTools.forEach((tool) => {
@@ -1016,6 +1067,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				tool.addEventListener("click", handleHomeQuickTool);
 			}
 		});
+		mobileBackButton?.addEventListener("click", handleMobileBack);
 
 		const setCoverSwitcherOpen = (open, restoreFocus = true) => {
 			if (!coverSwitcher || !coverSwitcherTrigger || coverSwitcherOpen === open) return;
@@ -1829,6 +1881,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 					tool.removeEventListener("click", handleHomeQuickTool);
 				}
 			});
+			mobileBackButton?.removeEventListener("click", handleMobileBack);
 			coverSwitcher?.removeEventListener("keydown", handleCoverSwitcherKeydown);
 			coverOrbit?.removeEventListener("pointermove", handleCoverOrbitPointerMove);
 			coverOrbit?.removeEventListener("pointerleave", handleCoverOrbitPointerLeave);
@@ -1919,6 +1972,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		width: 100%;
 		background: var(--page-bg);
 		color: var(--deep-text);
+	}
+
+	.home-mobile-dock,
+	.home-mobile-profile {
+		display: none;
 	}
 
 	.home-landing.has-local-wallpaper,
@@ -6093,6 +6151,239 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	}
 
 	@media (max-width: 640px) {
+		:global(body.home-landing-active #navbar > div > div:first-child) {
+			display: none !important;
+		}
+
+		:global(body.home-landing-active #quick-tools-dock .quick-tools-rail) {
+			display: none !important;
+		}
+
+		:global(body.home-landing-active #quick-tools-dock .quick-tools-menu) {
+			right: max(0.65rem, env(safe-area-inset-right)) !important;
+			bottom: calc(5.75rem + env(safe-area-inset-bottom)) !important;
+			width: calc(100vw - max(1.3rem, env(safe-area-inset-left) + env(safe-area-inset-right))) !important;
+			max-height: calc(100svh - 7rem) !important;
+		}
+
+		.home-hero-wash {
+			background:
+				linear-gradient(180deg, rgb(3 6 10 / 0.4), rgb(3 6 10 / 0.16) 28%, rgb(3 6 10 / 0.34) 67%, rgb(3 6 10 / 0.72)),
+				radial-gradient(circle at 50% 35%, transparent 15%, rgb(3 6 10 / 0.2) 82%);
+		}
+
+		.home-hero-content,
+		.home-hero-status,
+		.home-hero-action,
+		.home-scene-indicator {
+			display: none;
+		}
+
+		.home-mobile-profile {
+			position: absolute;
+			top: max(clamp(6.25rem, 16svh, 8.5rem), env(safe-area-inset-top));
+			left: 50%;
+			z-index: 4;
+			display: grid;
+			justify-items: center;
+			width: min(22rem, calc(100% - 2rem));
+			color: #fff;
+			font-family: var(--font-navbar-title, var(--font-sans));
+			text-align: center;
+			text-shadow: 0 0.15rem 0.75rem rgb(0 0 0 / 0.82);
+			transform: translateX(-50%);
+		}
+
+		.home-mobile-profile__role {
+			margin: 0 0 0.35rem;
+			font-size: clamp(0.76rem, 3.6vw, 0.92rem);
+			font-weight: 850;
+			letter-spacing: 0.04em;
+		}
+
+		.home-mobile-profile__title {
+			display: block;
+			margin: 0;
+			background: linear-gradient(90deg, #ff6868 0 16%, #ffbd4a 22%, #fff276 37%, #55df91 52%, #55cfff 68%, #a987ff 84%, #ff6f9f 100%);
+			background-clip: text;
+			color: transparent;
+			font-size: clamp(3.25rem, 17vw, 4.65rem);
+			font-weight: 950;
+			line-height: 0.95;
+			letter-spacing: -0.08em;
+			-webkit-background-clip: text;
+			-webkit-text-stroke: 1px rgb(255 255 255 / 0.22);
+			filter: drop-shadow(0 0.3rem 0.25rem rgb(0 0 0 / 0.55));
+		}
+
+		.home-mobile-profile__badge {
+			min-height: 2rem;
+			margin-top: 0.6rem;
+			padding: 0.35rem 1.2rem;
+			border: 2px solid rgb(255 255 255 / 0.96);
+			border-radius: 0.35rem;
+			background: rgb(255 255 255 / 0.94);
+			box-shadow:
+				0 0.16rem 0 hsl(var(--hue) 70% 52%),
+				0 0.5rem 1.4rem rgb(0 0 0 / 0.25);
+			color: #111;
+			font-size: 0.78rem;
+			font-weight: 850;
+			line-height: 1.15rem;
+			text-shadow: none;
+		}
+
+		.home-mobile-profile__avatar {
+			position: relative;
+			display: grid;
+			width: 5.65rem;
+			height: 5.65rem;
+			margin-top: 1rem;
+			border: 3px solid #090909;
+			border-radius: 50%;
+			background: rgb(255 255 255 / 0.88);
+			box-shadow:
+				0 0 0 2px rgb(255 255 255 / 0.9),
+				0 0.8rem 2rem rgb(0 0 0 / 0.32);
+			place-items: center;
+		}
+
+		.home-mobile-profile__avatar :global(img) {
+			width: 100%;
+			height: 100%;
+			border-radius: inherit;
+			object-fit: cover;
+		}
+
+		.home-mobile-profile__avatar :global([data-site-avatar]) {
+			width: 100%;
+			height: 100%;
+			border-radius: 50% !important;
+			overflow: hidden;
+		}
+
+		.home-mobile-profile__avatar :global(picture),
+		.home-mobile-profile__avatar :global(img) {
+			border-radius: 50% !important;
+		}
+
+		.home-mobile-profile__avatar > span {
+			position: absolute;
+			left: 50%;
+			bottom: -1.5rem;
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			min-width: 4.45rem;
+			min-height: 1.85rem;
+			justify-content: center;
+			padding: 0.2rem 0.6rem;
+			border: 3px solid #080808;
+			border-radius: 999px;
+			background: #fff;
+			box-shadow: 0 0.35rem 0.8rem rgb(0 0 0 / 0.28);
+			color: #0b0b0b;
+			font-size: 0.72rem;
+			font-weight: 900;
+			text-shadow: none;
+			transform: translateX(-50%);
+			white-space: nowrap;
+		}
+
+		.home-mobile-profile__avatar > span i {
+			width: 0.58rem;
+			height: 0.58rem;
+			border-radius: 50%;
+			background: #111;
+		}
+
+		.home-mobile-profile__welcome {
+			margin: 2.15rem 0 0;
+			font-size: clamp(0.84rem, 3.8vw, 1rem);
+			font-weight: 850;
+			letter-spacing: 0.02em;
+		}
+
+		.home-mobile-dock {
+			position: fixed;
+			right: max(0.75rem, env(safe-area-inset-right));
+			bottom: max(0.55rem, env(safe-area-inset-bottom));
+			left: max(0.75rem, env(safe-area-inset-left));
+			z-index: 1100;
+			display: grid;
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+			align-items: end;
+			min-height: 4.45rem;
+			padding: 0.35rem 0.5rem;
+			border: 1px solid rgb(255 255 255 / 0.46);
+			border-radius: 999px;
+			background: rgb(247 247 247 / 0.84);
+			box-shadow: 0 0.9rem 2.6rem rgb(0 0 0 / 0.34);
+			backdrop-filter: blur(1.25rem) saturate(1.16);
+		}
+
+		.home-mobile-dock a,
+		.home-mobile-dock button {
+			display: grid;
+			align-content: center;
+			justify-items: center;
+			gap: 0.1rem;
+			min-width: 0;
+			min-height: 3.45rem;
+			padding: 0.3rem 0.15rem;
+			border: 0;
+			border-radius: 0.9rem;
+			background: transparent;
+			color: #111;
+			font-size: 0.64rem;
+			font-weight: 750;
+			line-height: 1;
+			cursor: pointer;
+			transition: background-color 180ms ease, color 180ms ease;
+		}
+
+		.home-mobile-dock a:focus-visible,
+		.home-mobile-dock button:focus-visible {
+			outline: 2px solid hsl(var(--hue) 70% 46%);
+			outline-offset: 1px;
+		}
+
+		.home-mobile-dock a:active,
+		.home-mobile-dock button:active {
+			background: rgb(0 0 0 / 0.09);
+		}
+
+		.home-mobile-dock :global(svg) {
+			width: 1.35rem;
+			height: 1.35rem;
+		}
+
+		.home-mobile-dock__menu {
+			align-self: center;
+			width: 4.4rem;
+			height: 4.4rem;
+			margin: -1.05rem auto 0;
+			border: 3px solid #fff !important;
+			border-radius: 50% !important;
+			background: #090909 !important;
+			box-shadow: 0 0.65rem 1.6rem rgb(0 0 0 / 0.38);
+			color: #fff !important;
+		}
+
+		.home-mobile-dock__menu :global(svg) {
+			width: 2.2rem;
+			height: 2.2rem;
+		}
+
+		.home-mobile-dock__menu span {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
+		}
+
 		.home-ending-copy {
 			top: 4.8rem;
 			width: calc(100% - 1.25rem);
@@ -6137,6 +6428,35 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		.home-ending-letter-link {
 			margin-top: 0.9rem;
 			font-size: 0.64rem;
+		}
+	}
+
+	@media (max-width: 640px) and (max-height: 720px) {
+		.home-mobile-profile {
+			top: max(4.2rem, env(safe-area-inset-top));
+		}
+
+		.home-mobile-profile__title {
+			font-size: clamp(2.8rem, 15vw, 3.45rem);
+		}
+
+		.home-mobile-profile__badge {
+			margin-top: 0.4rem;
+		}
+
+		.home-mobile-profile__avatar {
+			width: 4.8rem;
+			height: 4.8rem;
+			margin-top: 0.7rem;
+		}
+
+		.home-mobile-profile__avatar > span {
+			bottom: -1.3rem;
+		}
+
+		.home-mobile-profile__welcome {
+			margin-top: 1.8rem;
+			font-size: 0.8rem;
 		}
 	}
 
