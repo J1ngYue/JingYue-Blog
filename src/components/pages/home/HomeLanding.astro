@@ -129,6 +129,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	data-home-timezone={siteTimezone}
 	data-home-start-date={siteStartDate}
 	data-home-default-hue={siteConfig.themeColor.hue}
+	data-home-entry="loading"
 >
 	<LocalWallpaperLayer client:load surface="home" />
 
@@ -217,6 +218,20 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	>
 		<div class="home-hero-sticky">
 			<div class="home-hero-frame" data-home-hero-frame>
+				<div class="home-entry-loader" data-home-entry-loader role="status" aria-live="polite">
+					<div class="home-entry-loader__signal" aria-hidden="true"><i></i><i></i><i></i></div>
+					<div class="home-entry-loader__content">
+						<p>JINGYUE / VISUAL LINK</p>
+						<strong>正在装载封面</strong>
+						<div class="home-entry-loader__track" aria-hidden="true">
+							<i data-home-entry-bar></i>
+						</div>
+						<div class="home-entry-loader__meta">
+							<span data-home-entry-label>建立视觉连接</span>
+							<output data-home-entry-value>06%</output>
+						</div>
+					</div>
+				</div>
 				{coverIllustrations.map((cover, index) => (
 					<>
 						<ImageWrapper
@@ -618,6 +633,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		if (!hero || !frame) return;
 
 		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const entryLoader = root.querySelector("[data-home-entry-loader]");
+		const entryBar = root.querySelector("[data-home-entry-bar]");
+		const entryLabel = root.querySelector("[data-home-entry-label]");
+		const entryValue = root.querySelector("[data-home-entry-value]");
 		const clock = root.querySelector("[data-home-clock]");
 		const date = root.querySelector("[data-home-date]");
 		const greeting = root.querySelector("[data-home-greeting]");
@@ -670,6 +689,12 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const quotes = quote ? JSON.parse(quote.dataset.quotes || "[]") : [];
 		const terminalLines = terminal ? JSON.parse(terminal.dataset.lines || "[]") : [];
 		let animationFrame = 0;
+		let entryProgressFrame = 0;
+		let entryFallbackTimer = 0;
+		let entryRevealTimer = 0;
+		let entryHideTimer = 0;
+		let entryStartedAt = 0;
+		let entryResolved = false;
 		let pageScrollAnimation = 0;
 		let pageScrollFallbackTimer = 0;
 		let pageScrollTransitionEndHandler = null;
@@ -1663,6 +1688,91 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			terminalTimer = window.setTimeout(type, 450);
 		};
 
+		const setEntryProgress = (value) => {
+			const normalized = Math.max(0, Math.min(100, Math.round(value)));
+			entryBar?.style.setProperty("--home-entry-progress", `${normalized}%`);
+			if (entryValue) entryValue.textContent = `${String(normalized).padStart(2, "0")}%`;
+		};
+
+		const animateEntryProgress = (time) => {
+			if (entryResolved) return;
+			const elapsed = Math.max(0, time - entryStartedAt);
+			const progress = 6 + 86 * (1 - Math.exp(-elapsed / 1800));
+			setEntryProgress(Math.min(92, progress));
+			entryProgressFrame = requestAnimationFrame(animateEntryProgress);
+		};
+
+		const beginHomeEntry = () => {
+			entryResolved = false;
+			if (entryProgressFrame) cancelAnimationFrame(entryProgressFrame);
+			if (entryFallbackTimer) window.clearTimeout(entryFallbackTimer);
+			if (entryRevealTimer) window.clearTimeout(entryRevealTimer);
+			if (entryHideTimer) window.clearTimeout(entryHideTimer);
+			entryLoader?.removeAttribute("hidden");
+			entryLoader?.classList.remove("is-leaving");
+			root.dataset.homeEntry = "loading";
+			root.setAttribute("aria-busy", "true");
+			document.documentElement.classList.add("home-entry-loading");
+			if (entryLabel) entryLabel.textContent = "建立视觉连接";
+			setEntryProgress(6);
+			entryStartedAt = performance.now();
+			if (!reducedMotion.matches) {
+				entryProgressFrame = requestAnimationFrame(animateEntryProgress);
+			}
+			entryFallbackTimer = window.setTimeout(
+				() => finishHomeEntry({ detail: { fallback: true } }),
+				10000,
+			);
+		};
+
+		const finishHomeEntry = (event) => {
+			if (entryResolved) return;
+			entryResolved = true;
+			if (entryProgressFrame) cancelAnimationFrame(entryProgressFrame);
+			entryProgressFrame = 0;
+			if (entryFallbackTimer) window.clearTimeout(entryFallbackTimer);
+			entryFallbackTimer = 0;
+			setEntryProgress(100);
+			if (entryLabel) {
+				entryLabel.textContent = event?.detail?.fallback ? "启用备用封面" : "封面准备完成";
+			}
+
+			entryRevealTimer = window.setTimeout(
+				() => {
+					entryRevealTimer = 0;
+					root.dataset.homeEntry = "ready";
+					root.setAttribute("aria-busy", "false");
+					entryLoader?.classList.add("is-leaving");
+					document.documentElement.classList.remove("home-entry-loading");
+					playWordmark();
+					startTerminal();
+				},
+				reducedMotion.matches ? 0 : 180,
+			);
+			entryHideTimer = window.setTimeout(
+				() => {
+					entryHideTimer = 0;
+					entryLoader?.setAttribute("hidden", "");
+				},
+				reducedMotion.matches ? 0 : 900,
+			);
+		};
+
+		const handleHomeWallpaperLoading = () => beginHomeEntry();
+		const handleHomeWallpaperReady = (event) => finishHomeEntry(event);
+		window.addEventListener("firefly:home-wallpaper-loading", handleHomeWallpaperLoading);
+		window.addEventListener("firefly:home-wallpaper-ready", handleHomeWallpaperReady);
+		beginHomeEntry();
+		requestAnimationFrame(() => {
+			const wallpaperLayer = root.querySelector('[data-local-wallpaper-surface="home"]');
+			if (
+				wallpaperLayer?.getAttribute("data-wallpaper-ready") === "true" ||
+				document.documentElement.getAttribute("data-wallpaper-mode") === "none"
+			) {
+				finishHomeEntry({ detail: { skipped: true } });
+			}
+		});
+
 		updateSceneMetrics();
 		sceneMetricsFrame = requestAnimationFrame(() => {
 			sceneMetricsFrame = 0;
@@ -1791,9 +1901,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				: Number(target);
 			navigateToScene(index >= 0 ? index : 0);
 		};
-		playWordmark();
-		startTerminal();
-
 		const render = () => {
 			animationFrame = 0;
 			if (sceneTransitioning) return;
@@ -1854,6 +1961,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		render();
 
 		window.__fireflyHomeLandingCleanup = () => {
+			window.removeEventListener("firefly:home-wallpaper-loading", handleHomeWallpaperLoading);
+			window.removeEventListener("firefly:home-wallpaper-ready", handleHomeWallpaperReady);
 			window.removeEventListener("scroll", scheduleRender);
 			window.removeEventListener("resize", handleViewportResize);
 			window.removeEventListener("theme-change", handleThemeChange);
@@ -1942,6 +2051,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (sceneMetricsFrame) cancelAnimationFrame(sceneMetricsFrame);
 			if (wordmarkFrame) cancelAnimationFrame(wordmarkFrame);
 			if (wordmarkReadyFrame) cancelAnimationFrame(wordmarkReadyFrame);
+			if (entryProgressFrame) cancelAnimationFrame(entryProgressFrame);
+			if (entryFallbackTimer) window.clearTimeout(entryFallbackTimer);
+			if (entryRevealTimer) window.clearTimeout(entryRevealTimer);
+			if (entryHideTimer) window.clearTimeout(entryHideTimer);
+			document.documentElement.classList.remove("home-entry-loading");
 			unlockPageScrollBehavior();
 			viewportElements.forEach(({ element, placeholder }) => {
 				if (placeholder.isConnected) placeholder.before(element);
@@ -1983,6 +2097,185 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		width: 100%;
 		background: var(--page-bg);
 		color: var(--deep-text);
+	}
+
+	:global(html.home-entry-loading) {
+		overflow: hidden;
+	}
+
+	.home-entry-loader {
+		position: absolute;
+		inset: 0;
+		z-index: 30;
+		display: grid;
+		align-content: center;
+		justify-items: center;
+		overflow: hidden;
+		padding: clamp(1.25rem, 4vw, 3rem);
+		background:
+			radial-gradient(circle at 72% 28%, color-mix(in oklch, var(--primary) 18%, transparent), transparent 26rem),
+			linear-gradient(145deg, #101720 0%, #0a1017 52%, #151c24 100%);
+		color: #f7fbff;
+		font-family: var(--font-navbar-title, var(--font-sans));
+		opacity: 1;
+		visibility: visible;
+		transition:
+			opacity 680ms cubic-bezier(0.22, 0.61, 0.36, 1),
+			visibility 680ms step-end;
+	}
+
+	.home-entry-loader::before {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(110deg, transparent 34%, rgb(255 255 255 / 0.07) 48%, transparent 62%);
+		content: "";
+		transform: translateX(-100%);
+		animation: home-entry-scan 2.2s ease-in-out infinite;
+		pointer-events: none;
+	}
+
+	.home-entry-loader[hidden] {
+		display: none;
+	}
+
+	.home-entry-loader.is-leaving {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.home-entry-loader__content {
+		position: relative;
+		z-index: 1;
+		width: min(30rem, calc(100vw - 2.5rem));
+	}
+
+	.home-entry-loader__content > p {
+		margin: 0 0 0.65rem;
+		color: rgb(226 239 248 / 0.68);
+		font-size: 0.68rem;
+		font-weight: 850;
+		letter-spacing: 0.26em;
+	}
+
+	.home-entry-loader__content > strong {
+		display: block;
+		font-size: clamp(1.45rem, 4vw, 2.4rem);
+		font-weight: 900;
+		letter-spacing: -0.035em;
+	}
+
+	.home-entry-loader__track {
+		position: relative;
+		height: 0.28rem;
+		margin-top: 1.4rem;
+		overflow: hidden;
+		border-radius: 999px;
+		background: rgb(255 255 255 / 0.14);
+	}
+
+	.home-entry-loader__track > i {
+		display: block;
+		width: var(--home-entry-progress, 6%);
+		height: 100%;
+		border-radius: inherit;
+		background: linear-gradient(90deg, #fff, color-mix(in oklch, var(--primary) 52%, white));
+		box-shadow: 0 0 1.15rem color-mix(in oklch, var(--primary) 72%, transparent);
+		transition: width 180ms ease-out;
+	}
+
+	.home-entry-loader__meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 0.65rem;
+		color: rgb(235 244 250 / 0.72);
+		font-size: 0.68rem;
+		font-weight: 750;
+		letter-spacing: 0.08em;
+	}
+
+	.home-entry-loader__meta output {
+		color: #fff;
+		font-variant-numeric: tabular-nums;
+		font-weight: 900;
+	}
+
+	.home-entry-loader__signal {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		align-items: end;
+		gap: 0.3rem;
+		width: min(30rem, calc(100vw - 2.5rem));
+		margin-bottom: 0.95rem;
+	}
+
+	.home-entry-loader__signal i {
+		display: block;
+		width: 0.24rem;
+		height: 0.7rem;
+		border-radius: 999px;
+		background: color-mix(in oklch, var(--primary) 54%, white);
+		animation: home-entry-signal 900ms ease-in-out infinite alternate;
+	}
+
+	.home-entry-loader__signal i:nth-child(2) {
+		height: 1rem;
+		animation-delay: -300ms;
+	}
+
+	.home-entry-loader__signal i:nth-child(3) {
+		height: 0.5rem;
+		animation-delay: -600ms;
+	}
+
+	.home-landing[data-home-entry="loading"] .home-cover-scene,
+	.home-landing[data-home-entry="loading"] :global(.home-hero-experience),
+	.home-landing[data-home-entry="loading"] .home-mobile-dock {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.home-landing[data-home-entry="loading"] .home-cover-scene {
+		transform: scale(1.012);
+	}
+
+	.home-landing[data-home-entry="ready"] .home-cover-scene,
+	.home-landing[data-home-entry="ready"] :global(.home-hero-experience),
+	.home-landing[data-home-entry="ready"] .home-mobile-dock {
+		opacity: 1;
+		visibility: visible;
+		transition:
+			opacity 620ms cubic-bezier(0.22, 0.61, 0.36, 1),
+			transform 760ms cubic-bezier(0.22, 0.61, 0.36, 1),
+			visibility 0ms;
+	}
+
+	@keyframes home-entry-scan {
+		0%,
+		20% {
+			transform: translateX(-100%);
+		}
+
+		80%,
+		100% {
+			transform: translateX(100%);
+		}
+	}
+
+	@keyframes home-entry-signal {
+		from {
+			opacity: 0.35;
+			transform: scaleY(0.62);
+		}
+
+		to {
+			opacity: 1;
+			transform: scaleY(1);
+		}
 	}
 
 	.home-mobile-dock,
@@ -5497,6 +5790,19 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.home-entry-loader,
+		.home-entry-loader__track > i,
+		.home-landing[data-home-entry] .home-cover-scene,
+		.home-landing[data-home-entry] :global(.home-hero-experience),
+		.home-landing[data-home-entry] .home-mobile-dock {
+			transition: none !important;
+		}
+
+		.home-entry-loader::before,
+		.home-entry-loader__signal i {
+			animation: none !important;
+		}
+
 		.home-landing[data-home-scenes-ready="true"] .home-scroll-scene {
 			transition: none !important;
 		}

@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.42",
+		date: "2026-08-23",
+		time: "00:50",
+		type: "optimize",
+		title: "首页封面同步揭幕",
+		summary: "消除图片和视频封面加载时的灰屏与内容抢跑。",
+		changes: [
+			"壁纸 URL 确定后继续等待图片解码或视频首帧就绪，再切换首页背景。",
+			"桌面端和移动端新增封面加载进度条，避免加载期间暴露白屏与灰屏。",
+			"封面、标题、头像和对话区域改为同一时刻柔和揭幕。",
+			"媒体加载失败时自动启用备用封面，并兼容减少动态效果设置。",
+		],
+	},
+	{
 		version: "v6.14.41",
 		date: "2026-08-22",
 		time: "23:28",

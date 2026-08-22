@@ -22,8 +22,51 @@ let mediaType = $state<LocalWallpaperType | null>(null);
 let opacity = $state(1);
 let blur = $state(0);
 let hasMedia = $state(false);
+let mediaReady = $state(false);
 let wallpaperEnabled = $state(true);
 let videoElement: HTMLVideoElement | null = null;
+
+function syncActiveWallpaperClass() {
+	if (typeof document === "undefined") return;
+	const container =
+		surface === "home"
+			? host?.closest(".home-landing")
+			: document.getElementById("wallpaper-wrapper");
+	const isActive = hasMedia && mediaReady && wallpaperEnabled;
+	container?.classList.toggle("has-local-wallpaper", isActive);
+	if (surface === "home") {
+		document.body.classList.toggle("has-home-local-wallpaper", isActive);
+	}
+}
+
+function dispatchHomeWallpaperState(
+	state: "loading" | "ready",
+	detail: Record<string, unknown> = {},
+) {
+	if (surface !== "home" || typeof window === "undefined") return;
+	window.dispatchEvent(
+		new CustomEvent(`firefly:home-wallpaper-${state}`, {
+			detail: { surface, mediaType, ...detail },
+		}),
+	);
+}
+
+function markMediaReady() {
+	if (!sourceUrl || mediaReady) return;
+	mediaReady = true;
+	syncActiveWallpaperClass();
+	dispatchHomeWallpaperState("ready");
+}
+
+function handleMediaError() {
+	mediaReady = false;
+	hasMedia = false;
+	sourceUrl = "";
+	mediaType = null;
+	document.documentElement.setAttribute("data-has-local-wallpaper", "false");
+	syncActiveWallpaperClass();
+	dispatchHomeWallpaperState("ready", { fallback: true });
+}
 
 function ensureVideoPlayback() {
 	if (!videoElement) return;
@@ -54,11 +97,7 @@ onMount(() => {
 		wallpaperEnabled =
 			(mode ?? document.documentElement.getAttribute("data-wallpaper-mode")) !==
 			"none";
-		const isActive = hasMedia && wallpaperEnabled;
-		container?.classList.toggle("has-local-wallpaper", isActive);
-		if (surface === "home") {
-			document.body.classList.toggle("has-home-local-wallpaper", isActive);
-		}
+		syncActiveWallpaperClass();
 	};
 
 	const applyAppearance = () => {
@@ -77,6 +116,9 @@ onMount(() => {
 
 	const loadMedia = async () => {
 		const version = ++loadVersion;
+		mediaReady = false;
+		dispatchHomeWallpaperState("loading");
+		syncWallpaperMode();
 		try {
 			const pageKey = resolvePageWallpaperKey();
 			const choice = getEffectivePageWallpaper(pageKey);
@@ -118,8 +160,15 @@ onMount(() => {
 			);
 			document.documentElement.setAttribute("data-page-wallpaper", choice);
 			syncWallpaperMode();
+			if (!sourceUrl) {
+				mediaReady = true;
+				dispatchHomeWallpaperState("ready", { skipped: true });
+			} else if (!wallpaperEnabled) {
+				dispatchHomeWallpaperState("ready", { skipped: true });
+			}
 		} catch {
 			if (!disposed) {
+				mediaReady = false;
 				hasMedia = false;
 				sourceUrl = "";
 				mediaType = null;
@@ -127,6 +176,7 @@ onMount(() => {
 				if (surface === "home") {
 					document.body.classList.remove("has-home-local-wallpaper");
 				}
+				dispatchHomeWallpaperState("ready", { fallback: true });
 			}
 		}
 	};
@@ -191,14 +241,22 @@ onMount(() => {
 	class="local-wallpaper-layer"
 	class:local-wallpaper-home={surface === "home"}
 	class:local-wallpaper-site={surface === "site"}
-	class:is-active={Boolean(sourceUrl) && wallpaperEnabled}
+	class:is-active={Boolean(sourceUrl) && mediaReady && wallpaperEnabled}
 	data-local-wallpaper-surface={surface}
+	data-wallpaper-ready={mediaReady ? "true" : "false"}
 	style:--home-local-wallpaper-opacity={opacity}
 	style:--home-local-wallpaper-blur={`${blur}px`}
 	aria-hidden="true"
 >
 	{#if mediaType === "image" && sourceUrl}
-		<img src={sourceUrl} alt="" />
+		<img
+			src={sourceUrl}
+			alt=""
+			loading="eager"
+			fetchpriority={surface === "home" ? "high" : "auto"}
+			onload={markMediaReady}
+			onerror={handleMediaError}
+		/>
 	{:else if mediaType === "video" && sourceUrl}
 		<video
 			bind:this={videoElement}
@@ -209,7 +267,12 @@ onMount(() => {
 			playsinline
 			preload="auto"
 			onloadedmetadata={ensureVideoPlayback}
-			oncanplay={ensureVideoPlayback}
+			onloadeddata={markMediaReady}
+			oncanplay={() => {
+				ensureVideoPlayback();
+				markMediaReady();
+			}}
+			onerror={handleMediaError}
 		></video>
 	{/if}
 </div>
@@ -221,7 +284,7 @@ onMount(() => {
 		overflow: hidden;
 		opacity: 0;
 		pointer-events: none;
-		transition: opacity 180ms ease;
+		transition: opacity 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
 	}
 
 	.local-wallpaper-home {
