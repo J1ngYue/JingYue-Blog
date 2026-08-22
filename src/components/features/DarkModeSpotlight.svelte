@@ -932,6 +932,10 @@ onMount(() => {
 	}
 
 	@media (max-width: 700px) {
+		.dark-mode-spotlight {
+			display: none;
+		}
+
 		.dark-mode-spotlight__wash {
 			opacity: 0.78;
 		}

@@ -1,0 +1,703 @@
+---
+import { Icon } from "astro-icon/components";
+import homeData1 from "@/assets/images/HomeReference/home-data-1.webp";
+import homeData2 from "@/assets/images/HomeReference/home-data-2.webp";
+import homeData3 from "@/assets/images/HomeReference/home-data-3.webp";
+import { announcementConfig } from "@/config/announcementConfig";
+import { profileConfig } from "@/config/profileConfig";
+import { siteConfig } from "@/config/siteConfig";
+import {
+	getCategoryList,
+	getSortedPostsList,
+	getTagList,
+} from "@/utils/content-utils";
+import { getPostUrlBySlug, getTagUrl } from "@/utils/url-utils";
+
+const [posts, categories, tags] = await Promise.all([
+	getSortedPostsList(),
+	getCategoryList(),
+	getTagList(),
+]);
+
+const pinnedPost = posts.find((post) => post.data.pinned) ?? posts[0];
+const recentPosts = posts
+	.filter((post) => post.id !== pinnedPost?.id)
+	.slice(0, 3);
+const popularCategories = categories.slice(0, 4);
+const popularTags = [...tags]
+	.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+	.slice(0, 6);
+const totalEntries = posts.length + categories.length + tags.length;
+const siteStartDate = siteConfig.siteStartDate || "2025-01-01";
+const runningDays = Math.max(
+	1,
+	Math.ceil(
+		(Date.now() - new Date(siteStartDate).getTime()) / (1000 * 60 * 60 * 24),
+	),
+);
+const formatDate = (value: Date) =>
+	new Intl.DateTimeFormat("zh-CN", {
+		timeZone: siteConfig.timezone || "Asia/Shanghai",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).format(value);
+const notices = [
+	"[欢迎] 欢迎来自远方的朋友！",
+	`[公告] ${announcementConfig.content}`,
+	`[更新] 最近整理了 ${posts.length} 篇文章、${categories.length} 个分类与 ${tags.length} 个标签`,
+];
+const currentYear = new Date().getFullYear();
+const externalLink = (url: string) => /^https?:\/\//.test(url);
+---
+
+<section class="home-mobile-overview" aria-labelledby="home-mobile-context-title">
+	<div class="home-mobile-ticker" role="status" aria-label="站点滚动公告">
+		<div class="home-mobile-ticker__track">
+			<div class="home-mobile-ticker__group">
+				{notices.map((notice) => <span>{notice}<i aria-hidden="true">×</i></span>)}
+			</div>
+			<div class="home-mobile-ticker__group" aria-hidden="true">
+				{notices.map((notice) => <span>{notice}<i aria-hidden="true">×</i></span>)}
+			</div>
+		</div>
+	</div>
+
+	<div class="home-mobile-overview__inner">
+		<header class="home-mobile-context">
+			<div>
+				<p>CONTEXT</p>
+				<strong>站点数据</strong>
+				<h2 id="home-mobile-context-title">地图指南</h2>
+			</div>
+			<button
+				type="button"
+				class="home-mobile-wallpaper"
+				data-global-wallpaper-trigger
+				aria-label="更换手机竖屏壁纸"
+				aria-controls="page-wallpaper-picker"
+			>
+				<Icon is:inline name="material-symbols:wallpaper" />
+				<span>换壁纸</span>
+			</button>
+		</header>
+
+		<div class="home-mobile-map">
+			<article
+				class="home-mobile-map__card home-mobile-map__card--visits"
+				style={`--mobile-card-art: url(${homeData1.src})`}
+			>
+				<div class="home-mobile-map__copy">
+					<p>VISITS</p>
+					<h3>站点访问</h3>
+					<span>运行 {runningDays} 天 / 收录 {totalEntries} 条内容</span>
+				</div>
+			</article>
+
+			<a
+				class="home-mobile-map__card home-mobile-map__card--archive"
+				href="/archive/"
+				style={`--mobile-card-art: url(${homeData2.src})`}
+			>
+				<span class="home-mobile-map__index">02</span>
+				<div class="home-mobile-map__copy">
+					<p>ARCHIVE</p>
+					<h3>内容索引<span aria-hidden="true">.</span></h3>
+					<dl>
+						<div><dt>文章</dt><dd>{posts.length}</dd></div>
+						<div><dt>分类</dt><dd>{categories.length}</dd></div>
+						<div><dt>标签</dt><dd>{tags.length}</dd></div>
+					</dl>
+				</div>
+			</a>
+		</div>
+
+		{pinnedPost && (
+			<a class="home-mobile-panel home-mobile-featured" href={getPostUrlBySlug(pinnedPost.id)}>
+				<span class="home-mobile-panel__eyebrow">置顶文章</span>
+				<p class="home-mobile-panel__meta">
+					{pinnedPost.data.category || "文章"} / {formatDate(pinnedPost.data.published)}
+				</p>
+				<h3>{pinnedPost.data.title}</h3>
+				<p>{pinnedPost.data.description || "查看这篇置顶文章的完整内容。"}</p>
+				<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+			</a>
+		)}
+
+		<section class="home-mobile-panel home-mobile-recent" aria-labelledby="home-mobile-recent-title">
+			<p class="home-mobile-panel__eyebrow">RECENT POSTS</p>
+			<h3 id="home-mobile-recent-title">最新更新</h3>
+			<div class="home-mobile-recent__track">
+				{recentPosts.map((post, index) => (
+					<a href={getPostUrlBySlug(post.id)}>
+						<span>{String(index + 1).padStart(2, "0")}</span>
+						<small>{post.data.category || "文章"} / {formatDate(post.data.published)}</small>
+						<strong>{post.data.title}</strong>
+						<p>{post.data.description || "阅读这篇最新内容。"}</p>
+					</a>
+				))}
+			</div>
+			<div class="home-mobile-recent__dots" aria-hidden="true">
+				{recentPosts.map((_, index) => <i class:list={[index === 0 && "is-active"]}></i>)}
+			</div>
+		</section>
+
+		<section class="home-mobile-panel home-mobile-index" aria-labelledby="home-mobile-categories-title">
+			<p class="home-mobile-panel__eyebrow">CATEGORIES</p>
+			<h3 id="home-mobile-categories-title">分类索引</h3>
+			<ul>
+				{popularCategories.map((category) => (
+					<li><a href={category.url}><span>{category.name}</span><strong>{category.count}</strong></a></li>
+				))}
+				<li><a href="/categories/"><span>查看全部</span><strong>{categories.length} 个分类</strong></a></li>
+			</ul>
+		</section>
+
+		<section class="home-mobile-panel home-mobile-tags" aria-labelledby="home-mobile-tags-title">
+			<p class="home-mobile-panel__eyebrow">TAGS</p>
+			<h3 id="home-mobile-tags-title">标签索引</h3>
+			<div>
+				{popularTags.map((tag) => <a href={getTagUrl(tag.name)}>#{tag.name} <span>{tag.count}</span></a>)}
+				<a href="/tags/">浏览全部标签 <Icon is:inline name="material-symbols:arrow-outward-rounded" /></a>
+			</div>
+		</section>
+
+		<section
+			class="home-mobile-panel home-mobile-subscribe"
+			aria-labelledby="home-mobile-subscribe-title"
+			style={`--mobile-card-art: url(${homeData3.src})`}
+		>
+			<p class="home-mobile-panel__eyebrow">SUBSCRIBE</p>
+			<h3 id="home-mobile-subscribe-title">订阅与联系</h3>
+			<p>收藏这个小站，也欢迎留下你想说的话。</p>
+			<nav aria-label="订阅与社交联系">
+				{profileConfig.links.map((link) => (
+					<a
+						href={link.url}
+						aria-label={link.name}
+						target={externalLink(link.url) ? "_blank" : undefined}
+						rel={externalLink(link.url) ? "noopener noreferrer" : undefined}
+					>
+						<Icon is:inline name={link.icon} />
+					</a>
+				))}
+				<a href="/guestbook/" aria-label="留言板"><Icon is:inline name="material-symbols:edit-square-outline-rounded" /></a>
+			</nav>
+		</section>
+
+		<footer class="home-mobile-overview__footer">
+			<p>Copyright © {currentYear} {siteConfig.title}. 保留所有权利。</p>
+			<a href="/rss/">RSS</a><span aria-hidden="true">/</span><a href="/about/">关于本站</a>
+		</footer>
+	</div>
+</section>
+
+<style>
+	.home-mobile-overview {
+		display: none;
+	}
+
+	@media (max-width: 640px) {
+		.home-mobile-overview {
+			--mobile-paper: #f8f8f6;
+			--mobile-card: rgb(255 255 255 / 0.88);
+			--mobile-ink: #101010;
+			--mobile-muted: #5f6264;
+			--mobile-line: #111;
+			display: block;
+			position: relative;
+			z-index: 3;
+			min-height: 100svh;
+			background: var(--mobile-paper);
+			color: var(--mobile-ink);
+			font-family: var(--font-navbar-title, var(--font-sans));
+			transition: background-color 220ms ease, color 220ms ease;
+		}
+
+		:global(html.dark) .home-mobile-overview {
+			--mobile-paper: #070707;
+			--mobile-card: rgb(12 12 12 / 0.94);
+			--mobile-ink: #fff;
+			--mobile-muted: #b8b8b8;
+			--mobile-line: #fff;
+		}
+
+		.home-mobile-ticker {
+			position: sticky;
+			top: 0;
+			z-index: 24;
+			width: 100%;
+			overflow: hidden;
+			border-block: 1px solid var(--mobile-line);
+			background: var(--mobile-paper);
+			color: var(--mobile-ink);
+		}
+
+		.home-mobile-ticker__track {
+			display: flex;
+			width: max-content;
+			animation: mobile-ticker 24s linear infinite;
+		}
+
+		.home-mobile-ticker__group {
+			display: flex;
+			flex: none;
+			align-items: center;
+		}
+
+		.home-mobile-ticker__group span {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.8rem;
+			min-height: 2.55rem;
+			padding-inline: 0.85rem;
+			font-size: 0.77rem;
+			font-weight: 780;
+			white-space: nowrap;
+		}
+
+		.home-mobile-ticker__group i {
+			font-style: normal;
+			font-weight: 400;
+			opacity: 0.62;
+		}
+
+		.home-mobile-ticker:focus-within .home-mobile-ticker__track,
+		.home-mobile-ticker:hover .home-mobile-ticker__track {
+			animation-play-state: paused;
+		}
+
+		.home-mobile-overview__inner {
+			display: grid;
+			gap: 0.72rem;
+			padding: 2.9rem 1rem calc(7.3rem + env(safe-area-inset-bottom));
+		}
+
+		.home-mobile-context {
+			display: flex;
+			align-items: end;
+			justify-content: space-between;
+			gap: 1rem;
+			margin-bottom: 0.5rem;
+		}
+
+		.home-mobile-context p,
+		.home-mobile-context strong {
+			display: block;
+			margin: 0;
+			font-size: 0.7rem;
+			line-height: 1.15;
+			letter-spacing: 0.08em;
+		}
+
+		.home-mobile-context strong {
+			margin-top: 0.14rem;
+			font-size: 0.9rem;
+			letter-spacing: 0;
+		}
+
+		.home-mobile-context h2 {
+			margin: 0.16rem 0 0;
+			font-size: clamp(2rem, 10vw, 2.65rem);
+			font-weight: 900;
+			line-height: 1;
+			letter-spacing: -0.04em;
+		}
+
+		.home-mobile-wallpaper {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			min-height: 2.75rem;
+			padding: 0.55rem 0.75rem;
+			border: 1.5px solid var(--mobile-line);
+			border-radius: 999px;
+			background: var(--mobile-card);
+			color: inherit;
+			font: inherit;
+			font-size: 0.72rem;
+			font-weight: 800;
+		}
+
+		.home-mobile-wallpaper :global(svg) {
+			width: 1.1rem;
+			height: 1.1rem;
+		}
+
+		.home-mobile-map {
+			display: grid;
+			gap: 0.72rem;
+		}
+
+		.home-mobile-map__card,
+		.home-mobile-panel {
+			position: relative;
+			display: block;
+			overflow: hidden;
+			border: 2px solid var(--mobile-line);
+			border-radius: 1rem;
+			background: var(--mobile-card);
+			color: inherit;
+			box-shadow: none;
+			text-decoration: none;
+		}
+
+		.home-mobile-map__card::before,
+		.home-mobile-subscribe::before {
+			position: absolute;
+			inset: 0;
+			background-image: linear-gradient(90deg, var(--mobile-card), rgb(255 255 255 / 0.08)), var(--mobile-card-art);
+			background-position: center;
+			background-size: cover;
+			content: "";
+			opacity: 0.54;
+		}
+
+		:global(html.dark) .home-mobile-map__card::before,
+		:global(html.dark) .home-mobile-subscribe::before {
+			background-image: linear-gradient(90deg, rgb(0 0 0 / 0.86), rgb(0 0 0 / 0.24)), var(--mobile-card-art);
+			opacity: 0.78;
+		}
+
+		.home-mobile-map__card--visits {
+			min-height: 12.5rem;
+		}
+
+		.home-mobile-map__card--archive {
+			min-height: 12rem;
+			background: #050505;
+			color: #fff;
+		}
+
+		.home-mobile-map__card--archive::before {
+			background-image: linear-gradient(102deg, #050505 0 58%, rgb(5 5 5 / 0.16) 59%), var(--mobile-card-art);
+			opacity: 0.82;
+		}
+
+		.home-mobile-map__copy {
+			position: absolute;
+			left: 1rem;
+			right: 1rem;
+			bottom: 1rem;
+			z-index: 1;
+		}
+
+		.home-mobile-map__copy > p,
+		.home-mobile-panel__eyebrow {
+			margin: 0;
+			color: var(--mobile-muted);
+			font-size: 0.66rem;
+			font-weight: 800;
+			letter-spacing: 0.1em;
+		}
+
+		.home-mobile-map__card--archive .home-mobile-map__copy > p {
+			color: rgb(255 255 255 / 0.66);
+		}
+
+		.home-mobile-map__copy h3 {
+			margin: 0.2rem 0 0;
+			font-size: 1.72rem;
+			font-weight: 900;
+			line-height: 1;
+		}
+
+		.home-mobile-map__card--archive .home-mobile-map__copy h3 {
+			font-size: 2rem;
+		}
+
+		.home-mobile-map__card--archive .home-mobile-map__copy h3 span {
+			color: #b8ff2d;
+		}
+
+		.home-mobile-map__copy > span {
+			display: block;
+			margin-top: 0.4rem;
+			font-size: 0.73rem;
+		}
+
+		.home-mobile-map__index {
+			position: absolute;
+			left: 1rem;
+			top: 1rem;
+			z-index: 1;
+			padding: 0.2rem 0.65rem;
+			border: 2px solid #fff;
+			border-radius: 999px;
+			font-size: 0.7rem;
+			font-weight: 900;
+		}
+
+		.home-mobile-map dl {
+			display: flex;
+			gap: 1rem;
+			margin: 0.8rem 0 0;
+		}
+
+		.home-mobile-map dl div {
+			display: flex;
+			align-items: baseline;
+			gap: 0.25rem;
+		}
+
+		.home-mobile-map dt,
+		.home-mobile-map dd {
+			margin: 0;
+			font-size: 0.68rem;
+		}
+
+		.home-mobile-map dd {
+			font-size: 1.05rem;
+			font-weight: 900;
+		}
+
+		.home-mobile-panel {
+			padding: 1.2rem;
+		}
+
+		.home-mobile-panel h3 {
+			margin: 0.18rem 0 0;
+			font-size: 1.55rem;
+			font-weight: 900;
+			line-height: 1.15;
+		}
+
+		.home-mobile-featured {
+			min-height: 12.5rem;
+			padding-top: 1.4rem;
+		}
+
+		.home-mobile-featured .home-mobile-panel__meta {
+			margin: 1.7rem 0 0.75rem;
+			color: var(--mobile-muted);
+			font-size: 0.68rem;
+		}
+
+		.home-mobile-featured > p:last-of-type {
+			display: -webkit-box;
+			overflow: hidden;
+			margin: 0.55rem 2rem 0 0;
+			color: var(--mobile-muted);
+			font-size: 0.78rem;
+			line-height: 1.6;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+		}
+
+		.home-mobile-featured > :global(svg) {
+			position: absolute;
+			right: 1rem;
+			bottom: 1rem;
+			width: 1.2rem;
+			height: 1.2rem;
+		}
+
+		.home-mobile-recent__track {
+			display: flex;
+			gap: 0.6rem;
+			margin: 1rem -0.35rem 0;
+			overflow-x: auto;
+			padding: 0.35rem;
+			scrollbar-width: none;
+			scroll-snap-type: x mandatory;
+		}
+
+		.home-mobile-recent__track::-webkit-scrollbar {
+			display: none;
+		}
+
+		.home-mobile-recent__track a {
+			position: relative;
+			display: grid;
+			flex: 0 0 calc(100% - 1rem);
+			min-height: 10.5rem;
+			align-content: end;
+			padding: 1rem;
+			border: 1.5px solid var(--mobile-line);
+			border-radius: 0.8rem;
+			background: color-mix(in srgb, var(--mobile-card) 92%, transparent);
+			color: inherit;
+			text-decoration: none;
+			scroll-snap-align: center;
+		}
+
+		.home-mobile-recent__track a > span {
+			position: absolute;
+			align-self: start;
+			font-size: 0.7rem;
+			font-weight: 900;
+		}
+
+		.home-mobile-recent__track small {
+			color: var(--mobile-muted);
+			font-size: 0.66rem;
+		}
+
+		.home-mobile-recent__track strong {
+			display: -webkit-box;
+			overflow: hidden;
+			margin-top: 0.45rem;
+			font-size: 0.96rem;
+			line-height: 1.45;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+		}
+
+		.home-mobile-recent__track p {
+			display: -webkit-box;
+			overflow: hidden;
+			margin: 0.45rem 0 0;
+			color: var(--mobile-muted);
+			font-size: 0.72rem;
+			line-height: 1.5;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+		}
+
+		.home-mobile-recent__dots {
+			display: flex;
+			gap: 0.3rem;
+			margin-top: 0.75rem;
+		}
+
+		.home-mobile-recent__dots i {
+			width: 0.42rem;
+			height: 0.42rem;
+			border: 1px solid var(--mobile-line);
+			border-radius: 50%;
+		}
+
+		.home-mobile-recent__dots i.is-active {
+			background: var(--mobile-ink);
+		}
+
+		.home-mobile-index ul {
+			margin: 0.8rem 0 0;
+			padding: 0;
+			list-style: none;
+		}
+
+		.home-mobile-index li + li {
+			border-top: 1px solid color-mix(in srgb, var(--mobile-line) 24%, transparent);
+		}
+
+		.home-mobile-index a {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			min-height: 2.45rem;
+			color: inherit;
+			font-size: 0.76rem;
+			text-decoration: none;
+		}
+
+		.home-mobile-index strong {
+			font-size: 0.68rem;
+		}
+
+		.home-mobile-tags > div {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.45rem;
+			margin-top: 0.8rem;
+		}
+
+		.home-mobile-tags a {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.25rem;
+			min-height: 2.5rem;
+			padding: 0.45rem 0.75rem;
+			border: 1px solid color-mix(in srgb, var(--mobile-line) 38%, transparent);
+			border-radius: 999px;
+			color: inherit;
+			font-size: 0.72rem;
+			font-weight: 750;
+			text-decoration: none;
+		}
+
+		.home-mobile-tags :global(svg) {
+			width: 0.9rem;
+			height: 0.9rem;
+		}
+
+		.home-mobile-subscribe {
+			min-height: 12.5rem;
+		}
+
+		.home-mobile-subscribe > * {
+			position: relative;
+			z-index: 1;
+		}
+
+		.home-mobile-subscribe > p:last-of-type {
+			max-width: 15rem;
+			margin: 0.65rem 0 0;
+			color: var(--mobile-muted);
+			font-size: 0.76rem;
+			line-height: 1.55;
+		}
+
+		.home-mobile-subscribe nav {
+			position: absolute;
+			right: 1rem;
+			bottom: 1rem;
+			display: flex;
+			gap: 0.45rem;
+		}
+
+		.home-mobile-subscribe nav a {
+			display: grid;
+			width: 2.65rem;
+			height: 2.65rem;
+			border: 1.5px solid var(--mobile-line);
+			border-radius: 50%;
+			background: var(--mobile-paper);
+			color: var(--mobile-ink);
+			place-items: center;
+		}
+
+		.home-mobile-subscribe nav :global(svg) {
+			width: 1.2rem;
+			height: 1.2rem;
+		}
+
+		.home-mobile-overview__footer {
+			padding: 3.5rem 0 1.5rem;
+			color: var(--mobile-muted);
+			font-size: 0.7rem;
+			line-height: 1.8;
+			text-align: center;
+		}
+
+		.home-mobile-overview__footer p {
+			margin: 0;
+		}
+
+		.home-mobile-overview__footer a {
+			color: inherit;
+		}
+
+		.home-mobile-overview__footer span {
+			margin-inline: 0.4rem;
+		}
+
+		@keyframes mobile-ticker {
+			to {
+				transform: translateX(-50%);
+			}
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-mobile-ticker__track {
+			width: 100%;
+			overflow-x: auto;
+			animation: none;
+		}
+
+		.home-mobile-ticker__group[aria-hidden="true"] {
+			display: none;
+		}
+	}
+</style>

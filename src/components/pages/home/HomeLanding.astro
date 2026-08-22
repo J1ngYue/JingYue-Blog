@@ -24,6 +24,7 @@ import { getBackgroundImages } from "@/utils/layout-utils";
 import ContributionHeatmap from "./ContributionHeatmap.astro";
 import HomeEditorialPanels from "./HomeEditorialPanels.astro";
 import HomeHeroExperience from "./HomeHeroExperience.astro";
+import HomeMobileOverview from "./HomeMobileOverview.astro";
 import HomeProfileMatrix from "./HomeProfileMatrix.astro";
 import JingYueWordmark from "./JingYueWordmark.astro";
 
@@ -195,8 +196,9 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			<Icon is:inline name="material-symbols:menu-rounded" />
 			<span>菜单</span>
 		</button>
-		<button type="button" data-home-quick-tool="settings" aria-label="打开主题与壁纸设置">
-			<Icon is:inline name="material-symbols:light-mode-outline-rounded" />
+		<button type="button" data-home-mobile-theme aria-label="切换深浅色主题">
+			<Icon class="home-mobile-theme__light" is:inline name="material-symbols:light-mode-outline-rounded" />
+			<Icon class="home-mobile-theme__dark" is:inline name="material-symbols:dark-mode-outline-rounded" />
 			<span>主题</span>
 		</button>
 		<button type="button" data-home-mobile-back aria-label="返回上一页">
@@ -342,6 +344,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			</div>
 		</div>
 	</section>
+
+	<HomeMobileOverview />
 
 	<section
 		id="home-capabilities"
@@ -637,6 +641,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const themeReset = root.querySelector("[data-home-cover-theme-reset]");
 		const homeQuickTools = Array.from(root.querySelectorAll("[data-home-quick-tool]"));
 		const mobileBackButton = root.querySelector("[data-home-mobile-back]");
+		const mobileThemeButton = root.querySelector("[data-home-mobile-theme]");
 		const coverImages = Array.from(
 			root.querySelectorAll("[id^='home-cover-desktop-'], [id^='home-cover-mobile-']"),
 		);
@@ -1061,6 +1066,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			}
 			window.scrollTo({ top: 0, behavior: reducedMotion.matches ? "auto" : "smooth" });
 		};
+		const handleMobileTheme = (event) => {
+			event.stopPropagation();
+			document.getElementById("quick-tools-theme")?.click();
+		};
 
 		homeQuickTools.forEach((tool) => {
 			if (tool.dataset.homeQuickTool !== "home") {
@@ -1068,6 +1077,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			}
 		});
 		mobileBackButton?.addEventListener("click", handleMobileBack);
+		mobileThemeButton?.addEventListener("click", handleMobileTheme);
 
 		const setCoverSwitcherOpen = (open, restoreFocus = true) => {
 			if (!coverSwitcher || !coverSwitcherTrigger || coverSwitcherOpen === open) return;
@@ -1882,6 +1892,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				}
 			});
 			mobileBackButton?.removeEventListener("click", handleMobileBack);
+			mobileThemeButton?.removeEventListener("click", handleMobileTheme);
 			coverSwitcher?.removeEventListener("keydown", handleCoverSwitcherKeydown);
 			coverOrbit?.removeEventListener("pointermove", handleCoverOrbitPointerMove);
 			coverOrbit?.removeEventListener("pointerleave", handleCoverOrbitPointerLeave);
@@ -5103,6 +5114,16 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	}
 
 	@media (max-width: 640px) {
+		:global(body.home-landing-active #main-grid > .footer) {
+			display: none !important;
+		}
+
+		.home-capability-page,
+		:global(#home-gallery),
+		.home-sections {
+			display: none !important;
+		}
+
 		.home-overview-grid {
 			grid-template-columns: minmax(0, 1fr);
 		}
@@ -6356,6 +6377,18 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		.home-mobile-dock :global(svg) {
 			width: 1.35rem;
 			height: 1.35rem;
+		}
+
+		.home-mobile-theme__dark {
+			display: none;
+		}
+
+		:global(html.dark) .home-mobile-theme__light {
+			display: none;
+		}
+
+		:global(html.dark) .home-mobile-theme__dark {
+			display: block;
 		}
 
 		.home-mobile-dock__menu {

@@ -55,6 +55,11 @@ export const ADMIN_PAGE_WALLPAPERS: PageWallpaperPreferences = {
 	links: "wallpaper-1",
 };
 
+// 手机端使用独立的竖屏默认图，不继承电脑端的横屏视频。
+export const ADMIN_MOBILE_PAGE_WALLPAPERS: PageWallpaperPreferences = {
+	home: "wallpaper-5",
+};
+
 function canUseLocalStorage() {
 	return (
 		typeof localStorage !== "undefined" &&
@@ -147,12 +152,17 @@ export function getEffectivePageWallpaper(
 ): PageWallpaperChoice {
 	const device = getWallpaperPreferenceDevice();
 	const devicePreferences = getUserPageWallpapers(device);
-	const desktopPreferences =
-		device === "mobile" ? getUserPageWallpapers("desktop") : devicePreferences;
+	if (device === "mobile") {
+		return (
+			devicePreferences[pageKey] ??
+			getUserDefaultPageWallpaper("mobile") ??
+			ADMIN_MOBILE_PAGE_WALLPAPERS[pageKey] ??
+			ADMIN_PAGE_WALLPAPERS[pageKey] ??
+			SYSTEM_DEFAULT_WALLPAPER
+		);
+	}
 	return (
 		devicePreferences[pageKey] ??
-		getUserDefaultPageWallpaper(device) ??
-		desktopPreferences[pageKey] ??
 		getUserDefaultPageWallpaper("desktop") ??
 		ADMIN_PAGE_WALLPAPERS[pageKey] ??
 		SYSTEM_DEFAULT_WALLPAPER
