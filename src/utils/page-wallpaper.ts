@@ -5,6 +5,10 @@ export const OPEN_WALLPAPER_PICKER_EVENT = "firefly:open-wallpaper-picker";
 
 export const PAGE_WALLPAPER_PREFERENCES_KEY = "fireflyPageWallpapersV1";
 export const PAGE_WALLPAPER_DEFAULT_KEY = "fireflyDefaultWallpaperV1";
+export const PAGE_WALLPAPER_MOBILE_PREFERENCES_KEY =
+	"fireflyMobilePageWallpapersV1";
+export const PAGE_WALLPAPER_MOBILE_DEFAULT_KEY =
+	"fireflyMobileDefaultWallpaperV1";
 export const PAGE_WALLPAPER_SYNC_TARGETS_KEY =
 	"fireflyPageWallpaperSyncTargetsV1";
 
@@ -38,6 +42,7 @@ export type PageWallpaperChoice = `wallpaper-${number}` | `local:${string}`;
 export type PageWallpaperPreferences = Partial<
 	Record<PageWallpaperKey, PageWallpaperChoice>
 >;
+export type WallpaperPreferenceDevice = "desktop" | "mobile";
 
 // 管理员可在这里为七个主页面指定不同默认壁纸；未配置的页面回退到系统默认。
 export const ADMIN_PAGE_WALLPAPERS: PageWallpaperPreferences = {
@@ -55,6 +60,25 @@ function canUseLocalStorage() {
 		typeof localStorage !== "undefined" &&
 		typeof localStorage.getItem === "function"
 	);
+}
+
+export function getWallpaperPreferenceDevice(): WallpaperPreferenceDevice {
+	return typeof window !== "undefined" &&
+		window.matchMedia("(max-width: 640px)").matches
+		? "mobile"
+		: "desktop";
+}
+
+function getPreferenceStorageKey(device: WallpaperPreferenceDevice) {
+	return device === "mobile"
+		? PAGE_WALLPAPER_MOBILE_PREFERENCES_KEY
+		: PAGE_WALLPAPER_PREFERENCES_KEY;
+}
+
+function getDefaultStorageKey(device: WallpaperPreferenceDevice) {
+	return device === "mobile"
+		? PAGE_WALLPAPER_MOBILE_DEFAULT_KEY
+		: PAGE_WALLPAPER_DEFAULT_KEY;
 }
 
 function isPageKey(value: unknown): value is PageWallpaperKey {
@@ -91,11 +115,13 @@ export function getPageWallpaperLabel(key: PageWallpaperKey) {
 	return PAGE_WALLPAPER_PAGES.find((page) => page.key === key)?.label ?? "主页";
 }
 
-export function getUserPageWallpapers(): PageWallpaperPreferences {
+export function getUserPageWallpapers(
+	device = getWallpaperPreferenceDevice(),
+): PageWallpaperPreferences {
 	if (!canUseLocalStorage()) return {};
 	try {
 		const value = JSON.parse(
-			localStorage.getItem(PAGE_WALLPAPER_PREFERENCES_KEY) || "{}",
+			localStorage.getItem(getPreferenceStorageKey(device)) || "{}",
 		);
 		if (!value || typeof value !== "object" || Array.isArray(value)) return {};
 		return Object.fromEntries(
@@ -108,18 +134,26 @@ export function getUserPageWallpapers(): PageWallpaperPreferences {
 	}
 }
 
-export function getUserDefaultPageWallpaper(): PageWallpaperChoice | null {
+export function getUserDefaultPageWallpaper(
+	device = getWallpaperPreferenceDevice(),
+): PageWallpaperChoice | null {
 	if (!canUseLocalStorage()) return null;
-	const choice = localStorage.getItem(PAGE_WALLPAPER_DEFAULT_KEY);
+	const choice = localStorage.getItem(getDefaultStorageKey(device));
 	return isPageWallpaperChoice(choice) ? choice : null;
 }
 
 export function getEffectivePageWallpaper(
 	pageKey = resolvePageWallpaperKey(),
 ): PageWallpaperChoice {
+	const device = getWallpaperPreferenceDevice();
+	const devicePreferences = getUserPageWallpapers(device);
+	const desktopPreferences =
+		device === "mobile" ? getUserPageWallpapers("desktop") : devicePreferences;
 	return (
-		getUserPageWallpapers()[pageKey] ??
-		getUserDefaultPageWallpaper() ??
+		devicePreferences[pageKey] ??
+		getUserDefaultPageWallpaper(device) ??
+		desktopPreferences[pageKey] ??
+		getUserDefaultPageWallpaper("desktop") ??
 		ADMIN_PAGE_WALLPAPERS[pageKey] ??
 		SYSTEM_DEFAULT_WALLPAPER
 	);
@@ -131,19 +165,21 @@ export function setPageWallpapers(
 	options: { setAsDefault?: boolean } = {},
 ) {
 	if (!canUseLocalStorage() || !isPageWallpaperChoice(choice)) return;
-	const preferences = getUserPageWallpapers();
+	const device = getWallpaperPreferenceDevice();
+	const preferences = getUserPageWallpapers(device);
 	for (const key of pageKeys) preferences[key] = choice;
 	localStorage.setItem(
-		PAGE_WALLPAPER_PREFERENCES_KEY,
+		getPreferenceStorageKey(device),
 		JSON.stringify(preferences),
 	);
 	if (options.setAsDefault) {
-		localStorage.setItem(PAGE_WALLPAPER_DEFAULT_KEY, choice);
+		localStorage.setItem(getDefaultStorageKey(device), choice);
 	}
 	window.dispatchEvent(
 		new CustomEvent(PAGE_WALLPAPER_CHANGE_EVENT, {
 			detail: {
 				choice,
+				device,
 				pageKeys: [...pageKeys],
 				setAsDefault: options.setAsDefault === true,
 			},
@@ -153,7 +189,7 @@ export function setPageWallpapers(
 
 export function resetDefaultPageWallpaper() {
 	if (!canUseLocalStorage()) return;
-	localStorage.removeItem(PAGE_WALLPAPER_DEFAULT_KEY);
+	localStorage.removeItem(getDefaultStorageKey(getWallpaperPreferenceDevice()));
 	window.dispatchEvent(
 		new CustomEvent(PAGE_WALLPAPER_CHANGE_EVENT, {
 			detail: { resetDefault: true },
@@ -163,10 +199,11 @@ export function resetDefaultPageWallpaper() {
 
 export function resetPageWallpapers(pageKeys: readonly PageWallpaperKey[]) {
 	if (!canUseLocalStorage()) return;
-	const preferences = getUserPageWallpapers();
+	const device = getWallpaperPreferenceDevice();
+	const preferences = getUserPageWallpapers(device);
 	for (const key of pageKeys) delete preferences[key];
 	localStorage.setItem(
-		PAGE_WALLPAPER_PREFERENCES_KEY,
+		getPreferenceStorageKey(device),
 		JSON.stringify(preferences),
 	);
 	window.dispatchEvent(
@@ -178,20 +215,26 @@ export function resetPageWallpapers(pageKeys: readonly PageWallpaperKey[]) {
 
 export function removePageWallpaperReferences(choice: PageWallpaperChoice) {
 	if (!canUseLocalStorage()) return;
-	const preferences = getUserPageWallpapers();
-	const affected = PAGE_WALLPAPER_PAGES.flatMap((page) => {
-		if (preferences[page.key] !== choice) return [];
-		delete preferences[page.key];
-		return [page.key];
-	});
-	if (affected.length === 0) return;
-	localStorage.setItem(
-		PAGE_WALLPAPER_PREFERENCES_KEY,
-		JSON.stringify(preferences),
-	);
+	const affected = new Set<PageWallpaperKey>();
+	for (const device of ["desktop", "mobile"] as const) {
+		const preferences = getUserPageWallpapers(device);
+		for (const page of PAGE_WALLPAPER_PAGES) {
+			if (preferences[page.key] !== choice) continue;
+			delete preferences[page.key];
+			affected.add(page.key);
+		}
+		localStorage.setItem(
+			getPreferenceStorageKey(device),
+			JSON.stringify(preferences),
+		);
+		if (getUserDefaultPageWallpaper(device) === choice) {
+			localStorage.removeItem(getDefaultStorageKey(device));
+		}
+	}
+	if (affected.size === 0) return;
 	window.dispatchEvent(
 		new CustomEvent(PAGE_WALLPAPER_CHANGE_EVENT, {
-			detail: { pageKeys: affected, reset: true },
+			detail: { pageKeys: [...affected], reset: true },
 		}),
 	);
 }

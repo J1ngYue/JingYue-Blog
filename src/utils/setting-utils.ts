@@ -471,25 +471,15 @@ function showBannerMode(animate = false) {
 		// 横幅始终从页面顶部开始，不继承全屏模式留下的 fixed/inset。
 		wallpaperWrapper.style.top = "0";
 
-		// 检查当前是否为首页
-		const isHomePage = checkIsHomePage(window.location.pathname);
-		const isMobile = window.innerWidth < 1024;
-
-		// 移动端非首页时，不显示banner；桌面端始终显示
-		if (isMobile && !isHomePage) {
-			wallpaperWrapper.style.display = "none";
-			wallpaperWrapper.classList.add("mobile-hide-banner");
-		} else {
-			// 首页或桌面端：先设置display，然后使用requestAnimationFrame确保渲染
-			wallpaperWrapper.style.display = "block";
-			wallpaperWrapper.style.setProperty("display", "block", "important");
-			requestAnimationFrame(() => {
-				wallpaperWrapper.classList.remove("hidden");
-				wallpaperWrapper.classList.remove("opacity-0");
-				wallpaperWrapper.classList.add("opacity-100");
-				wallpaperWrapper.classList.remove("mobile-hide-banner");
-			});
-		}
+		// 非首页默认使用纯色模式；用户主动切换为横幅后，移动端也应显示。
+		wallpaperWrapper.style.display = "block";
+		wallpaperWrapper.style.setProperty("display", "block", "important");
+		requestAnimationFrame(() => {
+			wallpaperWrapper.classList.remove("hidden");
+			wallpaperWrapper.classList.remove("opacity-0");
+			wallpaperWrapper.classList.add("opacity-100");
+			wallpaperWrapper.classList.remove("mobile-hide-banner");
+		});
 	}
 
 	// 显示横幅首页文本（如果启用且是首页）
@@ -522,14 +512,7 @@ function showBannerMode(animate = false) {
 		".w-full.z-30.pointer-events-none",
 	);
 	if (mainContentWrapper) {
-		const isHomePage = checkIsHomePage(window.location.pathname);
-		const isMobile = window.innerWidth < 1024;
-		// 只在移动端非首页时调整主内容位置
-		if (isMobile && !isHomePage) {
-			mainContentWrapper.classList.add("mobile-main-no-banner");
-		} else {
-			mainContentWrapper.classList.remove("mobile-main-no-banner");
-		}
+		mainContentWrapper.classList.remove("mobile-main-no-banner");
 	}
 
 	// 移除透明效果（横幅模式不使用半透明）
@@ -556,7 +539,6 @@ function showBannerMode(animate = false) {
 function showFullscreenMode(animate = false) {
 	// 显示 wallpaper-wrapper 并切换为全屏壁纸模式
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
-	const isMobile = window.innerWidth < 1024;
 	const isHomePage = checkIsHomePage(window.location.pathname);
 	const immersiveHomeLanding = preserveImmersiveHomeLayout();
 	if (wallpaperWrapper && !immersiveHomeLanding) {
@@ -566,22 +548,15 @@ function showFullscreenMode(animate = false) {
 		// 添加全屏壁纸模式类
 		wallpaperWrapper.classList.add("wallpaper-fullscreen");
 
-		if (isMobile && !isHomePage) {
-			// 移动端非首页时隐藏壁纸
-			wallpaperWrapper.style.display = "none";
-			wallpaperWrapper.classList.add("mobile-hide-banner");
-		} else {
-			// 显示壁纸
-			wallpaperWrapper.style.display = "block";
-			wallpaperWrapper.style.setProperty("display", "block", "important");
-			wallpaperWrapper.style.top = "";
-			requestAnimationFrame(() => {
-				wallpaperWrapper.classList.remove("hidden");
-				wallpaperWrapper.classList.remove("opacity-0");
-				wallpaperWrapper.classList.add("opacity-100");
-				wallpaperWrapper.classList.remove("mobile-hide-banner");
-			});
-		}
+		wallpaperWrapper.style.display = "block";
+		wallpaperWrapper.style.setProperty("display", "block", "important");
+		wallpaperWrapper.style.top = "";
+		requestAnimationFrame(() => {
+			wallpaperWrapper.classList.remove("hidden");
+			wallpaperWrapper.classList.remove("opacity-0");
+			wallpaperWrapper.classList.add("opacity-100");
+			wallpaperWrapper.classList.remove("mobile-hide-banner");
+		});
 	}
 
 	// 显示横幅首页文本（如果启用且是首页）
@@ -795,8 +770,12 @@ function adjustMainContentPosition(
 	switch (mode) {
 		case "banner": {
 			// Banner模式：主内容在banner下方
-			const isHome = checkIsHomePage(window.location.pathname);
-			const bannerTargetTop = "calc(var(--banner-height) - 3.5rem)";
+			const bannerTargetTop =
+				window.innerWidth <= 640
+					? "calc(min(46svh, 26rem) - 2rem)"
+					: window.innerWidth < 1024
+						? "calc(min(52svh, 34rem) - 2.5rem)"
+						: "calc(var(--banner-height) - 3.5rem)";
 
 			// 禁用 CSS transition，防止整个定位过程中的值变化触发过渡动画
 			mainContent.style.setProperty("transition", "none", "important");
@@ -806,16 +785,8 @@ function adjustMainContentPosition(
 			mainContent.style.top = "";
 			mainContent.style.setProperty("margin-top", "");
 
-			if (!isHome) {
-				mainContent.classList.add("mobile-main-no-banner");
-				if (window.innerWidth < 1024) {
-					mainContent.style.setProperty("top", "5.5rem", "important");
-				} else {
-					mainContent.style.setProperty("top", bannerTargetTop, "important");
-				}
-			} else {
-				mainContent.style.setProperty("top", bannerTargetTop, "important");
-			}
+			mainContent.classList.remove("mobile-main-no-banner");
+			mainContent.style.setProperty("top", bannerTargetTop, "important");
 			const bannerGrid = document.getElementById("main-grid");
 			if (bannerGrid) {
 				bannerGrid.style.transform = "";

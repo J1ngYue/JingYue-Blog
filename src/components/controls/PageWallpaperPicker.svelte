@@ -14,6 +14,7 @@ import {
 	getEffectivePageWallpaper,
 	getLastWallpaperSyncTargets,
 	getPageWallpaperLabel,
+	getWallpaperPreferenceDevice,
 	OPEN_WALLPAPER_PICKER_EVENT,
 	PAGE_WALLPAPER_CHANGE_EVENT,
 	PAGE_WALLPAPER_PAGES,
@@ -25,6 +26,7 @@ import {
 	resolvePageWallpaperKey,
 	setLastWallpaperSyncTargets,
 	setPageWallpapers,
+	type WallpaperPreferenceDevice,
 } from "@/utils/page-wallpaper";
 import {
 	getHue,
@@ -39,9 +41,11 @@ type HistoryPreview = LocalWallpaperHistoryRecord & { previewUrl: string };
 const FAVORITES_KEY = "fireflyLocalCoverFavorites";
 const VIDEO_PATTERN = /\.(m4v|mov|mp4|ogv|webm)$/i;
 const CLOSE_WALLPAPER_PICKER_EVENT = "firefly:close-wallpaper-picker";
+const WALLPAPER_PICKER_APPLIED_EVENT = "firefly:wallpaper-picker-applied";
 
 let open = $state(false);
 let currentPage = $state<PageWallpaperKey>("home");
+let currentDevice = $state<WallpaperPreferenceDevice>("desktop");
 let selectedChoice = $state<PageWallpaperChoice>("wallpaper-1");
 let applyMode = $state<ApplyMode>("current");
 let syncPages = $state<PageWallpaperKey[]>([]);
@@ -138,6 +142,7 @@ function openPicker() {
 		}),
 	);
 	currentPage = resolvePageWallpaperKey();
+	currentDevice = getWallpaperPreferenceDevice();
 	selectedChoice = getEffectivePageWallpaper(currentPage);
 	applyMode = "current";
 	syncPages = getLastWallpaperSyncTargets();
@@ -299,13 +304,14 @@ function applyWallpaper(choice = selectedChoice) {
 	if (applyMode === "sync") setLastWallpaperSyncTargets(syncPages);
 	message =
 		applyMode === "current"
-			? `已将 ${selectedName()} 应用到${getPageWallpaperLabel(currentPage)}。`
-			: `已同步到 ${targets.map(getPageWallpaperLabel).join("、")}。`;
+			? `已将 ${selectedName()} 应用到${getPageWallpaperLabel(currentPage)}的${currentDevice === "mobile" ? "手机端" : "电脑端"}。`
+			: `已同步到${currentDevice === "mobile" ? "手机端" : "电脑端"}的 ${targets.map(getPageWallpaperLabel).join("、")}。`;
 	error = "";
 	return true;
 }
 
 function closeAfterSelection() {
+	window.dispatchEvent(new Event(WALLPAPER_PICKER_APPLIED_EVENT));
 	if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 		closePicker();
 		return;
@@ -318,7 +324,7 @@ function restoreCurrentDefault() {
 	resetDefaultPageWallpaper();
 	selectedChoice = getEffectivePageWallpaper(currentPage);
 	applyMode = "current";
-	message = `${getPageWallpaperLabel(currentPage)}已恢复管理员默认壁纸。`;
+	message = `${getPageWallpaperLabel(currentPage)}的${currentDevice === "mobile" ? "手机端" : "电脑端"}已恢复默认壁纸。`;
 	error = "";
 	closeAfterSelection();
 }
@@ -501,6 +507,7 @@ onMount(() => {
 							<Icon icon="material-symbols:check-circle-rounded" />
 							<span>当前页面</span>
 							<strong>{getPageWallpaperLabel(currentPage)}</strong>
+							<em>{currentDevice === "mobile" ? "手机端" : "电脑端"}</em>
 							<i aria-hidden="true"></i>
 							<b>{selectedName()}</b>
 						</span>
@@ -662,7 +669,7 @@ onMount(() => {
 							<span class="home-cover-option-preview">
 								{#if favorite?.type === "video" || (!favorite && asset.type === "video")}
 									<video
-										src={favorite?.previewUrl || asset.desktopUrl}
+										src={favorite?.previewUrl || (currentDevice === "mobile" ? asset.mobileUrl : asset.desktopUrl)}
 										autoplay
 										muted
 										loop
@@ -671,7 +678,7 @@ onMount(() => {
 									></video>
 									<Icon icon="material-symbols:play-circle-rounded" />
 								{:else}
-									<img src={favorite?.previewUrl || asset.desktopUrl} alt="" loading={index === 0 ? "eager" : "lazy"} />
+									<img src={favorite?.previewUrl || (currentDevice === "mobile" ? asset.mobileUrl : asset.desktopUrl)} alt="" loading={index === 0 ? "eager" : "lazy"} />
 								{/if}
 							</span>
 							<span class="home-cover-option-copy">
@@ -1573,6 +1580,17 @@ onMount(() => {
 		width: 0.85rem;
 		height: 0.85rem;
 		color: #c4b5fd;
+	}
+
+	.home-cover-favorites-note em {
+		border: 1px solid currentColor;
+		border-radius: 999px;
+		padding: 0.15rem 0.4rem;
+		font-size: 0.62rem;
+		font-style: normal;
+		font-weight: 800;
+		line-height: 1;
+		opacity: 0.76;
 	}
 
 	.home-cover-switcher-description {

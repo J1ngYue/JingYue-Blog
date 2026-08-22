@@ -311,6 +311,28 @@ onMount(() => {
 		transform: translate3d(0, 0, 0) !important;
 	}
 
+	@media (max-width: 640px) {
+		:global(html[data-wallpaper-mode="banner"]) .local-wallpaper-site {
+			height: min(46svh, 26rem);
+		}
+
+		.local-wallpaper-layer img,
+		.local-wallpaper-layer video {
+			object-position: 50% 38%;
+		}
+	}
+
+	@media (min-width: 641px) and (max-width: 1023px) {
+		:global(html[data-wallpaper-mode="banner"]) .local-wallpaper-site {
+			height: min(52svh, 34rem);
+		}
+
+		.local-wallpaper-layer img,
+		.local-wallpaper-layer video {
+			object-position: 50% 40%;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.local-wallpaper-layer {
 			transition: none;

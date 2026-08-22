@@ -7,10 +7,8 @@ import { url } from "@/utils/url-utils";
 const showThemeColor = !siteConfig.themeColor.fixed;
 const isWallpaperSwitchable = backgroundWallpaper.switchable ?? true;
 const allowLayoutSwitch = siteConfig.postListLayout.allowSwitch;
-const showLocalAdminControls = import.meta.env.DEV;
 const hasDisplaySettings =
-	showLocalAdminControls &&
-	(showThemeColor || isWallpaperSwitchable || allowLayoutSwitch);
+	showThemeColor || isWallpaperSwitchable || allowLayoutSwitch;
 
 const quickLinks = [
 	{
@@ -159,7 +157,7 @@ const quickLinks = [
 				>
 					<Icon is:inline name="material-symbols:ads-click-rounded" />
 				</button>
-				{showLocalAdminControls && (
+				{isWallpaperSwitchable && (
 					<button
 						id="quick-tools-wallpaper"
 						class="quick-tools-button"
@@ -390,6 +388,11 @@ const quickLinks = [
 			event.stopPropagation();
 			requestExclusivePanel("wallpaper");
 			window.dispatchEvent(new Event("firefly:open-wallpaper-picker"));
+		});
+		window.addEventListener("firefly:wallpaper-picker-applied", () => {
+			if (!window.matchMedia("(max-width: 640px)").matches) return;
+			actionsCollapsed = true;
+			setActionsCollapsed(true);
 		});
 		musicButton?.addEventListener("click", (event) => {
 			event.stopPropagation();

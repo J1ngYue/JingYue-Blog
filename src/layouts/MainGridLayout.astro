@@ -72,7 +72,6 @@ interface Props {
 }
 
 const backgroundImages = getBackgroundImages();
-const showLocalAdminControls = import.meta.env.DEV;
 
 const {
 	title,
@@ -171,10 +170,8 @@ const showBannerPageTitle =
 	!isPostPage &&
 	!!title;
 const resolvedBannerTitle = bannerTitle ?? title;
-// 手机端非首页不显示banner的CSS类
-const mobileNonHomeBannerClass = !isHomePageCheck ? "mobile-hide-banner" : "";
 
-// 计算主内容区域位置，考虑手机端非首页时banner被隐藏
+// 计算主内容区域位置；手机端的最终高度由响应式样式与客户端显示模式接管。
 const mainPanelTop =
 	isBannerMode && isBackgroundEnabled
 		? `calc(${BANNER_HEIGHT}vh - ${MAIN_PANEL_OVERLAPS_BANNER_HEIGHT}rem)`
@@ -343,7 +340,7 @@ const hasMultipleImages =
 <!-- Wallpaper - 如果允许切换则始终渲染，否则只渲染当前模式 -->
 {(isWallpaperSwitchable || isBannerMode || isFullscreenMode || isOverlayMode) && (
 <div id="wallpaper-wrapper" class:list={[
-	`absolute z-10 w-full transition-opacity duration-200 overflow-hidden ${mobileNonHomeBannerClass}`,
+	"absolute z-10 w-full transition-opacity duration-200 overflow-hidden",
 	(isOverlayMode && !isWallpaperSwitchable) ? 'wallpaper-overlay' : '',
 	(isFullscreenMode && !isWallpaperSwitchable) ? 'wallpaper-fullscreen' : '',
 ]} style={
@@ -842,7 +839,7 @@ const hasMultipleImages =
 )}
 
 <!-- Main content -->
-<div id="main-content-wrapper" data-content-top={contentTop} class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={homeLanding ? 'top: 0;' : `top: ${resolvedContentTop}`}>
+<div id="main-content-wrapper" data-content-top={contentTop} class={`absolute w-full z-30 pointer-events-none ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={homeLanding ? 'top: 0;' : `top: ${resolvedContentTop}`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
     <div id="main-layout-container" class:list={[
         "relative w-full mx-auto pointer-events-auto",
@@ -961,7 +958,7 @@ const hasMultipleImages =
 
 <FloatingControls headings={headings} encrypted={encrypted} />
 <QuickToolsDock />
-{showLocalAdminControls && <PageWallpaperPicker client:load />}
+<PageWallpaperPicker client:load />
 
 <script>
 	type ChangelogWindow = Window & {

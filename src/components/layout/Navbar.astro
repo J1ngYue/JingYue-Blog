@@ -15,7 +15,6 @@ import DropdownMenu from "./DropdownMenu.astro";
 import NavMenuPanel from "./NavMenuPanel.astro";
 
 const className = Astro.props.class;
-const showLocalAdminControls = import.meta.env.DEV;
 
 // 获取导航栏透明模式配置
 const navbarTransparentMode =
@@ -306,7 +305,7 @@ const navbarProfileAvatarParticles = [
             </>
         )}
         <NavMenuPanel links={links}></NavMenuPanel>
-		{showLocalAdminControls && <DisplaySettings client:load />}
+		<DisplaySettings client:load />
     </div>
 </div>
 

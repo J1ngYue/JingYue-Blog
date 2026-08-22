@@ -96,6 +96,21 @@ const processedLinks = Astro.props.links;
 		backdrop-filter: blur(1.4rem) saturate(145%);
 	}
 
+	@media (max-width: 640px) {
+		.jingyue-mobile-nav {
+			right: 0.65rem !important;
+			width: min(18rem, calc(100vw - 1.3rem));
+			max-height: calc(100dvh - 5.25rem);
+			border-radius: 1.15rem;
+			padding: 0.8rem;
+		}
+
+		.jingyue-mobile-trigger,
+		.jingyue-mobile-child {
+			min-height: 2.875rem;
+		}
+	}
+
 	.jingyue-mobile-nav-heading {
 		display: flex;
 		align-items: baseline;

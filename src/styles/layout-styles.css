@@ -284,6 +284,37 @@ html.is-page-transitioning .banner-home-text-overlay {
     }
 }
 
+/* 手机端横幅与本地壁纸使用同一高度，避免切换壁纸后出现裁切或空白。 */
+@media (max-width: 640px) {
+    html[data-wallpaper-mode="banner"] #wallpaper-wrapper:not(.mobile-hide-banner) {
+        height: min(46svh, 26rem) !important;
+    }
+
+    html[data-wallpaper-mode="banner"] body.enable-banner #main-content-wrapper:not(.mobile-main-no-banner):not(.no-banner-layout) {
+        top: calc(min(46svh, 26rem) - 2rem) !important;
+        min-height: calc(100svh - min(46svh, 26rem) + 2rem) !important;
+    }
+
+    #wallpaper-wrapper :is(.banner-image-slot-mobile, .slide-item) img {
+        object-position: 50% 38% !important;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+    html[data-wallpaper-mode="banner"] #wallpaper-wrapper:not(.mobile-hide-banner) {
+        height: min(52svh, 34rem) !important;
+    }
+
+    html[data-wallpaper-mode="banner"] body.enable-banner #main-content-wrapper:not(.mobile-main-no-banner):not(.no-banner-layout) {
+        top: calc(min(52svh, 34rem) - 2.5rem) !important;
+        min-height: calc(100svh - min(52svh, 34rem) + 2.5rem) !important;
+    }
+
+    #wallpaper-wrapper :is(.banner-image-slot-mobile, .slide-item) img {
+        object-position: 50% 40% !important;
+    }
+}
+
 /* 平板和手机端非首页隐藏banner - 改进的分阶段动画 (1024px以下) */
 @media (max-width: 1023px) {
     #wallpaper-wrapper {
