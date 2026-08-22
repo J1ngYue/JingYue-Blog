@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.41",
+		date: "2026-08-22",
+		time: "23:28",
+		type: "optimize",
+		title: "手机首页卡片层级调整",
+		summary: "重做内容索引和最新更新的浅色视觉。",
+		changes: [
+			"内容索引在浅色模式改为白色纸面、黑色文字和渐隐插图。",
+			"内容索引仅在深色模式使用黑色底，与全局主题保持一致。",
+			"最新更新移除内层大边框，改为紧凑的整卡横向滑动内容。",
+			"收紧文章留白并补充序号、方向图标和轻量分隔线。",
+		],
+	},
+	{
 		version: "v6.14.40",
 		date: "2026-08-22",
 		time: "23:12",
