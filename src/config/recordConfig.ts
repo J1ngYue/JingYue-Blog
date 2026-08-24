@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.50",
+		date: "2026-08-24",
+		time: "22:31",
+		type: "feature",
+		title: "首页自动分镜入场",
+		summary: "将参考站的滚动分镜改为全自动播放，最终无缝停留在完整首页封面。",
+		changes: [
+			"分散画面碎片依次显现，并沿参考动画的节奏向中心聚合。",
+			"五幅纵向画面交错推入并拼合当前选中的首页壁纸。",
+			"取消滚轮驱动与长距离占位，播放期间不会卡住或意外翻到下一屏。",
+			"桌面端与移动端使用独立时长，减少动态效果模式直接显示最终首页。",
+		],
+	},
+	{
 		version: "v6.14.49",
 		date: "2026-08-24",
 		time: "18:49",

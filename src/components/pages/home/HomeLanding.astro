@@ -133,7 +133,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	data-home-default-hue={siteConfig.themeColor.hue}
 	data-home-wallpaper-assets={JSON.stringify(pageWallpaperAssets)}
 >
-	<HomeEntrance avatar={profileAvatar} name={siteConfig.title} />
+	<HomeEntrance name={siteConfig.title} />
 	<LocalWallpaperLayer client:load surface="home" />
 
 	{musicPlayerConfig.showInNavbar && (
