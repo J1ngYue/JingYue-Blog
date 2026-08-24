@@ -1948,6 +1948,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			root.removeAttribute("data-home-scene-index");
 			root.removeAttribute("data-home-scene-id");
 			root.removeAttribute("data-home-gallery-locked");
+			document.documentElement.style.removeProperty("background");
 			root.classList.remove("is-scene-transitioning");
 			document.documentElement.classList.remove("home-page-snap");
 			document.documentElement.classList.remove("home-scene-scroll-active");

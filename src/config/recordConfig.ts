@@ -20,6 +20,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.49",
+		date: "2026-08-24",
+		time: "18:49",
+		type: "fix",
+		title: "页面切换背景状态修复",
+		summary: "修复从首页进入更新日志后，页面下方与两侧错误显示深色背景的问题。",
+		changes: [
+			"离开首页时同步清除首屏防闪烁背景，不再将深色底色带入其他页面。",
+			"更新日志长页面继续使用当前浅色或深色主题，滚动全程保持一致。",
+		],
+	},
+	{
 		version: "v6.14.48",
 		date: "2026-08-24",
 		time: "18:36",
