@@ -4,22 +4,39 @@ import type { ArchiveKnowledgeGraphData } from "@/utils/archive-knowledge-graph"
 
 interface Props {
 	graph: ArchiveKnowledgeGraphData;
+	id?: string;
+	title?: string;
+	eyebrow?: string;
+	description?: string;
+	variant?: "archive" | "categories";
 }
 
-const { graph } = Astro.props;
+const {
+	graph,
+	id = "knowledge-graph",
+	title = "知识图谱",
+	eyebrow = "KNOWLEDGE GRAPH",
+	description = "根据文章标签的共同出现关系自动生成，点击节点即可筛选对应文章。",
+	variant = "archive",
+} = Astro.props;
 const featuredTags = graph.nodes.slice(0, 7);
 const accessibleLabel = `知识图谱，共 ${graph.nodes.length} 个标签、${graph.links.length} 条关联。节点大小表示包含该标签的文章数量。`;
 ---
 
-<section id="knowledge-graph" class="archive-knowledge" data-archive-knowledge-graph data-graph={JSON.stringify(graph)}>
+<section
+	id={id}
+	class:list={["archive-knowledge", `archive-knowledge--${variant}`]}
+	data-archive-knowledge-graph
+	data-graph={JSON.stringify(graph)}
+>
 	<header class="archive-knowledge__header">
 		<div>
-			<span class="archive-knowledge__eyebrow">KNOWLEDGE GRAPH</span>
+			<span class="archive-knowledge__eyebrow">{eyebrow}</span>
 			<h2>
 				<Icon is:inline name="material-symbols:share" />
-				知识图谱
+				{title}
 			</h2>
-			<p>根据文章标签的共同出现关系自动生成，点击节点即可筛选对应文章。</p>
+			<p>{description}</p>
 		</div>
 
 		<div class="archive-knowledge__controls" aria-label="图谱视图控制">
@@ -117,6 +134,9 @@ const accessibleLabel = `知识图谱，共 ${graph.nodes.length} 个标签、${
 	}
 
 	async function mountKnowledgeGraph(root: HTMLElement) {
+		const isCategoryGraph = root.classList.contains(
+			"archive-knowledge--categories",
+		);
 		const surface = root.querySelector<HTMLElement>("[data-graph-surface]");
 		const svgElement = root.querySelector<SVGSVGElement>("[data-graph-svg]");
 		const viewportElement =
@@ -157,7 +177,10 @@ const accessibleLabel = `知识图谱，共 ${graph.nodes.length} 个标签、${
 			)
 			.style(
 				"--graph-node-color",
-				(node) => graphColors[node.group % graphColors.length],
+				(node, index) =>
+					graphColors[
+						(isCategoryGraph ? index : node.group) % graphColors.length
+					],
 			);
 
 		nodeSelection
@@ -181,17 +204,46 @@ const accessibleLabel = `知识图谱，共 ${graph.nodes.length} 个标签、${
 		const linkForce = d3
 			.forceLink<GraphNode, GraphLink>(links)
 			.id((node) => node.id)
-			.distance((link) => Math.max(72, 118 - link.value * 10))
+			.distance((link) =>
+				isCategoryGraph
+					? Math.max(105, 154 - link.value * 8)
+					: Math.max(72, 118 - link.value * 10),
+			)
 			.strength((link) => Math.min(0.9, 0.35 + link.value * 0.14));
 		const simulation = d3
 			.forceSimulation<GraphNode>(nodes)
 			.force("link", linkForce)
-			.force("charge", d3.forceManyBody().strength(-190))
-			.force("collide", d3.forceCollide<GraphNode>().radius((node) => nodeRadius(node) + 22))
-			.force("x", d3.forceX<GraphNode>().strength(0.045))
-			.force("y", d3.forceY<GraphNode>().strength(0.045));
+			.force(
+				"charge",
+				d3.forceManyBody().strength(isCategoryGraph ? -410 : -190),
+			)
+			.force(
+				"collide",
+				d3
+					.forceCollide<GraphNode>()
+					.radius((node) => nodeRadius(node) + (isCategoryGraph ? 32 : 22)),
+			)
+			.force(
+				"x",
+				d3
+					.forceX<GraphNode>()
+					.strength(isCategoryGraph ? 0.018 : 0.045),
+			)
+			.force(
+				"y",
+				d3
+					.forceY<GraphNode>()
+					.strength(isCategoryGraph ? 0.018 : 0.045),
+			);
 
 		const render = () => {
+			if (isCategoryGraph && width > 0 && height > 0) {
+				for (const node of nodes) {
+					const radius = nodeRadius(node) + 48;
+					node.x = Math.max(radius, Math.min(width - radius, node.x ?? 0));
+					node.y = Math.max(radius, Math.min(height - radius - 18, node.y ?? 0));
+				}
+			}
 			linkSelection
 				.attr("x1", (link) => (link.source as GraphNode).x ?? 0)
 				.attr("y1", (link) => (link.source as GraphNode).y ?? 0)
@@ -325,8 +377,18 @@ const accessibleLabel = `知识图谱，共 ${graph.nodes.length} 个标签、${
 			svg.attr("viewBox", `0 0 ${width} ${height}`);
 			simulation
 				.force("center", d3.forceCenter(width / 2, height / 2))
-				.force("x", d3.forceX<GraphNode>(width / 2).strength(0.045))
-				.force("y", d3.forceY<GraphNode>(height / 2).strength(0.045))
+				.force(
+					"x",
+					d3
+						.forceX<GraphNode>(width / 2)
+						.strength(isCategoryGraph ? 0.018 : 0.045),
+				)
+				.force(
+					"y",
+					d3
+						.forceY<GraphNode>(height / 2)
+						.strength(isCategoryGraph ? 0.018 : 0.045),
+				)
 				.alpha(0.35)
 				.restart();
 		};
@@ -657,6 +719,40 @@ const accessibleLabel = `知识图谱，共 ${graph.nodes.length} 个标签、${
 	.archive-knowledge__footer a span {
 		color: var(--graph-muted);
 		font-size: 0.62rem;
+	}
+
+	.archive-knowledge--categories {
+		margin-top: clamp(2.2rem, 4vw, 3.4rem);
+		padding-top: clamp(1.8rem, 3vw, 2.5rem);
+		border-top: 1px solid color-mix(in srgb, var(--graph-ink) 13%, transparent);
+	}
+
+	.archive-knowledge--categories .archive-knowledge__header h2 {
+		font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+		letter-spacing: 0;
+	}
+
+	.archive-knowledge--categories .archive-knowledge__header h2 :global(svg) {
+		width: 1.45rem;
+		height: 1.45rem;
+	}
+
+	.archive-knowledge--categories .archive-knowledge__surface {
+		height: clamp(28rem, 49vw, 35rem);
+		border-radius: 0.45rem;
+		background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+	}
+
+	.archive-knowledge--categories .archive-knowledge__surface::before {
+		display: none;
+	}
+
+	.archive-knowledge--categories
+		.archive-knowledge__surface
+		:global(.archive-knowledge__nodes circle) {
+		filter: drop-shadow(
+			0 0 0.55rem color-mix(in srgb, var(--graph-node-color) 34%, transparent)
+		);
 	}
 
 	@media (max-width: 700px) {

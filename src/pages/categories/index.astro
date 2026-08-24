@@ -1,20 +1,17 @@
 ---
 import { Icon } from "astro-icon/components";
+import ArchiveKnowledgeGraph from "@/components/controls/ArchiveKnowledgeGraph.astro";
 import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import {
-	getCategoryList,
-	getSortedPostsList,
-	getTagList,
-} from "@/utils/content-utils";
+import { buildArchiveKnowledgeGraph } from "@/utils/archive-knowledge-graph";
+import { getCategoryList, getSortedPostsList } from "@/utils/content-utils";
 import { getTagUrl } from "@/utils/url-utils";
 
-const [categories, posts, tags] = await Promise.all([
+const [categories, posts] = await Promise.all([
 	getCategoryList(),
 	getSortedPostsList(),
-	getTagList(),
 ]);
 
 const uncategorizedLabel = i18n(I18nKey.uncategorized);
@@ -40,9 +37,6 @@ const categoryFolders = categories.map((category) => ({
 const categoryData = categoryFolders
 	.slice()
 	.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"));
-const tagData = tags
-	.slice()
-	.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"));
 const totalPosts = categories.reduce(
 	(sum, category) => sum + category.count,
 	0,
@@ -51,11 +45,100 @@ const maxCategoryCount = Math.max(
 	...categoryData.map((category) => category.count),
 	1,
 );
-const maxTagCount = Math.max(...tagData.map((tag) => tag.count), 1);
-const totalTagAssignments = tags.reduce((sum, tag) => sum + tag.count, 0);
-const averageTagsPerPost = posts.length
-	? (totalTagAssignments / posts.length).toFixed(1)
-	: "0.0";
+const tagGraph = buildArchiveKnowledgeGraph(
+	posts.map((post) => ({
+		title: post.data.title,
+		tags: post.data.tags ?? [],
+	})),
+);
+
+const chartColors = [
+	"#596fc7",
+	"#82c45e",
+	"#f4c24f",
+	"#e95b66",
+	"#58b8d0",
+	"#38a67f",
+	"#ec8650",
+	"#a96ac5",
+	"#dc66a1",
+	"#738dd7",
+	"#8c98aa",
+	"#d6a03d",
+];
+const chartCenter = { x: 350, y: 260 };
+
+function polarPoint(radius: number, angle: number) {
+	const radians = ((angle - 90) * Math.PI) / 180;
+	return {
+		x: chartCenter.x + radius * Math.cos(radians),
+		y: chartCenter.y + radius * Math.sin(radians),
+	};
+}
+
+function radialBarPath(
+	startAngle: number,
+	endAngle: number,
+	innerRadius: number,
+	outerRadius: number,
+) {
+	const outerStart = polarPoint(outerRadius, startAngle);
+	const outerEnd = polarPoint(outerRadius, endAngle);
+	const innerEnd = polarPoint(innerRadius, endAngle);
+	const innerStart = polarPoint(innerRadius, startAngle);
+	const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+	return [
+		`M ${outerStart.x} ${outerStart.y}`,
+		`A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,
+		`L ${innerEnd.x} ${innerEnd.y}`,
+		`A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStart.x} ${innerStart.y}`,
+		"Z",
+	].join(" ");
+}
+
+const categoryChartItems = categoryData.map((category, index) => {
+	const segment = 360 / Math.max(categoryData.length, 1);
+	const gap = Math.min(7, Math.max(2.2, segment * 0.12));
+	const startAngle = index * segment + gap / 2;
+	const endAngle = (index + 1) * segment - gap / 2;
+	const middleAngle = (startAngle + endAngle) / 2;
+	const outerRadius = 92 + Math.sqrt(category.count / maxCategoryCount) * 104;
+	const lineStart = polarPoint(outerRadius + 5, middleAngle);
+	const lineBend = polarPoint(outerRadius + 30, middleAngle);
+	const side = Math.sin((middleAngle * Math.PI) / 180) >= 0 ? "right" : "left";
+
+	return {
+		...category,
+		color: chartColors[index % chartColors.length],
+		path: radialBarPath(startAngle, endAngle, 67, outerRadius),
+		lineStart,
+		lineBend,
+		side,
+		labelX: side === "right" ? 680 : 20,
+		labelY: Math.max(30, Math.min(474, lineBend.y)),
+		lineEndX: side === "right" ? 610 : 90,
+		displayName:
+			category.name.length > 16
+				? `${category.name.slice(0, 15)}…`
+				: category.name,
+	};
+});
+
+for (const side of ["left", "right"] as const) {
+	const items = categoryChartItems
+		.filter((item) => item.side === side)
+		.sort((a, b) => a.labelY - b.labelY);
+	let cursor = 32;
+	for (const item of items) {
+		item.labelY = Math.max(cursor, item.labelY);
+		cursor = item.labelY + 30;
+	}
+	const overflow = Math.max(0, cursor - 504);
+	if (overflow > 0) {
+		for (const item of items) item.labelY -= overflow;
+	}
+}
 ---
 
 <MainGridLayout
@@ -171,101 +254,61 @@ const averageTagsPerPost = posts.length
 			data-category-panel="data"
 			hidden
 		>
-			<div class="category-data-panel__summary">
-				<div>
-					<span>{categories.length}</span>
-					<small>文章分类</small>
-				</div>
-				<div>
-					<span>{tags.length}</span>
-					<small>内容标签</small>
-				</div>
-				<div>
-					<span>{totalPosts}</span>
-					<small>收录文章</small>
-				</div>
-				<div>
-					<span>{averageTagsPerPost}</span>
-					<small>平均标签 / 文章</small>
-				</div>
-			</div>
-
-			<div class="category-data-panel__grid">
-				<section class="category-data-card" aria-labelledby="category-distribution-title">
-					<header class="category-data-card__header">
-						<div>
-							<h2 id="category-distribution-title">分类分布</h2>
-							<p>按文章数量查看内容重心</p>
-						</div>
-						<Icon is:inline name="material-symbols:bar-chart-rounded" />
-					</header>
-					<div class="category-data-bars">
-						{categoryData.length > 0 ? (
-							categoryData.map((category) => {
-								const share = totalPosts
-									? Math.round((category.count / totalPosts) * 100)
-									: 0;
-								const width = Math.max(
-									4,
-									Math.round((category.count / maxCategoryCount) * 100),
-								);
-								return (
-									<a
-										class="category-data-bar-row"
-										href={category.url}
-										title={`查看 ${category.name} 分类 · ${category.count} 篇文章`}
+			<div class="category-data-overview">
+				<section class="category-radial-chart" aria-labelledby="category-distribution-title">
+					<h2 id="category-distribution-title" class="sr-only">分类文章数量径向图</h2>
+					{categoryChartItems.length > 0 ? (
+						<svg viewBox="0 0 720 520" role="img" aria-label={`分类数据图，共 ${categories.length} 个分类、${totalPosts} 篇文章`}>
+							<title>分类文章数量径向图</title>
+							<circle class="category-radial-chart__ring" cx={chartCenter.x} cy={chartCenter.y} r="67" />
+							{categoryChartItems.map((category) => (
+								<a href={category.url} aria-label={`${category.name}，${category.count} 篇文章`}>
+									<path class="category-radial-chart__bar" d={category.path} fill={category.color} />
+									<path
+										class="category-radial-chart__leader"
+										d={`M ${category.lineStart.x} ${category.lineStart.y} L ${category.lineBend.x} ${category.lineBend.y} L ${category.lineEndX} ${category.labelY}`}
+									/>
+									<text
+										class="category-radial-chart__label"
+										x={category.labelX}
+										y={category.labelY - 4}
+										text-anchor={category.side === "right" ? "end" : "start"}
 									>
-										<span class="category-data-bar-row__meta">
-											<strong>{category.name}</strong>
-											<small>{category.count} 篇 · {share}%</small>
-										</span>
-										<span
-											class="category-data-bar"
-											role="meter"
-											aria-label={`${category.name}文章占比`}
-											aria-valuemin="0"
-											aria-valuemax="100"
-											aria-valuenow={share}
-										>
-											<span style={`--bar-width: ${width}%`}></span>
-										</span>
-									</a>
-								);
-							})
-						) : (
-							<p class="category-data-card__empty">暂时没有可统计的分类</p>
-						)}
-					</div>
+										<tspan>{category.displayName}</tspan>
+										<tspan x={category.labelX} dy="16">{category.count} 篇</tspan>
+									</text>
+								</a>
+							))}
+						</svg>
+					) : (
+						<p class="category-data-empty">暂时没有可统计的分类</p>
+					)}
 				</section>
 
-				<section class="category-data-card" aria-labelledby="tag-ranking-title">
-					<header class="category-data-card__header">
-						<div>
-							<h2 id="tag-ranking-title">标签活跃度</h2>
-							<p>最常出现在文章中的标签</p>
-						</div>
-						<Icon is:inline name="material-symbols:local-fire-department-rounded" />
-					</header>
-					<ol class="category-tag-ranking">
-						{tagData.length > 0 ? (
-							tagData.slice(0, 8).map((tag, index) => (
-								<li>
-									<span class="category-tag-ranking__index">{String(index + 1).padStart(2, "0")}</span>
-									<a href={getTagUrl(tag.name)} title={`查看 #${tag.name} 标签`}>
-										<span class="category-tag-ranking__name">#{tag.name}</span>
-										<span class="category-tag-ranking__track" aria-hidden="true">
-											<span style={`--bar-width: ${Math.max(4, Math.round((tag.count / maxTagCount) * 100))}%`}></span>
-										</span>
-										<strong>{tag.count}</strong>
-									</a>
-								</li>
-							))
-						) : (
-							<li class="category-data-card__empty">暂时没有可统计的标签</li>
-						)}
+				<section class="category-ranking-panel" aria-labelledby="category-ranking-title">
+					<h2 id="category-ranking-title" class="sr-only">分类文章数量排行</h2>
+					<ol>
+						{categoryData.map((category) => (
+							<li>
+								<a href={category.url}>
+									<strong>{category.name}</strong>
+									<span>{category.count} 篇</span>
+								</a>
+							</li>
+						))}
 					</ol>
+					<p>共 {totalPosts} 篇文章</p>
 				</section>
 			</div>
+
+			<ArchiveKnowledgeGraph
+				graph={tagGraph}
+				id="category-tag-graph"
+				title="标签关系图谱"
+				eyebrow={`${tagGraph.nodes.length} 个标签`}
+				description="标签之间的连线表示它们曾在同一篇文章中出现，节点越大代表使用频率越高。"
+				variant="categories"
+			/>
 		</div>
 
 		{categories.length === 0 && (
@@ -549,8 +592,7 @@ const averageTagsPerPost = posts.length
 
 	.category-workbench__switch button:focus-visible,
 	.category-folder a:focus-visible,
-	.category-folder button:focus-visible,
-	.category-data-card a:focus-visible {
+	.category-folder button:focus-visible {
 		outline: 3px solid color-mix(in srgb, var(--category-text) 70%, white);
 		outline-offset: 3px;
 	}
@@ -792,213 +834,153 @@ const averageTagsPerPost = posts.length
 	}
 
 	.category-data-panel {
-		padding: clamp(1rem, 2.5vw, 1.75rem);
-		border: 1px solid var(--category-border);
-		border-radius: 0.85rem;
-		background: var(--category-surface);
+		padding: clamp(0.4rem, 1.5vw, 1rem) 0 0;
 	}
 
 	.category-data-panel[hidden] {
 		display: none;
 	}
 
-	.category-data-panel__summary {
+	.category-data-overview {
 		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
+		grid-template-columns: minmax(0, 1fr) minmax(12rem, 15rem);
+		align-items: center;
+		gap: clamp(0.7rem, 2vw, 1.5rem);
+		min-height: 32rem;
 	}
 
-	.category-data-panel__summary > div {
-		position: relative;
-		overflow: hidden;
+	.category-radial-chart {
 		display: grid;
-		gap: 0.18rem;
-		padding: 1rem;
-		border: 1px solid
-			color-mix(in srgb, var(--category-text) 10%, transparent);
-		border-radius: 0.65rem;
-		background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+		min-width: 0;
+		place-items: center;
 	}
 
-	.category-data-panel__summary > div::after {
-		position: absolute;
-		right: -1.5rem;
-		bottom: -2rem;
-		width: 5rem;
-		height: 5rem;
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--category-text) 10%, transparent);
-		content: "";
+	.category-radial-chart svg {
+		display: block;
+		width: 100%;
+		max-width: 44rem;
+		height: auto;
+		overflow: visible;
+	}
+
+	.category-radial-chart__ring {
+		fill: none;
+		stroke: color-mix(in srgb, var(--category-text) 15%, transparent);
+		stroke-width: 1.5;
+	}
+
+	.category-radial-chart__bar {
+		filter: saturate(0.86);
+		transform-box: fill-box;
+		transform-origin: center;
+		transition: filter 180ms ease, opacity 180ms ease, transform 220ms ease;
+	}
+
+	.category-radial-chart a:hover .category-radial-chart__bar,
+	.category-radial-chart a:focus-visible .category-radial-chart__bar {
+		filter: saturate(1.18) brightness(0.96);
+		transform: scale(1.025);
+	}
+
+	.category-radial-chart a:focus-visible {
+		outline: none;
+	}
+
+	.category-radial-chart a:focus-visible .category-radial-chart__leader {
+		stroke: var(--category-text);
+		stroke-width: 2;
+	}
+
+	.category-radial-chart__leader {
+		fill: none;
+		stroke: color-mix(in srgb, var(--category-text) 54%, transparent);
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-width: 1.2;
+		vector-effect: non-scaling-stroke;
+		transition: stroke 180ms ease, stroke-width 180ms ease;
+	}
+
+	.category-radial-chart__label {
+		fill: var(--category-text);
+		font-family: var(--font-navbar-title, var(--font-family));
+		font-size: 13px;
+		font-weight: 750;
+		letter-spacing: 0;
 		pointer-events: none;
 	}
 
-	.category-data-panel__summary span {
-		font-size: 1.6rem;
-		font-weight: 850;
-		line-height: 1;
+	.category-radial-chart__label tspan + tspan {
+		fill: var(--category-muted);
+		font-size: 11px;
+		font-weight: 580;
 	}
 
-	.category-data-panel__summary small {
-		color: var(--category-muted);
-		font-size: 0.75rem;
-	}
-
-	.category-data-panel__grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-		gap: 1rem;
-	}
-
-	.category-data-card {
+	.category-ranking-panel {
 		min-width: 0;
-		border: 1px solid
-			color-mix(in srgb, var(--category-text) 11%, transparent);
-		border-radius: 0.75rem;
-		background: color-mix(in srgb, var(--card-bg) 90%, transparent);
-		padding: 1.1rem 1.15rem 1.2rem;
+		padding: 0.6rem 0;
 	}
 
-	.category-data-card__header {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 1rem;
-		margin-bottom: 1.1rem;
-	}
-
-	.category-data-card__header h2 {
-		margin: 0;
-		font-size: 1rem;
-		font-weight: 800;
-		line-height: 1.3;
-	}
-
-	.category-data-card__header p {
-		margin: 0.25rem 0 0;
-		color: var(--category-muted);
-		font-size: 0.72rem;
-		line-height: 1.4;
-	}
-
-	.category-data-card__header > :global(svg) {
-		width: 1.25rem;
-		height: 1.25rem;
-		color: var(--category-text);
-	}
-
-	.category-data-bars,
-	.category-tag-ranking {
+	.category-ranking-panel ol {
 		display: grid;
-		gap: 0.85rem;
+		gap: 0.12rem;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
-	.category-data-bar-row {
-		display: grid;
-		gap: 0.4rem;
-		color: inherit;
-	}
-
-	.category-data-bar-row__meta {
+	.category-ranking-panel a {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 0.75rem;
+		min-height: 2.55rem;
+		padding: 0.55rem 0.15rem;
+		border-bottom: 1px solid transparent;
+		color: inherit;
+		transition: border-color 180ms ease, padding 180ms ease;
 	}
 
-	.category-data-bar-row__meta strong {
+	.category-ranking-panel a:hover,
+	.category-ranking-panel a:focus-visible {
+		padding-right: 0.55rem;
+		padding-left: 0.55rem;
+		border-bottom-color: var(--category-text);
+		outline: none;
+	}
+
+	.category-ranking-panel strong {
 		overflow: hidden;
 		min-width: 0;
-		font-size: 0.78rem;
-		font-weight: 750;
+		font-family: var(--font-navbar-title, var(--font-family));
+		font-size: 0.92rem;
+		font-weight: 760;
+		letter-spacing: 0;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.category-data-bar-row__meta small {
+	.category-ranking-panel a span {
 		flex: 0 0 auto;
 		color: var(--category-muted);
-		font-size: 0.68rem;
-	}
-
-	.category-data-bar,
-	.category-tag-ranking__track {
-		display: block;
-		height: 0.42rem;
-		overflow: hidden;
-		border-radius: 999rem;
-		background: color-mix(in srgb, var(--category-text) 9%, transparent);
-	}
-
-	.category-data-bar > span,
-	.category-tag-ranking__track > span {
-		display: block;
-		width: var(--bar-width);
-		height: 100%;
-		border-radius: inherit;
-		background: var(--category-text);
-		transform-origin: left center;
-		transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	.category-data-bar-row:hover .category-data-bar > span {
-		filter: saturate(1.2);
-	}
-
-	.category-tag-ranking {
-		gap: 0.35rem;
-	}
-
-	.category-tag-ranking li {
-		display: grid;
-		grid-template-columns: 1.55rem minmax(0, 1fr);
-		align-items: center;
-		gap: 0.5rem;
-		min-height: 2.1rem;
-	}
-
-	.category-tag-ranking__index {
-		color: var(--category-muted);
-		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-		font-size: 0.68rem;
-		font-weight: 700;
-	}
-
-	.category-tag-ranking li > a {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 3.2rem 1.5rem;
-		align-items: center;
-		gap: 0.55rem;
-		min-width: 0;
-		color: inherit;
-	}
-
-	.category-tag-ranking__name {
-		overflow: hidden;
 		font-size: 0.76rem;
-		font-weight: 650;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.category-tag-ranking li > a > strong {
-		color: var(--category-text);
-		font-size: 0.72rem;
+	.category-ranking-panel > p {
+		margin: 0.75rem 0 0;
+		padding-top: 0.85rem;
+		border-top: 1px dashed
+			color-mix(in srgb, var(--category-text) 18%, transparent);
+		color: var(--category-muted);
+		font-size: 0.76rem;
 		text-align: right;
 	}
 
-	.category-tag-ranking li > a:hover .category-tag-ranking__name {
-		color: var(--category-text);
-	}
-
-	.category-data-card__empty {
+	.category-data-empty {
 		margin: 0;
-		padding: 1.5rem 0;
+		padding: 5rem 0;
 		color: var(--category-muted);
-		font-size: 0.78rem;
+		font-size: 0.86rem;
 		text-align: center;
 	}
 
@@ -1071,29 +1053,34 @@ const averageTagsPerPost = posts.length
 			padding: 1rem;
 		}
 
-		.category-data-panel__summary {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 0.45rem;
-		}
-
-		.category-data-panel__summary > div {
-			padding: 0.75rem 0.6rem;
-		}
-
-		.category-data-panel__summary span {
-			font-size: 1.25rem;
-		}
-
-		.category-data-panel__grid {
+		.category-data-overview {
 			grid-template-columns: minmax(0, 1fr);
+			gap: 0.5rem;
+			min-height: 0;
 		}
 
-		.category-data-card {
-			padding: 1rem;
+		.category-radial-chart {
+			overflow: hidden;
+			padding: 1.5rem 0;
 		}
 
-		.category-tag-ranking li > a {
-			grid-template-columns: minmax(0, 1fr) 2.8rem 1.4rem;
+		.category-radial-chart svg {
+			width: 100%;
+			transform: scale(1.32);
+			transform-origin: center;
+		}
+
+		.category-radial-chart__leader,
+		.category-radial-chart__label {
+			display: none;
+		}
+
+		.category-ranking-panel {
+			padding: 0 0.35rem;
+		}
+
+		.category-ranking-panel strong {
+			font-size: 0.88rem;
 		}
 	}
 
@@ -1105,14 +1092,14 @@ const averageTagsPerPost = posts.length
 		.category-folder__tag-count,
 		.category-workbench__indicator,
 		.category-workbench__switch button,
-		.category-data-card a {
+		.category-radial-chart__bar,
+		.category-radial-chart__leader,
+		.category-ranking-panel a {
 			transition: none;
 		}
 
 		.category-folder__content,
-		.category-folder__tags,
-		.category-data-bar > span,
-		.category-tag-ranking__track > span {
+		.category-folder__tags {
 			transition: none;
 		}
 	}

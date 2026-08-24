@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.44",
+		date: "2026-08-24",
+		time: "16:26",
+		type: "optimize",
+		title: "头像与分类数据图焕新",
+		summary: "统一全站个人形象，并重做分类页的数据可视化。",
+		changes: [
+			"使用新的高清头像统一替换导航栏、个人资料卡、内容侧栏与站点图标。",
+			"个人资料卡横幅更换为蓝紫星空雪山封面，并同步更新图片加载占位。",
+			"分类数据图改为径向文章分布图与完整分类排行，数据随文章自动更新。",
+			"新增彩色标签关系图谱，支持缩放、拖拽、悬浮信息与移动端布局。",
+		],
+	},
+	{
 		version: "v6.14.43",
 		date: "2026-08-24",
 		time: "15:30",

@@ -1,7 +1,5 @@
 {
   "src:assets/images/firefly.png": "72d3af9ee699aced93",
-  "src:assets/images/cover.avif": "7c6f966a628a816e82",
-  "src:assets/images/avatar.avif": "dcd8d5d1cecabea9a9",
   "public:gallery/firefly-2026/cover.avif": "7588a28a8f989e8d88",
   "public:gallery/firefly-2026/1.avif": "c8bca9dde6d2babfb5",
   "src:assets/images/DesktopWallpaper/d6.avif": "d9e5ec9ca7aebda9b0",
@@ -51,5 +49,7 @@
   "src:assets/images/notebooks/learning.webp": "2a405d384d66343c47",
   "src:assets/images/notebooks/inspiration.webp": "6c8190748c9d618098",
   "src:assets/images/notebooks/engineering.webp": "4f64a54d4f988c81b2",
-  "src:assets/images/notebooks/daily-review.webp": "8b97567a894b546442"
+  "src:assets/images/notebooks/daily-review.webp": "8b97567a894b546442",
+  "src:assets/images/cover.avif": "9483aa4b69993e536a",
+  "src:assets/images/avatar.avif": "cfced6c7c3ceaca3b3"
 }
