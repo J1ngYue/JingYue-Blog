@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.45",
+		date: "2026-08-24",
+		time: "16:51",
+		type: "optimize",
+		title: "笔记本翻页动效柔化",
+		summary: "放慢书封与纸页的翻动节奏，让打开和合拢更加柔和连贯。",
+		changes: [
+			"书封展开时间延长至约 720 毫秒，三层纸页按顺序柔和接力。",
+			"合拢时间延长至约 820 毫秒，并使用对称缓入缓出曲线。",
+			"减轻翻页角度、倾斜和缩放幅度，避免快速折板感。",
+			"保持书本外框位置固定，并继续兼容减少动态效果设置。",
+		],
+	},
+	{
 		version: "v6.14.44",
 		date: "2026-08-24",
 		time: "16:26",
