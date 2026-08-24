@@ -90,6 +90,11 @@ const formatDate = (date: Date) =>
 ---
 
 <div class="article-reading-rails" data-article-reading-rails>
+	<div
+		class="article-reading-toc-edge"
+		data-article-reading-toc-edge
+		aria-hidden="true"
+	></div>
 	<aside
 		class="article-reading-toc"
 		data-article-reading-toc
@@ -203,54 +208,11 @@ const formatDate = (date: Date) =>
 		root.dataset.bound = "true";
 
 		const toc = root.querySelector<HTMLElement>("[data-article-reading-toc]");
+		const tocEdge = root.querySelector<HTMLElement>(
+			"[data-article-reading-toc-edge]",
+		);
 		const library = root.querySelector<HTMLElement>("[data-article-reading-library]");
 		const libraryTrigger = root.querySelector<HTMLButtonElement>("[data-article-library-trigger]");
-
-		type ReadingAnchor = {
-			range: Range;
-			top: number;
-		};
-
-		const captureReadingAnchor = (): ReadingAnchor | null => {
-			const article = document.querySelector<HTMLElement>("#post-container");
-			const main = document.querySelector<HTMLElement>("#main-column-wrapper");
-			if (!article || !main) return null;
-
-			const mainRect = main.getBoundingClientRect();
-			const anchorY = window.innerHeight * 0.48;
-			const xCandidates = [0.28, 0.4, 0.18, 0.55].map(
-				(ratio) => mainRect.left + mainRect.width * ratio,
-			);
-			const yOffsets = [0, 24, -24, 48, -48, 72, -72];
-
-			for (const yOffset of yOffsets) {
-				for (const x of xCandidates) {
-					const y = anchorY + yOffset;
-					const caretPosition = document.caretPositionFromPoint?.(x, y);
-					if (!caretPosition || !article.contains(caretPosition.offsetNode)) continue;
-					const range = document.createRange();
-					range.setStart(caretPosition.offsetNode, caretPosition.offset);
-					range.collapse(true);
-					const rect = range.getBoundingClientRect();
-					if (Number.isFinite(rect.top)) return { range, top: rect.top };
-				}
-			}
-
-			return null;
-		};
-
-		const keepReadingAnchor = (anchor: ReadingAnchor | null) => {
-			if (!anchor) return;
-			const startedAt = performance.now();
-			const stabilize = () => {
-				const rect = anchor.range.getBoundingClientRect();
-				if (Number.isFinite(rect.top)) {
-					window.scrollBy(0, rect.top - anchor.top);
-				}
-				if (performance.now() - startedAt < 380) requestAnimationFrame(stabilize);
-			};
-			requestAnimationFrame(stabilize);
-		};
 
 		const applyTocState = (collapsed: boolean) => {
 			toc?.classList.toggle("is-collapsed", collapsed);
@@ -261,9 +223,7 @@ const formatDate = (date: Date) =>
 		let collapseTimer: number | undefined;
 		const setTocExpanded = (expanded: boolean) => {
 			if (!toc || toc.classList.contains("is-collapsed") === !expanded) return;
-			const readingAnchor = captureReadingAnchor();
 			applyTocState(!expanded);
-			keepReadingAnchor(readingAnchor);
 		};
 		const cancelTocCollapse = () => {
 			if (collapseTimer === undefined) return;
@@ -275,11 +235,16 @@ const formatDate = (date: Date) =>
 			collapseTimer = window.setTimeout(() => {
 				collapseTimer = undefined;
 				setTocExpanded(false);
-			}, 140);
+			}, 220);
 		};
 
 		applyTocState(hoverMedia.matches);
 		if (hoverMedia.matches) {
+			tocEdge?.addEventListener("pointerenter", () => {
+				cancelTocCollapse();
+				setTocExpanded(true);
+			});
+			tocEdge?.addEventListener("pointerleave", scheduleTocCollapse);
 			toc?.addEventListener("pointerenter", () => {
 				cancelTocCollapse();
 				setTocExpanded(true);
@@ -354,6 +319,15 @@ const formatDate = (date: Date) =>
 		backdrop-filter: blur(1rem);
 	}
 
+	.article-reading-toc-edge {
+		position: fixed;
+		top: 4.75rem;
+		bottom: 0;
+		left: 0;
+		z-index: 43;
+		width: 1.5rem;
+	}
+
 	.article-reading-toc {
 		position: fixed;
 		top: 5.35rem;
@@ -376,7 +350,7 @@ const formatDate = (date: Date) =>
 		background: transparent;
 		box-shadow: none;
 		backdrop-filter: none;
-		transform: translateX(calc(-100% + 1rem));
+		transform: translateX(calc(-100% - 1.25rem));
 	}
 
 	.article-reading-toc__header {
@@ -648,16 +622,8 @@ const formatDate = (date: Date) =>
 
 	:global(html:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
 		grid-column: 1 / -1 !important;
-		width: calc(100% - 19.75rem) !important;
-		margin-right: 0 !important;
-		margin-left: 19.75rem !important;
-		transition:
-			width 320ms cubic-bezier(0.22, 0.8, 0.2, 1),
-			margin-left 320ms cubic-bezier(0.22, 0.8, 0.2, 1);
-	}
-
-	:global(html[data-article-toc-collapsed="true"]:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
 		width: 100% !important;
+		margin-right: 0 !important;
 		margin-left: 0 !important;
 	}
 
@@ -674,14 +640,6 @@ const formatDate = (date: Date) =>
 		padding-inline: 0 !important;
 	}
 
-	@media (max-width: 1120px) {
-		:global(html:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper),
-		:global(html[data-article-toc-collapsed="true"]:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
-			width: 100% !important;
-			margin-left: 0 !important;
-		}
-	}
-
 	@media (max-width: 760px) {
 		.article-reading-toc {
 			top: 4.8rem;
@@ -689,7 +647,6 @@ const formatDate = (date: Date) =>
 			left: 0;
 			width: min(18.5rem, calc(100vw - 4rem));
 			border-radius: 0 0.9rem 0.9rem 0;
-			transform: translateX(calc(-100% + 2.5rem));
 		}
 
 		.article-reading-toc:not(.is-collapsed) {
@@ -705,10 +662,6 @@ const formatDate = (date: Date) =>
 			width: min(18rem, calc(100vw - 1rem));
 		}
 
-		:global(html:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper),
-		:global(html[data-article-toc-collapsed="true"]:has([data-article-reading-rails]) body.content-only-active #main-column-wrapper) {
-			width: 100% !important;
-		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {

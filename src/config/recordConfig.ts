@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.46",
+		date: "2026-08-24",
+		time: "17:15",
+		type: "fix",
+		title: "文章目录边缘悬浮稳定",
+		summary: "修复文章阅读页左侧目录在边缘反复展开与收起的问题。",
+		changes: [
+			"将目录悬浮触发区从移动面板分离为固定的视口边缘命中带。",
+			"目录展开改为覆盖正文，不再修改正文宽度与左侧边距。",
+			"目录收起时完全移出屏幕，并增加离开缓冲避免跨越边缘误收起。",
+			"保留键盘焦点展开、触屏布局与减少动态效果支持。",
+		],
+	},
+	{
 		version: "v6.14.45",
 		date: "2026-08-24",
 		time: "16:51",
