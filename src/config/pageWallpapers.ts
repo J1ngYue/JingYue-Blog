@@ -17,6 +17,7 @@ export interface PageWallpaperAsset {
 	desktopUrl: string;
 	mobileUrl: string;
 	type: "image" | "video";
+	posterUrl?: string;
 }
 
 export const DEFAULT_PAGE_WALLPAPER_ID = "wallpaper-1" as const;
@@ -28,6 +29,7 @@ export const pageWallpaperAssets: PageWallpaperAsset[] = [
 		desktopUrl: "/assets/videos/blue-melancholy.mp4",
 		mobileUrl: "/assets/videos/blue-melancholy.mp4",
 		type: "video",
+		posterUrl: "/assets/images/blue-melancholy-poster.webp",
 	},
 	{
 		id: "wallpaper-2",

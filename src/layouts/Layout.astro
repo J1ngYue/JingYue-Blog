@@ -23,6 +23,7 @@ import {
 	profileConfig,
 	siteConfig,
 } from "@/config";
+import { pageWallpaperAssets } from "@/config/pageWallpapers";
 import {
 	BANNER_HEIGHT,
 	BANNER_HEIGHT_EXTEND,
@@ -34,8 +35,12 @@ import { defaultFavicons } from "@/constants/icon";
 import type { Favicon } from "@/types/config";
 import { isHomePage } from "@/utils/layout-utils";
 import {
+	ADMIN_MOBILE_PAGE_WALLPAPERS,
 	ADMIN_PAGE_WALLPAPERS,
 	PAGE_WALLPAPER_DEFAULT_KEY,
+	PAGE_WALLPAPER_MOBILE_DEFAULT_KEY,
+	PAGE_WALLPAPER_MOBILE_PREFERENCES_KEY,
+	PAGE_WALLPAPER_PREFERENCES_KEY,
 	SYSTEM_DEFAULT_WALLPAPER,
 } from "@/utils/page-wallpaper";
 import { url } from "@/utils/url-utils";
@@ -295,7 +300,12 @@ const siteLang = lang.replace("_", "-");
         baseUrl: import.meta.env.BASE_URL,
         cardTransparentOpacity: backgroundWallpaper.overlay?.cardOpacity ?? 0.65,
         adminPageWallpapers: ADMIN_PAGE_WALLPAPERS,
+        adminMobilePageWallpapers: ADMIN_MOBILE_PAGE_WALLPAPERS,
+        pageWallpaperAssets,
+        pageWallpaperPreferencesKey: PAGE_WALLPAPER_PREFERENCES_KEY,
+        mobilePageWallpaperPreferencesKey: PAGE_WALLPAPER_MOBILE_PREFERENCES_KEY,
         defaultWallpaperPreferenceKey: PAGE_WALLPAPER_DEFAULT_KEY,
+        mobileDefaultWallpaperPreferenceKey: PAGE_WALLPAPER_MOBILE_DEFAULT_KEY,
         systemDefaultWallpaper: SYSTEM_DEFAULT_WALLPAPER,
         homeLanding,
       }}
@@ -304,9 +314,6 @@ const siteLang = lang.replace("_", "-");
       const LIGHT_MODE = "light";
       const DARK_MODE = "dark";
       const SYSTEM_MODE = "system";
-      if (homeLanding) {
-        document.documentElement.classList.add("home-cover-pending");
-      }
 
       function getResponsiveBannerContentTop() {
         if (window.innerWidth <= 640) {
@@ -384,9 +391,19 @@ const siteLang = lang.replace("_", "-");
       let storedPageWallpapers = {};
       let storedDefaultWallpaper = "";
       let storedFavoriteWallpapers = {};
+      const isMobileWallpaper = window.matchMedia("(max-width: 640px)").matches;
+      const wallpaperPreferencesKey = isMobileWallpaper
+        ? mobilePageWallpaperPreferencesKey
+        : pageWallpaperPreferencesKey;
+      const wallpaperDefaultKey = isMobileWallpaper
+        ? mobileDefaultWallpaperPreferenceKey
+        : defaultWallpaperPreferenceKey;
+      const initialAdminPageWallpapers = isMobileWallpaper
+        ? adminMobilePageWallpapers
+        : adminPageWallpapers;
       try {
-        storedPageWallpapers = JSON.parse(localStorage.getItem("fireflyPageWallpapersV1") || "{}");
-        storedDefaultWallpaper = localStorage.getItem(defaultWallpaperPreferenceKey) || "";
+        storedPageWallpapers = JSON.parse(localStorage.getItem(wallpaperPreferencesKey) || "{}");
+        storedDefaultWallpaper = localStorage.getItem(wallpaperDefaultKey) || "";
         storedFavoriteWallpapers = JSON.parse(localStorage.getItem("fireflyLocalCoverFavorites") || "{}");
       } catch {
         storedPageWallpapers = {};
@@ -401,6 +418,7 @@ const siteLang = lang.replace("_", "-");
           ? storedPageWallpapers[initialWallpaperPage]
           : "") ||
         (isWallpaperChoice(storedDefaultWallpaper) ? storedDefaultWallpaper : "") ||
+        initialAdminPageWallpapers[initialWallpaperPage] ||
         adminPageWallpapers[initialWallpaperPage] ||
         systemDefaultWallpaper;
       const initialWallpaperIndex = initialWallpaperChoice.startsWith("wallpaper-")
@@ -414,6 +432,34 @@ const siteLang = lang.replace("_", "-");
         "data-has-local-wallpaper",
         initialWallpaperIsLocal ? "true" : "false"
       );
+      if (homeLanding && !initialWallpaperIsLocal) {
+        const initialWallpaperAsset = pageWallpaperAssets.find(
+          (asset) => asset.id === initialWallpaperChoice
+        );
+        const bootstrapWallpaperUrl = initialWallpaperAsset
+          ? initialWallpaperAsset.type === "video"
+            ? initialWallpaperAsset.posterUrl
+            : isMobileWallpaper
+              ? initialWallpaperAsset.mobileUrl
+              : initialWallpaperAsset.desktopUrl
+          : "";
+        if (
+          bootstrapWallpaperUrl &&
+          document.documentElement.getAttribute("data-wallpaper-mode") !== "none"
+        ) {
+          document.documentElement.setAttribute("data-home-wallpaper-bootstrap", "true");
+          document.documentElement.style.setProperty(
+            "--home-wallpaper-bootstrap",
+            `url(${JSON.stringify(bootstrapWallpaperUrl)})`
+          );
+          const preload = document.createElement("link");
+          preload.rel = "preload";
+          preload.as = "image";
+          preload.href = bootstrapWallpaperUrl;
+          preload.fetchPriority = "high";
+          document.head.appendChild(preload);
+        }
+      }
 
       // calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
       // 使用更准确的窗口高度计算
@@ -708,15 +754,6 @@ const siteLang = lang.replace("_", "-");
         }
       })();
     </script>
-	<style is:global>
-		html.home-cover-pending body.home-landing-active {
-			background: #0b1017;
-		}
-
-		html.home-cover-pending body.home-landing-active > *:not(script):not(style) {
-			visibility: hidden !important;
-		}
-	</style>
     <style
       define:vars={{
         configHue,

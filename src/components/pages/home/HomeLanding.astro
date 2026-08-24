@@ -17,6 +17,7 @@ import SiteStats from "@/components/widget/SiteStats.astro";
 import Tags from "@/components/widget/Tags.astro";
 import { announcementConfig } from "@/config/announcementConfig";
 import { musicPlayerConfig } from "@/config/musicConfig";
+import { pageWallpaperAssets } from "@/config/pageWallpapers";
 import { githubUsername, profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
 import type { ActivityCalendar } from "@/utils/home-activity";
@@ -129,7 +130,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	data-home-timezone={siteTimezone}
 	data-home-start-date={siteStartDate}
 	data-home-default-hue={siteConfig.themeColor.hue}
-	data-home-entry="loading"
+	data-home-wallpaper-assets={JSON.stringify(pageWallpaperAssets)}
 >
 	<LocalWallpaperLayer client:load surface="home" />
 
@@ -614,6 +615,33 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 
 		const root = document.querySelector(".home-landing[data-home-landing]");
 		if (!root) return;
+		if (
+			document.documentElement.getAttribute("data-wallpaper-mode") !== "none" &&
+			document.documentElement.getAttribute("data-has-local-wallpaper") !== "true" &&
+			document.documentElement.getAttribute("data-home-wallpaper-bootstrap") !== "true"
+		) {
+			try {
+				const wallpaperAssets = JSON.parse(root.dataset.homeWallpaperAssets || "[]");
+				const choice = document.documentElement.getAttribute("data-page-wallpaper");
+				const asset = wallpaperAssets.find((item) => item.id === choice);
+				const bootstrapUrl = asset
+					? asset.type === "video"
+						? asset.posterUrl
+						: window.matchMedia("(max-width: 640px)").matches
+							? asset.mobileUrl
+							: asset.desktopUrl
+					: "";
+				if (bootstrapUrl) {
+					document.documentElement.setAttribute("data-home-wallpaper-bootstrap", "true");
+					document.documentElement.style.setProperty(
+						"--home-wallpaper-bootstrap",
+						`url(${JSON.stringify(bootstrapUrl)})`,
+					);
+				}
+			} catch {
+				// 壁纸层仍会按正常流程加载；这里只负责无闪烁首帧。
+			}
+		}
 		const hero = root.querySelector("[data-home-hero]");
 		const frame = root.querySelector("[data-home-hero-frame]");
 		if (!hero || !frame) return;
@@ -671,7 +699,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const quotes = quote ? JSON.parse(quote.dataset.quotes || "[]") : [];
 		const terminalLines = terminal ? JSON.parse(terminal.dataset.lines || "[]") : [];
 		let animationFrame = 0;
-		let entryResolved = false;
 		let pageScrollAnimation = 0;
 		let pageScrollFallbackTimer = 0;
 		let pageScrollTransitionEndHandler = null;
@@ -1665,44 +1692,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			terminalTimer = window.setTimeout(type, 450);
 		};
 
-		const beginHomeEntry = () => {
-			entryResolved = false;
-			root.dataset.homeEntry = "loading";
-			root.setAttribute("aria-busy", "true");
-			document.documentElement.classList.add("home-cover-pending");
-		};
-
-		const finishHomeEntry = () => {
-			if (entryResolved) return;
-			entryResolved = true;
-			root.dataset.homeEntry = "ready";
-			root.setAttribute("aria-busy", "false");
-			document.documentElement.classList.add("home-cover-reveal-now");
-			document.documentElement.classList.remove("home-cover-pending");
-			playWordmark();
-			startTerminal();
-			requestAnimationFrame(() => {
-				requestAnimationFrame(() => {
-					document.documentElement.classList.remove("home-cover-reveal-now");
-				});
-			});
-		};
-
-		const handleHomeWallpaperLoading = () => beginHomeEntry();
-		const handleHomeWallpaperReady = () => finishHomeEntry();
-		window.addEventListener("firefly:home-wallpaper-loading", handleHomeWallpaperLoading);
-		window.addEventListener("firefly:home-wallpaper-ready", handleHomeWallpaperReady);
-		beginHomeEntry();
-		requestAnimationFrame(() => {
-			const wallpaperLayer = root.querySelector('[data-local-wallpaper-surface="home"]');
-			if (
-				wallpaperLayer?.getAttribute("data-wallpaper-ready") === "true" ||
-				document.documentElement.getAttribute("data-wallpaper-mode") === "none"
-			) {
-				finishHomeEntry();
-			}
-		});
-
 		updateSceneMetrics();
 		sceneMetricsFrame = requestAnimationFrame(() => {
 			sceneMetricsFrame = 0;
@@ -1888,11 +1877,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		window.addEventListener("resize", handleViewportResize);
 		window.addEventListener("theme-change", handleThemeChange);
 		reducedMotion.addEventListener("change", handleMotionPreference);
+		playWordmark();
+		startTerminal();
 		render();
 
 		window.__fireflyHomeLandingCleanup = () => {
-			window.removeEventListener("firefly:home-wallpaper-loading", handleHomeWallpaperLoading);
-			window.removeEventListener("firefly:home-wallpaper-ready", handleHomeWallpaperReady);
 			window.removeEventListener("scroll", scheduleRender);
 			window.removeEventListener("resize", handleViewportResize);
 			window.removeEventListener("theme-change", handleThemeChange);
@@ -1981,10 +1970,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (sceneMetricsFrame) cancelAnimationFrame(sceneMetricsFrame);
 			if (wordmarkFrame) cancelAnimationFrame(wordmarkFrame);
 			if (wordmarkReadyFrame) cancelAnimationFrame(wordmarkReadyFrame);
-			document.documentElement.classList.remove(
-				"home-cover-pending",
-				"home-cover-reveal-now",
-			);
+			document.documentElement.removeAttribute("data-home-wallpaper-bootstrap");
+			document.documentElement.style.removeProperty("--home-wallpaper-bootstrap");
 			unlockPageScrollBehavior();
 			viewportElements.forEach(({ element, placeholder }) => {
 				if (placeholder.isConnected) placeholder.before(element);
@@ -2026,10 +2013,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		width: 100%;
 		background: var(--page-bg);
 		color: var(--deep-text);
-	}
-
-	.home-landing[data-home-entry="loading"] {
-		visibility: hidden;
 	}
 
 	.home-mobile-dock,
@@ -3073,6 +3056,33 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		height: 100%;
 		overflow: hidden;
 		background: #eceff2;
+	}
+
+	.home-hero-frame::before {
+		position: absolute;
+		inset: 0;
+		z-index: -3;
+		background-image: var(--home-wallpaper-bootstrap, none);
+		background-position: center;
+		background-size: cover;
+		content: "";
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	:global(html[data-home-wallpaper-bootstrap="true"]) .home-hero,
+	:global(html[data-home-wallpaper-bootstrap="true"]) .home-hero-frame {
+		background: transparent;
+	}
+
+	:global(html[data-home-wallpaper-bootstrap="true"]) .home-hero-frame::before {
+		opacity: var(--home-background-opacity, 1);
+	}
+
+	:global(html[data-home-wallpaper-bootstrap="true"])
+		.home-landing
+		:global(.home-hero-cover-image) {
+		opacity: 0 !important;
 	}
 
 	.home-profile-reveal {

@@ -25,6 +25,15 @@ let hasMedia = $state(false);
 let mediaReady = $state(false);
 let wallpaperEnabled = $state(true);
 let videoElement: HTMLVideoElement | null = null;
+let posterUrl = $state("");
+
+function finishBootstrapHandoff() {
+	if (surface !== "home" || typeof document === "undefined") return;
+	requestAnimationFrame(() => {
+		document.documentElement.removeAttribute("data-home-wallpaper-bootstrap");
+		document.documentElement.style.removeProperty("--home-wallpaper-bootstrap");
+	});
+}
 
 function syncActiveWallpaperClass() {
 	if (typeof document === "undefined") return;
@@ -57,6 +66,7 @@ function markMediaReady() {
 	mediaReady = true;
 	syncActiveWallpaperClass();
 	dispatchHomeWallpaperState("ready");
+	finishBootstrapHandoff();
 }
 
 async function handleImageLoad(event: Event) {
@@ -83,9 +93,11 @@ function handleMediaError() {
 	hasMedia = false;
 	sourceUrl = "";
 	mediaType = null;
+	posterUrl = "";
 	document.documentElement.setAttribute("data-has-local-wallpaper", "false");
 	syncActiveWallpaperClass();
 	dispatchHomeWallpaperState("ready", { fallback: true });
+	finishBootstrapHandoff();
 }
 
 function ensureVideoPlayback() {
@@ -173,6 +185,7 @@ onMount(() => {
 						: builtIn.desktopUrl
 					: "";
 			mediaType = record?.type ?? builtIn?.type ?? null;
+			posterUrl = record ? "" : (builtIn?.posterUrl ?? "");
 			hasMedia = Boolean(sourceUrl);
 			document.documentElement.setAttribute(
 				"data-has-local-wallpaper",
@@ -183,8 +196,10 @@ onMount(() => {
 			if (!sourceUrl) {
 				mediaReady = true;
 				dispatchHomeWallpaperState("ready", { skipped: true });
+				finishBootstrapHandoff();
 			} else if (!wallpaperEnabled) {
 				dispatchHomeWallpaperState("ready", { skipped: true });
+				finishBootstrapHandoff();
 			}
 		} catch {
 			if (!disposed) {
@@ -192,11 +207,13 @@ onMount(() => {
 				hasMedia = false;
 				sourceUrl = "";
 				mediaType = null;
+				posterUrl = "";
 				container?.classList.remove("has-local-wallpaper");
 				if (surface === "home") {
 					document.body.classList.remove("has-home-local-wallpaper");
 				}
 				dispatchHomeWallpaperState("ready", { fallback: true });
+				finishBootstrapHandoff();
 			}
 		}
 	};
@@ -286,6 +303,7 @@ onMount(() => {
 			loop
 			playsinline
 			preload="auto"
+			poster={posterUrl || undefined}
 			onloadedmetadata={ensureVideoPlayback}
 			onloadeddata={handleVideoReady}
 			oncanplay={handleVideoReady}
@@ -345,8 +363,7 @@ onMount(() => {
 		opacity: var(--home-background-opacity, var(--home-local-wallpaper-opacity));
 	}
 
-	:global(html.home-cover-pending) .local-wallpaper-home,
-	:global(html.home-cover-reveal-now) .local-wallpaper-home {
+	:global(html[data-home-wallpaper-bootstrap="true"]) .local-wallpaper-home {
 		transition: none;
 	}
 
