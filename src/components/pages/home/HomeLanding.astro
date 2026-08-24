@@ -24,6 +24,7 @@ import type { ActivityCalendar } from "@/utils/home-activity";
 import { getBackgroundImages } from "@/utils/layout-utils";
 import ContributionHeatmap from "./ContributionHeatmap.astro";
 import HomeEditorialPanels from "./HomeEditorialPanels.astro";
+import HomeEntrance from "./HomeEntrance.astro";
 import HomeHeroExperience from "./HomeHeroExperience.astro";
 import HomeMobileOverview from "./HomeMobileOverview.astro";
 import HomeProfileMatrix from "./HomeProfileMatrix.astro";
@@ -132,6 +133,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	data-home-default-hue={siteConfig.themeColor.hue}
 	data-home-wallpaper-assets={JSON.stringify(pageWallpaperAssets)}
 >
+	<HomeEntrance avatar={profileAvatar} name={siteConfig.title} />
 	<LocalWallpaperLayer client:load surface="home" />
 
 	{musicPlayerConfig.showInNavbar && (

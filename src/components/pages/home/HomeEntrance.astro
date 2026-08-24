@@ -1,0 +1,258 @@
+---
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+
+interface Props {
+	avatar: string;
+	name: string;
+}
+
+const { avatar, name } = Astro.props;
+---
+
+<div class="home-entrance" data-home-entrance aria-hidden="true">
+	<div class="home-entrance__curtain home-entrance__curtain--left"></div>
+	<div class="home-entrance__curtain home-entrance__curtain--right"></div>
+	<div class="home-entrance__brand">
+		<span class="home-entrance__line" aria-hidden="true"></span>
+		<div class="home-entrance__avatar">
+			<ImageWrapper
+				src={avatar}
+				alt=""
+				loading="eager"
+				fetchpriority="high"
+				widths={[96, 144, 192]}
+				sizes="6rem"
+				fadeIn={false}
+				siteAvatar
+			/>
+		</div>
+		<p>WELCOME TO</p>
+		<strong>{name}</strong>
+		<small>PERSONAL SPACE</small>
+	</div>
+</div>
+
+<style>
+	.home-entrance {
+		position: fixed;
+		inset: 0;
+		z-index: 10000;
+		display: grid;
+		place-items: center;
+		overflow: hidden;
+		pointer-events: auto;
+		animation: home-entrance-finish 2.6s linear both;
+	}
+
+	.home-entrance__curtain {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: calc(50% + 1px);
+		background: rgb(8 18 35 / 0.88);
+		backdrop-filter: blur(0.75rem) saturate(0.78);
+		will-change: transform;
+	}
+
+	.home-entrance__curtain::after {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 1px;
+		background: rgb(190 221 255 / 0.7);
+		box-shadow: 0 0 1.6rem rgb(117 180 255 / 0.5);
+		content: "";
+	}
+
+	.home-entrance__curtain--left {
+		left: 0;
+		animation: home-entrance-left 2.6s cubic-bezier(0.76, 0, 0.24, 1) both;
+	}
+
+	.home-entrance__curtain--left::after {
+		right: 0;
+	}
+
+	.home-entrance__curtain--right {
+		right: 0;
+		animation: home-entrance-right 2.6s cubic-bezier(0.76, 0, 0.24, 1) both;
+	}
+
+	.home-entrance__curtain--right::after {
+		left: 0;
+	}
+
+	.home-entrance__brand {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		justify-items: center;
+		width: min(22rem, 78vw);
+		color: #fff;
+		text-align: center;
+		text-shadow: 0 0.3rem 1.2rem rgb(1 8 20 / 0.7);
+		animation: home-entrance-brand 2.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.home-entrance__line {
+		position: absolute;
+		top: 3rem;
+		left: 50%;
+		width: min(21rem, 76vw);
+		height: 1px;
+		background: rgb(201 228 255 / 0.72);
+		box-shadow: 0 0 1rem rgb(131 190 255 / 0.5);
+		transform: translateX(-50%) scaleX(0);
+		animation: home-entrance-line 2.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.home-entrance__avatar {
+		position: relative;
+		width: 6rem;
+		aspect-ratio: 1;
+		margin-bottom: 1rem;
+		border: 2px solid rgb(255 255 255 / 0.92);
+		border-radius: 50%;
+		background: rgb(255 255 255 / 0.9);
+		box-shadow:
+			0 0 0 0.32rem rgb(126 184 255 / 0.18),
+			0 1rem 2.8rem rgb(0 8 24 / 0.42);
+		overflow: hidden;
+		animation: home-entrance-avatar 2.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.home-entrance__avatar :global(picture),
+	.home-entrance__avatar :global(img) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.home-entrance p,
+	.home-entrance strong,
+	.home-entrance small {
+		margin: 0;
+		letter-spacing: 0.18em;
+	}
+
+	.home-entrance p {
+		font-size: 0.68rem;
+		font-weight: 750;
+		opacity: 0.78;
+	}
+
+	.home-entrance strong {
+		margin-top: 0.22rem;
+		font-size: clamp(2.2rem, 5vw, 4.4rem);
+		font-weight: 850;
+		letter-spacing: 0;
+		line-height: 1;
+	}
+
+	.home-entrance small {
+		margin-top: 0.68rem;
+		font-size: 0.58rem;
+		font-weight: 700;
+		opacity: 0.62;
+	}
+
+	@keyframes home-entrance-left {
+		0%,
+		42% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-102%);
+		}
+	}
+
+	@keyframes home-entrance-right {
+		0%,
+		42% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(102%);
+		}
+	}
+
+	@keyframes home-entrance-brand {
+		0% {
+			opacity: 0;
+			transform: translateY(1rem) scale(0.96);
+		}
+		16%,
+		44% {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+		66%,
+		100% {
+			opacity: 0;
+			transform: translateY(-0.7rem) scale(1.035);
+		}
+	}
+
+	@keyframes home-entrance-avatar {
+		0% {
+			transform: translateY(0.7rem) rotate(-3deg) scale(0.86);
+		}
+		22%,
+		44% {
+			transform: translateY(0) rotate(0) scale(1);
+		}
+		66%,
+		100% {
+			transform: translateY(-0.45rem) rotate(2deg) scale(1.04);
+		}
+	}
+
+	@keyframes home-entrance-line {
+		0%,
+		10% {
+			opacity: 0;
+			transform: translateX(-50%) scaleX(0);
+		}
+		28%,
+		46% {
+			opacity: 1;
+			transform: translateX(-50%) scaleX(1);
+		}
+		66%,
+		100% {
+			opacity: 0;
+			transform: translateX(-50%) scaleX(0.3);
+		}
+	}
+
+	@keyframes home-entrance-finish {
+		0%,
+		96% {
+			opacity: 1;
+			visibility: visible;
+		}
+		100% {
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.home-entrance__curtain {
+			background: rgb(8 18 35 / 0.82);
+			backdrop-filter: blur(0.45rem) saturate(0.82);
+		}
+
+		.home-entrance__avatar {
+			width: 5.2rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-entrance {
+			display: none;
+		}
+	}
+</style>

@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.48",
+		date: "2026-08-24",
+		time: "18:36",
+		type: "feature",
+		title: "首页全自动入场动画",
+		summary: "新增专属首页入场效果，并在动画结束后准确停留在完整封面页。",
+		changes: [
+			"使用全站同步头像与 JingYue 品牌构成首页专属定场画面。",
+			"左右遮罩全自动推开，底层真实视频首帧与首页内容提前完成渲染。",
+			"动画结束后完全释放交互并停留在首页首屏，不自动翻页或滚动。",
+			"减少动态效果模式直接显示最终首页，兼顾移动端与无障碍偏好。",
+		],
+	},
+	{
 		version: "v6.14.47",
 		date: "2026-08-24",
 		time: "17:44",
