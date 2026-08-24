@@ -127,7 +127,7 @@ const siteLang = lang.replace("_", "-");
   lang={siteLang}
   class="bg-(--page-bg) text-[16px]"
   data-wallpaper-mode={pageDefaultWallpaperMode}
-  style={`--wallpaper-veil-opacity: ${backgroundWallpaper.common?.dimOpacity ?? 0.2};`}
+  style={`--wallpaper-veil-opacity: ${backgroundWallpaper.common?.dimOpacity ?? 0.2};${homeLanding ? "background:#0b1017;" : ""}`}
 >
   <head>
     <meta charset="UTF-8" />
@@ -304,6 +304,9 @@ const siteLang = lang.replace("_", "-");
       const LIGHT_MODE = "light";
       const DARK_MODE = "dark";
       const SYSTEM_MODE = "system";
+      if (homeLanding) {
+        document.documentElement.classList.add("home-cover-pending");
+      }
 
       function getResponsiveBannerContentTop() {
         if (window.innerWidth <= 640) {
@@ -705,6 +708,15 @@ const siteLang = lang.replace("_", "-");
         }
       })();
     </script>
+	<style is:global>
+		html.home-cover-pending body.home-landing-active {
+			background: #0b1017;
+		}
+
+		html.home-cover-pending body.home-landing-active > *:not(script):not(style) {
+			visibility: hidden !important;
+		}
+	</style>
     <style
       define:vars={{
         configHue,

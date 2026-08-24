@@ -33,6 +33,7 @@ function syncActiveWallpaperClass() {
 			? host?.closest(".home-landing")
 			: document.getElementById("wallpaper-wrapper");
 	const isActive = hasMedia && mediaReady && wallpaperEnabled;
+	host?.classList.toggle("is-active", isActive);
 	container?.classList.toggle("has-local-wallpaper", isActive);
 	if (surface === "home") {
 		document.body.classList.toggle("has-home-local-wallpaper", isActive);
@@ -56,6 +57,25 @@ function markMediaReady() {
 	mediaReady = true;
 	syncActiveWallpaperClass();
 	dispatchHomeWallpaperState("ready");
+}
+
+async function handleImageLoad(event: Event) {
+	const image = event.currentTarget as HTMLImageElement;
+	const expectedSource = sourceUrl;
+	try {
+		await image.decode();
+	} catch {
+		// onload 已确认资源可用；部分浏览器会拒绝重复 decode。
+	}
+	if (sourceUrl !== expectedSource) return;
+	requestAnimationFrame(() => markMediaReady());
+}
+
+function handleVideoReady() {
+	ensureVideoPlayback();
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => markMediaReady());
+	});
 }
 
 function handleMediaError() {
@@ -254,7 +274,7 @@ onMount(() => {
 			alt=""
 			loading="eager"
 			fetchpriority={surface === "home" ? "high" : "auto"}
-			onload={markMediaReady}
+			onload={handleImageLoad}
 			onerror={handleMediaError}
 		/>
 	{:else if mediaType === "video" && sourceUrl}
@@ -267,11 +287,8 @@ onMount(() => {
 			playsinline
 			preload="auto"
 			onloadedmetadata={ensureVideoPlayback}
-			onloadeddata={markMediaReady}
-			oncanplay={() => {
-				ensureVideoPlayback();
-				markMediaReady();
-			}}
+			onloadeddata={handleVideoReady}
+			oncanplay={handleVideoReady}
 			onerror={handleMediaError}
 		></video>
 	{/if}
@@ -326,6 +343,11 @@ onMount(() => {
 
 	.local-wallpaper-layer.is-active {
 		opacity: var(--home-background-opacity, var(--home-local-wallpaper-opacity));
+	}
+
+	:global(html.home-cover-pending) .local-wallpaper-home,
+	:global(html.home-cover-reveal-now) .local-wallpaper-home {
+		transition: none;
 	}
 
 	:global(body:not(.home-landing-active)) .local-wallpaper-home,

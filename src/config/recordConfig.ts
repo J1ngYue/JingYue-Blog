@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.43",
+		date: "2026-08-24",
+		time: "15:30",
+		type: "optimize",
+		title: "首页最终封面原子呈现",
+		summary: "移除进度条动画，封面与首页内容在同一首帧呈现。",
+		changes: [
+			"删除首页封面加载进度条及其全部进场动画。",
+			"首屏加载期间不再显示旧封面、文字或灰色中间状态。",
+			"图片完成解码、视频首帧可绘制后，再同时呈现最终封面与首页内容。",
+			"桌面端与移动端共用同一套首帧门控逻辑。",
+		],
+	},
+	{
 		version: "v6.14.42",
 		date: "2026-08-23",
 		time: "00:50",
