@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.57",
+		date: "2026-08-29",
+		time: "18:45",
+		type: "optimize",
+		title: "全站小猪滚动条",
+		summary: "将系统默认粗滚动条替换为轻量的小猪主题原生滚动条。",
+		changes: [
+			"使用 Twemoji 猪脸素材装饰视口滑块，并保留浏览器原生滚动与拖拽行为。",
+			"移除 Chromium 默认上下箭头，补充悬停、按下及深浅色主题状态。",
+			"Firefox 使用同色系原生滚动条降级，不引入额外滚动脚本。",
+		],
+	},
+	{
 		version: "v6.14.56",
 		date: "2026-08-29",
 		time: "18:30",
