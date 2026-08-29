@@ -21,6 +21,7 @@ import {
 	live2dWidgetConfig,
 	sidebarLayoutConfig,
 	siteConfig,
+	spineModelConfig,
 } from "@/config";
 import {
 	BANNER_HEIGHT,
@@ -951,7 +952,7 @@ const hasMultipleImages =
             </div>
         </div>
 
-        <SpineModel></SpineModel>
+		{spineModelConfig.enable && <SpineModel />}
         {live2dWidgetConfig.enable && <Live2DWidget config={live2dWidgetConfig} />}
     </div>
 </div>

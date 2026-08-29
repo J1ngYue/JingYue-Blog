@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.51",
+		date: "2026-08-29",
+		time: "09:24",
+		type: "fix",
+		title: "首页壁纸切片入场修正",
+		summary: "将重复整张壁纸的小块改为等尺寸区域切片，并暂时隐藏宠物功能。",
+		changes: [
+			"按当前视口生成等宽等高的壁纸切片，每块只显示原图对应区域。",
+			"切片自动从分散状态拼合为完整封面，桌面端与移动端分别适配列数。",
+			"暂时关闭 Spine 与 Live2D 宠物挂载，模型资源和功能代码保持不变。",
+			"减少动态效果模式继续跳过入场动画，避免产生不必要的运动。",
+		],
+	},
+	{
 		version: "v6.14.50",
 		date: "2026-08-24",
 		time: "22:31",

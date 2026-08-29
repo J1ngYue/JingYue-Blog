@@ -4,23 +4,7 @@ interface Props {
 }
 
 const { name } = Astro.props;
-
-const fragments = [
-	{ className: "fragment--one", label: "01" },
-	{ className: "fragment--two", label: "02" },
-	{ className: "fragment--three", label: "03" },
-	{ className: "fragment--four", label: "04" },
-	{ className: "fragment--five", label: "05" },
-	{ className: "fragment--six", label: "06" },
-];
-
-const panels = [
-	{ index: 0, direction: "up", delay: "3.05s", mobileDelay: "2.2s" },
-	{ index: 1, direction: "down", delay: "3.17s", mobileDelay: "2.28s" },
-	{ index: 2, direction: "up", delay: "3.29s", mobileDelay: "2.36s" },
-	{ index: 3, direction: "down", delay: "3.41s", mobileDelay: "2.44s" },
-	{ index: 4, direction: "up", delay: "3.53s", mobileDelay: "2.52s" },
-];
+const tileSlots = Array.from({ length: 120 });
 ---
 
 <div class="home-entrance" data-home-entrance aria-hidden="true">
@@ -36,23 +20,11 @@ const panels = [
 		<small>2025 — PRESENT</small>
 	</div>
 
-	<div class="home-entrance__fragments" aria-hidden="true">
-		{fragments.map((fragment) => (
-			<span class:list={["home-entrance__fragment", fragment.className]}>
-				<i>{fragment.label}</i>
+	<div class="home-entrance__mosaic" data-home-entrance-mosaic aria-hidden="true">
+		{tileSlots.map(() => (
+			<span class="home-entrance__tile" data-home-entrance-tile hidden>
+				<i class="home-entrance__tile-image"></i>
 			</span>
-		))}
-	</div>
-
-	<div class="home-entrance__panels" aria-hidden="true">
-		{panels.map((panel) => (
-			<span
-				class:list={[
-					"home-entrance__panel",
-					`home-entrance__panel--${panel.direction}`,
-				]}
-				style={`--panel-index: ${panel.index}; --panel-delay: ${panel.delay}; --panel-mobile-delay: ${panel.mobileDelay};`}
-			></span>
 		))}
 	</div>
 
@@ -90,9 +62,44 @@ const panels = [
 			root.style.setProperty("--home-entrance-wallpaper", bootstrapWallpaper);
 		}
 
+		const tiles = Array.from(
+			root.querySelectorAll<HTMLElement>("[data-home-entrance-tile]"),
+		);
+		const layoutTiles = () => {
+			const columns =
+				window.innerWidth <= 640 ? 5 : window.innerWidth < window.innerHeight ? 6 : 10;
+			const tileSize = Math.ceil(window.innerWidth / columns);
+			const rows = Math.ceil(window.innerHeight / tileSize);
+			const activeCount = columns * rows;
+
+			tiles.forEach((tile, index) => {
+				const active = index < activeCount;
+				tile.hidden = !active;
+				if (!active) return;
+
+				const column = index % columns;
+				const row = Math.floor(index / columns);
+				const left = column * tileSize;
+				const top = row * tileSize;
+				const wave = (column + row * 2) % 7;
+				const offsetX = (((index * 37) % 9) - 4) * tileSize * 0.62;
+				const offsetY = (((index * 53) % 11) - 5) * tileSize * 0.52;
+
+				tile.style.setProperty("--tile-left", `${left}px`);
+				tile.style.setProperty("--tile-top", `${top}px`);
+				tile.style.setProperty("--tile-size", `${tileSize}px`);
+				tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
+				tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
+				tile.style.setProperty("--tile-rotation", `${((index * 29) % 15) - 7}deg`);
+				tile.style.setProperty("--tile-delay", `${0.42 + wave * 0.1}s`);
+			});
+		};
+
+		layoutTiles();
 		document.documentElement.classList.add(ACTIVE_CLASS);
 		window.scrollTo(0, 0);
 		requestAnimationFrame(() => window.scrollTo(0, 0));
+
 		const handleAnimationEnd = (event: AnimationEvent) => {
 			if (event.target !== root || event.animationName !== "home-entrance-finish") {
 				return;
@@ -120,13 +127,13 @@ const panels = [
 		color: #fff;
 		font-family: var(--font-navbar-title, var(--font-sans));
 		pointer-events: none;
-		animation: home-entrance-finish 7.6s linear both;
+		animation: home-entrance-finish 7.2s linear both;
 	}
 
 	.home-entrance::after {
 		position: absolute;
 		inset: 0;
-		z-index: 5;
+		z-index: 4;
 		background-image:
 			linear-gradient(90deg, rgb(4 9 18 / 0.4), rgb(4 9 18 / 0.08) 58%, rgb(4 9 18 / 0.28)),
 			var(
@@ -137,8 +144,7 @@ const panels = [
 		background-size: cover;
 		content: "";
 		opacity: 0;
-		transform: scale(1.035);
-		animation: home-entrance-final-cover 7.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation: home-entrance-final-cover 7.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
 	.home-entrance__identity {
@@ -150,7 +156,7 @@ const panels = [
 		gap: 0.45rem;
 		max-width: min(38rem, 44vw);
 		text-shadow: 0 0.4rem 1.4rem rgb(0 0 0 / 0.72);
-		animation: home-entrance-identity 5.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation: home-entrance-identity 4.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
 	.home-entrance__identity p,
@@ -163,11 +169,16 @@ const panels = [
 		letter-spacing: 0;
 	}
 
-	.home-entrance__identity p {
+	.home-entrance__identity p,
+	.home-entrance__merge-copy span,
+	.home-entrance__merge-copy small {
 		font-family: var(--font-mono);
-		font-size: clamp(0.62rem, 0.72vw, 0.78rem);
+		font-size: clamp(0.58rem, 0.72vw, 0.78rem);
 		font-weight: 700;
 		letter-spacing: 0.16em;
+	}
+
+	.home-entrance__identity p {
 		opacity: 0.62;
 	}
 
@@ -197,7 +208,7 @@ const panels = [
 		font-weight: 700;
 		letter-spacing: 0.18em;
 		opacity: 0;
-		animation: home-entrance-axis 4.8s 0.55s ease both;
+		animation: home-entrance-axis 4.4s 0.45s ease both;
 	}
 
 	.home-entrance__axis i {
@@ -207,126 +218,39 @@ const panels = [
 		background: rgb(255 255 255 / 0.42);
 	}
 
-	.home-entrance__fragments,
-	.home-entrance__panels {
+	.home-entrance__mosaic {
 		position: absolute;
 		inset: 0;
-	}
-
-	.home-entrance__fragment {
-		position: absolute;
 		z-index: 3;
-		display: block;
 		overflow: hidden;
-		border: 1px solid rgb(255 255 255 / 0.32);
-		background-image:
-			linear-gradient(rgb(3 8 17 / 0.18), rgb(3 8 17 / 0.18)),
-			var(
-				--home-entrance-wallpaper,
-				var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"))
-			);
-		background-position: center;
-		background-size: cover;
-		box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.42);
-		opacity: 0;
-		will-change: transform, opacity;
-		animation: home-entrance-fragment 4.8s var(--fragment-delay, 0s) cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
-	.home-entrance__fragment i {
+	.home-entrance__tile {
 		position: absolute;
-		right: 0.55rem;
-		bottom: 0.38rem;
-		font-family: var(--font-mono);
-		font-size: 0.55rem;
-		font-style: normal;
-		font-weight: 700;
-		letter-spacing: 0.12em;
-		opacity: 0.7;
-	}
-
-	.fragment--one {
-		top: 8%;
-		left: 5%;
-		width: 17vw;
-		aspect-ratio: 16 / 10;
-		--fragment-delay: 0.2s;
-		--fragment-x: 15vw;
-		--fragment-y: 10vh;
-	}
-
-	.fragment--two {
-		top: 13%;
-		left: 39%;
-		width: 15vw;
-		aspect-ratio: 16 / 9;
-		--fragment-delay: 0.45s;
-		--fragment-x: -7vw;
-		--fragment-y: 24vh;
-	}
-
-	.fragment--three {
-		top: 8%;
-		right: 7%;
-		width: 21vw;
-		aspect-ratio: 16 / 10;
-		--fragment-delay: 0.68s;
-		--fragment-x: -16vw;
-		--fragment-y: 14vh;
-	}
-
-	.fragment--four {
-		bottom: 9%;
-		left: 10%;
-		width: 22vw;
-		aspect-ratio: 16 / 9;
-		--fragment-delay: 0.55s;
-		--fragment-x: 18vw;
-		--fragment-y: -14vh;
-	}
-
-	.fragment--five {
-		bottom: 15%;
-		left: 43%;
-		width: 16vw;
-		aspect-ratio: 4 / 3;
-		--fragment-delay: 0.85s;
-		--fragment-x: -6vw;
-		--fragment-y: -18vh;
-	}
-
-	.fragment--six {
-		right: 5%;
-		bottom: 8%;
-		width: 19vw;
-		aspect-ratio: 16 / 9;
-		--fragment-delay: 0.35s;
-		--fragment-x: -20vw;
-		--fragment-y: -12vh;
-	}
-
-	.home-entrance__panels {
-		z-index: 4;
-		display: grid;
-		grid-template-columns: repeat(5, 1fr);
-	}
-
-	.home-entrance__panel {
-		position: relative;
+		top: var(--tile-top);
+		left: var(--tile-left);
 		display: block;
+		width: var(--tile-size);
+		height: var(--tile-size);
 		overflow: hidden;
-		min-width: 0;
-		box-shadow: inset 1px 0 rgb(255 255 255 / 0.13);
+		border: 1px solid rgb(255 255 255 / 0.16);
+		box-shadow: 0 0.85rem 2rem rgb(0 0 0 / 0.34);
 		opacity: 0;
-		will-change: transform, opacity;
+		will-change: transform, opacity, filter;
+		animation: home-entrance-tile 4.25s var(--tile-delay) cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
-	.home-entrance__panel::before {
+	.home-entrance__tile[hidden] {
+		display: none;
+	}
+
+	.home-entrance__tile-image {
 		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: calc(var(--panel-index) * -100%);
-		width: 500%;
+		top: calc(-1 * var(--tile-top));
+		left: calc(-1 * var(--tile-left));
+		display: block;
+		width: 100vw;
+		height: 100vh;
 		background-image:
 			linear-gradient(rgb(3 8 17 / 0.12), rgb(3 8 17 / 0.12)),
 			var(
@@ -335,15 +259,6 @@ const panels = [
 			);
 		background-position: center;
 		background-size: cover;
-		content: "";
-	}
-
-	.home-entrance__panel--up {
-		animation: home-entrance-panel-up 3.2s var(--panel-delay) cubic-bezier(0.65, 0, 0.35, 1) both;
-	}
-
-	.home-entrance__panel--down {
-		animation: home-entrance-panel-down 3.2s var(--panel-delay) cubic-bezier(0.65, 0, 0.35, 1) both;
 	}
 
 	.home-entrance__merge-copy {
@@ -355,15 +270,7 @@ const panels = [
 		gap: 0.2rem;
 		text-shadow: 0 0.4rem 1.5rem rgb(0 0 0 / 0.72);
 		opacity: 0;
-		animation: home-entrance-merge-copy 7.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	.home-entrance__merge-copy span,
-	.home-entrance__merge-copy small {
-		font-family: var(--font-mono);
-		font-size: 0.58rem;
-		font-weight: 700;
-		letter-spacing: 0.18em;
+		animation: home-entrance-merge-copy 7.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
 	.home-entrance__merge-copy strong {
@@ -372,128 +279,50 @@ const panels = [
 	}
 
 	@keyframes home-entrance-identity {
-		0% {
-			opacity: 0;
-			transform: translateY(1.5rem);
-		}
-		14%,
-		62% {
-			opacity: 1;
-			transform: translateY(0);
-		}
-		100% {
-			opacity: 0;
-			transform: translateY(-1rem);
-		}
+		0% { opacity: 0; transform: translateY(1.5rem); }
+		14%, 66% { opacity: 1; transform: translateY(0); }
+		100% { opacity: 0; transform: translateY(-1rem); }
 	}
 
 	@keyframes home-entrance-axis {
-		0%,
-		12% {
+		0%, 12% { opacity: 0; transform: translateX(1.5rem); }
+		28%, 72% { opacity: 0.72; transform: translateX(0); }
+		100% { opacity: 0; transform: translateX(-1rem); }
+	}
+
+	@keyframes home-entrance-tile {
+		0% {
 			opacity: 0;
-			transform: translateX(1.5rem);
+			transform: translate3d(var(--tile-offset-x), var(--tile-offset-y), 0) rotate(var(--tile-rotation)) scale(0.7);
+			filter: blur(5px);
 		}
-		28%,
+		18% { opacity: 0.94; }
 		72% {
-			opacity: 0.72;
-			transform: translateX(0);
+			opacity: 1;
+			transform: translate3d(0, 0, 0) rotate(0) scale(1);
+			filter: blur(0);
 		}
 		100% {
-			opacity: 0;
-			transform: translateX(-1rem);
-		}
-	}
-
-	@keyframes home-entrance-fragment {
-		0% {
-			opacity: 0;
-			transform: translateY(2rem) scale(0.82);
-		}
-		18%,
-		58% {
-			opacity: 0.9;
-			transform: translate(0, 0) scale(1);
-		}
-		82% {
-			opacity: 0.5;
-			transform: translate(var(--fragment-x), var(--fragment-y)) scale(1.24);
-		}
-		100% {
-			opacity: 0;
-			transform: translate(var(--fragment-x), var(--fragment-y)) scale(1.42);
-		}
-	}
-
-	@keyframes home-entrance-panel-up {
-		0% {
-			opacity: 0;
-			transform: translateY(105%);
-		}
-		12% {
 			opacity: 1;
-		}
-		82%,
-		100% {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@keyframes home-entrance-panel-down {
-		0% {
-			opacity: 0;
-			transform: translateY(-105%);
-		}
-		12% {
-			opacity: 1;
-		}
-		82%,
-		100% {
-			opacity: 1;
-			transform: translateY(0);
+			transform: translate3d(0, 0, 0) rotate(0) scale(1);
+			filter: blur(0);
 		}
 	}
 
 	@keyframes home-entrance-final-cover {
-		0%,
-		70% {
-			opacity: 0;
-			transform: scale(1.035);
-		}
-		82%,
-		100% {
-			opacity: 1;
-			transform: scale(1);
-		}
+		0%, 64% { opacity: 0; }
+		76%, 100% { opacity: 1; }
 	}
 
 	@keyframes home-entrance-merge-copy {
-		0%,
-		76% {
-			opacity: 0;
-			transform: translateY(1.25rem);
-		}
-		86%,
-		94% {
-			opacity: 1;
-			transform: translateY(0);
-		}
-		100% {
-			opacity: 0;
-			transform: translateY(-0.35rem);
-		}
+		0%, 72% { opacity: 0; transform: translateY(1.25rem); }
+		82%, 94% { opacity: 1; transform: translateY(0); }
+		100% { opacity: 0; transform: translateY(-0.35rem); }
 	}
 
 	@keyframes home-entrance-finish {
-		0%,
-		92% {
-			opacity: 1;
-			visibility: visible;
-		}
-		100% {
-			opacity: 0;
-			visibility: hidden;
-		}
+		0%, 92% { opacity: 1; visibility: visible; }
+		100% { opacity: 0; visibility: hidden; }
 	}
 
 	:global(html.home-entrance-active),
@@ -505,14 +334,14 @@ const panels = [
 		.home-entrance,
 		.home-entrance::after,
 		.home-entrance__merge-copy {
-			animation-duration: 5.8s;
+			animation-duration: 5.6s;
 		}
 
 		.home-entrance__identity {
 			top: 20vh;
 			left: 1.25rem;
 			max-width: calc(100vw - 2.5rem);
-			animation-duration: 3.8s;
+			animation-duration: 3.5s;
 		}
 
 		.home-entrance__identity strong {
@@ -526,32 +355,11 @@ const panels = [
 		.home-entrance__axis {
 			right: 1.1rem;
 			bottom: 7.5rem;
-			animation-duration: 3.6s;
+			animation-duration: 3.4s;
 		}
 
-		.home-entrance__fragment {
-			animation-duration: 3.5s;
-		}
-
-		.fragment--one,
-		.fragment--four {
-			width: 38vw;
-		}
-
-		.fragment--two,
-		.fragment--five {
-			width: 34vw;
-		}
-
-		.fragment--three,
-		.fragment--six {
-			width: 42vw;
-		}
-
-		.home-entrance__panel--up,
-		.home-entrance__panel--down {
-			animation-duration: 2.4s;
-			animation-delay: var(--panel-mobile-delay);
+		.home-entrance__tile {
+			animation-duration: 3.4s;
 		}
 
 		.home-entrance__merge-copy {
