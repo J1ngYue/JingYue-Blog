@@ -221,9 +221,15 @@ const tileSlots = Array.from({ length: 120 });
 		}
 	}
 
-	:global(html.home-entrance-active),
+	/* 入场时也保留视口滚动轨道，避免拼图完成后滚动条出现导致整页变窄。 */
+	:global(html.home-entrance-active) {
+		overflow-y: scroll !important;
+		overflow-x: clip !important;
+		scrollbar-gutter: stable;
+	}
+
 	:global(html.home-entrance-active body) {
-		overflow: hidden !important;
+		overflow-x: clip !important;
 	}
 
 	@media (max-width: 640px) {

@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.60",
+		date: "2026-08-30",
+		time: "03:16",
+		type: "fix",
+		title: "首页入场稳定与全宽对话",
+		summary: "首帧预留滚动条空间，拼图完成后不再缩放，并让对话框更早以全宽底栏出现。",
+		changes: [
+			"入场阶段保留原生滚动轨道与稳定间距，滚轮从第一帧就可见，避免拼图完成时页面突然变窄。",
+			"对话框改为贴底全宽的半透明网格底栏，桌面与移动端均避开安全区并保持文字层级。",
+			"缩短封面完成后的等待时间，让时钟、JingYue 字标动画结束后更快显示对话内容。",
+		],
+	},
+	{
 		version: "v6.14.59",
 		date: "2026-08-29",
 		time: "19:24",
