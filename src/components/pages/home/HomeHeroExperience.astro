@@ -553,11 +553,19 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 			updateWorkStatus(state);
 			state.statusTimer = window.setInterval(() => updateWorkStatus(state), 60_000);
 			const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-			if (config.enabled !== false && state.coverActive) {
+			const revealDialogue = () => {
+				if (config.enabled === false || !state.coverActive) return;
+				if (state.openTimer) window.clearTimeout(state.openTimer);
 				state.openTimer = window.setTimeout(() => {
 					state.openTimer = 0;
 					if (state.coverActive) setDialogueOpen(state, true);
-				}, reducedMotion ? 0 : 650);
+				}, reducedMotion ? 0 : 80);
+			};
+			listen(state, window, "firefly:home-dialogue-reveal", revealDialogue);
+			if (
+				root.closest("[data-home-landing]")?.classList.contains("is-home-dialogue-ready")
+			) {
+				revealDialogue();
 			}
 		});
 	}

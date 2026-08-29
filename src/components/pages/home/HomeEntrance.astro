@@ -1,25 +1,8 @@
 ---
-interface Props {
-	name: string;
-}
-
-const { name } = Astro.props;
 const tileSlots = Array.from({ length: 120 });
 ---
 
 <div class="home-entrance" data-home-entrance aria-hidden="true">
-	<div class="home-entrance__identity">
-		<p>JINGYUE / PERSONAL ARCHIVE</p>
-		<strong>{name}</strong>
-		<span>记录代码、生活与闪光的片刻</span>
-	</div>
-
-	<div class="home-entrance__axis" aria-hidden="true">
-		<span>VISUAL LOG</span>
-		<i></i>
-		<small>2025 — PRESENT</small>
-	</div>
-
 	<div class="home-entrance__mosaic" data-home-entrance-mosaic aria-hidden="true">
 		{tileSlots.map(() => (
 			<span class="home-entrance__tile" data-home-entrance-tile hidden>
@@ -27,16 +10,11 @@ const tileSlots = Array.from({ length: 120 });
 			</span>
 		))}
 	</div>
-
-	<div class="home-entrance__merge-copy">
-		<span>WELCOME TO</span>
-		<strong>{name}</strong>
-		<small>PERSONAL SPACE</small>
-	</div>
 </div>
 
 <script>
 	const ACTIVE_CLASS = "home-entrance-active";
+	const COMPLETE_EVENT = "firefly:home-entrance-complete";
 
 	function initHomeEntrance() {
 		const root = document.querySelector<HTMLElement>(
@@ -46,8 +24,16 @@ const tileSlots = Array.from({ length: 120 });
 
 		root.dataset.homeEntranceReady = "true";
 		const finish = () => {
+			root.dataset.homeEntranceState = "complete";
 			document.documentElement.classList.remove(ACTIVE_CLASS);
-			root.remove();
+			window.dispatchEvent(new CustomEvent(COMPLETE_EVENT));
+
+			const removeEntrance = () => root.remove();
+			if ("requestIdleCallback" in window) {
+				window.requestIdleCallback(removeEntrance, { timeout: 1200 });
+			} else {
+				setTimeout(removeEntrance, 600);
+			}
 		};
 
 		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -65,37 +51,34 @@ const tileSlots = Array.from({ length: 120 });
 		const tiles = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-home-entrance-tile]"),
 		);
-		const layoutTiles = () => {
-			const columns =
-				window.innerWidth <= 640 ? 5 : window.innerWidth < window.innerHeight ? 6 : 10;
-			const tileSize = Math.ceil(window.innerWidth / columns);
-			const rows = Math.ceil(window.innerHeight / tileSize);
-			const activeCount = columns * rows;
+		const columns =
+			window.innerWidth <= 640 ? 5 : window.innerWidth < window.innerHeight ? 6 : 10;
+		const tileSize = Math.ceil(window.innerWidth / columns);
+		const rows = Math.ceil(window.innerHeight / tileSize);
+		const activeCount = columns * rows;
 
-			tiles.forEach((tile, index) => {
-				const active = index < activeCount;
-				tile.hidden = !active;
-				if (!active) return;
+		tiles.forEach((tile, index) => {
+			const active = index < activeCount;
+			tile.hidden = !active;
+			if (!active) return;
 
-				const column = index % columns;
-				const row = Math.floor(index / columns);
-				const left = column * tileSize;
-				const top = row * tileSize;
-				const wave = (column + row * 2) % 7;
-				const offsetX = (((index * 37) % 9) - 4) * tileSize * 0.62;
-				const offsetY = (((index * 53) % 11) - 5) * tileSize * 0.52;
+			const column = index % columns;
+			const row = Math.floor(index / columns);
+			const left = column * tileSize;
+			const top = row * tileSize;
+			const wave = (column + row * 2) % 7;
+			const offsetX = (((index * 37) % 9) - 4) * tileSize * 0.62;
+			const offsetY = (((index * 53) % 11) - 5) * tileSize * 0.52;
 
-				tile.style.setProperty("--tile-left", `${left}px`);
-				tile.style.setProperty("--tile-top", `${top}px`);
-				tile.style.setProperty("--tile-size", `${tileSize}px`);
-				tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
-				tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
-				tile.style.setProperty("--tile-rotation", `${((index * 29) % 15) - 7}deg`);
-				tile.style.setProperty("--tile-delay", `${0.42 + wave * 0.1}s`);
-			});
-		};
+			tile.style.setProperty("--tile-left", `${left}px`);
+			tile.style.setProperty("--tile-top", `${top}px`);
+			tile.style.setProperty("--tile-size", `${tileSize}px`);
+			tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
+			tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
+			tile.style.setProperty("--tile-rotation", `${((index * 29) % 15) - 7}deg`);
+			tile.style.setProperty("--tile-delay", `${0.2 + wave * 0.08}s`);
+		});
 
-		layoutTiles();
 		document.documentElement.classList.add(ACTIVE_CLASS);
 		window.scrollTo(0, 0);
 		requestAnimationFrame(() => window.scrollTo(0, 0));
@@ -124,10 +107,8 @@ const tileSlots = Array.from({ length: 120 });
 		z-index: 44;
 		overflow: hidden;
 		background: #05070a;
-		color: #fff;
-		font-family: var(--font-navbar-title, var(--font-sans));
 		pointer-events: none;
-		animation: home-entrance-finish 7.2s linear both;
+		animation: home-entrance-finish 5.7s cubic-bezier(0.4, 0, 0.2, 1) both;
 	}
 
 	.home-entrance::after {
@@ -144,78 +125,8 @@ const tileSlots = Array.from({ length: 120 });
 		background-size: cover;
 		content: "";
 		opacity: 0;
-		animation: home-entrance-final-cover 7.2s cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	.home-entrance__identity {
-		position: absolute;
-		top: clamp(8.5rem, 20vh, 13rem);
-		left: clamp(2rem, 7vw, 8rem);
-		z-index: 2;
-		display: grid;
-		gap: 0.45rem;
-		max-width: min(38rem, 44vw);
-		text-shadow: 0 0.4rem 1.4rem rgb(0 0 0 / 0.72);
-		animation: home-entrance-identity 4.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	.home-entrance__identity p,
-	.home-entrance__identity strong,
-	.home-entrance__identity span,
-	.home-entrance__merge-copy span,
-	.home-entrance__merge-copy strong,
-	.home-entrance__merge-copy small {
-		margin: 0;
-		letter-spacing: 0;
-	}
-
-	.home-entrance__identity p,
-	.home-entrance__merge-copy span,
-	.home-entrance__merge-copy small {
-		font-family: var(--font-mono);
-		font-size: clamp(0.58rem, 0.72vw, 0.78rem);
-		font-weight: 700;
-		letter-spacing: 0.16em;
-	}
-
-	.home-entrance__identity p {
-		opacity: 0.62;
-	}
-
-	.home-entrance__identity strong {
-		font-size: clamp(4rem, 9.2vw, 9.8rem);
-		font-weight: 820;
-		line-height: 0.92;
-		text-shadow: 0 0.7rem 2.5rem rgb(0 0 0 / 0.58);
-	}
-
-	.home-entrance__identity span {
-		font-size: clamp(0.92rem, 1.25vw, 1.25rem);
-		font-weight: 650;
-		opacity: 0.78;
-	}
-
-	.home-entrance__axis {
-		position: absolute;
-		right: clamp(1.6rem, 4vw, 4.5rem);
-		bottom: clamp(2.2rem, 6vh, 5rem);
-		z-index: 2;
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		font-family: var(--font-mono);
-		font-size: 0.58rem;
-		font-weight: 700;
-		letter-spacing: 0.18em;
-		opacity: 0;
-		animation: home-entrance-axis 4.4s 0.45s ease both;
-	}
-
-	.home-entrance__axis i {
-		display: block;
-		width: clamp(4rem, 11vw, 9rem);
-		height: 1px;
-		background: rgb(255 255 255 / 0.42);
+		will-change: opacity;
+		animation: home-entrance-final-cover 5.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
 	.home-entrance__mosaic {
@@ -233,11 +144,11 @@ const tileSlots = Array.from({ length: 120 });
 		width: var(--tile-size);
 		height: var(--tile-size);
 		overflow: hidden;
-		border: 1px solid rgb(255 255 255 / 0.16);
-		box-shadow: 0 0.85rem 2rem rgb(0 0 0 / 0.34);
+		border: 1px solid rgb(255 255 255 / 0.14);
+		box-shadow: 0 0.65rem 1.6rem rgb(0 0 0 / 0.28);
 		opacity: 0;
-		will-change: transform, opacity, filter;
-		animation: home-entrance-tile 4.25s var(--tile-delay) cubic-bezier(0.22, 1, 0.36, 1) both;
+		will-change: transform, opacity;
+		animation: home-entrance-tile 4.25s var(--tile-delay) cubic-bezier(0.16, 1, 0.3, 1) both;
 	}
 
 	.home-entrance__tile[hidden] {
@@ -261,68 +172,42 @@ const tileSlots = Array.from({ length: 120 });
 		background-size: cover;
 	}
 
-	.home-entrance__merge-copy {
-		position: absolute;
-		bottom: clamp(2rem, 7vh, 5rem);
-		left: clamp(2rem, 6vw, 7rem);
-		z-index: 6;
-		display: grid;
-		gap: 0.2rem;
-		text-shadow: 0 0.4rem 1.5rem rgb(0 0 0 / 0.72);
-		opacity: 0;
-		animation: home-entrance-merge-copy 7.2s cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	.home-entrance__merge-copy strong {
-		font-size: clamp(2.6rem, 5vw, 5.4rem);
-		line-height: 1;
-	}
-
-	@keyframes home-entrance-identity {
-		0% { opacity: 0; transform: translateY(1.5rem); }
-		14%, 66% { opacity: 1; transform: translateY(0); }
-		100% { opacity: 0; transform: translateY(-1rem); }
-	}
-
-	@keyframes home-entrance-axis {
-		0%, 12% { opacity: 0; transform: translateX(1.5rem); }
-		28%, 72% { opacity: 0.72; transform: translateX(0); }
-		100% { opacity: 0; transform: translateX(-1rem); }
-	}
-
 	@keyframes home-entrance-tile {
 		0% {
 			opacity: 0;
-			transform: translate3d(var(--tile-offset-x), var(--tile-offset-y), 0) rotate(var(--tile-rotation)) scale(0.7);
-			filter: blur(5px);
+			transform: translate3d(var(--tile-offset-x), var(--tile-offset-y), 0) rotate(var(--tile-rotation)) scale(0.72);
 		}
-		18% { opacity: 0.94; }
-		72% {
-			opacity: 1;
-			transform: translate3d(0, 0, 0) rotate(0) scale(1);
-			filter: blur(0);
+		18% {
+			opacity: 0.94;
 		}
+		72%,
 		100% {
 			opacity: 1;
 			transform: translate3d(0, 0, 0) rotate(0) scale(1);
-			filter: blur(0);
 		}
 	}
 
 	@keyframes home-entrance-final-cover {
-		0%, 64% { opacity: 0; }
-		76%, 100% { opacity: 1; }
-	}
-
-	@keyframes home-entrance-merge-copy {
-		0%, 72% { opacity: 0; transform: translateY(1.25rem); }
-		82%, 94% { opacity: 1; transform: translateY(0); }
-		100% { opacity: 0; transform: translateY(-0.35rem); }
+		0%,
+		72% {
+			opacity: 0;
+		}
+		87%,
+		100% {
+			opacity: 1;
+		}
 	}
 
 	@keyframes home-entrance-finish {
-		0%, 92% { opacity: 1; visibility: visible; }
-		100% { opacity: 0; visibility: hidden; }
+		0%,
+		88% {
+			opacity: 1;
+			visibility: visible;
+		}
+		100% {
+			opacity: 0;
+			visibility: hidden;
+		}
 	}
 
 	:global(html.home-entrance-active),
@@ -332,39 +217,12 @@ const tileSlots = Array.from({ length: 120 });
 
 	@media (max-width: 640px) {
 		.home-entrance,
-		.home-entrance::after,
-		.home-entrance__merge-copy {
-			animation-duration: 5.6s;
-		}
-
-		.home-entrance__identity {
-			top: 20vh;
-			left: 1.25rem;
-			max-width: calc(100vw - 2.5rem);
-			animation-duration: 3.5s;
-		}
-
-		.home-entrance__identity strong {
-			font-size: clamp(3.7rem, 20vw, 6rem);
-		}
-
-		.home-entrance__identity span {
-			font-size: 0.88rem;
-		}
-
-		.home-entrance__axis {
-			right: 1.1rem;
-			bottom: 7.5rem;
-			animation-duration: 3.4s;
+		.home-entrance::after {
+			animation-duration: 5.2s;
 		}
 
 		.home-entrance__tile {
-			animation-duration: 3.4s;
-		}
-
-		.home-entrance__merge-copy {
-			bottom: 8rem;
-			left: 1.25rem;
+			animation-duration: 3.9s;
 		}
 	}
 

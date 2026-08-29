@@ -128,12 +128,13 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 <div
 	class="home-landing"
 	data-home-landing
+	data-home-reveal-stage="cover"
 	data-home-timezone={siteTimezone}
 	data-home-start-date={siteStartDate}
 	data-home-default-hue={siteConfig.themeColor.hue}
 	data-home-wallpaper-assets={JSON.stringify(pageWallpaperAssets)}
 >
-	<HomeEntrance name={siteConfig.title} />
+	<HomeEntrance />
 	<LocalWallpaperLayer client:load surface="home" />
 
 	{musicPlayerConfig.showInNavbar && (
@@ -693,6 +694,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		let pageScrollTransitionActive = false;
 		let sceneMetricsFrame = 0;
 		let terminalTimer = 0;
+		let homeRevealStarted = false;
+		let homeRevealTimers = [];
 		let sceneWheelQuietTimer = 0;
 		let sceneLockTimer = 0;
 		let quoteTimer = 0;
@@ -1773,6 +1776,59 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			terminalTimer = window.setTimeout(type, 450);
 		};
 
+		const clearHomeRevealTimers = () => {
+			homeRevealTimers.forEach((timer) => window.clearTimeout(timer));
+			homeRevealTimers = [];
+		};
+		const queueHomeReveal = (callback, delay) => {
+			const timer = window.setTimeout(callback, delay);
+			homeRevealTimers.push(timer);
+		};
+		const setHomeRevealStage = (stage) => {
+			root.dataset.homeRevealStage = stage;
+		};
+		const startHomeReveal = () => {
+			if (homeRevealStarted) return;
+			homeRevealStarted = true;
+			clearHomeRevealTimers();
+			setHomeRevealStage("cover");
+
+			const revealClock = () => {
+				root.classList.add("is-home-clock-ready");
+				setHomeRevealStage("clock");
+			};
+			const revealWordmark = () => {
+				root.classList.add("is-home-wordmark-ready");
+				setHomeRevealStage("wordmark");
+				playWordmark();
+				startTerminal();
+			};
+			const revealDialogue = () => {
+				root.classList.add("is-home-dialogue-ready");
+				setHomeRevealStage("dialogue");
+				window.dispatchEvent(new CustomEvent("firefly:home-dialogue-reveal"));
+			};
+
+			if (reducedMotion.matches) {
+				revealClock();
+				revealWordmark();
+				revealDialogue();
+				return;
+			}
+
+			queueHomeReveal(revealClock, 280);
+			queueHomeReveal(revealWordmark, 900);
+			queueHomeReveal(revealDialogue, 3750);
+		};
+		const handleHomeEntranceComplete = () => startHomeReveal();
+		window.addEventListener("firefly:home-entrance-complete", handleHomeEntranceComplete, {
+			once: true,
+		});
+		const entrance = document.querySelector("[data-home-entrance]");
+		if (!entrance || entrance.dataset.homeEntranceState === "complete") {
+			startHomeReveal();
+		}
+
 		updateSceneMetrics();
 		sceneMetricsFrame = requestAnimationFrame(() => {
 			sceneMetricsFrame = 0;
@@ -1977,11 +2033,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		window.addEventListener("resize", handleViewportResize);
 		window.addEventListener("theme-change", handleThemeChange);
 		reducedMotion.addEventListener("change", handleMotionPreference);
-		playWordmark();
-		startTerminal();
 		render();
 
 		window.__fireflyHomeLandingCleanup = () => {
+			window.removeEventListener("firefly:home-entrance-complete", handleHomeEntranceComplete);
+			clearHomeRevealTimers();
 			window.removeEventListener("scroll", scheduleRender);
 			window.removeEventListener("resize", handleViewportResize);
 			window.removeEventListener("theme-change", handleThemeChange);
@@ -3354,6 +3410,18 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		max-width: calc(100% - 2.7rem);
 		color: white;
 		text-align: left;
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(calc(-50% + 1rem));
+		transition:
+			opacity 520ms ease-out,
+			transform 720ms cubic-bezier(0.16, 1, 0.3, 1),
+			visibility 520ms ease-out;
+	}
+
+	.home-landing.is-home-wordmark-ready .home-hero-content {
+		opacity: 1;
+		visibility: visible;
 		transform: translateY(-50%);
 	}
 
@@ -3462,6 +3530,19 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		color: white;
 		text-align: right;
 		text-shadow: 0 0.4rem 1.3rem rgba(0, 0, 0, 0.42);
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(0.8rem);
+		transition:
+			opacity 480ms ease-out,
+			transform 680ms cubic-bezier(0.16, 1, 0.3, 1),
+			visibility 480ms ease-out;
+	}
+
+	.home-landing.is-home-clock-ready .home-hero-status {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(0);
 	}
 
 	.home-clock-label,
@@ -6180,7 +6261,19 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			font-family: var(--font-navbar-title, var(--font-sans));
 			text-align: center;
 			text-shadow: 0 0.15rem 0.75rem rgb(0 0 0 / 0.82);
-			transform: translateX(-50%);
+			opacity: 0;
+			visibility: hidden;
+			transform: translate(-50%, 0.75rem);
+			transition:
+				opacity 520ms ease-out,
+				transform 720ms cubic-bezier(0.16, 1, 0.3, 1),
+				visibility 520ms ease-out;
+		}
+
+		.home-landing.is-home-wordmark-ready .home-mobile-profile {
+			opacity: 1;
+			visibility: visible;
+			transform: translate(-50%, 0);
 		}
 
 		.home-mobile-profile__role {
