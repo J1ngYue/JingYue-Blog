@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.59",
+		date: "2026-08-29",
+		time: "19:24",
+		type: "optimize",
+		title: "首页影像连续滚动",
+		summary: "影像改为滚轮驱动的平滑横向移动，进度条会随实际播放位置实时跟进。",
+		changes: [
+			"鼠标滚轮在影像区域内切换上一张或下一张，向下滚动时画面缓缓向左平移。",
+			"自动播放与手动切换共用同一条连续进度时间轴，避免进度条突然跳格。",
+			"延长影像切换缓动并在滚轮操作后短暂暂停自动播放，减少连续滚动时的抢动。",
+		],
+	},
+	{
 		version: "v6.14.58",
 		date: "2026-08-29",
 		time: "19:03",

@@ -699,9 +699,12 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		let particleArrowFrame = 0;
 		let particleArrowAngle = 0;
 		let particleArrowHasAngle = false;
-		let exhibitProgressAnimations = [];
-		let exhibitProgressCycle = 0;
 		let exhibitActiveIndex = 0;
+		let exhibitProgressFrame = 0;
+		let exhibitProgressStartTime = 0;
+		let exhibitProgressPosition = 0;
+		let exhibitWheelDelta = 0;
+		let exhibitWheelQuietTimer = 0;
 		let exhibitVisible = false;
 		let exhibitInteractionPaused = false;
 		let exhibitObserver = null;
@@ -978,15 +981,43 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		};
 
 		const exhibitSlideDuration = 5200;
-		const exhibitBlocksPerSlide = Math.max(
-			1,
-			Math.floor(exhibitMeterFills.length / Math.max(1, exhibitSlides.length)),
-		);
+		const exhibitWheelThreshold = 34;
+		const exhibitProgressLimit = () => Math.max(0, exhibitSlides.length);
+		const clampExhibitProgress = (value) =>
+			Math.max(0, Math.min(exhibitProgressLimit(), value));
 
-		const stopExhibitProgress = () => {
-			exhibitProgressCycle += 1;
-			exhibitProgressAnimations.forEach((animation) => animation.cancel());
-			exhibitProgressAnimations = [];
+		const renderExhibitMeter = (position) => {
+			const slideCount = exhibitProgressLimit();
+			const blockPosition = slideCount
+				? (clampExhibitProgress(position) / slideCount) * exhibitMeterFills.length
+				: 0;
+			exhibitMeterFills.forEach((fill, blockIndex) => {
+				const localProgress = Math.max(0, Math.min(1, blockPosition - blockIndex));
+				fill.style.transform = `scaleX(${localProgress})`;
+			});
+			if (!exhibitMeter || slideCount === 0) return;
+			const accessibleValue = Math.min(slideCount, clampExhibitProgress(position) + 1);
+			const currentSlide = Math.min(slideCount, Math.floor(clampExhibitProgress(position)) + 1);
+			exhibitMeter.setAttribute("aria-valuenow", accessibleValue.toFixed(2));
+			exhibitMeter.setAttribute("aria-valuetext", `第 ${currentSlide} 张，共 ${slideCount} 张`);
+		};
+
+		const getExhibitProgressPosition = () => {
+			if (!exhibitProgressStartTime) return exhibitProgressPosition;
+			return clampExhibitProgress(
+				exhibitActiveIndex +
+					(Math.max(0, performance.now() - exhibitProgressStartTime) /
+						exhibitSlideDuration),
+			);
+		};
+
+		const stopExhibitProgress = (reset = false) => {
+			if (exhibitProgressStartTime) exhibitProgressPosition = getExhibitProgressPosition();
+			if (exhibitProgressFrame) window.cancelAnimationFrame(exhibitProgressFrame);
+			exhibitProgressFrame = 0;
+			exhibitProgressStartTime = 0;
+			if (reset) exhibitProgressPosition = exhibitActiveIndex;
+			renderExhibitMeter(exhibitProgressPosition);
 		};
 
 		const shouldPlayExhibit = () =>
@@ -998,66 +1029,40 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 					!reducedMotion.matches,
 			);
 
-		const animateExhibitMeterBlock = (blockIndex, lastCurrentBlock, cycle) => {
-			if (cycle !== exhibitProgressCycle || !shouldPlayExhibit()) return;
-
-			const fill = exhibitMeterFills[blockIndex];
-			if (!fill) return;
-			const blockDuration = exhibitSlideDuration / exhibitBlocksPerSlide;
-			const animation = fill.animate(
-				[{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
-				{
-					duration: blockDuration,
-					easing: "linear",
-					fill: "forwards",
-				},
+		const tickExhibitProgress = (timestamp) => {
+			if (!shouldPlayExhibit()) {
+				exhibitProgressFrame = 0;
+				return;
+			}
+			const elapsed = Math.max(0, timestamp - exhibitProgressStartTime);
+			exhibitProgressPosition = clampExhibitProgress(
+				exhibitActiveIndex + elapsed / exhibitSlideDuration,
 			);
-			exhibitProgressAnimations = [animation];
-
-			animation.finished
-				.then(() => {
-					if (cycle !== exhibitProgressCycle || !shouldPlayExhibit()) return;
-					fill.style.transform = "scaleX(1)";
-					exhibitProgressAnimations = [];
-					animation.cancel();
-
-					const nextBlockIndex = blockIndex + 1;
-					if (nextBlockIndex < lastCurrentBlock) {
-						animateExhibitMeterBlock(nextBlockIndex, lastCurrentBlock, cycle);
-						return;
-					}
-					showExhibitSlide(exhibitActiveIndex + 1);
-				})
-				.catch(() => {});
+			renderExhibitMeter(exhibitProgressPosition);
+			if (elapsed >= exhibitSlideDuration) {
+				exhibitProgressFrame = 0;
+				exhibitProgressStartTime = 0;
+				showExhibitSlide(exhibitActiveIndex + 1);
+				return;
+			}
+			exhibitProgressFrame = window.requestAnimationFrame(tickExhibitProgress);
 		};
 
-		const startExhibitProgress = () => {
-			stopExhibitProgress();
-			const cycle = exhibitProgressCycle;
-			const firstCurrentBlock = exhibitActiveIndex * exhibitBlocksPerSlide;
-			const lastCurrentBlock = Math.min(
-				firstCurrentBlock + exhibitBlocksPerSlide,
-				exhibitMeterFills.length,
-			);
-
-			exhibitMeterFills.forEach((fill, blockIndex) => {
-				fill.style.transform = blockIndex < firstCurrentBlock ? "scaleX(1)" : "scaleX(0)";
-			});
-
-			if (!shouldPlayExhibit() || firstCurrentBlock >= lastCurrentBlock) return;
-			animateExhibitMeterBlock(firstCurrentBlock, lastCurrentBlock, cycle);
+		const startExhibitProgress = (reset = true) => {
+			stopExhibitProgress(reset);
+			if (!shouldPlayExhibit() || exhibitSlides.length === 0) return;
+			exhibitProgressStartTime =
+				performance.now() -
+					Math.max(0, exhibitProgressPosition - exhibitActiveIndex) * exhibitSlideDuration;
+			exhibitProgressFrame = window.requestAnimationFrame(tickExhibitProgress);
 		};
 
 		const syncExhibitPlayback = () => {
 			if (shouldPlayExhibit()) {
-				if (exhibitProgressAnimations.length > 0) {
-					exhibitProgressAnimations.forEach((animation) => animation.play());
-				} else {
-					startExhibitProgress();
-				}
+				if (!exhibitProgressFrame) startExhibitProgress(false);
 				return;
 			}
-			exhibitProgressAnimations.forEach((animation) => animation.pause());
+			stopExhibitProgress(false);
 		};
 
 		const showExhibitSlide = (requestedIndex) => {
@@ -1082,7 +1087,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				slide.setAttribute("aria-hidden", String(offset !== 0));
 			});
 
-			exhibitMeter?.setAttribute("aria-valuenow", String(exhibitActiveIndex + 1));
+			exhibitProgressPosition = exhibitActiveIndex;
+			renderExhibitMeter(exhibitProgressPosition);
 			startExhibitProgress();
 		};
 
@@ -1112,6 +1118,39 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			releaseExhibitPointerFocus(event);
 		};
 		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
+		const scheduleExhibitWheelResume = () => {
+			if (exhibitWheelQuietTimer) window.clearTimeout(exhibitWheelQuietTimer);
+			exhibitWheelQuietTimer = window.setTimeout(() => {
+				exhibitWheelQuietTimer = 0;
+				exhibitWheelDelta = 0;
+				exhibitInteractionPaused = false;
+				syncExhibitPlayback();
+			}, 900);
+		};
+		const eventTargetIsInteractive = (target) =>
+			target instanceof Element &&
+			Boolean(target.closest("button, a, input, textarea, select, [contenteditable='true']"));
+		const handleExhibitWheel = (event) => {
+			if (
+				!exhibitVisible ||
+				reducedMotion.matches ||
+				event.ctrlKey ||
+				event.altKey ||
+				eventTargetIsInteractive(event.target)
+			) return;
+			const delta =
+				Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+			if (Math.abs(delta) < 1) return;
+			event.preventDefault();
+			event.stopPropagation();
+			exhibitInteractionPaused = true;
+			scheduleExhibitWheelResume();
+			exhibitWheelDelta += normalizeWheelDelta(event, delta);
+			if (Math.abs(exhibitWheelDelta) < exhibitWheelThreshold) return;
+			const direction = exhibitWheelDelta > 0 ? 1 : -1;
+			exhibitWheelDelta = 0;
+			showExhibitSlide(exhibitActiveIndex + direction);
+		};
 
 		const handleLocalCoverState = (event) => {
 			const localCoverActive = Boolean(event.detail?.active);
@@ -1972,6 +2011,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		coverOrbit?.addEventListener("focusin", handleCoverOrbitFocusIn);
 		exhibitCarousel?.addEventListener("focusin", pauseExhibitInteraction);
 		exhibitCarousel?.addEventListener("focusout", handleExhibitFocusOut);
+		exhibitCarousel?.addEventListener("wheel", handleExhibitWheel, { passive: false });
 		exhibitPrevious?.addEventListener("click", showPreviousExhibitSlide);
 		exhibitNext?.addEventListener("click", showNextExhibitSlide);
 		document.addEventListener("visibilitychange", handleExhibitVisibilityChange);
@@ -2096,6 +2136,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			coverOrbit?.removeEventListener("focusin", handleCoverOrbitFocusIn);
 			exhibitCarousel?.removeEventListener("focusin", pauseExhibitInteraction);
 			exhibitCarousel?.removeEventListener("focusout", handleExhibitFocusOut);
+			exhibitCarousel?.removeEventListener("wheel", handleExhibitWheel);
 			exhibitPrevious?.removeEventListener("click", showPreviousExhibitSlide);
 			exhibitNext?.removeEventListener("click", showNextExhibitSlide);
 			document.removeEventListener("visibilitychange", handleExhibitVisibilityChange);
@@ -2111,6 +2152,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			sceneObserver?.disconnect();
 			overviewVideoObserver?.disconnect();
 			exhibitObserver?.disconnect();
+			if (exhibitWheelQuietTimer) window.clearTimeout(exhibitWheelQuietTimer);
+			exhibitWheelQuietTimer = 0;
+			exhibitWheelDelta = 0;
+			stopExhibitProgress(true);
 			themeClassObserver.disconnect();
 			root.removeAttribute("data-home-scenes-ready");
 			root.removeAttribute("data-home-scene-index");
