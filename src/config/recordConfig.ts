@@ -20,6 +20,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.58",
+		date: "2026-08-29",
+		time: "19:03",
+		type: "optimize",
+		title: "首页拼图无缝收束",
+		summary: "拼块归位后立即合成完整封面，并缩短入场等待时间。",
+		changes: [
+			"拼块分界线改为不占尺寸的内描边，避免边框造成背景切片错位。",
+			"拼块归位时同步淡出描边与阴影，中间不再长时间保留网格缝隙。",
+			"桌面端入场由 5.7 秒缩短至 3.2 秒，移动端缩短至 3 秒。",
+		],
+	},
+	{
 		version: "v6.14.57",
 		date: "2026-08-29",
 		time: "18:45",
