@@ -485,7 +485,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 					widgetConfig={{ type: "siteInfo", enable: true, position: "top" }}
 				/>
 			</div>
-			<a class="home-scene-next home-section-next" href="#home-exhibit" aria-label="向下探索收藏影像">
+			<a class="home-scene-next home-section-next" href="#home-exhibit" aria-label="向下探索横向影像叙事">
 				<span>向下探索</span>
 				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
 			</a>
@@ -494,16 +494,12 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		<section
 			id="home-exhibit"
 			class="home-section home-exhibit home-scroll-scene"
-			aria-labelledby="home-exhibit-title"
+			aria-label="横向影像叙事"
 			data-home-scroll-scene
 			data-home-page
 			data-home-section-tone="light"
 		>
 			<HomeExhibitCarousel />
-			<a class="home-scene-next home-section-next" href="#home-activity" aria-label="向下探索 GitHub 提交记录">
-				<span>向下探索</span>
-				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
-			</a>
 		</section>
 
 		<section
@@ -643,11 +639,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const particleArrow = root.querySelector("[data-home-cover-particle-arrow]");
 		const exhibitCarousel = root.querySelector("[data-home-exhibit-carousel]");
 		const exhibitSlides = Array.from(root.querySelectorAll("[data-home-exhibit-slide]"));
-		const exhibitPrevious = root.querySelector("[data-home-exhibit-previous]");
-		const exhibitNext = root.querySelector("[data-home-exhibit-next]");
 		const exhibitMeter = root.querySelector("[data-home-exhibit-meter]");
 		const exhibitMeterFills = Array.from(root.querySelectorAll("[data-home-exhibit-meter-fill]"));
-		const exhibitCounter = root.querySelector("[data-home-exhibit-counter]");
 		const overviewVideo = root.querySelector("[data-home-overview-video]");
 		const profileRail = root.querySelector(".home-profile-rail");
 		const coverSwitcherClosers = Array.from(root.querySelectorAll("[data-home-cover-switcher-close]"));
@@ -1076,14 +1069,9 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			});
 
 			exhibitMeter?.setAttribute("aria-valuenow", String(exhibitActiveIndex + 1));
-			if (exhibitCounter) {
-				exhibitCounter.value = `${String(exhibitActiveIndex + 1).padStart(2, "0")} / ${String(slideCount).padStart(2, "0")}`;
-			}
 			startExhibitProgress();
 		};
 
-		const showPreviousExhibitSlide = () => showExhibitSlide(exhibitActiveIndex - 1);
-		const showNextExhibitSlide = () => showExhibitSlide(exhibitActiveIndex + 1);
 		const pauseExhibitInteraction = () => {
 			exhibitInteractionPaused = true;
 			syncExhibitPlayback();
@@ -1955,10 +1943,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		coverOrbit?.addEventListener("pointermove", handleCoverOrbitPointerMove);
 		coverOrbit?.addEventListener("pointerleave", handleCoverOrbitPointerLeave);
 		coverOrbit?.addEventListener("focusin", handleCoverOrbitFocusIn);
-		exhibitPrevious?.addEventListener("click", showPreviousExhibitSlide);
-		exhibitNext?.addEventListener("click", showNextExhibitSlide);
-		exhibitCarousel?.addEventListener("pointerenter", pauseExhibitInteraction);
-		exhibitCarousel?.addEventListener("pointerleave", resumeExhibitInteraction);
 		exhibitCarousel?.addEventListener("focusin", pauseExhibitInteraction);
 		exhibitCarousel?.addEventListener("focusout", handleExhibitFocusOut);
 		document.addEventListener("visibilitychange", handleExhibitVisibilityChange);
@@ -2081,10 +2065,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			coverOrbit?.removeEventListener("pointermove", handleCoverOrbitPointerMove);
 			coverOrbit?.removeEventListener("pointerleave", handleCoverOrbitPointerLeave);
 			coverOrbit?.removeEventListener("focusin", handleCoverOrbitFocusIn);
-			exhibitPrevious?.removeEventListener("click", showPreviousExhibitSlide);
-			exhibitNext?.removeEventListener("click", showNextExhibitSlide);
-			exhibitCarousel?.removeEventListener("pointerenter", pauseExhibitInteraction);
-			exhibitCarousel?.removeEventListener("pointerleave", resumeExhibitInteraction);
 			exhibitCarousel?.removeEventListener("focusin", pauseExhibitInteraction);
 			exhibitCarousel?.removeEventListener("focusout", handleExhibitFocusOut);
 			document.removeEventListener("visibilitychange", handleExhibitVisibilityChange);
@@ -4650,6 +4630,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	}
 
 	.home-exhibit {
+		width: 100vw;
+		max-width: none;
+		margin-right: calc(50% - 50vw);
+		margin-left: calc(50% - 50vw);
 		margin-top: clamp(4rem, 9vw, 7rem);
 	}
 
@@ -4959,6 +4943,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		.home-activity,
 		.home-overview {
 			margin-top: 0;
+		}
+
+		.home-scroll-scene.home-exhibit {
+			padding: 0;
 		}
 
 		.home-scroll-scene.home-ending {

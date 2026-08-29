@@ -1,646 +1,139 @@
 ---
-import { Icon } from "astro-icon/components";
-import desktop5 from "@/assets/images/DesktopWallpaper/d5.avif";
-import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import "@/styles/components/home-blinds-exhibit.css";
+import HomeBlindsScene from "./HomeBlindsScene.astro";
 
-const slides = [
+type SceneItem = {
+	eyebrow: string;
+	title: string;
+	description: string;
+	image: string;
+	alt: string;
+};
+
+const sceneItems: SceneItem[] = [
 	{
-		eyebrow: "PROLOGUE / BREEZE",
-		title: "风从海上来",
-		description: "把海风、天光与还没有说完的故事，一起收进这一帧。",
-		image: "assets/images/DesktopWallpaper/d1.avif",
-		position: "center 34%",
+		eyebrow: "PROLOGUE / RUN",
+		title: "奔向下一幕",
+		description: "光影从身后掠过，把正在发生的故事收进这一帧。",
+		image: "/assets/images/home-blinds/act2/1.webp",
+		alt: "阳光下的庭院围墙",
 	},
 	{
-		eyebrow: "SCENE 02 / BLOOM",
-		title: "花影落在肩头",
-		description: "春日沿着花枝缓慢靠近，光落下时，恰好有人回头。",
-		image: "assets/images/DesktopWallpaper/d2.avif",
-		position: "center 34%",
+		eyebrow: "SCENE 02 / LIGHT",
+		title: "沿途拾光",
+		description: "让短暂的风景停驻，在下一次转场前多看一眼。",
+		image: "/assets/images/home-blinds/act3/1.webp",
+		alt: "第二幕插画",
 	},
 	{
-		eyebrow: "SCENE 03 / STARS",
-		title: "星夜停泊",
-		description: "让遥远的星光暂时停靠，也让此刻被认真记住。",
-		image: "assets/images/DesktopWallpaper/d3.avif",
-		position: "center 38%",
+		eyebrow: "SCENE 03 / WIND",
+		title: "风经过这里",
+		description: "留在画里的是此刻，被风吹动的是仍未写完的旅程。",
+		image: "/assets/images/home-blinds/act3/2.webp",
+		alt: "第三幕插画",
 	},
 	{
-		eyebrow: "SCENE 04 / SPRING",
-		title: "赴一场春日",
-		description: "风吹动裙摆与花瓣，未写完的旅程仍然向前延伸。",
-		image: "assets/images/DesktopWallpaper/d4.avif",
-		position: "center 36%",
+		eyebrow: "SCENE 04 / PAGE",
+		title: "收进一页",
+		description: "把颜色、温度与偶然相遇的瞬间，一起留在纸面。",
+		image: "/assets/images/home-blinds/act3/3.webp",
+		alt: "第四幕插画",
 	},
 	{
-		eyebrow: "FINALE / REST",
-		title: "午后小憩",
-		description: "在明亮而安静的午后，把匆忙留在门外，慢一点生活。",
-		image: "assets/images/DesktopWallpaper/d5.avif",
-		position: "center 46%",
+		eyebrow: "FINALE / ARRIVE",
+		title: "抵达之前",
+		description: "最后一幕停在中央，下一段路从这里重新开始。",
+		image: "/assets/images/home-blinds/act3/4.webp",
+		alt: "第五幕插画",
 	},
 ];
 
-const meterBlocks = Array.from({ length: slides.length * 4 });
-const circularOffset = (index: number) => {
-	let offset = index;
-	if (offset > slides.length / 2) offset -= slides.length;
-	return offset;
-};
+const cycleImage = "/assets/images/home-blinds/act-cycle/1.webp";
+const cycleCells = Array.from({ length: 6 }, () => cycleImage);
+const meterBlocks = Array.from({ length: 20 });
 ---
 
 <div
-	class="home-exhibit-carousel"
+	class="home-blinds home-exhibit-blinds"
 	data-home-exhibit-carousel
-	data-slide-count={slides.length}
+	data-slide-count={sceneItems.length}
+	data-pagefind-ignore
 	role="region"
 	aria-roledescription="轮播图"
-	aria-label="收藏影像"
-	style={`--home-exhibit-backdrop: url("${desktop5.src}")`}
+	aria-label="横向影像叙事"
 >
-	<div class="home-exhibit-backdrop" aria-hidden="true"></div>
-
-	<header class="home-exhibit-heading">
-		<div>
-			<p>VISUAL MOMENTS · {String(slides.length).padStart(2, "0")}</p>
-			<h2 id="home-exhibit-title">收藏一帧心动</h2>
-		</div>
-		<div class="home-exhibit-controls" aria-label="影像切换">
-			<button type="button" data-home-exhibit-previous aria-label="上一幕" title="上一幕">
-				<Icon is:inline name="material-symbols:arrow-back-rounded" />
-			</button>
-			<button type="button" data-home-exhibit-next aria-label="下一幕" title="下一幕">
-				<Icon is:inline name="material-symbols:arrow-forward-rounded" />
-			</button>
-		</div>
-	</header>
-
-	<div class="home-exhibit-stage" data-home-exhibit-stage>
-		{
-			slides.map((slide, index) => {
-				const offset = circularOffset(index);
-				const position = offset === 0
-					? "active"
-					: offset === -1
-						? "previous"
-						: offset === 1
-							? "next"
-							: offset < 0
-								? "far-previous"
-								: "far-next";
-				const cue = index === 0 ? "序幕" : index === slides.length - 1 ? "终幕" : "NEXT";
-
-				return (
-					<article
-						class="home-exhibit-scene"
-						data-home-exhibit-slide
-						data-slide-index={index}
-						data-position={position}
-						aria-hidden={index === 0 ? "false" : "true"}
-					>
-						<div class="home-exhibit-scene-rail" aria-hidden="true">
-							<i></i>
-							<span>{slide.eyebrow}</span>
-							<b></b>
-							<strong>{slide.title}</strong>
-						</div>
-
-						<header class="home-exhibit-scene-head">
-							<span>{slide.eyebrow}</span>
-							<strong>「{slide.title}」</strong>
-							<span>{cue} <i aria-hidden="true">{index === slides.length - 1 ? "■" : "→"}</i></span>
-						</header>
-
-						<div class="home-exhibit-scene-frame">
-							<ImageWrapper
-								src={slide.image}
-								alt={`${slide.title}插画`}
-								class="home-exhibit-scene-image"
-								loading={index === 0 ? "eager" : "lazy"}
-								layout="full-width"
-								widths={[750, 1024, 1440, 1920]}
-								sizes="(max-width: 760px) 86vw, 55vw"
-								position={slide.position}
-							/>
-							<div class="home-exhibit-viewfinder" aria-hidden="true">
-								<span data-corner="top-left"></span>
-								<span data-corner="top-right"></span>
-								<span data-corner="bottom-left"></span>
-								<span data-corner="bottom-right"></span>
+	<section class="home-blinds-scenes" aria-label="横向影像叙事">
+		<div class="home-blinds-scenes__viewport">
+			<div
+				class="home-blinds-scenes__cycle"
+				style="--home-blinds-cycle-cell: 38vw"
+				aria-hidden="true"
+			>
+				<div class="home-blinds-scenes__cycle-track">
+					{
+						cycleCells.map((image) => (
+							<div class="home-blinds-scenes__cycle-cell">
+								<img
+									class="home-blinds-scenes__cycle-image"
+									src={image}
+									alt=""
+									loading="lazy"
+									decoding="async"
+								/>
 							</div>
-							<span class="home-exhibit-scene-number">{String(index + 1).padStart(2, "0")}</span>
-							<div class="home-exhibit-scene-caption">
-								<span aria-hidden="true"></span>
-								<p>{slide.description}</p>
-							</div>
-						</div>
-					</article>
-				);
-			})
-		}
-	</div>
+						))
+					}
+				</div>
+			</div>
 
-	<div class="home-exhibit-meter-row">
-		<div
-			class="home-exhibit-meter"
-			data-home-exhibit-meter
-			role="progressbar"
-			aria-label="影像播放进度"
-			aria-valuemin="1"
-			aria-valuemax={slides.length}
-			aria-valuenow="1"
-		>
-			<div class="home-exhibit-meter-track">
+			<div class="home-blinds-scenes__track">
 				{
-					meterBlocks.map(() => (
-						<span class="home-exhibit-meter-block" data-home-exhibit-meter-block>
-							<i data-home-exhibit-meter-fill></i>
-						</span>
+					sceneItems.map((item, index) => (
+						<HomeBlindsScene
+							index={index}
+							total={sceneItems.length}
+							item={item}
+							composite={index === 0}
+						/>
 					))
 				}
 			</div>
-			<i class="home-exhibit-meter-cap" aria-hidden="true"></i>
+
+			<div
+				class="home-blinds-scenes__meter"
+				data-home-exhibit-meter
+				role="progressbar"
+				aria-label="影像播放进度"
+				aria-valuemin="1"
+				aria-valuemax={sceneItems.length}
+				aria-valuenow="1"
+			>
+				<span class="home-blinds-scenes__meter-track">
+					<span class="home-blinds-scenes__meter-blocks">
+						{
+							meterBlocks.map(() => (
+								<span class="home-blinds-scenes__meter-block">
+									<i data-home-exhibit-meter-fill></i>
+								</span>
+							))
+						}
+					</span>
+				</span>
+				<span class="home-blinds-scenes__meter-cap" aria-hidden="true"></span>
+			</div>
+
+			<div class="home-blinds-scenes__stands" aria-hidden="true">
+				<div class="home-blinds-scenes__stand" style="--home-blinds-stand-index: 0">
+					<img
+						class="home-blinds-scenes__stand-image"
+						src="/assets/images/home-blinds/act4/1.webp"
+						alt=""
+						loading="lazy"
+						decoding="async"
+					/>
+					<span class="home-blinds-scenes__stand-pole"></span>
+				</div>
+			</div>
 		</div>
-		<output class="home-exhibit-counter" data-home-exhibit-counter aria-live="polite">
-			01 / {String(slides.length).padStart(2, "0")}
-		</output>
-	</div>
+	</section>
 </div>
-
-<style>
-	.home-exhibit-carousel {
-		--exhibit-ink: var(--deep-text);
-		--exhibit-muted: color-mix(in oklch, var(--deep-text) 56%, transparent);
-		--exhibit-edge: color-mix(in oklch, var(--deep-text) 82%, transparent);
-		--exhibit-progress: #00a29b;
-		--exhibit-slide-width: min(55vw, 64rem);
-		--exhibit-slide-gap: clamp(1.5rem, 3vw, 3.5rem);
-		position: relative;
-		width: 100vw;
-		min-height: clamp(38rem, 78vh, 52rem);
-		margin-left: calc(50% - 50vw);
-		overflow: hidden;
-		background: color-mix(in oklch, var(--page-bg) 94%, #edf0f2);
-		color: var(--exhibit-ink);
-	}
-
-	.home-exhibit-backdrop {
-		position: absolute;
-		inset: 0;
-		background:
-			linear-gradient(90deg, var(--page-bg), transparent 22% 78%, var(--page-bg)),
-			linear-gradient(color-mix(in oklch, var(--page-bg) 78%, transparent), color-mix(in oklch, var(--page-bg) 68%, transparent)),
-			var(--home-exhibit-backdrop) center 45% / cover no-repeat;
-		filter: grayscale(1) contrast(0.72);
-		opacity: 0.15;
-		pointer-events: none;
-	}
-
-	.home-exhibit-heading {
-		position: relative;
-		z-index: 8;
-		display: flex;
-		align-items: end;
-		justify-content: space-between;
-		width: min(74rem, calc(100% - 4rem));
-		margin: 0 auto;
-		padding-top: clamp(1rem, 2.5vh, 2rem);
-	}
-
-	.home-exhibit-heading p,
-	.home-exhibit-heading h2 {
-		margin: 0;
-	}
-
-	.home-exhibit-heading p {
-		margin-bottom: 0.55rem;
-		color: var(--exhibit-muted);
-		font-size: 0.68rem;
-		font-weight: 800;
-		letter-spacing: 0.3em;
-	}
-
-	.home-exhibit-heading h2 {
-		font-size: clamp(2.35rem, 4.4vw, 4.6rem);
-		font-weight: 720;
-		letter-spacing: 0;
-		line-height: 1;
-	}
-
-	.home-exhibit-controls {
-		display: flex;
-		gap: 0.55rem;
-	}
-
-	.home-exhibit-controls button {
-		display: grid;
-		place-items: center;
-		width: 2.75rem;
-		height: 2.75rem;
-		border: 1.5px solid var(--exhibit-edge);
-		border-radius: 50%;
-		background: color-mix(in oklch, var(--page-bg) 90%, transparent);
-		color: var(--exhibit-ink);
-		cursor: pointer;
-		transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
-	}
-
-	.home-exhibit-controls button:hover,
-	.home-exhibit-controls button:focus-visible {
-		background: var(--exhibit-ink);
-		color: var(--page-bg);
-		transform: translateY(-0.12rem);
-		outline: 2px solid color-mix(in oklch, var(--primary) 54%, transparent);
-		outline-offset: 3px;
-	}
-
-	.home-exhibit-controls :global(svg) {
-		width: 1.25rem;
-		height: 1.25rem;
-	}
-
-	.home-exhibit-stage {
-		position: relative;
-		z-index: 2;
-		height: clamp(31rem, 36vw, 41rem);
-		margin-top: clamp(0.8rem, 2vh, 1.5rem);
-	}
-
-	.home-exhibit-scene {
-		position: absolute;
-		top: clamp(2.6rem, 5vh, 4.5rem);
-		left: 50%;
-		z-index: 1;
-		width: var(--exhibit-slide-width);
-		margin: 0;
-		opacity: 0;
-		transform: translate3d(-50%, 0, 0) scale(0.78);
-		transform-origin: center;
-		transition:
-			transform 780ms cubic-bezier(0.22, 0.61, 0.36, 1),
-			opacity 520ms ease,
-			filter 520ms ease;
-		will-change: transform, opacity;
-	}
-
-	.home-exhibit-scene[data-position="active"] {
-		z-index: 4;
-		opacity: 1;
-		filter: none;
-		transform: translate3d(-50%, 0, 0) scale(1);
-	}
-
-	.home-exhibit-scene[data-position="previous"],
-	.home-exhibit-scene[data-position="next"] {
-		z-index: 2;
-		opacity: 0.43;
-		filter: grayscale(0.28) saturate(0.72);
-	}
-
-	.home-exhibit-scene[data-position="previous"] {
-		transform: translate3d(calc(-50% - var(--exhibit-slide-width) - var(--exhibit-slide-gap)), 0, 0) scale(0.88);
-	}
-
-	.home-exhibit-scene[data-position="next"] {
-		transform: translate3d(calc(-50% + var(--exhibit-slide-width) + var(--exhibit-slide-gap)), 0, 0) scale(0.88);
-	}
-
-	.home-exhibit-scene[data-position="far-previous"] {
-		transform: translate3d(calc(-50% - var(--exhibit-slide-width) - var(--exhibit-slide-gap) - 32vw), 0, 0)
-			scale(0.76);
-	}
-
-	.home-exhibit-scene[data-position="far-next"] {
-		transform: translate3d(calc(-50% + var(--exhibit-slide-width) + var(--exhibit-slide-gap) + 32vw), 0, 0)
-			scale(0.76);
-	}
-
-	.home-exhibit-scene-head {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-		align-items: baseline;
-		gap: 1rem;
-		min-height: 2rem;
-		padding-inline: 0.2rem;
-	}
-
-	.home-exhibit-scene-head > * {
-		white-space: nowrap;
-	}
-
-	.home-exhibit-scene-head > span {
-		color: var(--exhibit-muted);
-		font-size: 0.62rem;
-		font-weight: 800;
-		letter-spacing: 0.22em;
-	}
-
-	.home-exhibit-scene-head > strong {
-		font-size: 0.82rem;
-		font-weight: 760;
-		letter-spacing: 0.16em;
-	}
-
-	.home-exhibit-scene-head > span:last-child {
-		justify-self: end;
-		color: var(--exhibit-ink);
-	}
-
-	.home-exhibit-scene-head i {
-		font-style: normal;
-		letter-spacing: 0;
-	}
-
-	.home-exhibit-scene-rail {
-		position: absolute;
-		top: 2.2rem;
-		right: calc(100% + 1.25rem);
-		bottom: 0;
-		display: flex;
-		align-items: center;
-		flex-direction: column;
-		gap: 0.65rem;
-		width: max-content;
-	}
-
-	.home-exhibit-scene-rail i {
-		width: 0.32rem;
-		height: 0.32rem;
-		border-radius: 50%;
-		background: var(--exhibit-ink);
-	}
-
-	.home-exhibit-scene-rail span,
-	.home-exhibit-scene-rail strong {
-		writing-mode: vertical-rl;
-	}
-
-	.home-exhibit-scene-rail span {
-		color: var(--exhibit-muted);
-		font-size: 0.58rem;
-		font-weight: 760;
-		letter-spacing: 0.25em;
-	}
-
-	.home-exhibit-scene-rail b {
-		width: 1.5px;
-		height: clamp(2rem, 6vh, 3.8rem);
-		background: var(--exhibit-ink);
-	}
-
-	.home-exhibit-scene-rail strong {
-		font-size: clamp(1.02rem, 1.45vw, 1.45rem);
-		font-weight: 850;
-		letter-spacing: 0.2em;
-	}
-
-	.home-exhibit-scene-frame {
-		position: relative;
-		isolation: isolate;
-		aspect-ratio: 16 / 9;
-		overflow: hidden;
-		border: 2px solid var(--exhibit-edge);
-		background: var(--page-bg);
-		box-shadow: 0 1.2rem 2.8rem color-mix(in oklch, var(--deep-text) 14%, transparent);
-	}
-
-	:global(.home-exhibit-scene-image) {
-		position: absolute !important;
-		inset: 0;
-		z-index: -2;
-		width: 100%;
-		height: 100%;
-	}
-
-	:global(.home-exhibit-scene-image picture),
-	:global(.home-exhibit-scene-image img) {
-		width: 100% !important;
-		height: 100% !important;
-	}
-
-	:global(.home-exhibit-scene-image img) {
-		object-fit: cover !important;
-		transform: scale(1.015);
-		transition: transform 5.2s ease-out;
-	}
-
-	.home-exhibit-scene[data-position="active"] :global(.home-exhibit-scene-image img) {
-		transform: scale(1.045);
-	}
-
-	.home-exhibit-scene-frame::after {
-		content: "";
-		position: absolute;
-		inset: 0;
-		z-index: -1;
-		background: linear-gradient(180deg, rgba(4, 8, 14, 0.02) 46%, rgba(4, 8, 14, 0.68));
-		pointer-events: none;
-	}
-
-	.home-exhibit-viewfinder {
-		position: absolute;
-		inset: 1.25rem;
-		pointer-events: none;
-	}
-
-	.home-exhibit-viewfinder span {
-		position: absolute;
-		width: 2.25rem;
-		height: 2.25rem;
-		border-color: rgba(255, 255, 255, 0.82);
-		border-style: solid;
-	}
-
-	.home-exhibit-viewfinder [data-corner="top-left"] {
-		top: 0;
-		left: 0;
-		border-width: 2px 0 0 2px;
-	}
-
-	.home-exhibit-viewfinder [data-corner="top-right"] {
-		top: 0;
-		right: 0;
-		border-width: 2px 2px 0 0;
-	}
-
-	.home-exhibit-viewfinder [data-corner="bottom-left"] {
-		bottom: 0;
-		left: 0;
-		border-width: 0 0 2px 2px;
-	}
-
-	.home-exhibit-viewfinder [data-corner="bottom-right"] {
-		right: 0;
-		bottom: 0;
-		border-width: 0 2px 2px 0;
-	}
-
-	.home-exhibit-scene-number {
-		position: absolute;
-		top: 1.35rem;
-		left: 1.55rem;
-		color: rgba(255, 255, 255, 0.9);
-		font-size: 0.72rem;
-		font-weight: 820;
-		letter-spacing: 0.22em;
-	}
-
-	.home-exhibit-scene-caption {
-		position: absolute;
-		right: clamp(1.35rem, 3vw, 2.6rem);
-		bottom: clamp(1.25rem, 2.6vw, 2.25rem);
-		display: flex;
-		align-items: center;
-		gap: 0.85rem;
-		max-width: min(34rem, 76%);
-		color: white;
-		text-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.42);
-	}
-
-	.home-exhibit-scene-caption > span {
-		flex: none;
-		width: 2.2rem;
-		height: 2px;
-		background: currentColor;
-	}
-
-	.home-exhibit-scene-caption p {
-		margin: 0;
-		font-size: clamp(0.74rem, 1vw, 0.92rem);
-		font-weight: 650;
-		line-height: 1.7;
-	}
-
-	.home-exhibit-meter-row {
-		position: relative;
-		z-index: 8;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.8rem;
-		margin-top: 0.65rem;
-	}
-
-	.home-exhibit-meter {
-		display: flex;
-		align-items: center;
-		gap: 0.12rem;
-		width: min(18rem, calc(100vw - 8rem));
-	}
-
-	.home-exhibit-meter-track {
-		display: flex;
-		flex: 1;
-		gap: 0.16rem;
-		height: 1.45rem;
-		padding: 0.28rem 0.4rem;
-		border: 2px solid var(--exhibit-edge);
-		border-radius: 999px;
-	}
-
-	.home-exhibit-meter-block {
-		position: relative;
-		flex: 1;
-		overflow: hidden;
-		border-radius: 0.14rem;
-		background: color-mix(in oklch, var(--deep-text) 16%, transparent);
-	}
-
-	.home-exhibit-meter-block i {
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		background: var(--exhibit-progress);
-		box-shadow: 0 0 0.35rem color-mix(in srgb, var(--exhibit-progress) 48%, transparent);
-		transform: scaleX(0);
-		transform-origin: left;
-	}
-
-	.home-exhibit-meter-cap {
-		width: 0.28rem;
-		height: 0.6rem;
-		border-radius: 0 0.16rem 0.16rem 0;
-		background: var(--exhibit-edge);
-	}
-
-	.home-exhibit-counter {
-		min-width: 3.4rem;
-		color: var(--exhibit-muted);
-		font-size: 0.62rem;
-		font-weight: 800;
-		letter-spacing: 0.16em;
-		font-variant-numeric: tabular-nums;
-	}
-
-	@media (max-width: 1100px) {
-		.home-exhibit-carousel {
-			--exhibit-slide-width: min(70vw, 52rem);
-		}
-
-		.home-exhibit-heading {
-			width: min(100% - 2rem, 74rem);
-		}
-	}
-
-	@media (max-width: 760px) {
-		.home-exhibit-carousel {
-			--exhibit-slide-width: 84vw;
-			--exhibit-slide-gap: 1rem;
-			min-height: 37rem;
-		}
-
-		.home-exhibit-heading h2 {
-			font-size: clamp(2rem, 9vw, 3rem);
-		}
-
-		.home-exhibit-stage {
-			height: 27rem;
-		}
-
-		.home-exhibit-scene {
-			top: 2rem;
-		}
-
-		.home-exhibit-scene-rail,
-		.home-exhibit-scene-head > span:first-child {
-			display: none;
-		}
-
-		.home-exhibit-scene-head {
-			grid-template-columns: 1fr auto;
-		}
-
-		.home-exhibit-scene-head > strong {
-			justify-self: start;
-			font-size: 0.72rem;
-		}
-
-		.home-exhibit-scene-caption {
-			left: 1rem;
-			right: 1rem;
-			bottom: 1rem;
-			max-width: none;
-		}
-
-		.home-exhibit-viewfinder {
-			inset: 0.8rem;
-		}
-
-		.home-exhibit-viewfinder span {
-			width: 1.4rem;
-			height: 1.4rem;
-		}
-
-		.home-exhibit-meter-row {
-			margin-top: -1.2rem;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.home-exhibit-scene,
-		:global(.home-exhibit-scene-image img),
-		.home-exhibit-controls button {
-			transition: none;
-		}
-	}
-</style>

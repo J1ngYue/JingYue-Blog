@@ -20,6 +20,21 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.54",
+		date: "2026-08-29",
+		time: "14:52",
+		type: "feature",
+		title: "首页原版横向分镜替换",
+		summary:
+			"以 MmzMing/my-blog 的 HomeBlinds 分镜与原素材替换收藏影像，并加入自动循环播放。",
+		changes: [
+			"删除“收藏一帧心动”自定义标题与旧轮播，移植原版五幕结构、建筑纸张背景、分镜装饰和立牌素材。",
+			"五幕按固定节奏自动循环，鼠标停留不阻断播放，末幕可连续回到序幕。",
+			"修复二十格电池进度与当前幕不同步的问题，回到序幕时正确重置。",
+			"保留现有移动端独立首页与减少动态效果设置，不把桌面横向舞台塞入手机布局。",
+		],
+	},
+	{
 		version: "v6.14.53",
 		date: "2026-08-29",
 		time: "11:05",
