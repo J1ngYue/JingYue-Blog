@@ -25,6 +25,7 @@ import { getBackgroundImages } from "@/utils/layout-utils";
 import ContributionHeatmap from "./ContributionHeatmap.astro";
 import HomeEditorialPanels from "./HomeEditorialPanels.astro";
 import HomeEntrance from "./HomeEntrance.astro";
+import HomeExhibitCarousel from "./HomeExhibitCarousel.astro";
 import HomeHeroExperience from "./HomeHeroExperience.astro";
 import HomeMobileOverview from "./HomeMobileOverview.astro";
 import HomeProfileMatrix from "./HomeProfileMatrix.astro";
@@ -97,8 +98,7 @@ const editorialPanels = [
 		image: galleryImage5,
 	},
 ];
-const exhibitImage = backgroundImages.desktop[2] || profileDesktop;
-const overviewImage = backgroundImages.desktop[3] || exhibitImage;
+const overviewImage = backgroundImages.desktop[3] || profileDesktop;
 const overviewVideo =
 	"https://tzyy-1330068502.cos.ap-beijing.myqcloud.com/AI%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87/main/videos/feature-1.mp4";
 const siteTimezone = siteConfig.timezone || "Asia/Shanghai";
@@ -498,27 +498,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			data-home-page
 			data-home-section-tone="light"
 		>
-			<div class="home-exhibit-heading">
-				<p>VISUAL MOMENT · 01</p>
-				<h2 id="home-exhibit-title">收藏一帧心动</h2>
-			</div>
-			<div class="home-exhibit-card" data-home-exhibit-tilt>
-				<ImageWrapper
-					src={exhibitImage}
-					alt="JingYue 收藏的插画片段"
-					class="home-exhibit-image"
-					loading="lazy"
-					layout="full-width"
-					widths={[750, 1024, 1440, 1920]}
-					sizes="(max-width: 1240px) 94vw, 74rem"
-				/>
-				<div class="home-exhibit-shade" aria-hidden="true"></div>
-				<span class="home-exhibit-index">片段 01</span>
-				<div class="home-exhibit-caption">
-					<p>JINGYUE · MEMORY FRAME</p>
-					<span>让喜欢的画面，在经过时轻轻停一下。</span>
-				</div>
-			</div>
+			<HomeExhibitCarousel />
 			<a class="home-scene-next home-section-next" href="#home-activity" aria-label="向下探索 GitHub 提交记录">
 				<span>向下探索</span>
 				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
@@ -660,7 +640,13 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const coverSwitcher = root.querySelector("[data-home-cover-switcher]");
 		const coverOrbit = root.querySelector("[data-home-cover-orbit]");
 		const particleArrow = root.querySelector("[data-home-cover-particle-arrow]");
-		const exhibitTilts = Array.from(root.querySelectorAll("[data-home-exhibit-tilt]"));
+		const exhibitCarousel = root.querySelector("[data-home-exhibit-carousel]");
+		const exhibitSlides = Array.from(root.querySelectorAll("[data-home-exhibit-slide]"));
+		const exhibitPrevious = root.querySelector("[data-home-exhibit-previous]");
+		const exhibitNext = root.querySelector("[data-home-exhibit-next]");
+		const exhibitMeter = root.querySelector("[data-home-exhibit-meter]");
+		const exhibitMeterFills = Array.from(root.querySelectorAll("[data-home-exhibit-meter-fill]"));
+		const exhibitCounter = root.querySelector("[data-home-exhibit-counter]");
 		const overviewVideo = root.querySelector("[data-home-overview-video]");
 		const profileRail = root.querySelector(".home-profile-rail");
 		const coverSwitcherClosers = Array.from(root.querySelectorAll("[data-home-cover-switcher-close]"));
@@ -715,7 +701,12 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		let particleArrowFrame = 0;
 		let particleArrowAngle = 0;
 		let particleArrowHasAngle = false;
-		let exhibitTiltFrame = 0;
+		let exhibitProgressAnimations = [];
+		let exhibitProgressCycle = 0;
+		let exhibitActiveIndex = 0;
+		let exhibitVisible = false;
+		let exhibitInteractionPaused = false;
+		let exhibitObserver = null;
 		let wordmarkFrame = 0;
 		let wordmarkReadyFrame = 0;
 		let themeHueFrame = 0;
@@ -988,33 +979,121 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (option) pointParticleArrowToElement(option);
 		};
 
-		const resetExhibitTilt = (event) => {
-			const exhibitTilt = event.currentTarget;
-			if (!exhibitTilt) return;
-			if (exhibitTiltFrame) cancelAnimationFrame(exhibitTiltFrame);
-			exhibitTiltFrame = 0;
-			exhibitTilt.style.setProperty("--exhibit-tilt-x", "0deg");
-			exhibitTilt.style.setProperty("--exhibit-tilt-y", "0deg");
-			exhibitTilt.classList.remove("is-tilting");
+		const exhibitSlideDuration = 5200;
+		const exhibitBlocksPerSlide = Math.max(
+			1,
+			Math.floor(exhibitMeterFills.length / Math.max(1, exhibitSlides.length)),
+		);
+
+		const stopExhibitProgress = () => {
+			exhibitProgressCycle += 1;
+			exhibitProgressAnimations.forEach((animation) => animation.cancel());
+			exhibitProgressAnimations = [];
 		};
 
-		const handleExhibitTiltPointerMove = (event) => {
-			const exhibitTilt = event.currentTarget;
-			if (!exhibitTilt || reducedMotion.matches || event.pointerType === "touch") return;
-			const rect = exhibitTilt.getBoundingClientRect();
-			const relativeX = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-			const relativeY = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-			const rotateX = (relativeY - 0.5) * -4.8;
-			const rotateY = (relativeX - 0.5) * 4.8;
+		const shouldPlayExhibit = () =>
+			Boolean(
+				exhibitCarousel &&
+					exhibitVisible &&
+					!exhibitInteractionPaused &&
+					!document.hidden &&
+					!reducedMotion.matches,
+			);
 
-			if (exhibitTiltFrame) cancelAnimationFrame(exhibitTiltFrame);
-			exhibitTiltFrame = requestAnimationFrame(() => {
-				exhibitTiltFrame = 0;
-				exhibitTilt.style.setProperty("--exhibit-tilt-x", `${rotateX.toFixed(2)}deg`);
-				exhibitTilt.style.setProperty("--exhibit-tilt-y", `${rotateY.toFixed(2)}deg`);
-				exhibitTilt.classList.add("is-tilting");
+		const startExhibitProgress = () => {
+			stopExhibitProgress();
+			const cycle = exhibitProgressCycle;
+			const firstCurrentBlock = exhibitActiveIndex * exhibitBlocksPerSlide;
+			const lastCurrentBlock = Math.min(
+				firstCurrentBlock + exhibitBlocksPerSlide,
+				exhibitMeterFills.length,
+			);
+
+			exhibitMeterFills.forEach((fill, blockIndex) => {
+				fill.style.transform = blockIndex < firstCurrentBlock ? "scaleX(1)" : "scaleX(0)";
 			});
+
+			if (!shouldPlayExhibit() || firstCurrentBlock >= lastCurrentBlock) return;
+
+			const blockDuration = exhibitSlideDuration / Math.max(1, lastCurrentBlock - firstCurrentBlock);
+			for (let blockIndex = firstCurrentBlock; blockIndex < lastCurrentBlock; blockIndex += 1) {
+				const animation = exhibitMeterFills[blockIndex].animate(
+					[{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+					{
+						duration: blockDuration,
+						delay: (blockIndex - firstCurrentBlock) * blockDuration,
+						easing: "linear",
+						fill: "forwards",
+					},
+				);
+				exhibitProgressAnimations.push(animation);
+			}
+
+			const finalAnimation = exhibitProgressAnimations.at(-1);
+			finalAnimation?.finished
+				.then(() => {
+					if (cycle !== exhibitProgressCycle || !shouldPlayExhibit()) return;
+					showExhibitSlide(exhibitActiveIndex + 1);
+				})
+				.catch(() => {});
 		};
+
+		const syncExhibitPlayback = () => {
+			if (shouldPlayExhibit()) {
+				if (exhibitProgressAnimations.length > 0) {
+					exhibitProgressAnimations.forEach((animation) => animation.play());
+				} else {
+					startExhibitProgress();
+				}
+				return;
+			}
+			exhibitProgressAnimations.forEach((animation) => animation.pause());
+		};
+
+		const showExhibitSlide = (requestedIndex) => {
+			const slideCount = exhibitSlides.length;
+			if (slideCount === 0) return;
+			exhibitActiveIndex = ((requestedIndex % slideCount) + slideCount) % slideCount;
+
+			exhibitSlides.forEach((slide, slideIndex) => {
+				let offset = slideIndex - exhibitActiveIndex;
+				if (offset > slideCount / 2) offset -= slideCount;
+				if (offset < -slideCount / 2) offset += slideCount;
+				const position = offset === 0
+					? "active"
+					: offset === -1
+						? "previous"
+						: offset === 1
+							? "next"
+							: offset < 0
+								? "far-previous"
+								: "far-next";
+				slide.dataset.position = position;
+				slide.setAttribute("aria-hidden", String(offset !== 0));
+			});
+
+			exhibitMeter?.setAttribute("aria-valuenow", String(exhibitActiveIndex + 1));
+			if (exhibitCounter) {
+				exhibitCounter.value = `${String(exhibitActiveIndex + 1).padStart(2, "0")} / ${String(slideCount).padStart(2, "0")}`;
+			}
+			startExhibitProgress();
+		};
+
+		const showPreviousExhibitSlide = () => showExhibitSlide(exhibitActiveIndex - 1);
+		const showNextExhibitSlide = () => showExhibitSlide(exhibitActiveIndex + 1);
+		const pauseExhibitInteraction = () => {
+			exhibitInteractionPaused = true;
+			syncExhibitPlayback();
+		};
+		const resumeExhibitInteraction = () => {
+			exhibitInteractionPaused = false;
+			syncExhibitPlayback();
+		};
+		const handleExhibitFocusOut = (event) => {
+			if (exhibitCarousel?.contains(event.relatedTarget)) return;
+			resumeExhibitInteraction();
+		};
+		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
 
 		const handleLocalCoverState = (event) => {
 			const localCoverActive = Boolean(event.detail?.active);
@@ -1772,6 +1851,22 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			overviewVideo?.play().catch(() => {});
 		}
 		overviewVideo?.addEventListener("playing", markOverviewVideoPlaying);
+		if (exhibitCarousel) {
+			showExhibitSlide(0);
+			if ("IntersectionObserver" in window) {
+				exhibitObserver = new IntersectionObserver(
+					([entry]) => {
+						exhibitVisible = Boolean(entry?.isIntersecting && entry.intersectionRatio >= 0.3);
+						syncExhibitPlayback();
+					},
+					{ threshold: [0, 0.3, 0.6] },
+				);
+				exhibitObserver.observe(exhibitCarousel);
+			} else {
+				exhibitVisible = true;
+				syncExhibitPlayback();
+			}
+		}
 
 		updateClock();
 		const clockInterval = window.setInterval(updateClock, 1000);
@@ -1804,11 +1899,13 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		coverOrbit?.addEventListener("pointermove", handleCoverOrbitPointerMove);
 		coverOrbit?.addEventListener("pointerleave", handleCoverOrbitPointerLeave);
 		coverOrbit?.addEventListener("focusin", handleCoverOrbitFocusIn);
-		exhibitTilts.forEach((exhibitTilt) => {
-			exhibitTilt.addEventListener("pointermove", handleExhibitTiltPointerMove);
-			exhibitTilt.addEventListener("pointerleave", resetExhibitTilt);
-			exhibitTilt.addEventListener("pointercancel", resetExhibitTilt);
-		});
+		exhibitPrevious?.addEventListener("click", showPreviousExhibitSlide);
+		exhibitNext?.addEventListener("click", showNextExhibitSlide);
+		exhibitCarousel?.addEventListener("pointerenter", pauseExhibitInteraction);
+		exhibitCarousel?.addEventListener("pointerleave", resumeExhibitInteraction);
+		exhibitCarousel?.addEventListener("focusin", pauseExhibitInteraction);
+		exhibitCarousel?.addEventListener("focusout", handleExhibitFocusOut);
+		document.addEventListener("visibilitychange", handleExhibitVisibilityChange);
 		window.addEventListener("jingyue:local-cover-state-change", handleLocalCoverState);
 		sceneLinks.forEach((link) => link.addEventListener("click", handleSceneLink));
 		window.addEventListener("wheel", handleHomeWheel, { passive: false });
@@ -1835,6 +1932,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		};
 		const handleMotionPreference = () => {
 			cancelSceneNavigation();
+			syncExhibitPlayback();
 			if (sceneMetricsFrame) cancelAnimationFrame(sceneMetricsFrame);
 			sceneMetricsFrame = requestAnimationFrame(() => {
 				sceneMetricsFrame = 0;
@@ -1927,11 +2025,13 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			coverOrbit?.removeEventListener("pointermove", handleCoverOrbitPointerMove);
 			coverOrbit?.removeEventListener("pointerleave", handleCoverOrbitPointerLeave);
 			coverOrbit?.removeEventListener("focusin", handleCoverOrbitFocusIn);
-			exhibitTilts.forEach((exhibitTilt) => {
-				exhibitTilt.removeEventListener("pointermove", handleExhibitTiltPointerMove);
-				exhibitTilt.removeEventListener("pointerleave", resetExhibitTilt);
-				exhibitTilt.removeEventListener("pointercancel", resetExhibitTilt);
-			});
+			exhibitPrevious?.removeEventListener("click", showPreviousExhibitSlide);
+			exhibitNext?.removeEventListener("click", showNextExhibitSlide);
+			exhibitCarousel?.removeEventListener("pointerenter", pauseExhibitInteraction);
+			exhibitCarousel?.removeEventListener("pointerleave", resumeExhibitInteraction);
+			exhibitCarousel?.removeEventListener("focusin", pauseExhibitInteraction);
+			exhibitCarousel?.removeEventListener("focusout", handleExhibitFocusOut);
+			document.removeEventListener("visibilitychange", handleExhibitVisibilityChange);
 			overviewVideo?.removeEventListener("playing", markOverviewVideoPlaying);
 			overviewVideo?.pause();
 			endingVideo?.pause();
@@ -1943,6 +2043,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			window.removeEventListener("firefly:home-section-tone", handleHomeSectionTone);
 			sceneObserver?.disconnect();
 			overviewVideoObserver?.disconnect();
+			exhibitObserver?.disconnect();
 			themeClassObserver.disconnect();
 			root.removeAttribute("data-home-scenes-ready");
 			root.removeAttribute("data-home-scene-index");
@@ -1967,7 +2068,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (coverSwitcherTimer) window.clearTimeout(coverSwitcherTimer);
 			if (coverChangeTimer) window.clearTimeout(coverChangeTimer);
 			if (particleArrowFrame) cancelAnimationFrame(particleArrowFrame);
-			if (exhibitTiltFrame) cancelAnimationFrame(exhibitTiltFrame);
+			stopExhibitProgress();
 			if (animationFrame) cancelAnimationFrame(animationFrame);
 			clearPageScrollVisual();
 			if (sceneMetricsFrame) cancelAnimationFrame(sceneMetricsFrame);
@@ -4469,161 +4570,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 
 	.home-exhibit {
 		margin-top: clamp(4rem, 9vw, 7rem);
-		perspective: 1200px;
-	}
-
-	.home-exhibit-heading {
-		margin-bottom: 1.5rem;
-	}
-
-	.home-exhibit-heading p,
-	.home-exhibit-heading h2 {
-		margin: 0;
-	}
-
-	.home-exhibit-heading p {
-		margin-bottom: 0.6rem;
-		color: color-mix(in oklch, var(--deep-text) 58%, #ba788b);
-		font-size: 0.68rem;
-		font-weight: 800;
-		letter-spacing: 0.3em;
-	}
-
-	.home-exhibit-card {
-		--exhibit-tilt-x: 0deg;
-		--exhibit-tilt-y: 0deg;
-		position: relative;
-		isolation: isolate;
-		min-height: clamp(27rem, 60vh, 42rem);
-		overflow: hidden;
-		border: 1px solid rgba(255, 255, 255, 0.48);
-		border-radius: 2rem;
-		box-shadow:
-			0 2rem 5rem color-mix(in oklch, var(--deep-text) 15%, transparent),
-			inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-		opacity: 0.38;
-		clip-path: inset(8% 5% round 2.6rem);
-		transform: perspective(1100px) rotateX(var(--exhibit-tilt-x)) rotateY(var(--exhibit-tilt-y)) translateY(2rem)
-			scale(0.975);
-		transform-style: preserve-3d;
-		transition:
-			clip-path 820ms cubic-bezier(0.22, 0.61, 0.36, 1),
-			opacity 560ms ease,
-			transform 220ms ease-out,
-			box-shadow 260ms ease;
-		will-change: clip-path, opacity, transform;
-	}
-
-	.home-exhibit.is-visible .home-exhibit-card {
-		opacity: 1;
-		clip-path: inset(0 round 2rem);
-		transform: perspective(1100px) rotateX(var(--exhibit-tilt-x)) rotateY(var(--exhibit-tilt-y)) translateY(0)
-			scale(1);
-	}
-
-	.home-exhibit-card.is-tilting {
-		box-shadow:
-			0 2.6rem 6.2rem color-mix(in oklch, var(--deep-text) 20%, transparent),
-			inset 0 0 0 1px rgba(255, 255, 255, 0.26);
-	}
-
-	:global(.home-exhibit-image) {
-		position: absolute !important;
-		inset: -2%;
-		z-index: -3;
-		width: 104%;
-		height: 104%;
-	}
-
-	:global(.home-exhibit-image img),
-	:global(.home-exhibit-image picture) {
-		width: 100% !important;
-		height: 100% !important;
-	}
-
-	:global(.home-exhibit-image img) {
-		object-fit: cover !important;
-		transform: scale(1.075);
-		transition: transform 1s cubic-bezier(0.22, 0.61, 0.36, 1), filter 600ms ease;
-	}
-
-	.home-exhibit.is-visible :global(.home-exhibit-image img) {
-		transform: scale(1.015);
-	}
-
-	.home-exhibit-card.is-tilting :global(.home-exhibit-image img) {
-		transform: scale(1.035);
-	}
-
-	.home-exhibit-shade {
-		position: absolute;
-		inset: 0;
-		z-index: -2;
-		background:
-			linear-gradient(180deg, rgba(18, 18, 24, 0.05), rgba(20, 16, 22, 0.42)),
-			linear-gradient(110deg, rgba(246, 230, 235, 0.12), transparent 44%);
-		pointer-events: none;
-	}
-
-	.home-exhibit-shade::after {
-		content: "";
-		position: absolute;
-		inset-block: 0;
-		left: -38%;
-		width: 28%;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-		filter: blur(1.2rem);
-		transform: skewX(-14deg);
-		transition: left 760ms cubic-bezier(0.22, 0.61, 0.36, 1);
-	}
-
-	.home-exhibit-card:hover .home-exhibit-shade::after {
-		left: 112%;
-	}
-
-	.home-exhibit-index {
-		position: absolute;
-		left: 1.5rem;
-		top: 1.5rem;
-		display: inline-flex;
-		align-items: center;
-		min-height: 2.35rem;
-		border: 1px solid rgba(255, 255, 255, 0.36);
-		border-radius: 999px;
-		background: rgba(31, 30, 37, 0.28);
-		padding: 0.25rem 1rem;
-		color: rgba(255, 255, 255, 0.86);
-		font-size: 0.62rem;
-		font-weight: 800;
-		letter-spacing: 0.24em;
-		backdrop-filter: blur(0.75rem);
-	}
-
-	.home-exhibit-caption {
-		position: absolute;
-		left: 1.6rem;
-		bottom: 1.5rem;
-		max-width: 30rem;
-		color: white;
-		text-shadow: 0 0.3rem 1.2rem rgba(0, 0, 0, 0.45);
-	}
-
-	.home-exhibit-caption p,
-	.home-exhibit-caption span {
-		display: block;
-		margin: 0;
-	}
-
-	.home-exhibit-caption p {
-		font-size: 0.65rem;
-		font-weight: 800;
-		letter-spacing: 0.24em;
-	}
-
-	.home-exhibit-caption span {
-		margin-top: 0.55rem;
-		color: rgba(255, 255, 255, 0.82);
-		font-size: 0.88rem;
 	}
 
 	.home-ending {
@@ -5146,10 +5092,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			gap: 1rem;
 		}
 
-		.home-exhibit-card {
-			min-height: clamp(25rem, 58vw, 34rem);
-		}
-
 		.home-ending {
 			min-height: 0;
 		}
@@ -5460,34 +5402,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			border-radius: 1.2rem;
 		}
 
-		.home-exhibit-heading {
-			margin-bottom: 1rem;
-		}
-
-		.home-exhibit-card,
-		.home-exhibit.is-visible .home-exhibit-card {
-			min-height: 23rem;
-			border-radius: 1.35rem;
-			clip-path: inset(0 round 1.35rem);
-		}
-
-		.home-exhibit-index {
-			left: 0.9rem;
-			top: 0.9rem;
-			min-height: 2rem;
-			padding-inline: 0.8rem;
-		}
-
-		.home-exhibit-caption {
-			left: 1rem;
-			right: 1rem;
-			bottom: 1rem;
-		}
-
-		.home-exhibit-caption span {
-			font-size: 0.78rem;
-		}
-
 		.home-ending {
 			margin-top: 5rem;
 			padding: 4.5rem 0 6rem;
@@ -5602,8 +5516,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		.home-nav-card,
 		:global(.home-nav-image img),
 		.home-nav-arrow,
-		.home-exhibit-card,
-		:global(.home-exhibit-image img),
 		.home-ending-art,
 		:global(.home-ending-image img),
 		.home-ending-letter,
@@ -5631,8 +5543,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			will-change: auto;
 		}
 
-		.home-exhibit-card,
-		.home-exhibit.is-visible .home-exhibit-card,
 		.home-ending-art,
 		.home-ending.is-visible .home-ending-art,
 		.home-ending-letter,
@@ -5643,8 +5553,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			will-change: auto;
 		}
 
-		:global(.home-exhibit-image img),
-		.home-exhibit.is-visible :global(.home-exhibit-image img),
 		:global(.home-ending-image img),
 		.home-ending.is-visible :global(.home-ending-image img) {
 			transform: none;
