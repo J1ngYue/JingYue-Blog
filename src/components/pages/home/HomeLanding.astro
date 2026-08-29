@@ -641,6 +641,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const exhibitSlides = Array.from(root.querySelectorAll("[data-home-exhibit-slide]"));
 		const exhibitMeter = root.querySelector("[data-home-exhibit-meter]");
 		const exhibitMeterFills = Array.from(root.querySelectorAll("[data-home-exhibit-meter-fill]"));
+		const exhibitPrevious = root.querySelector("[data-home-exhibit-previous]");
+		const exhibitNext = root.querySelector("[data-home-exhibit-next]");
 		const overviewVideo = root.querySelector("[data-home-overview-video]");
 		const profileRail = root.querySelector(".home-profile-rail");
 		const coverSwitcherClosers = Array.from(root.querySelectorAll("[data-home-cover-switcher-close]"));
@@ -996,6 +998,39 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 					!reducedMotion.matches,
 			);
 
+		const animateExhibitMeterBlock = (blockIndex, lastCurrentBlock, cycle) => {
+			if (cycle !== exhibitProgressCycle || !shouldPlayExhibit()) return;
+
+			const fill = exhibitMeterFills[blockIndex];
+			if (!fill) return;
+			const blockDuration = exhibitSlideDuration / exhibitBlocksPerSlide;
+			const animation = fill.animate(
+				[{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+				{
+					duration: blockDuration,
+					easing: "linear",
+					fill: "forwards",
+				},
+			);
+			exhibitProgressAnimations = [animation];
+
+			animation.finished
+				.then(() => {
+					if (cycle !== exhibitProgressCycle || !shouldPlayExhibit()) return;
+					fill.style.transform = "scaleX(1)";
+					exhibitProgressAnimations = [];
+					animation.cancel();
+
+					const nextBlockIndex = blockIndex + 1;
+					if (nextBlockIndex < lastCurrentBlock) {
+						animateExhibitMeterBlock(nextBlockIndex, lastCurrentBlock, cycle);
+						return;
+					}
+					showExhibitSlide(exhibitActiveIndex + 1);
+				})
+				.catch(() => {});
+		};
+
 		const startExhibitProgress = () => {
 			stopExhibitProgress();
 			const cycle = exhibitProgressCycle;
@@ -1010,28 +1045,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			});
 
 			if (!shouldPlayExhibit() || firstCurrentBlock >= lastCurrentBlock) return;
-
-			const blockDuration = exhibitSlideDuration / Math.max(1, lastCurrentBlock - firstCurrentBlock);
-			for (let blockIndex = firstCurrentBlock; blockIndex < lastCurrentBlock; blockIndex += 1) {
-				const animation = exhibitMeterFills[blockIndex].animate(
-					[{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
-					{
-						duration: blockDuration,
-						delay: (blockIndex - firstCurrentBlock) * blockDuration,
-						easing: "linear",
-						fill: "forwards",
-					},
-				);
-				exhibitProgressAnimations.push(animation);
-			}
-
-			const finalAnimation = exhibitProgressAnimations.at(-1);
-			finalAnimation?.finished
-				.then(() => {
-					if (cycle !== exhibitProgressCycle || !shouldPlayExhibit()) return;
-					showExhibitSlide(exhibitActiveIndex + 1);
-				})
-				.catch(() => {});
+			animateExhibitMeterBlock(firstCurrentBlock, lastCurrentBlock, cycle);
 		};
 
 		const syncExhibitPlayback = () => {
@@ -1083,6 +1097,19 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const handleExhibitFocusOut = (event) => {
 			if (exhibitCarousel?.contains(event.relatedTarget)) return;
 			resumeExhibitInteraction();
+		};
+		const releaseExhibitPointerFocus = (event) => {
+			if (event.detail > 0 && event.currentTarget instanceof HTMLElement) {
+				event.currentTarget.blur();
+			}
+		};
+		const showPreviousExhibitSlide = (event) => {
+			showExhibitSlide(exhibitActiveIndex - 1);
+			releaseExhibitPointerFocus(event);
+		};
+		const showNextExhibitSlide = (event) => {
+			showExhibitSlide(exhibitActiveIndex + 1);
+			releaseExhibitPointerFocus(event);
 		};
 		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
 
@@ -1945,6 +1972,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		coverOrbit?.addEventListener("focusin", handleCoverOrbitFocusIn);
 		exhibitCarousel?.addEventListener("focusin", pauseExhibitInteraction);
 		exhibitCarousel?.addEventListener("focusout", handleExhibitFocusOut);
+		exhibitPrevious?.addEventListener("click", showPreviousExhibitSlide);
+		exhibitNext?.addEventListener("click", showNextExhibitSlide);
 		document.addEventListener("visibilitychange", handleExhibitVisibilityChange);
 		window.addEventListener("jingyue:local-cover-state-change", handleLocalCoverState);
 		sceneLinks.forEach((link) => link.addEventListener("click", handleSceneLink));
@@ -2067,6 +2096,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			coverOrbit?.removeEventListener("focusin", handleCoverOrbitFocusIn);
 			exhibitCarousel?.removeEventListener("focusin", pauseExhibitInteraction);
 			exhibitCarousel?.removeEventListener("focusout", handleExhibitFocusOut);
+			exhibitPrevious?.removeEventListener("click", showPreviousExhibitSlide);
+			exhibitNext?.removeEventListener("click", showNextExhibitSlide);
 			document.removeEventListener("visibilitychange", handleExhibitVisibilityChange);
 			overviewVideo?.removeEventListener("playing", markOverviewVideoPlaying);
 			overviewVideo?.pause();

@@ -1749,10 +1749,12 @@
 	opacity: 0;
 	visibility: hidden;
 	transform: translate3d(-50%, -50%, 0) scale(0.88);
+	will-change: transform, opacity;
+	backface-visibility: hidden;
 	transition:
-		transform 920ms cubic-bezier(0.22, 0.61, 0.36, 1),
-		opacity 620ms ease,
-		filter 620ms ease;
+		transform 780ms cubic-bezier(0.22, 1, 0.36, 1),
+		opacity 560ms ease,
+		filter 560ms ease;
 }
 
 .home-exhibit-blinds .home-blinds-scene[data-position="active"] {
@@ -1789,6 +1791,59 @@
 
 .home-exhibit-blinds .home-blinds-scene__viewfinder-flash {
 	opacity: 0;
+}
+
+.home-exhibit-blinds .home-blinds-scenes__navigation {
+	position: absolute;
+	inset: 0;
+	z-index: 28;
+	pointer-events: none;
+}
+
+.home-exhibit-blinds .home-blinds-scenes__navigation-button {
+	position: absolute;
+	top: 50%;
+	display: grid;
+	place-items: center;
+	width: 3rem;
+	height: 3rem;
+	padding: 0;
+	border: 2px solid #171717;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.92);
+	color: #171717;
+	box-shadow: 0 0.55rem 1.5rem rgba(15, 23, 42, 0.16);
+	transform: translateY(-50%);
+	cursor: pointer;
+	pointer-events: auto;
+	transition:
+		background-color 180ms ease,
+		color 180ms ease,
+		box-shadow 180ms ease;
+}
+
+.home-exhibit-blinds .home-blinds-scenes__navigation-button.is-previous {
+	left: clamp(1rem, 4vw, 4.5rem);
+}
+
+.home-exhibit-blinds .home-blinds-scenes__navigation-button.is-next {
+	right: clamp(1rem, 4vw, 4.5rem);
+}
+
+.home-exhibit-blinds .home-blinds-scenes__navigation-button :where(svg) {
+	width: 1.85rem;
+	height: 1.85rem;
+}
+
+.home-exhibit-blinds .home-blinds-scenes__navigation-button:hover {
+	background: #171717;
+	color: #fff;
+	box-shadow: 0 0.7rem 1.8rem rgba(15, 23, 42, 0.24);
+}
+
+.home-exhibit-blinds .home-blinds-scenes__navigation-button:focus-visible {
+	outline: 3px solid #fff;
+	outline-offset: 3px;
 }
 
 .home-exhibit-blinds .home-blinds-scenes__meter-block {
@@ -1869,6 +1924,11 @@
 
 	.home-exhibit-blinds .home-blinds-scenes__meter {
 		width: min(13rem, calc(100vw - 4rem));
+	}
+
+	.home-exhibit-blinds .home-blinds-scenes__navigation-button {
+		width: 2.75rem;
+		height: 2.75rem;
 	}
 }
 

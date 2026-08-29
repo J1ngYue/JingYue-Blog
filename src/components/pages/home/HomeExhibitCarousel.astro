@@ -1,4 +1,5 @@
 ---
+import { Icon } from "astro-icon/components";
 import "@/styles/components/home-blinds-exhibit.css";
 import HomeBlindsScene from "./HomeBlindsScene.astro";
 
@@ -97,6 +98,27 @@ const meterBlocks = Array.from({ length: 20 });
 						/>
 					))
 				}
+			</div>
+
+			<div class="home-blinds-scenes__navigation" aria-label="影像切换">
+				<button
+					class="home-blinds-scenes__navigation-button is-previous"
+					type="button"
+					data-home-exhibit-previous
+					aria-label="上一张影像"
+					title="上一张"
+				>
+					<Icon is:inline name="material-symbols:chevron-left-rounded" aria-hidden="true" />
+				</button>
+				<button
+					class="home-blinds-scenes__navigation-button is-next"
+					type="button"
+					data-home-exhibit-next
+					aria-label="下一张影像"
+					title="下一张"
+				>
+					<Icon is:inline name="material-symbols:chevron-right-rounded" aria-hidden="true" />
+				</button>
 			</div>
 
 			<div
