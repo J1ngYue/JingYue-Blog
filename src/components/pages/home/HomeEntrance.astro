@@ -76,7 +76,7 @@ const tileSlots = Array.from({ length: 120 });
 			tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
 			tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
 			tile.style.setProperty("--tile-rotation", `${((index * 29) % 15) - 7}deg`);
-			tile.style.setProperty("--tile-delay", `${0.2 + wave * 0.08}s`);
+			tile.style.setProperty("--tile-delay", `${0.12 + wave * 0.035}s`);
 		});
 
 		document.documentElement.classList.add(ACTIVE_CLASS);
@@ -148,7 +148,7 @@ const tileSlots = Array.from({ length: 120 });
 		box-shadow: 0 0.65rem 1.6rem rgb(0 0 0 / 0.28);
 		opacity: 0;
 		will-change: transform, opacity;
-		animation: home-entrance-tile 4.25s var(--tile-delay) cubic-bezier(0.16, 1, 0.3, 1) both;
+		animation: home-entrance-tile 3.4s var(--tile-delay) cubic-bezier(0.16, 1, 0.3, 1) both;
 	}
 
 	.home-entrance__tile[hidden] {
@@ -177,10 +177,10 @@ const tileSlots = Array.from({ length: 120 });
 			opacity: 0;
 			transform: translate3d(var(--tile-offset-x), var(--tile-offset-y), 0) rotate(var(--tile-rotation)) scale(0.72);
 		}
-		18% {
+		14% {
 			opacity: 0.94;
 		}
-		72%,
+		46%,
 		100% {
 			opacity: 1;
 			transform: translate3d(0, 0, 0) rotate(0) scale(1);
@@ -222,7 +222,7 @@ const tileSlots = Array.from({ length: 120 });
 		}
 
 		.home-entrance__tile {
-			animation-duration: 3.9s;
+			animation-duration: 3.2s;
 		}
 	}
 

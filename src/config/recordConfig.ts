@@ -20,6 +20,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.55",
+		date: "2026-08-29",
+		time: "15:24",
+		type: "optimize",
+		title: "首页拼图缝隙节奏优化",
+		summary: "缩短拼块错位阶段，让画面更快收拢为整齐网格。",
+		changes: [
+			"压缩拼块波次的随机延迟，避免最后几块长时间留下粗黑断缝。",
+			"将完整归位节点提前到动画前半段，最慢拼块约 1.9 秒内完成收拢。",
+			"保留整齐细网格到完整封面接管，后续时间、字标和对话框顺序保持不变。",
+			"同步缩短移动端拼合时长，并继续遵循减少动态效果偏好。",
+		],
+	},
+	{
 		version: "v6.14.54",
 		date: "2026-08-29",
 		time: "14:52",
