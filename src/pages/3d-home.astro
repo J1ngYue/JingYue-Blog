@@ -230,6 +230,7 @@ const bio = profileConfig.bio || siteConfig.subtitle;
   let lastPointerX = 0;
   let lastPointerY = 0;
   let activeMode = "night";
+  let activeHotspot = "";
   let elapsed = 0;
 
   const palette = { outline: "#101b32", wood: "#ad6b53", woodDark: "#633b4b", cyan: "#5de8e1", pink: "#ff8ebb", yellow: "#ffd46b", purple: "#ac8cff", mint: "#b8ffb1", glass: "#6db9e8" };
@@ -266,6 +267,27 @@ const bio = profileConfig.bio || siteConfig.subtitle;
   addBox(world, [15, 8, .22], "#10213a", [0, 4, -5], { roughness: .84 });
   addBox(world, [.22, 8, 10], "#0d1b31", [-7.5, 4, 0], { roughness: .84 });
   addBox(world, [.22, 8, 10], "#0d1b31", [7.5, 4, 0], { roughness: .84 });
+  addBox(world, [15, .16, .2], palette.purple, [0, 7.62, -2.8], { emissive: "#251d52", emissiveIntensity: .35 });
+  addBox(world, [15, .16, .2], palette.cyan, [0, 7.62, 1.5], { emissive: "#123e52", emissiveIntensity: .32 });
+  const rug = new THREE.Mesh(new THREE.CylinderGeometry(2.55, 2.55, .06, 48), mat("#30386d", { roughness: .92 }));
+  rug.position.set(1.15, .22, 1.45);
+  rug.scale.set(1.3, 1, .64);
+  rug.receiveShadow = true;
+  world.add(rug);
+  const rugTrim = new THREE.Mesh(new THREE.TorusGeometry(2.55, .035, 8, 48), new THREE.MeshBasicMaterial({ color: palette.cyan, transparent: true, opacity: .5 }));
+  rugTrim.position.copy(rug.position);
+  rugTrim.scale.copy(rug.scale);
+  rugTrim.rotation.x = Math.PI / 2;
+  world.add(rugTrim);
+
+  const artGroup = new THREE.Group();
+  artGroup.position.set(-4.35, 4.25, -4.78);
+  world.add(artGroup);
+  addBox(artGroup, [2.4, 2.05, .12], palette.woodDark, [0, 0, 0]);
+  addBox(artGroup, [2.08, 1.73, .04], "#1a2747", [0, 0, .08], { emissive: "#112e58", emissiveIntensity: .4 });
+  addSphere(artGroup, .32, palette.pink, [-.52, .3, .13], { emissive: palette.pink, emissiveIntensity: .5 });
+  addSphere(artGroup, .48, palette.cyan, [.2, -.13, .13], { emissive: palette.cyan, emissiveIntensity: .5 });
+  addSphere(artGroup, .2, palette.yellow, [.62, .48, .13], { emissive: palette.yellow, emissiveIntensity: .5 });
 
   // Window and a little moon/sky gradient.
   const windowGroup = new THREE.Group();
@@ -398,12 +420,14 @@ const bio = profileConfig.bio || siteConfig.subtitle;
       orbit.targetX = roomHotspots[key]?.position.x ?? 0;
       orbit.targetY = key === "window" ? 3.1 : 2.3;
       orbit.targetZ = key === "window" ? -2.7 : key === "shelf" ? -2.8 : -.7;
+      activeHotspot = key;
       document.querySelector<HTMLElement>("[data-room-message]")!.textContent = statusMessages[key] || statusMessages.desk;
     });
   });
   document.querySelectorAll<HTMLButtonElement>("[data-scene-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.sceneMode || "night")));
   document.querySelector<HTMLButtonElement>("[data-scene-reset]")!.addEventListener("click", () => {
     orbit.yaw = .74; orbit.pitch = .22; orbit.radius = 11.8; orbit.targetX = 0; orbit.targetY = 2.4; orbit.targetZ = -.8;
+    activeHotspot = "";
   });
   document.querySelector<HTMLButtonElement>("[data-weather]")!.addEventListener("click", (event) => {
     weatherOn = !weatherOn;
@@ -435,6 +459,12 @@ const bio = profileConfig.bio || siteConfig.subtitle;
     orbit.currentX += (orbit.targetX - orbit.currentX) * .035;
     orbit.currentY += (orbit.targetY - orbit.currentY) * .035;
     orbit.currentZ += (orbit.targetZ - orbit.currentZ) * .035;
+    Object.entries(roomHotspots).forEach(([key, group]) => {
+      const emphasis = key === activeHotspot ? 1.055 : 1;
+      group.scale.x += (emphasis - group.scale.x) * .08;
+      group.scale.y += (emphasis - group.scale.y) * .08;
+      group.scale.z += (emphasis - group.scale.z) * .08;
+    });
     const distance = orbit.radius;
     camera.position.set(Math.cos(orbit.yaw) * Math.cos(orbit.pitch) * distance + orbit.currentX, orbit.currentY + Math.sin(orbit.pitch) * distance, Math.sin(orbit.yaw) * Math.cos(orbit.pitch) * distance + orbit.currentZ);
     camera.lookAt(orbit.currentX, orbit.currentY, orbit.currentZ);

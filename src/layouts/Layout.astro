@@ -15,6 +15,7 @@ import SiteAvatarManager from "@components/features/SiteAvatarManager.astro";
 import SiteProfileCoverManager from "@components/features/SiteProfileCoverManager.astro";
 import SnowEffect from "@components/features/SnowEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
+import BlogEntryLoader from "@components/features/BlogEntryLoader.astro";
 
 import {
 	analyticsConfig,
@@ -797,6 +798,7 @@ const siteLang = lang.replace("_", "-");
     <!-- 页面顶部渐变高光效果 - 只在full和semifull模式下显示 -->
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
+    <BlogEntryLoader />
     {showLocalAdminControls && <SiteAvatarManager />}
     {showLocalAdminControls && <SiteProfileCoverManager />}
     <LayoutStabilityAgent />
