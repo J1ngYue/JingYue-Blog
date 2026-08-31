@@ -1,0 +1,460 @@
+---
+import avatarImage from "@/assets/images/avatar.avif";
+import { profileConfig, siteConfig } from "@/config";
+
+const displayName = profileConfig.name || siteConfig.title;
+const bio = profileConfig.bio || siteConfig.subtitle;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#071329" />
+    <title>{displayName} · 3D Home</title>
+    <meta name="description" content={`${displayName} 的彩色 3D Home`} />
+  </head>
+  <body>
+    <main class="three-home" data-three-home data-mode="night">
+      <div class="three-home__stage" aria-hidden="true">
+        <canvas data-three-home-canvas></canvas>
+        <div class="three-home__grain"></div>
+        <div class="three-home__vignette"></div>
+      </div>
+
+      <header class="three-home__topbar">
+        <a class="three-home__brand" href="/" aria-label="返回博客首页">
+          <img src={avatarImage.src} alt="" width="42" height="42" />
+          <span>{displayName}<small>3D HOME</small></span>
+        </a>
+        <div class="three-home__top-actions">
+          <span class="three-home__live"><i></i> LIVE SCENE</span>
+          <a class="three-home__back" href="/">返回博客 ↗</a>
+        </div>
+      </header>
+
+      <section class="three-home__intro" aria-labelledby="three-home-title">
+        <p class="eyebrow">PERSONAL SPACE · 2026</p>
+        <h1 id="three-home-title">彩色生活舱</h1>
+        <p class="three-home__bio">{bio}</p>
+        <p class="three-home__hint">拖动旋转视角 · 滚轮缩放 · 点击房间里的热点</p>
+      </section>
+
+      <div class="three-home__scene-meta" aria-hidden="true">
+        <span>SCENE 01 / HOME</span>
+        <span>LIGHT · WEATHER · MEMORY</span>
+      </div>
+
+      <aside class="three-home__console" aria-label="场景控制台">
+        <div class="console__heading">
+          <span>SCENE CONSOLE</span>
+          <b data-scene-status>夜航模式</b>
+        </div>
+        <div class="console__modes" role="group" aria-label="场景氛围">
+          <button type="button" data-scene-mode="day">日光</button>
+          <button type="button" class="is-active" data-scene-mode="night">夜航</button>
+          <button type="button" data-scene-mode="aurora">极光</button>
+        </div>
+        <button type="button" class="console__weather" data-weather>
+          <span class="weather-icon">✦</span>
+          <span><b>天气粒子</b><small data-weather-label>微光漂浮中</small></span>
+          <span class="weather-toggle" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="console__reset" data-scene-reset>↺ 重置视角</button>
+      </aside>
+
+      <nav class="three-home__hotspots" aria-label="房间热点">
+        <button type="button" class="hotspot hotspot--desk" data-room-hotspot="desk">
+          <i></i><span><b>DESK / WORK</b><small>文章与代码</small></span>
+        </button>
+        <button type="button" class="hotspot hotspot--shelf" data-room-hotspot="shelf">
+          <i></i><span><b>SHELF / NOTES</b><small>收藏与灵感</small></span>
+        </button>
+        <button type="button" class="hotspot hotspot--window" data-room-hotspot="window">
+          <i></i><span><b>WINDOW / NOW</b><small>此刻的天气</small></span>
+        </button>
+      </nav>
+
+      <footer class="three-home__footer">
+        <div class="footer__message"><span data-room-message>欢迎来到我的彩色小屋，随便坐。</span></div>
+        <div class="footer__scroll"><span></span> SCROLL TO EXPLORE</div>
+        <div class="footer__version">JINGYUE · 3D HOME <span>01</span></div>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style>
+  :root {
+    color-scheme: dark;
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: #071329;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; min-height: 100%; overflow: hidden; background: #071329; }
+  body { color: #f4f7ff; }
+  button, a { font: inherit; }
+  button { color: inherit; }
+
+  .three-home { --accent: #72f5df; --accent-2: #ff9bcf; --ink: #0a1427; position: relative; width: 100vw; height: 100svh; min-height: 620px; overflow: hidden; isolation: isolate; background: #071329; }
+  .three-home__stage, .three-home__stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .three-home__stage { z-index: -1; background: radial-gradient(circle at 60% 35%, #173762 0%, #071329 64%); }
+  .three-home__stage canvas { display: block; cursor: grab; touch-action: none; }
+  .three-home__stage canvas:active { cursor: grabbing; }
+  .three-home__grain { position: absolute; inset: 0; pointer-events: none; opacity: .12; background-image: radial-gradient(#fff 0.6px, transparent .7px); background-size: 4px 4px; mix-blend-mode: soft-light; }
+  .three-home__vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 55% 45%, transparent 20%, rgba(3, 8, 20, .2) 70%, rgba(3, 8, 20, .7) 100%); }
+  .three-home[data-mode="day"] { --accent: #0c9fa3; --accent-2: #f18e67; }
+  .three-home[data-mode="aurora"] { --accent: #c8ff78; --accent-2: #b07cff; }
+
+  .three-home__topbar { position: absolute; top: clamp(1rem, 2.6vw, 2rem); left: clamp(1rem, 4vw, 4.5rem); right: clamp(1rem, 4vw, 4.5rem); display: flex; justify-content: space-between; align-items: center; z-index: 3; }
+  .three-home__brand, .three-home__back { color: inherit; text-decoration: none; }
+  .three-home__brand { display: inline-flex; align-items: center; gap: .75rem; padding: .42rem .95rem .42rem .42rem; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; background: rgba(8,18,37,.62); box-shadow: 0 15px 45px rgba(0,0,0,.18); backdrop-filter: blur(16px); }
+  .three-home__brand img { width: 2.55rem; height: 2.55rem; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.8); }
+  .three-home__brand span { display: flex; flex-direction: column; font-size: .92rem; font-weight: 700; letter-spacing: .06em; }
+  .three-home__brand small { margin-top: .1rem; color: var(--accent); font-size: .53rem; letter-spacing: .22em; }
+  .three-home__top-actions { display: flex; align-items: center; gap: 1rem; font-size: .72rem; letter-spacing: .12em; }
+  .three-home__live { color: rgba(244,247,255,.72); }
+  .three-home__live i { display: inline-block; width: .42rem; height: .42rem; margin-right: .36rem; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .three-home__back { padding: .72rem 1rem; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; background: rgba(8,18,37,.52); transition: background .25s ease, transform .25s ease; }
+  .three-home__back:hover { background: rgba(255,255,255,.15); transform: translateY(-2px); }
+
+  .three-home__intro { position: absolute; left: clamp(1.2rem, 8vw, 9rem); top: 28%; max-width: 33rem; z-index: 2; pointer-events: none; }
+  .eyebrow { margin: 0 0 1.1rem; color: var(--accent); font-size: .7rem; font-weight: 700; letter-spacing: .3em; }
+  .three-home__intro h1 { margin: 0; font-size: clamp(3rem, 7vw, 7.8rem); line-height: .92; letter-spacing: -.08em; text-shadow: 0 0 34px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .three-home__bio { margin: 1.35rem 0 0; color: rgba(244,247,255,.86); font-size: clamp(1rem, 1.45vw, 1.35rem); letter-spacing: .08em; }
+  .three-home__hint { margin-top: 1.4rem; color: rgba(244,247,255,.48); font-size: .75rem; letter-spacing: .08em; }
+  .three-home__scene-meta { position: absolute; top: 22%; right: clamp(1rem, 5vw, 5rem); display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; color: rgba(244,247,255,.47); font-size: .58rem; letter-spacing: .24em; z-index: 2; }
+
+  .three-home__console { position: absolute; top: 24%; right: clamp(1rem, 4vw, 4.5rem); width: min(17rem, 25vw); padding: 1.05rem; border: 1px solid rgba(255,255,255,.22); border-radius: 1.1rem; background: rgba(8,18,37,.63); box-shadow: 0 20px 45px rgba(0,0,0,.2); backdrop-filter: blur(18px); z-index: 4; }
+  .console__heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: .85rem; color: rgba(244,247,255,.55); font-size: .58rem; letter-spacing: .18em; }
+  .console__heading b { color: var(--accent); font-size: .62rem; letter-spacing: .08em; }
+  .console__modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; }
+  .console__modes button, .console__reset { border: 1px solid rgba(255,255,255,.2); border-radius: .65rem; background: rgba(255,255,255,.06); color: rgba(244,247,255,.68); cursor: pointer; font-size: .72rem; padding: .58rem .2rem; transition: .25s ease; }
+  .console__modes button:hover, .console__modes button.is-active { border-color: var(--accent); color: var(--ink); background: var(--accent); }
+  .console__weather { display: flex; align-items: center; gap: .65rem; width: 100%; margin: .75rem 0; padding: .65rem .2rem; border: 0; border-top: 1px solid rgba(255,255,255,.12); border-bottom: 1px solid rgba(255,255,255,.12); background: transparent; text-align: left; cursor: pointer; }
+  .weather-icon { color: var(--accent-2); font-size: 1.2rem; }
+  .console__weather span:nth-child(2) { display: flex; flex: 1; flex-direction: column; gap: .2rem; }
+  .console__weather b { font-size: .72rem; }
+  .console__weather small { color: rgba(244,247,255,.5); font-size: .6rem; }
+  .weather-toggle { position: relative; width: 1.8rem; height: 1rem; border-radius: 99px; background: var(--accent); }
+  .weather-toggle::after { position: absolute; top: .16rem; right: .16rem; width: .68rem; height: .68rem; border-radius: 50%; background: var(--ink); content: ""; transition: transform .25s ease; }
+  .console__weather.is-off .weather-toggle { background: rgba(255,255,255,.2); }
+  .console__weather.is-off .weather-toggle::after { transform: translateX(-.8rem); }
+  .console__reset { width: 100%; }
+  .console__reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  .three-home__hotspots { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .hotspot { position: absolute; display: flex; align-items: center; gap: .55rem; padding: .5rem .7rem; border: 1px solid rgba(255,255,255,.2); border-radius: .75rem; background: rgba(8,18,37,.45); color: rgba(244,247,255,.76); cursor: pointer; pointer-events: auto; text-align: left; backdrop-filter: blur(12px); transition: .25s ease; }
+  .hotspot:hover, .hotspot:focus-visible { border-color: var(--accent); background: rgba(8,18,37,.8); transform: translateY(-3px); outline: none; }
+  .hotspot i { width: .52rem; height: .52rem; border: 2px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent), 0 0 14px var(--accent); }
+  .hotspot span { display: flex; flex-direction: column; gap: .17rem; }
+  .hotspot b { font-size: .62rem; letter-spacing: .13em; }
+  .hotspot small { color: rgba(244,247,255,.5); font-size: .62rem; }
+  .hotspot--desk { left: 25%; bottom: 26%; }
+  .hotspot--shelf { right: 28%; bottom: 35%; }
+  .hotspot--window { right: 32%; top: 38%; }
+
+  .three-home__footer { position: absolute; left: clamp(1rem, 4vw, 4.5rem); right: clamp(1rem, 4vw, 4.5rem); bottom: clamp(1rem, 3vw, 2.8rem); display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 1rem; z-index: 3; }
+  .footer__message { max-width: 32rem; padding-left: .9rem; border-left: 2px solid var(--accent); color: rgba(244,247,255,.86); font-size: .92rem; letter-spacing: .08em; }
+  .footer__scroll, .footer__version { color: rgba(244,247,255,.46); font-size: .59rem; letter-spacing: .2em; }
+  .footer__scroll span { display: inline-block; width: 2.4rem; height: 1px; margin-right: .5rem; vertical-align: middle; background: var(--accent); }
+  .footer__version { justify-self: end; }
+  .footer__version span { color: var(--accent); }
+
+  @media (max-width: 800px) {
+    .three-home { min-height: 560px; }
+    .three-home__topbar { left: 1rem; right: 1rem; }
+    .three-home__top-actions { gap: .4rem; }
+    .three-home__live { display: none; }
+    .three-home__back { padding: .58rem .78rem; font-size: .68rem; }
+    .three-home__intro { top: 18%; left: 1.2rem; max-width: 18rem; }
+    .three-home__intro h1 { font-size: clamp(3rem, 16vw, 5rem); }
+    .three-home__bio { margin-top: .8rem; font-size: .86rem; }
+    .three-home__hint { margin-top: .9rem; font-size: .62rem; }
+    .three-home__scene-meta { display: none; }
+    .three-home__console { top: auto; bottom: 7.2rem; right: 1rem; width: min(14rem, calc(100vw - 2rem)); padding: .75rem; }
+    .hotspot--desk { left: 1rem; bottom: 24%; }
+    .hotspot--shelf { right: 1rem; bottom: 32%; }
+    .hotspot--window { right: 1rem; top: 40%; }
+    .hotspot b { font-size: .55rem; }
+    .hotspot small { font-size: .55rem; }
+    .three-home__footer { grid-template-columns: 1fr auto; bottom: 1rem; gap: .55rem; }
+    .footer__message { grid-column: 1 / -1; font-size: .78rem; }
+    .footer__version { display: none; }
+    .footer__scroll { justify-self: end; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .three-home *, .three-home *::before, .three-home *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  }
+</style>
+
+<script>
+  import * as THREE from "three";
+
+  const root = document.querySelector<HTMLElement>("[data-three-home]");
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-three-home-canvas]");
+  if (!root || !canvas) throw new Error("3D Home canvas is unavailable");
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 50);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const world = new THREE.Group();
+  scene.add(world);
+  const lights = {
+    ambient: new THREE.AmbientLight("#b9d8ff", 1.35),
+    key: new THREE.DirectionalLight("#fff1d0", 2.1),
+    window: new THREE.PointLight("#53d9ff", 5.2, 13),
+    orb: new THREE.PointLight("#ff7bd6", 4.2, 8),
+  };
+  lights.key.position.set(-5, 9, 5);
+  lights.key.castShadow = true;
+  lights.key.shadow.mapSize.set(1024, 1024);
+  lights.window.position.set(3.8, 4.3, -3.8);
+  lights.orb.position.set(1.4, 3, -1.2);
+  scene.add(lights.ambient, lights.key, lights.window, lights.orb);
+
+  const roomHotspots: Record<string, THREE.Group> = {};
+  const orbit = { yaw: 0.74, pitch: 0.22, radius: 11.8, targetX: 0, targetY: 2.4, targetZ: -0.8, currentX: 0, currentY: 2.4, currentZ: -0.8 };
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let weatherOn = true;
+  let dragging = false;
+  let lastPointerX = 0;
+  let lastPointerY = 0;
+  let activeMode = "night";
+  let elapsed = 0;
+
+  const palette = { outline: "#101b32", wood: "#ad6b53", woodDark: "#633b4b", cyan: "#5de8e1", pink: "#ff8ebb", yellow: "#ffd46b", purple: "#ac8cff", mint: "#b8ffb1", glass: "#6db9e8" };
+  const mat = (color: string, options: Partial<THREE.MeshStandardMaterialParameters> = {}) => new THREE.MeshStandardMaterial({ color, roughness: .68, metalness: .08, ...options });
+  const outlined = <T extends THREE.Mesh>(mesh: T, opacity = .5) => {
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({ color: palette.outline, transparent: true, opacity }));
+    mesh.add(edge);
+    return mesh;
+  };
+  const addBox = (group: THREE.Group, size: [number, number, number], color: string, position: [number, number, number], options: Partial<THREE.MeshStandardMaterialParameters> = {}) => {
+    const mesh = outlined(new THREE.Mesh(new THREE.BoxGeometry(...size), mat(color, options)));
+    mesh.position.set(...position);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    return mesh;
+  };
+  const addSphere = (group: THREE.Group, radius: number, color: string, position: [number, number, number], options: Partial<THREE.MeshStandardMaterialParameters> = {}) => {
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 16), mat(color, options));
+    mesh.position.set(...position);
+    mesh.castShadow = true;
+    group.add(mesh);
+    return mesh;
+  };
+
+  // Room shell: a cozy cabin with clear, dark outlines and colorful props.
+  addBox(world, [15, .28, 10], "#182c48", [0, .02, 0], { roughness: .9 });
+  const floorGrid = new THREE.GridHelper(15, 15, "#395477", "#223653");
+  floorGrid.position.y = .18;
+  floorGrid.position.z = .1;
+  (floorGrid.material as THREE.Material).transparent = true;
+  (floorGrid.material as THREE.Material).opacity = .34;
+  world.add(floorGrid);
+  addBox(world, [15, 8, .22], "#10213a", [0, 4, -5], { roughness: .84 });
+  addBox(world, [.22, 8, 10], "#0d1b31", [-7.5, 4, 0], { roughness: .84 });
+  addBox(world, [.22, 8, 10], "#0d1b31", [7.5, 4, 0], { roughness: .84 });
+
+  // Window and a little moon/sky gradient.
+  const windowGroup = new THREE.Group();
+  windowGroup.position.set(3.8, 2.15, -4.78);
+  world.add(windowGroup);
+  const windowPanel = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.9), mat(palette.glass, { transparent: true, opacity: .48, emissive: "#236b9a", emissiveIntensity: .6 }));
+  windowGroup.add(windowPanel);
+  addBox(windowGroup, [4.5, .12, .14], palette.pink, [0, 1.95, .03]);
+  addBox(windowGroup, [4.5, .12, .14], palette.purple, [0, -1.95, .03]);
+  addBox(windowGroup, [.12, 4, .14], palette.pink, [-2.2, 0, .03]);
+  addBox(windowGroup, [.12, 4, .14], palette.purple, [2.2, 0, .03]);
+  addBox(windowGroup, [.08, 4, .11], palette.cyan, [0, 0, .05]);
+  addBox(windowGroup, [4.3, .08, .11], palette.cyan, [0, 0, .05]);
+  const moon = addSphere(windowGroup, .43, palette.yellow, [1.15, 1.05, .05], { emissive: palette.yellow, emissiveIntensity: 1.4 });
+  const moonRing = new THREE.Mesh(new THREE.TorusGeometry(.68, .018, 8, 40), new THREE.MeshBasicMaterial({ color: palette.yellow, transparent: true, opacity: .65 }));
+  moonRing.position.copy(moon.position);
+  moonRing.rotation.x = Math.PI / 2;
+  windowGroup.add(moonRing);
+  roomHotspots.window = windowGroup;
+
+  // Desk, monitor, keyboard and a floating orb for the personal-work corner.
+  const deskGroup = new THREE.Group();
+  deskGroup.position.set(-1.65, 0, .45);
+  world.add(deskGroup);
+  addBox(deskGroup, [4.5, .28, 1.65], palette.wood, [0, 2.05, 0]);
+  addBox(deskGroup, [.22, 2.05, .22], palette.woodDark, [-1.9, 1, -.55]);
+  addBox(deskGroup, [.22, 2.05, .22], palette.woodDark, [1.9, 1, -.55]);
+  addBox(deskGroup, [.22, 2.05, .22], palette.woodDark, [-1.9, 1, .55]);
+  addBox(deskGroup, [.22, 2.05, .22], palette.woodDark, [1.9, 1, .55]);
+  addBox(deskGroup, [2.2, 1.35, .18], palette.purple, [0, 2.92, -.2], { emissive: "#33215f", emissiveIntensity: .35 });
+  addBox(deskGroup, [1.92, 1.08, .04], "#0a1831", [0, 2.92, -.1], { emissive: "#0f7b9e", emissiveIntensity: .35 });
+  addBox(deskGroup, [1.5, .08, .56], palette.cyan, [0, 2.36, .35]);
+  for (let index = 0; index < 6; index += 1) addBox(deskGroup, [.17, .06, .27], index % 2 ? palette.pink : palette.yellow, [-.67 + index * .27, 2.46, .3]);
+  addSphere(deskGroup, .2, palette.pink, [1.38, 2.42, -.1], { emissive: palette.pink, emissiveIntensity: 1.2 });
+  const orb = addSphere(deskGroup, .34, palette.mint, [1.15, 3.65, -.65], { emissive: palette.mint, emissiveIntensity: 1.8, roughness: .22 });
+  const orbRing = new THREE.Mesh(new THREE.TorusGeometry(.62, .025, 8, 48), new THREE.MeshBasicMaterial({ color: palette.mint, transparent: true, opacity: .72 }));
+  orbRing.position.copy(orb.position);
+  orbRing.rotation.x = Math.PI / 2.5;
+  deskGroup.add(orbRing);
+  roomHotspots.desk = deskGroup;
+
+  // Shelf with books, a plant, and small geometric keepsakes.
+  const shelfGroup = new THREE.Group();
+  shelfGroup.position.set(4.8, .2, -3.95);
+  world.add(shelfGroup);
+  addBox(shelfGroup, [.22, 5.8, .3], palette.woodDark, [-1.8, 2.7, 0]);
+  addBox(shelfGroup, [.22, 5.8, .3], palette.woodDark, [1.8, 2.7, 0]);
+  [0, 1.9, 3.8, 5.7].forEach((y, index) => addBox(shelfGroup, [3.8, .18, .8], index % 2 ? palette.wood : palette.purple, [0, y, 0]));
+  const bookColors = [palette.cyan, palette.pink, palette.yellow, palette.mint];
+  for (let row = 0; row < 3; row += 1) for (let book = 0; book < 4; book += 1) addBox(shelfGroup, [.4, 1.25 + (book % 2) * .2, .55], bookColors[(row + book) % bookColors.length], [-1.3 + book * .55, .35 + row * 1.9, -.08]);
+  addSphere(shelfGroup, .45, palette.pink, [.85, 2.58, -.1]);
+  const plant = new THREE.Group();
+  plant.position.set(.65, 4, -.08);
+  shelfGroup.add(plant);
+  addBox(plant, [1.05, .78, 1.05], palette.yellow, [0, .38, 0]);
+  for (let leaf = 0; leaf < 5; leaf += 1) {
+    const leafMesh = addSphere(plant, .28, leaf % 2 ? palette.mint : palette.cyan, [Math.cos(leaf) * .32, .95 + (leaf % 2) * .2, Math.sin(leaf) * .2]);
+    leafMesh.scale.set(.55, 1.45, .16);
+    leafMesh.rotation.z = (leaf - 2) * .35;
+  }
+  roomHotspots.shelf = shelfGroup;
+
+  // Pendant lamp and sofa make the space feel inhabited rather than abstract.
+  const lamp = new THREE.Group();
+  lamp.position.set(-3.9, 5.8, -1.2);
+  world.add(lamp);
+  const cord = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, 1.8, 8), new THREE.MeshBasicMaterial({ color: palette.outline }));
+  cord.position.y = .9;
+  lamp.add(cord);
+  addSphere(lamp, .6, palette.yellow, [0, 0, 0], { emissive: palette.yellow, emissiveIntensity: 1.1 });
+  const lampLight = new THREE.PointLight(palette.yellow, 4.2, 7);
+  lampLight.position.set(0, -.1, .1);
+  lamp.add(lampLight);
+  addBox(world, [3.4, .7, 1.6], palette.pink, [2.8, .65, 1.85]);
+  addBox(world, [3.3, 1.5, .25], palette.purple, [2.8, 1.5, 2.45]);
+  addSphere(world, .45, palette.mint, [1.45, 1.2, 1.55]);
+
+  // A lightweight particle field keeps the magic-cabin atmosphere alive.
+  const particleCount = 96;
+  const particlePositions = new Float32Array(particleCount * 3);
+  for (let index = 0; index < particleCount; index += 1) {
+    particlePositions[index * 3] = (Math.random() - .5) * 13;
+    particlePositions[index * 3 + 1] = Math.random() * 7.5 + .3;
+    particlePositions[index * 3 + 2] = (Math.random() - .5) * 8 - .4;
+  }
+  const particleGeometry = new THREE.BufferGeometry();
+  particleGeometry.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
+  const particles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ color: palette.cyan, size: .045, transparent: true, opacity: .75, sizeAttenuation: true }));
+  world.add(particles);
+
+  const rainPositions = new Float32Array(52 * 3);
+  for (let index = 0; index < 52; index += 1) {
+    rainPositions[index * 3] = (Math.random() - .5) * 13;
+    rainPositions[index * 3 + 1] = Math.random() * 7.6;
+    rainPositions[index * 3 + 2] = (Math.random() - .5) * 8 - .2;
+  }
+  const rainGeometry = new THREE.BufferGeometry();
+  rainGeometry.setAttribute("position", new THREE.BufferAttribute(rainPositions, 3));
+  const rain = new THREE.Points(rainGeometry, new THREE.PointsMaterial({ color: palette.glass, size: .035, transparent: true, opacity: .42 }));
+  world.add(rain);
+
+  const modeSettings: Record<string, { label: string; background: string; fog: string; ambient: number; key: string; window: string }> = {
+    day: { label: "日光模式", background: "#98cbe2", fog: "#98cbe2", ambient: 2.2, key: "#fff5d9", window: "#7de8ff" },
+    night: { label: "夜航模式", background: "#071329", fog: "#071329", ambient: 1.25, key: "#9dafff", window: "#53d9ff" },
+    aurora: { label: "极光模式", background: "#171039", fog: "#171039", ambient: 1.5, key: "#d3a7ff", window: "#b8ffb1" },
+  };
+  scene.fog = new THREE.Fog("#071329", 12, 28);
+  const setMode = (mode: string) => {
+    const settings = modeSettings[mode] || modeSettings.night;
+    activeMode = mode;
+    root.dataset.mode = mode;
+    scene.background = new THREE.Color(settings.background);
+    (scene.fog as THREE.Fog).color.set(settings.fog);
+    lights.ambient.intensity = settings.ambient;
+    lights.key.color.set(settings.key);
+    lights.window.color.set(settings.window);
+    document.querySelector<HTMLElement>("[data-scene-status]")!.textContent = settings.label;
+    document.querySelectorAll<HTMLButtonElement>("[data-scene-mode]").forEach((button) => button.classList.toggle("is-active", button.dataset.sceneMode === mode));
+  };
+  setMode("night");
+
+  const statusMessages: Record<string, string> = {
+    desk: "把灵感放在桌面上，慢慢写成一篇文章。",
+    shelf: "每一本收藏，都是下一次出发的小地图。",
+    window: "窗外正在换天气，而这里一直亮着灯。",
+  };
+  document.querySelectorAll<HTMLButtonElement>("[data-room-hotspot]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.roomHotspot || "desk";
+      orbit.targetX = roomHotspots[key]?.position.x ?? 0;
+      orbit.targetY = key === "window" ? 3.1 : 2.3;
+      orbit.targetZ = key === "window" ? -2.7 : key === "shelf" ? -2.8 : -.7;
+      document.querySelector<HTMLElement>("[data-room-message]")!.textContent = statusMessages[key] || statusMessages.desk;
+    });
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-scene-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.sceneMode || "night")));
+  document.querySelector<HTMLButtonElement>("[data-scene-reset]")!.addEventListener("click", () => {
+    orbit.yaw = .74; orbit.pitch = .22; orbit.radius = 11.8; orbit.targetX = 0; orbit.targetY = 2.4; orbit.targetZ = -.8;
+  });
+  document.querySelector<HTMLButtonElement>("[data-weather]")!.addEventListener("click", (event) => {
+    weatherOn = !weatherOn;
+    const button = event.currentTarget as HTMLButtonElement;
+    button.classList.toggle("is-off", !weatherOn);
+    document.querySelector<HTMLElement>("[data-weather-label]")!.textContent = weatherOn ? "微光漂浮中" : "已暂停";
+    rain.visible = weatherOn;
+  });
+
+  canvas.addEventListener("pointerdown", (event) => { dragging = true; lastPointerX = event.clientX; lastPointerY = event.clientY; canvas.setPointerCapture(event.pointerId); });
+  canvas.addEventListener("pointermove", (event) => {
+    if (!dragging) return;
+    orbit.yaw -= (event.clientX - lastPointerX) * .005;
+    orbit.pitch = THREE.MathUtils.clamp(orbit.pitch + (event.clientY - lastPointerY) * .004, -.12, .78);
+    lastPointerX = event.clientX; lastPointerY = event.clientY;
+  });
+  const stopDragging = (event: PointerEvent) => { dragging = false; canvas.releasePointerCapture?.(event.pointerId); };
+  canvas.addEventListener("pointerup", stopDragging);
+  canvas.addEventListener("pointercancel", stopDragging);
+  canvas.addEventListener("wheel", (event) => { event.preventDefault(); orbit.radius = THREE.MathUtils.clamp(orbit.radius + event.deltaY * .008, 8.1, 16); }, { passive: false });
+
+  const resize = () => { const width = canvas.clientWidth; const height = canvas.clientHeight; camera.aspect = width / Math.max(height, 1); camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.65)); renderer.setSize(width, height, false); };
+  window.addEventListener("resize", resize);
+  resize();
+
+  const animate = (time: number) => {
+    const delta = Math.min((time - elapsed) * .001 || .016, .05);
+    elapsed = time;
+    orbit.currentX += (orbit.targetX - orbit.currentX) * .035;
+    orbit.currentY += (orbit.targetY - orbit.currentY) * .035;
+    orbit.currentZ += (orbit.targetZ - orbit.currentZ) * .035;
+    const distance = orbit.radius;
+    camera.position.set(Math.cos(orbit.yaw) * Math.cos(orbit.pitch) * distance + orbit.currentX, orbit.currentY + Math.sin(orbit.pitch) * distance, Math.sin(orbit.yaw) * Math.cos(orbit.pitch) * distance + orbit.currentZ);
+    camera.lookAt(orbit.currentX, orbit.currentY, orbit.currentZ);
+    if (!reduceMotion) {
+      const seconds = time * .001;
+      orb.position.y = 3.65 + Math.sin(seconds * 1.5) * .12;
+      orbRing.position.y = orb.position.y;
+      orbRing.rotation.z += delta * .45;
+      moonRing.rotation.z += delta * .08;
+      lamp.rotation.z = Math.sin(seconds * .8) * .015;
+      particles.rotation.y += delta * .012;
+      const positions = particleGeometry.getAttribute("position") as THREE.BufferAttribute;
+      for (let index = 0; index < particleCount; index += 1) { const y = positions.getY(index) + delta * .08; positions.setY(index, y > 7.9 ? .25 : y); }
+      positions.needsUpdate = true;
+      const rainAttr = rainGeometry.getAttribute("position") as THREE.BufferAttribute;
+      for (let index = 0; index < 52; index += 1) { const y = rainAttr.getY(index) - delta * (activeMode === "day" ? .7 : .35); rainAttr.setY(index, y < .25 ? 7.9 : y); }
+      rainAttr.needsUpdate = true;
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  };
+  requestAnimationFrame(animate);
+</script>
