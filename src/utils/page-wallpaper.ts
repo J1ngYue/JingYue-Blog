@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_WALLPAPER_ID } from "@/config/pageWallpapers";
+import { DEFAULT_PAGE_WALLPAPER_ID, homeWallpaper } from "@/config/pageWallpapers";
 
 export const PAGE_WALLPAPER_CHANGE_EVENT = "firefly:page-wallpaper-change";
 export const OPEN_WALLPAPER_PICKER_EVENT = "firefly:open-wallpaper-picker";
@@ -46,7 +46,7 @@ export type WallpaperPreferenceDevice = "desktop" | "mobile";
 
 // 管理员可在这里为七个主页面指定不同默认壁纸；未配置的页面回退到系统默认。
 export const ADMIN_PAGE_WALLPAPERS: PageWallpaperPreferences = {
-	home: "wallpaper-1",
+	home: homeWallpaper.id,
 	articles: "wallpaper-1",
 	updates: "wallpaper-1",
 	social: "wallpaper-1",
@@ -57,7 +57,7 @@ export const ADMIN_PAGE_WALLPAPERS: PageWallpaperPreferences = {
 
 // 手机端使用独立的竖屏默认图，不继承电脑端的横屏视频。
 export const ADMIN_MOBILE_PAGE_WALLPAPERS: PageWallpaperPreferences = {
-	home: "wallpaper-5",
+	home: homeWallpaper.id,
 };
 
 function canUseLocalStorage() {

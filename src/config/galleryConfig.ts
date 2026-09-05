@@ -16,6 +16,14 @@ export const galleryConfig: GalleryConfig = {
 		// passwordHint: 密码提示，设置后在输入密码错误时显示（可选，需配合password使用）
 		// 每添加一个数组项就相当于添加了一个相册，记得在 public/gallery/ 目录下创建对应的子目录并放入图片
 		{
+			id: "desktop-wallpapers",
+			name: "电脑壁纸",
+			description: "雨夜漫步，收藏桌面与手机上的风景。",
+			cover: "/assets/images/home/rainy-night-desktop.webp",
+			date: "2026-09-06",
+			tags: ["壁纸", "电脑壁纸", "手机壁纸"],
+		},
+		{
 			id: "firefly-2026",
 			name: "可爱流萤",
 			description: "飞萤之火自无梦的长夜亮起，绽放在终竟的明天。",

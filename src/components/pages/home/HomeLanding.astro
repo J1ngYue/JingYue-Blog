@@ -17,7 +17,7 @@ import SiteStats from "@/components/widget/SiteStats.astro";
 import Tags from "@/components/widget/Tags.astro";
 import { announcementConfig } from "@/config/announcementConfig";
 import { musicPlayerConfig } from "@/config/musicConfig";
-import { pageWallpaperAssets } from "@/config/pageWallpapers";
+import { homeWallpaper, pageWallpaperAssets } from "@/config/pageWallpapers";
 import { githubUsername, profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
 import type { ActivityCalendar } from "@/utils/home-activity";
@@ -37,11 +37,8 @@ interface Props {
 
 const { githubActivity } = Astro.props;
 const backgroundImages = getBackgroundImages();
-const heroDesktop =
-	backgroundImages.desktop[0] ||
-	backgroundImages.mobile[0] ||
-	"assets/images/cover.avif";
-const heroMobile = backgroundImages.mobile[0] || heroDesktop;
+const heroDesktop = homeWallpaper.desktopUrl;
+const heroMobile = homeWallpaper.mobileUrl;
 const profileDesktop = backgroundImages.desktop[1] || heroDesktop;
 const profileMobile = backgroundImages.mobile[1] || heroMobile;
 const coverIllustrations = Array.from(
@@ -56,8 +53,8 @@ const coverIllustrations = Array.from(
 		),
 	},
 	(_, index) => ({
-		desktop: backgroundImages.desktop[index] || heroDesktop,
-		mobile: backgroundImages.mobile[index] || heroMobile,
+		desktop: index === 0 ? heroDesktop : backgroundImages.desktop[index] || heroDesktop,
+		mobile: index === 0 ? heroMobile : backgroundImages.mobile[index] || heroMobile,
 	}),
 );
 

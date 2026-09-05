@@ -22,6 +22,14 @@ export interface PageWallpaperAsset {
 
 export const DEFAULT_PAGE_WALLPAPER_ID = "wallpaper-1" as const;
 
+export const homeWallpaper: PageWallpaperAsset = {
+	id: "wallpaper-8",
+	label: "雨夜漫步",
+	desktopUrl: "/assets/images/home/rainy-night-desktop.webp",
+	mobileUrl: "/assets/images/home/rainy-night-mobile.webp",
+	type: "image",
+};
+
 export const pageWallpaperAssets: PageWallpaperAsset[] = [
 	{
 		id: DEFAULT_PAGE_WALLPAPER_ID,
@@ -73,4 +81,5 @@ export const pageWallpaperAssets: PageWallpaperAsset[] = [
 		mobileUrl: mobile1.src,
 		type: "image",
 	},
+	homeWallpaper,
 ];
