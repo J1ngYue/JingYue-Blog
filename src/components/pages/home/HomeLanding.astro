@@ -10,11 +10,6 @@ import endingMidgroundImage from "@/assets/images/HomeReference/utl-back1.webp";
 import endingBackgroundVideo from "@/assets/images/HomeReference/utl-back2.webm";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import LocalWallpaperLayer from "@/components/features/LocalWallpaperLayer.svelte";
-import Categories from "@/components/widget/Categories.astro";
-import Dynamic from "@/components/widget/Dynamic.astro";
-import SiteInfo from "@/components/widget/SiteInfo.astro";
-import SiteStats from "@/components/widget/SiteStats.astro";
-import Tags from "@/components/widget/Tags.astro";
 import { announcementConfig } from "@/config/announcementConfig";
 import { musicPlayerConfig } from "@/config/musicConfig";
 import { homeWallpaper, pageWallpaperAssets } from "@/config/pageWallpapers";
@@ -29,6 +24,7 @@ import HomeExhibitCarousel from "./HomeExhibitCarousel.astro";
 import HomeHeroExperience from "./HomeHeroExperience.astro";
 import HomeMobileOverview from "./HomeMobileOverview.astro";
 import HomeProfileMatrix from "./HomeProfileMatrix.astro";
+import HomeSiteData from "./HomeSiteData.astro";
 import JingYueWordmark from "./JingYueWordmark.astro";
 
 interface Props {
@@ -438,50 +434,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			data-home-page
 			data-home-section-tone="light"
 		>
-			<div class="home-section-heading home-dashboard-heading">
-				<div>
-					<p class="home-section-eyebrow">SITE DATA · DASHBOARD</p>
-					<h2 id="home-dashboard-title">站点概览</h2>
-				</div>
-				<p>动态、统计、分类与标签均来自当前站点内容集合。</p>
-			</div>
-			<div class="home-overview-grid">
-				<Dynamic
-					class="home-overview-card home-overview-dynamic"
-					widgetConfig={{
-						type: "dynamic",
-						enable: true,
-						position: "top",
-						specificConfig: { dynamic: { limit: 3 } },
-					}}
-				/>
-				<SiteStats
-					class="home-overview-card home-overview-stats"
-					widgetConfig={{ type: "stats", enable: true, position: "top" }}
-				/>
-				<Categories
-					class="home-overview-card home-overview-categories"
-					widgetConfig={{
-						type: "categories",
-						enable: true,
-						position: "top",
-						specificConfig: { collapseThreshold: 5 },
-					}}
-				/>
-				<Tags
-					class="home-overview-card home-overview-tags"
-					widgetConfig={{
-						type: "tags",
-						enable: true,
-						position: "top",
-						specificConfig: { collapseThreshold: 10 },
-					}}
-				/>
-				<SiteInfo
-					class="home-overview-card home-overview-site-info"
-					widgetConfig={{ type: "siteInfo", enable: true, position: "top" }}
-				/>
-			</div>
+			<HomeSiteData images={[galleryImage1, galleryImage2, galleryImage3, galleryImage4, galleryImage5]} />
 			<a class="home-scene-next home-section-next" href="#home-exhibit" aria-label="向下探索横向影像叙事">
 				<span>向下探索</span>
 				<Icon is:inline name="material-symbols:arrow-downward-rounded" />

@@ -1,0 +1,163 @@
+---
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import { profileConfig } from "@/config/profileConfig";
+import { siteConfig } from "@/config/siteConfig";
+import { getCategoryList, getSortedPosts, getTagList } from "@/utils/content-utils";
+import { url } from "@/utils/url-utils";
+
+interface Props {
+	images: ImageMetadata[];
+}
+
+const { images } = Astro.props;
+const posts = await getSortedPosts();
+const dynamics = siteConfig.pages.dynamic ? await getCollection("dynamic") : [];
+const categories = await getCategoryList();
+const tags = await getTagList();
+const pinnedPosts = posts.filter((post) => post.data.pinned).slice(0, 3);
+const latestPosts = posts.filter((post) => !post.data.pinned).slice(0, 3);
+const displayPosts = pinnedPosts.length > 0 ? pinnedPosts : posts.slice(0, 3);
+const displayLatest = latestPosts.length > 0 ? latestPosts : posts.slice(0, 3);
+const totalWords = posts.reduce((total, post) => {
+	const body = (post.body || "")
+		.replace(/```[\s\S]*?```/g, "")
+		.replace(/`[^`]*`/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+	return total + (body.match(/[\u4e00-\u9fa5a-zA-Z]/gi) || []).length;
+}, 0);
+const formatNumber = (value: number) => value.toLocaleString("zh-CN");
+const formatDate = (date: Date) =>
+	new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+const cardImages = images.length > 0 ? images : [];
+const imageFor = (index: number) => cardImages[index % Math.max(cardImages.length, 1)];
+---
+
+<div class="home-site-data" data-home-site-data>
+	<div class="home-site-data__ticker" role="status" aria-label="站点滚动公告">
+		<div class="home-site-data__ticker-track">
+			<div class="home-site-data__ticker-group">
+				<span>JINGYUE · 站点数据</span><i>✦</i><span>{posts.length} 篇文章</span><i>✦</i><span>{dynamics.length} 条动态</span><i>✦</i><span>持续记录，缓慢生长</span>
+			</div>
+			<div class="home-site-data__ticker-group" aria-hidden="true">
+				<span>JINGYUE · 站点数据</span><i>✦</i><span>{posts.length} 篇文章</span><i>✦</i><span>{dynamics.length} 条动态</span><i>✦</i><span>持续记录，缓慢生长</span>
+			</div>
+		</div>
+	</div>
+
+	<header class="home-site-data__heading">
+		<div>
+			<p>CONTEXT</p>
+			<h2>站点数据</h2>
+		</div>
+		<strong>JINGYUE<br />PERSONAL SPACE</strong>
+	</header>
+
+	<div class="home-site-data__grid">
+		<a class="home-site-data__card home-site-data__card--visits" href={url("/posts/")}>
+			{imageFor(0) && <Image src={imageFor(0)} alt="" loading="lazy" />}
+			<span class="home-site-data__veil"></span>
+			<div><small>CONTENT</small><h3>内容索引</h3><p>{posts.length} 篇文章 · {formatNumber(totalWords)} 字</p></div>
+		</a>
+		<a class="home-site-data__card home-site-data__card--archive" href={url("/archive/")}>
+			{imageFor(1) && <Image src={imageFor(1)} alt="" loading="lazy" />}
+			<span class="home-site-data__veil"></span>
+			<div><small>ARCHIVE</small><h3>文章档案</h3><p>{categories.length} 个分类 · {tags.length} 个标签</p></div>
+		</a>
+
+		<section class="home-site-data__card home-site-data__card--posts" aria-labelledby="home-site-data-pinned">
+			<div class="home-site-data__card-title"><h3 id="home-site-data-pinned">置顶文章</h3><a href={url("/posts/")}>查看全部 →</a></div>
+			<div class="home-site-data__post-list">
+				{displayPosts.map((post, index) => (
+					<a href={url(`/posts/${post.id}/`)} class="home-site-data__post">
+						{post.data.image && <img src={typeof post.data.image === "string" ? post.data.image : undefined} alt="" loading="lazy" />}
+						<span><small>{post.data.category || "未分类"} · {formatDate(new Date(post.data.published))}</small><strong>{post.data.title}</strong><em>{post.data.description || "记录一些值得留下的片刻。"}</em></span>
+						<b>{String(index + 1).padStart(2, "0")}</b>
+					</a>
+				))}
+			</div>
+		</section>
+
+		<section class="home-site-data__card home-site-data__card--latest" aria-labelledby="home-site-data-latest">
+			{imageFor(2) && <Image src={imageFor(2)} alt="" loading="lazy" />}
+			<span class="home-site-data__veil"></span>
+			<div class="home-site-data__latest-content"><h3 id="home-site-data-latest">最新更新</h3><div>{displayLatest.map((post) => <a href={url(`/posts/${post.id}/`)}><small>{post.data.category || "文章"} · {formatDate(new Date(post.data.published))}</small><strong>{post.data.title}</strong></a>)}</div></div>
+		</section>
+
+		<section class="home-site-data__card home-site-data__card--categories" aria-labelledby="home-site-data-categories">
+			<small>CATEGORIES</small><h3 id="home-site-data-categories">分类索引</h3>
+			<div class="home-site-data__index-list">{categories.slice(0, 4).map((category) => <a href={url(category.url)}><span>{category.name}</span><b>{category.count}</b></a>)}</div>
+			<a class="home-site-data__more" href={url("/categories/")}>查看全部 <b>{categories.length} 个分类</b></a>
+		</section>
+
+		<section class="home-site-data__card home-site-data__card--tags" aria-labelledby="home-site-data-tags">
+			<small>TAGS</small><h3 id="home-site-data-tags">标签索引</h3>
+			<div class="home-site-data__tag-list">{tags.slice(0, 6).map((tag) => <a href={url(`/archive/?tag=${encodeURIComponent(tag.name)}`)}>#{tag.name}<b>{tag.count}</b></a>)}</div>
+			<a class="home-site-data__more" href={url("/tags/")}>浏览全部标签 <b>→</b></a>
+		</section>
+
+		<section class="home-site-data__card home-site-data__card--subscribe" aria-labelledby="home-site-data-subscribe">
+			{imageFor(3) && <Image src={imageFor(3)} alt="" loading="lazy" />}
+			<span class="home-site-data__veil"></span>
+			<div><small>SUBSCRIBE</small><h3 id="home-site-data-subscribe">订阅与联系</h3><p>{profileConfig.bio}</p><nav aria-label="订阅与社交联系">{profileConfig.links.map((link) => <a href={link.url} aria-label={link.name} target={link.url.startsWith("http") ? "_blank" : undefined} rel={link.url.startsWith("http") ? "noreferrer" : undefined}>{link.name}</a>)}</nav></div>
+		</section>
+	</div>
+</div>
+
+<style>
+	.home-site-data { --site-data-ink: #f4f1ed; --site-data-muted: rgb(244 241 237 / 60%); --site-data-line: rgb(244 241 237 / 72%); position: relative; overflow: hidden; border-radius: 1.1rem; background: #101010; color: var(--site-data-ink); }
+	.home-site-data__ticker { overflow: hidden; border-bottom: 1px solid rgb(244 241 237 / 18%); white-space: nowrap; }
+	.home-site-data__ticker-track { display: flex; width: max-content; animation: home-site-data-ticker 28s linear infinite; }
+	.home-site-data__ticker-group { display: flex; align-items: center; gap: 1.2rem; min-width: max-content; padding: .7rem 1.5rem; color: var(--site-data-muted); font-size: .7rem; font-weight: 700; letter-spacing: .12em; }
+	.home-site-data__ticker-group i { color: #ffb36b; font-style: normal; }
+	.home-site-data__heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; padding: clamp(2.6rem, 7vw, 5rem) clamp(1.25rem, 6vw, 5rem) 2rem; }
+	.home-site-data__heading p, .home-site-data__card small { margin: 0; color: var(--site-data-muted); font-size: .68rem; font-weight: 800; letter-spacing: .18em; }
+	.home-site-data__heading h2 { margin: .3rem 0 0; font-size: clamp(3rem, 8vw, 6rem); line-height: .9; letter-spacing: .01em; }
+	.home-site-data__heading strong { color: var(--site-data-muted); font-size: .65rem; letter-spacing: .18em; line-height: 1.55; text-align: right; }
+	.home-site-data__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; padding: 0 clamp(1.25rem, 6vw, 5rem) clamp(2rem, 5vw, 4rem); }
+	.home-site-data__card { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--site-data-line); border-radius: 1rem; background: #111; }
+	.home-site-data__card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .42; filter: grayscale(.7) contrast(1.05); transition: transform .6s ease, opacity .35s ease; }
+	.home-site-data__card:hover > img { opacity: .58; transform: scale(1.04); }
+	.home-site-data__veil { position: absolute; inset: 0; background: linear-gradient(120deg, rgb(0 0 0 / 72%), rgb(0 0 0 / 18%) 90%); }
+	.home-site-data__card > div { position: relative; z-index: 1; }
+	.home-site-data__card h3 { margin: .45rem 0; font-size: clamp(1.4rem, 2.7vw, 2.2rem); line-height: 1; }
+	.home-site-data__card p { margin: 0; color: var(--site-data-muted); font-size: .78rem; font-weight: 600; }
+	.home-site-data__card--visits, .home-site-data__card--archive { grid-column: span 6; min-height: 11rem; padding: clamp(1.4rem, 3vw, 2rem); display: flex; align-items: end; }
+	.home-site-data__card--posts { grid-column: span 7; min-height: 16rem; padding: 1.4rem; }
+	.home-site-data__card--latest { grid-column: span 5; min-height: 16rem; padding: 1.4rem; display: flex; align-items: end; }
+	.home-site-data__card-title { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+	.home-site-data__card-title h3 { margin: 0 0 1rem; font-size: clamp(1.6rem, 3vw, 2.6rem); }
+	.home-site-data__card-title a, .home-site-data__more { color: var(--site-data-muted); font-size: .72rem; font-weight: 700; }
+	.home-site-data__post-list { display: grid; gap: .4rem; }
+	.home-site-data__post { display: grid; grid-template-columns: 1fr auto; gap: .8rem; align-items: center; border-top: 1px dotted rgb(244 241 237 / 35%); padding: .65rem 0; color: inherit; text-decoration: none; }
+	.home-site-data__post span { display: grid; min-width: 0; gap: .2rem; }
+	.home-site-data__post small, .home-site-data__latest-content small { color: var(--site-data-muted); font-size: .62rem; }
+	.home-site-data__post strong { overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
+	.home-site-data__post em { overflow: hidden; color: var(--site-data-muted); font-size: .68rem; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+	.home-site-data__post b { color: var(--site-data-muted); font-size: .75rem; }
+	.home-site-data__latest-content { width: 100%; }
+	.home-site-data__latest-content h3 { font-size: clamp(1.8rem, 3.5vw, 3rem); }
+	.home-site-data__latest-content > div { display: grid; gap: .7rem; }
+	.home-site-data__latest-content a { display: grid; gap: .2rem; color: inherit; text-decoration: none; }
+	.home-site-data__latest-content strong { font-size: .9rem; }
+	.home-site-data__card--categories, .home-site-data__card--tags { grid-column: span 4; min-height: 14rem; padding: 1.4rem; }
+	.home-site-data__index-list { display: grid; margin: .8rem 0 1rem; }
+	.home-site-data__index-list a { display: flex; justify-content: space-between; border-bottom: 1px dotted rgb(244 241 237 / 35%); padding: .5rem 0; color: inherit; font-size: .8rem; font-weight: 700; text-decoration: none; }
+	.home-site-data__index-list b, .home-site-data__more b { color: var(--site-data-muted); }
+	.home-site-data__more { display: flex; justify-content: space-between; text-decoration: none; }
+	.home-site-data__tag-list { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1rem 0; }
+	.home-site-data__tag-list a { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid rgb(244 241 237 / 60%); border-radius: .75rem; padding: .55rem .7rem; color: inherit; font-size: .75rem; text-decoration: none; transform: rotate(var(--tag-angle, 0deg)); }
+	.home-site-data__tag-list a:nth-child(2n) { --tag-angle: 3deg; }
+	.home-site-data__tag-list a:nth-child(3n) { --tag-angle: -4deg; }
+	.home-site-data__tag-list b { color: var(--site-data-muted); font-size: .65rem; }
+	.home-site-data__card--subscribe { grid-column: span 4; min-height: 14rem; padding: 1.4rem; display: flex; align-items: end; }
+	.home-site-data__card--subscribe p { max-width: 18rem; }
+	.home-site-data__card--subscribe nav { display: flex; gap: .7rem; margin-top: 1rem; }
+	.home-site-data__card--subscribe nav a { color: inherit; font-size: .72rem; font-weight: 700; text-decoration: underline; text-underline-offset: .25rem; }
+	@keyframes home-site-data-ticker { to { transform: translate3d(-50%, 0, 0); } }
+	@media (prefers-reduced-motion: reduce) { .home-site-data__ticker-track { animation-play-state: paused; } }
+	@media (max-width: 800px) { .home-site-data__heading { align-items: start; flex-direction: column; } .home-site-data__heading strong { text-align: left; } .home-site-data__card--posts, .home-site-data__card--latest { grid-column: span 12; } .home-site-data__card--categories, .home-site-data__card--tags, .home-site-data__card--subscribe { grid-column: span 6; } }
+	@media (max-width: 560px) { .home-site-data__grid { grid-template-columns: 1fr; } .home-site-data__card--visits, .home-site-data__card--archive, .home-site-data__card--posts, .home-site-data__card--latest, .home-site-data__card--categories, .home-site-data__card--tags, .home-site-data__card--subscribe { grid-column: auto; } .home-site-data__card--visits, .home-site-data__card--archive { min-height: 9rem; } }
+</style>
