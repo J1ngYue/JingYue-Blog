@@ -3489,6 +3489,18 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		text-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.25);
 	}
 
+	/* Reserve the upper-left title area for the larger dialogue character below. */
+	@media (min-width: 901px) {
+		.home-hero-frame:has([data-hero-dialogue]) .home-hero-content {
+			top: clamp(6rem, 10svh, 8rem);
+			transform-origin: top left;
+			transform: translateY(1rem) scale(0.65);
+		}
+		.home-landing.is-home-wordmark-ready .home-hero-frame:has([data-hero-dialogue]) .home-hero-content {
+			transform: scale(0.65);
+		}
+	}
+
 	.home-hero-title {
 		width: clamp(23rem, 41vw, 39rem);
 		max-width: 100%;

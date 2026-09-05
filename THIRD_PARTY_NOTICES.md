@@ -12,6 +12,10 @@ Copyright (c) 2025 CuteLeaf
 
 The complete MIT License text is available in [LICENSE](./LICENSE).
 
+The full-width dialogue presentation in `HomeHeroExperience.astro`, its character
+feature coordinates, and `public/assets/images/home/character.avif` are also
+adapted from the same repository under that license.
+
 ## Twemoji
 
 The pig face asset at `public/assets/images/ui/pig-scrollbar.png` is from
