@@ -643,6 +643,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const exhibitMeterFills = Array.from(root.querySelectorAll("[data-home-exhibit-meter-fill]"));
 		const exhibitPrevious = root.querySelector("[data-home-exhibit-previous]");
 		const exhibitNext = root.querySelector("[data-home-exhibit-next]");
+		const exhibitToggle = root.querySelector("[data-home-exhibit-toggle]");
 		const overviewVideo = root.querySelector("[data-home-overview-video]");
 		const profileRail = root.querySelector(".home-profile-rail");
 		const coverSwitcherClosers = Array.from(root.querySelectorAll("[data-home-cover-switcher-close]"));
@@ -707,6 +708,9 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		let exhibitWheelQuietTimer = 0;
 		let exhibitVisible = false;
 		let exhibitInteractionPaused = false;
+		let exhibitUserPaused = false;
+		let exhibitTransition = null;
+		let exhibitLastWheelTime = 0;
 		let exhibitObserver = null;
 		let wordmarkFrame = 0;
 		let wordmarkReadyFrame = 0;
@@ -980,116 +984,97 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (option) pointParticleArrowToElement(option);
 		};
 
-		const exhibitSlideDuration = 5200;
-		const exhibitWheelThreshold = 34;
-		const exhibitProgressLimit = () => Math.max(0, exhibitSlides.length);
-		const clampExhibitProgress = (value) =>
-			Math.max(0, Math.min(exhibitProgressLimit(), value));
+		const exhibitSlideDuration = 12000;
+		const exhibitWheelThreshold = 80;
+		const exhibitModulo = (value) =>
+			((value % exhibitSlides.length) + exhibitSlides.length) % exhibitSlides.length;
 
 		const renderExhibitMeter = (position) => {
-			const slideCount = exhibitProgressLimit();
-			const blockPosition = slideCount
-				? (clampExhibitProgress(position) / slideCount) * exhibitMeterFills.length
-				: 0;
-			exhibitMeterFills.forEach((fill, blockIndex) => {
-				const localProgress = Math.max(0, Math.min(1, blockPosition - blockIndex));
-				fill.style.transform = `scaleX(${localProgress})`;
+			if (!exhibitSlides.length) return;
+			const normalized = exhibitModulo(position);
+			const blockPosition = normalized / exhibitSlides.length * exhibitMeterFills.length;
+			exhibitMeterFills.forEach((fill, index) => {
+				fill.style.transform = `scaleX(${Math.max(0, Math.min(1, blockPosition - index))})`;
 			});
-			if (!exhibitMeter || slideCount === 0) return;
-			const accessibleValue = Math.min(slideCount, clampExhibitProgress(position) + 1);
-			const currentSlide = Math.min(slideCount, Math.floor(clampExhibitProgress(position)) + 1);
-			exhibitMeter.setAttribute("aria-valuenow", accessibleValue.toFixed(2));
-			exhibitMeter.setAttribute("aria-valuetext", `第 ${currentSlide} 张，共 ${slideCount} 张`);
-		};
-
-		const getExhibitProgressPosition = () => {
-			if (!exhibitProgressStartTime) return exhibitProgressPosition;
-			return clampExhibitProgress(
-				exhibitActiveIndex +
-					(Math.max(0, performance.now() - exhibitProgressStartTime) /
-						exhibitSlideDuration),
-			);
+			exhibitActiveIndex = Math.round(position);
+			exhibitSlides.forEach((slide, index) => {
+				// Recycle only beyond the clipped viewport; visible postcards never jump.
+				const offset = exhibitModulo(index - position + exhibitSlides.length / 2) - exhibitSlides.length / 2;
+				slide.style.setProperty("--scene-offset", offset.toFixed(5));
+				slide.setAttribute("aria-hidden", String(Math.abs(offset) > 1.5));
+				slide.dataset.position = Math.abs(offset) < .5 ? "active" : "adjacent";
+			});
+			exhibitMeter?.setAttribute("aria-valuenow", (normalized / exhibitSlides.length * 100).toFixed(1));
+			exhibitMeter?.setAttribute("aria-valuetext", `第 ${exhibitModulo(exhibitActiveIndex) + 1} 张，共 ${exhibitSlides.length} 张`);
 		};
 
 		const stopExhibitProgress = (reset = false) => {
-			if (exhibitProgressStartTime) exhibitProgressPosition = getExhibitProgressPosition();
 			if (exhibitProgressFrame) window.cancelAnimationFrame(exhibitProgressFrame);
 			exhibitProgressFrame = 0;
 			exhibitProgressStartTime = 0;
 			if (reset) exhibitProgressPosition = exhibitActiveIndex;
-			renderExhibitMeter(exhibitProgressPosition);
+			exhibitCarousel?.setAttribute("data-playing", "false");
 		};
 
 		const shouldPlayExhibit = () =>
-			Boolean(
-				exhibitCarousel &&
-					exhibitVisible &&
-					!exhibitInteractionPaused &&
-					!document.hidden &&
-					!reducedMotion.matches,
-			);
+			Boolean(exhibitCarousel && exhibitVisible && !exhibitInteractionPaused &&
+				!exhibitUserPaused && !document.hidden && !reducedMotion.matches);
 
 		const tickExhibitProgress = (timestamp) => {
-			if (!shouldPlayExhibit()) {
-				exhibitProgressFrame = 0;
+			exhibitProgressFrame = 0;
+			if (!exhibitVisible || document.hidden) {
+				stopExhibitProgress();
 				return;
 			}
-			const elapsed = Math.max(0, timestamp - exhibitProgressStartTime);
-			exhibitProgressPosition = clampExhibitProgress(
-				exhibitActiveIndex + elapsed / exhibitSlideDuration,
-			);
+			if (exhibitTransition) {
+				const t = Math.min(1, (timestamp - exhibitTransition.started) / 950);
+				const eased = t * t * (3 - 2 * t);
+				exhibitProgressPosition = exhibitTransition.from +
+					(exhibitTransition.to - exhibitTransition.from) * eased;
+				if (t === 1) exhibitTransition = null;
+			} else if (shouldPlayExhibit()) {
+				const elapsed = exhibitProgressStartTime ? Math.min(timestamp - exhibitProgressStartTime, 64) : 0;
+				exhibitProgressPosition += elapsed / exhibitSlideDuration;
+			} else {
+				stopExhibitProgress();
+				return;
+			}
+			exhibitProgressStartTime = timestamp;
 			renderExhibitMeter(exhibitProgressPosition);
-			if (elapsed >= exhibitSlideDuration) {
-				exhibitProgressFrame = 0;
-				exhibitProgressStartTime = 0;
-				showExhibitSlide(exhibitActiveIndex + 1);
-				return;
-			}
-			exhibitProgressFrame = window.requestAnimationFrame(tickExhibitProgress);
-		};
-
-		const startExhibitProgress = (reset = true) => {
-			stopExhibitProgress(reset);
-			if (!shouldPlayExhibit() || exhibitSlides.length === 0) return;
-			exhibitProgressStartTime =
-				performance.now() -
-					Math.max(0, exhibitProgressPosition - exhibitActiveIndex) * exhibitSlideDuration;
-			exhibitProgressFrame = window.requestAnimationFrame(tickExhibitProgress);
+			exhibitProgressFrame = requestAnimationFrame(tickExhibitProgress);
 		};
 
 		const syncExhibitPlayback = () => {
-			if (shouldPlayExhibit()) {
-				if (!exhibitProgressFrame) startExhibitProgress(false);
-				return;
-			}
-			stopExhibitProgress(false);
+			const playing = shouldPlayExhibit();
+			exhibitCarousel?.setAttribute("data-playing", String(playing));
+			const paused = exhibitUserPaused || reducedMotion.matches;
+			exhibitToggle?.setAttribute("aria-pressed", String(paused));
+			exhibitToggle?.setAttribute("aria-label", paused ? "播放自动滚动" : "暂停自动滚动");
+			exhibitToggle?.setAttribute("title", reducedMotion.matches ? "已跟随系统减少动态效果" : paused ? "播放自动滚动" : "暂停自动滚动");
+			if (exhibitToggle) exhibitToggle.disabled = reducedMotion.matches;
+			if (playing || (exhibitTransition && exhibitVisible && !document.hidden)) {
+				if (!exhibitProgressFrame) {
+					exhibitProgressStartTime = 0;
+					exhibitProgressFrame = requestAnimationFrame(tickExhibitProgress);
+				}
+			} else stopExhibitProgress();
 		};
 
-		const showExhibitSlide = (requestedIndex) => {
-			const slideCount = exhibitSlides.length;
-			if (slideCount === 0) return;
-			exhibitActiveIndex = ((requestedIndex % slideCount) + slideCount) % slideCount;
-
-			exhibitSlides.forEach((slide, slideIndex) => {
-				let offset = slideIndex - exhibitActiveIndex;
-				if (offset > slideCount / 2) offset -= slideCount;
-				if (offset < -slideCount / 2) offset += slideCount;
-				const position = offset === 0
-					? "active"
-					: offset === -1
-						? "previous"
-						: offset === 1
-							? "next"
-							: offset < 0
-								? "far-previous"
-								: "far-next";
-				slide.dataset.position = position;
-				slide.setAttribute("aria-hidden", String(offset !== 0));
-			});
-
-			exhibitProgressPosition = exhibitActiveIndex;
-			renderExhibitMeter(exhibitProgressPosition);
-			startExhibitProgress();
+		const showExhibitSlide = (requestedIndex, instant = false) => {
+			if (!exhibitSlides.length) return;
+			if (instant || reducedMotion.matches) {
+				exhibitProgressPosition = requestedIndex;
+				exhibitTransition = null;
+				renderExhibitMeter(exhibitProgressPosition);
+			} else {
+				exhibitTransition = { from: exhibitProgressPosition, to: requestedIndex, started: performance.now() };
+			}
+			syncExhibitPlayback();
+		};
+		const toggleExhibitPlayback = (event) => {
+			exhibitUserPaused = !exhibitUserPaused;
+			releaseExhibitPointerFocus(event);
+			syncExhibitPlayback();
 		};
 
 		const pauseExhibitInteraction = () => {
@@ -1110,11 +1095,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			}
 		};
 		const showPreviousExhibitSlide = (event) => {
-			showExhibitSlide(exhibitActiveIndex - 1);
+			showExhibitSlide(exhibitTransition ? exhibitTransition.to - 1 : Math.floor(exhibitProgressPosition - .05));
 			releaseExhibitPointerFocus(event);
 		};
 		const showNextExhibitSlide = (event) => {
-			showExhibitSlide(exhibitActiveIndex + 1);
+			showExhibitSlide(exhibitTransition ? exhibitTransition.to + 1 : Math.ceil(exhibitProgressPosition + .05));
 			releaseExhibitPointerFocus(event);
 		};
 		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
@@ -1147,6 +1132,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			scheduleExhibitWheelResume();
 			exhibitWheelDelta += normalizeWheelDelta(event, delta);
 			if (Math.abs(exhibitWheelDelta) < exhibitWheelThreshold) return;
+			if (performance.now() - exhibitLastWheelTime < 650) return;
+			exhibitLastWheelTime = performance.now();
 			const direction = exhibitWheelDelta > 0 ? 1 : -1;
 			exhibitWheelDelta = 0;
 			showExhibitSlide(exhibitActiveIndex + direction);
@@ -1962,7 +1949,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		}
 		overviewVideo?.addEventListener("playing", markOverviewVideoPlaying);
 		if (exhibitCarousel) {
-			showExhibitSlide(0);
+			showExhibitSlide(0, true);
 			if ("IntersectionObserver" in window) {
 				exhibitObserver = new IntersectionObserver(
 					([entry]) => {
@@ -2014,6 +2001,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		exhibitCarousel?.addEventListener("wheel", handleExhibitWheel, { passive: false });
 		exhibitPrevious?.addEventListener("click", showPreviousExhibitSlide);
 		exhibitNext?.addEventListener("click", showNextExhibitSlide);
+		exhibitToggle?.addEventListener("click", toggleExhibitPlayback);
 		document.addEventListener("visibilitychange", handleExhibitVisibilityChange);
 		window.addEventListener("jingyue:local-cover-state-change", handleLocalCoverState);
 		sceneLinks.forEach((link) => link.addEventListener("click", handleSceneLink));
@@ -2139,6 +2127,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			exhibitCarousel?.removeEventListener("wheel", handleExhibitWheel);
 			exhibitPrevious?.removeEventListener("click", showPreviousExhibitSlide);
 			exhibitNext?.removeEventListener("click", showNextExhibitSlide);
+			exhibitToggle?.removeEventListener("click", toggleExhibitPlayback);
 			document.removeEventListener("visibilitychange", handleExhibitVisibilityChange);
 			overviewVideo?.removeEventListener("playing", markOverviewVideoPlaying);
 			overviewVideo?.pause();

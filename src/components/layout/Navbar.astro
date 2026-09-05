@@ -13,6 +13,7 @@ import { isHomePage } from "@/utils/layout-utils";
 import { url } from "@/utils/url-utils";
 import DropdownMenu from "./DropdownMenu.astro";
 import NavMenuPanel from "./NavMenuPanel.astro";
+import NavbarProfileOverview from "./NavbarProfileOverview.astro";
 
 const className = Astro.props.class;
 
@@ -196,9 +197,7 @@ const navbarProfileAvatarParticles = [
                 </a>
 
                 <aside id="navbar-profile-card" class="navbar-profile-card" aria-label={`${profileConfig.name} 个人资料`} aria-hidden="true">
-                    <div class="navbar-profile-card__topbar">
-                        <span class="navbar-profile-card__dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    </div>
+                    <div class="navbar-profile-card__identity">
                     <div class="navbar-profile-card__avatar-wrap" data-navbar-profile-avatar-wrap>
                         <ImageWrapper
                             src={profileConfig.avatar || "assets/images/avatar.avif"}
@@ -244,6 +243,7 @@ const navbarProfileAvatarParticles = [
                         ></span>
                     </div>
                     <div class="navbar-profile-card__content">
+                        <a class="navbar-profile-card__name" href={url("/about/")}>{profileConfig.name}</a>
                         <p class="navbar-profile-card__command">
                             <span class="navbar-profile-card__prompt">profile@{profileConfig.name.toLowerCase()}:~$</span>
                             <span
@@ -260,13 +260,16 @@ const navbarProfileAvatarParticles = [
                                     href={item.href}
                                     target={item.isExternal ? "_blank" : undefined}
                                     rel={item.isExternal ? "me noopener noreferrer" : "me"}
+                                    aria-label={item.label}
+                                    title={item.label}
                                 >
                                     <Icon is:inline name={item.icon} />
-                                    <span>{item.label}</span>
                                 </a>
                             ))}
                         </nav>
                     </div>
+                    </div>
+                    <NavbarProfileOverview />
                 </aside>
             </div>
 			<div class:list={[

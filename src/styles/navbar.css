@@ -250,16 +250,20 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     position: absolute;
     top: calc(100% + 0.65rem);
     left: 0;
-    width: min(30rem, calc(100vw - 2rem));
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 1.1rem 1.5rem;
+    width: min(42rem, calc(100vw - 2rem));
     box-sizing: border-box;
-    padding: 0.9rem 1rem 1rem 6.75rem;
+    padding: 1.25rem;
     visibility: hidden;
     overflow: visible;
-    border: 1px solid rgb(148 163 184 / 58%);
-    border-radius: 1.15rem;
-    background: linear-gradient(135deg, #17243a 0%, #263854 100%);
-    box-shadow: 0 1.2rem 3rem rgb(15 23 42 / 28%);
-    color: #f8fafc;
+    border: 1px solid #3b3b3b;
+    border-radius: 8px;
+    background: #191919;
+    box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 22%);
+    color: #f2f2f2;
+    letter-spacing: 0;
     opacity: 0;
     pointer-events: none;
     transform: translateY(-0.45rem) scale(0.96);
@@ -286,45 +290,15 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     transform: translateY(0) scale(1);
 }
 
-#navbar .navbar-profile-card__topbar {
-    display: flex;
-    min-height: 1.65rem;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 1rem;
-    padding-bottom: 0.65rem;
-    border-bottom: 1px solid rgb(226 232 240 / 18%);
-    color: rgb(241 245 249 / 76%);
-    font-size: 0.68rem;
-}
-
-#navbar .navbar-profile-card__dots {
-    display: flex;
-    flex: none;
-    gap: 0.38rem;
-}
-
-#navbar .navbar-profile-card__dots i {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 50%;
-    background: #ed7ca8;
-}
-
-#navbar .navbar-profile-card__dots i:nth-child(2) {
-    background: #f4d36d;
-}
-
-#navbar .navbar-profile-card__dots i:nth-child(3) {
-    background: #8ad8c0;
-}
+#navbar .navbar-profile-card__identity { position: relative; min-width: 0; padding-left: 4.65rem; }
+#navbar .navbar-profile-card__name { display: block; color: #f2f2f2; font-size: 1.25rem; font-weight: 750; line-height: 1.4; }
 
 #navbar .navbar-profile-card__avatar-wrap {
     position: absolute;
-    top: 3.25rem;
-    left: 1rem;
-    width: 4.85rem;
-    height: 4.85rem;
+    top: 0;
+    left: 0;
+    width: 3.75rem;
+    height: 3.75rem;
     border-radius: 50%;
 }
 
@@ -334,7 +308,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-    border: 0.28rem solid rgb(255 255 255 / 94%);
+    border: 2px solid rgb(255 255 255 / 85%);
     border-radius: 50%;
     background: #fff;
     box-shadow: 0 0.75rem 1.8rem rgb(15 23 42 / 32%);
@@ -513,7 +487,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 
 #navbar .navbar-profile-card__content {
     min-width: 0;
-    padding-top: 0.65rem;
+    padding-top: 0;
 }
 
 #navbar .navbar-profile-card__command,
@@ -528,7 +502,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     gap: 0.38rem;
     overflow: hidden;
     font-family: var(--font-mono, monospace);
-    font-size: 1rem;
+    font-size: 0.64rem;
     white-space: nowrap;
 }
 
@@ -551,19 +525,18 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 
 #navbar .navbar-profile-card__command i {
     width: 0.42rem;
-    height: 1.15rem;
+    height: .7rem;
     flex: none;
     background: #f4a6c5;
     animation: navbar-profile-cursor 1s steps(2, jump-none) infinite;
 }
 
 #navbar .navbar-profile-card__bio {
-    margin-top: 0.75rem;
-    color: #f8fafc;
-    font-size: 0.84rem;
-    font-weight: 750;
-    opacity: 0;
-    transform: translateY(0.35rem);
+    margin-top: 0.3rem;
+    color: #aeaeae;
+    font-size: 0.75rem;
+    font-weight: 400;
+    opacity: 1;
 }
 
 #navbar .navbar-profile-card__links {
@@ -571,18 +544,20 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     flex-wrap: wrap;
     gap: 0.45rem;
     margin-top: 0.75rem;
-    opacity: 0;
-    transform: translateY(0.35rem);
+    opacity: 1;
+    margin-left: -4.65rem;
 }
 
 #navbar .navbar-profile-card .navbar-profile-card__links a {
     display: inline-flex;
-    min-height: 2rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    justify-content: center;
     align-items: center;
     gap: 0.42rem;
     border: 1px solid rgb(226 232 240 / 25%);
     border-radius: 999px;
-    padding: 0.32rem 0.65rem;
+    padding: 0;
     color: #f8fafc;
     font-size: 0.66rem;
     font-weight: 750;
@@ -610,8 +585,52 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 }
 
 #navbar .navbar-profile-card__links svg {
-    width: 0.8rem;
-    height: 0.8rem;
+    width: 1rem;
+    height: 1rem;
+}
+
+#navbar navbar-profile-overview { display: contents; }
+#navbar .navbar-profile-card__activity { grid-column: 1; min-width: 0; }
+#navbar .navbar-profile-card__activity-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; color: #aaa; font-size: .66rem; }
+#navbar .navbar-profile-card__activity-heading a { display: inline-flex; align-items: center; gap: .2rem; color: #ddd; }
+#navbar .navbar-profile-card__activity-heading svg { width: .8rem; height: .8rem; }
+#navbar .navbar-profile-card__heatmap { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+#navbar .navbar-profile-card__heat-column { display: grid; gap: 4px; text-align: center; font-size: .62rem; color: #999; }
+#navbar .navbar-profile-card__heat-column button { display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 1px solid transparent; border-radius: 3px; background: #2d2d2d; cursor: pointer; transition: border-color 150ms ease; }
+#navbar .navbar-profile-card__heat-column button[data-level="1"] { background: #555; }
+#navbar .navbar-profile-card__heat-column button[data-level="2"] { background: #818181; }
+#navbar .navbar-profile-card__heat-column button[data-level="3"] { background: #aaa; }
+#navbar .navbar-profile-card__heat-column button[data-level="4"] { background: #dfdfdf; }
+#navbar .navbar-profile-card__heat-column button:hover,
+#navbar .navbar-profile-card__heat-column button:focus-visible,
+#navbar .navbar-profile-card__heat-column button[aria-pressed="true"] { outline: 1px solid #dba5ba; outline-offset: 1px; }
+#navbar .navbar-profile-card__details { grid-column: 2; grid-row: 1 / span 2; min-width: 0; padding-left: 1.1rem; border-left: 1px solid #333; }
+#navbar .navbar-profile-card__details [hidden] { display: none; }
+#navbar .navbar-profile-card__countdowns { display: grid; gap: .7rem; margin: 0; }
+#navbar .navbar-profile-card__countdowns > div,
+#navbar .navbar-profile-card__event > div { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+#navbar .navbar-profile-card__countdowns dt,
+#navbar .navbar-profile-card__event time,
+#navbar .navbar-profile-card__event [data-event-days] { color: #aaa; font-size: .76rem; white-space: nowrap; }
+#navbar .navbar-profile-card__countdowns dd { margin: 0; font-size: 1.14rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+#navbar .navbar-profile-card__event { display: grid; gap: .65rem; margin-top: 1rem; }
+#navbar .navbar-profile-card__event strong { font-size: .9rem; }
+#navbar .navbar-profile-card__event progress { display: block; flex: 1; min-width: 0; width: 100%; height: 7px; overflow: hidden; border: 0; border-radius: 999px; background: #333; color: #ddd; appearance: none; }
+#navbar .navbar-profile-card__event progress::-webkit-progress-bar { background: #333; border-radius: 999px; }
+#navbar .navbar-profile-card__event progress::-webkit-progress-value { background: #ddd; border-radius: 999px; }
+#navbar .navbar-profile-card__event progress::-moz-progress-bar { background: #ddd; border-radius: 999px; }
+#navbar .navbar-profile-card__posts-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .8rem; }
+#navbar .navbar-profile-card__posts-heading button { display: grid; flex: none; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: #ddd; background: #303030; cursor: pointer; }
+#navbar .navbar-profile-card__posts-heading svg { width: 1rem; height: 1rem; }
+#navbar .navbar-profile-card__post-list { display: grid; gap: .7rem; max-height: 12.5rem; overflow-y: auto; margin-top: .8rem; color: #aaa; font-size: .76rem; }
+#navbar .navbar-profile-card__post-list a { padding-bottom: .6rem; border-bottom: 1px solid #333; color: #e5e5e5; line-height: 1.6; overflow-wrap: anywhere; }
+
+@media (max-width: 700px) {
+    #navbar .navbar-profile-card { grid-template-columns: minmax(0, 1fr); gap: .85rem; padding: 1rem; max-height: calc(100dvh - 6rem); overflow-y: auto; }
+    #navbar .navbar-profile-card__details { grid-column: 1; grid-row: auto; padding: .85rem 0 0; border-left: 0; border-top: 1px solid #333; }
+    #navbar .navbar-profile-card__countdowns { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+    #navbar .navbar-profile-card__countdowns > div { flex-direction: column; align-items: flex-start; gap: .25rem; }
+    #navbar .navbar-profile-card__event { gap: .45rem; margin-top: .75rem; }
 }
 
 @keyframes navbar-profile-cursor {
@@ -673,12 +692,12 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 
     #navbar[data-home-brand="avatar"] .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card__bio,
     #navbar[data-home-brand="avatar"] .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card__bio {
-        animation: navbar-profile-content-in 280ms ease 720ms both;
+        animation: navbar-profile-content-in 220ms ease both;
     }
 
     #navbar[data-home-brand="avatar"] .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card__links,
     #navbar[data-home-brand="avatar"] .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card__links {
-        animation: navbar-profile-content-in 280ms ease 820ms both;
+        animation: navbar-profile-content-in 220ms ease both;
     }
 }
 

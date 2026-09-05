@@ -1,0 +1,138 @@
+---
+import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
+import { getSortedPosts } from "@/utils/content-utils";
+import { getPostUrlBySlug, url } from "@/utils/url-utils";
+import { profileDateKey } from "@/utils/profile-calendar";
+
+const timeZone = siteConfig.timezone || "Asia/Shanghai";
+const posts = (await getSortedPosts()).filter((post) => !post.data.draft).map((post) => ({
+	title: post.data.title,
+	date: profileDateKey(post.data.published, timeZone),
+	href: getPostUrlBySlug(post.id),
+}));
+---
+
+<navbar-profile-overview data-posts={JSON.stringify(posts)} data-timezone={timeZone} data-site-start={siteConfig.siteStartDate || "2025-01-01"}>
+	<div class="navbar-profile-card__activity">
+		<div class="navbar-profile-card__activity-heading"><span data-profile-year></span><a href={url("/archive/")}>文章归档 <Icon is:inline name="material-symbols:arrow-outward-rounded" /></a></div>
+		<div class="navbar-profile-card__heatmap" role="group" aria-label="年度文章活动">
+			{Array.from({ length: 12 }, (_, month) => (
+				<div class="navbar-profile-card__heat-column">
+					<span>{month + 1}</span>
+					{Array.from({ length: 4 }, (_, week) => <button type="button" data-profile-cell={`${month + 1}-${week}`} aria-label={`${month + 1}月第${week + 1}周文章`} aria-pressed="false" data-level="0"></button>)}
+				</div>
+			))}
+		</div>
+	</div>
+	<div class="navbar-profile-card__details">
+		<div data-profile-calendar>
+			<dl class="navbar-profile-card__countdowns">
+				<div><dt>距周末</dt><dd data-profile-days="week">--</dd></div>
+				<div><dt>距月底</dt><dd data-profile-days="month">--</dd></div>
+				<div><dt>距年底</dt><dd data-profile-days="year">--</dd></div>
+			</dl>
+			{["holiday", "anniversary"].map((kind) => (
+				<div class="navbar-profile-card__event" data-profile-event={kind}>
+					<div><strong data-event-name></strong><time data-event-date></time></div>
+					<div><progress max="100" value="0" aria-label={kind === "holiday" ? "节日倒计时" : "建站周年倒计时"}></progress><span data-event-days></span></div>
+				</div>
+			))}
+		</div>
+		<div data-profile-posts hidden>
+			<div class="navbar-profile-card__posts-heading"><strong data-profile-posts-title></strong><button type="button" data-profile-back title="返回倒计时" aria-label="返回倒计时"><Icon is:inline name="material-symbols:close-rounded" /></button></div>
+			<div class="navbar-profile-card__post-list" data-profile-post-list></div>
+		</div>
+	</div>
+</navbar-profile-overview>
+
+<script>
+	import { getProfileCountdowns, profileDateKey } from "@/utils/profile-calendar";
+
+	class NavbarProfileOverview extends HTMLElement {
+		private cleanup?: () => void;
+		connectedCallback() {
+			this.cleanup?.();
+			const controller = new AbortController();
+			const posts = JSON.parse(this.dataset.posts || "[]") as { title: string; date: string; href: string }[];
+			const cells = Array.from(this.querySelectorAll<HTMLButtonElement>("[data-profile-cell]"));
+			const calendar = this.querySelector<HTMLElement>("[data-profile-calendar]")!;
+			const postPane = this.querySelector<HTMLElement>("[data-profile-posts]")!;
+			const postList = this.querySelector<HTMLElement>("[data-profile-post-list]")!;
+			let dateKey = "";
+			let groups = new Map<string, typeof posts>();
+			const closePosts = () => {
+				calendar.hidden = false;
+				postPane.hidden = true;
+				cells.forEach((cell) => cell.setAttribute("aria-pressed", "false"));
+			};
+			const update = () => {
+				const now = new Date();
+				const today = profileDateKey(now, this.dataset.timezone!);
+				if (dateKey === today) return;
+				dateKey = today;
+				groups = new Map();
+				for (const post of posts) {
+					if (post.date.slice(0, 4) !== today.slice(0, 4) || post.date > today) continue;
+					const [, month, day] = post.date.split("-").map(Number);
+					const key = `${month}-${Math.min(3, Math.floor((day - 1) / 7))}`;
+					groups.set(key, [...(groups.get(key) || []), post]);
+				}
+				this.querySelector("[data-profile-year]")!.textContent = `${today.slice(0, 4)} · 文章活动`;
+				cells.forEach((cell) => {
+					const count = groups.get(cell.dataset.profileCell!)?.length || 0;
+					cell.dataset.level = String(Math.min(4, count));
+					const [month, week] = cell.dataset.profileCell!.split("-").map(Number);
+					const lastDay = new Date(Date.UTC(Number(today.slice(0, 4)), month, 0)).getUTCDate();
+					const label = `${month}月 ${week * 7 + 1}–${week === 3 ? lastDay : week * 7 + 7}日，${count} 篇文章`;
+					cell.title = label;
+					cell.setAttribute("aria-label", label);
+				});
+				const countdowns = getProfileCountdowns(now, this.dataset.timezone!, this.dataset.siteStart!);
+				for (const kind of ["week", "month", "year"] as const) {
+					this.querySelector(`[data-profile-days="${kind}"]`)!.textContent = `${countdowns[kind]}天`;
+				}
+				for (const kind of ["holiday", "anniversary"] as const) {
+					const event = countdowns[kind];
+					const node = this.querySelector(`[data-profile-event="${kind}"]`)!;
+					node.querySelector("[data-event-name]")!.textContent = event.name;
+					const time = node.querySelector("time")!;
+					time.textContent = `${Number(event.date.slice(5, 7))}月${Number(event.date.slice(8))}日`;
+					time.dateTime = event.date;
+					node.querySelector("[data-event-days]")!.textContent = `${event.days}天`;
+					node.querySelector("progress")!.value = event.progress;
+				}
+				closePosts();
+			};
+			cells.forEach((cell) => cell.addEventListener("click", () => {
+				const wasSelected = cell.getAttribute("aria-pressed") === "true";
+				closePosts();
+				if (wasSelected) return;
+				cell.setAttribute("aria-pressed", "true");
+				calendar.hidden = true;
+				postPane.hidden = false;
+				this.querySelector("[data-profile-posts-title]")!.textContent = cell.title.split("，")[0];
+				postList.replaceChildren();
+				const matches = groups.get(cell.dataset.profileCell!) || [];
+				if (!matches.length) postList.textContent = "这段时间还没有文章。";
+				for (const post of matches) {
+					const link = document.createElement("a");
+					link.href = post.href;
+					link.textContent = post.title;
+					postList.append(link);
+				}
+			}, { signal: controller.signal }));
+			this.querySelector("[data-profile-back]")!.addEventListener("click", () => {
+				const selected = cells.find((cell) => cell.getAttribute("aria-pressed") === "true");
+				closePosts();
+				selected?.focus();
+			}, { signal: controller.signal });
+			document.addEventListener("visibilitychange", update, { signal: controller.signal });
+			const timer = window.setInterval(update, 60_000);
+			update();
+			this.cleanup = () => { controller.abort(); window.clearInterval(timer); };
+		}
+		disconnectedCallback() { this.cleanup?.(); }
+	}
+	if (!customElements.get("navbar-profile-overview")) customElements.define("navbar-profile-overview", NavbarProfileOverview);
+</script>
