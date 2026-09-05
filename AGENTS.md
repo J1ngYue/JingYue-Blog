@@ -29,6 +29,12 @@ There is no dedicated unit-test framework configured. Before submitting changes,
 
 Use Conventional Commits, matching the current history: `feat: ...`, `fix: ...`, and `chore: ...`. Keep commits and PRs focused on one concern. PRs should include a concise summary, linked issues when relevant, validation commands run, and screenshots for UI changes. Discuss major features or design changes in an issue or discussion before implementation.
 
+## Project Delivery Rules
+
+- Every user-requested code or visual change must add a concise entry to the curated changelog when it needs context, then use a Conventional Commit message.
+- Run `pnpm records` before previewing or committing when commit history changed. `pnpm dev` and `pnpm build` run this synchronization automatically, so newer Conventional Commits appear in the changelog without manual duplication.
+- After local verification, push the focused commit to the configured GitHub remote. Do not claim a deployment is live until the remote push and hosting build have completed.
+
 ## Security & Configuration Tips
 
 Do not commit secrets, tokens, or service keys in config files. Keep deployment-specific settings in the target platform environment, and review generated files such as `dist`, `src/constants/lqips.json`, and `src/constants/icons.ts` before committing them.

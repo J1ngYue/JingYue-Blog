@@ -27,6 +27,12 @@ const filters = [
 		icon: "material-symbols:delete-outline-rounded",
 	},
 ];
+const typeLabels = {
+	feature: "功能新增",
+	optimize: "功能优化",
+	fix: "问题修复",
+	remove: "功能删除",
+} as const;
 ---
 
 <MainGridLayout
@@ -65,6 +71,7 @@ const filters = [
 						<time datetime={`${entry.date}T${entry.time}`}>
 							{entry.date} · {entry.time}
 						</time>
+						<small>{typeLabels[entry.type]}</small>
 						<span>{entry.version}</span>
 					</header>
 					<div class="changelog-entry__box">
@@ -75,7 +82,10 @@ const filters = [
 							aria-expanded="false"
 							aria-controls={`changelog-details-${index}`}
 						>
-							<span>{entry.summary}</span>
+							<span>
+								<strong>{entry.title}</strong>
+								<em>{entry.summary}</em>
+							</span>
 							<Icon is:inline name="material-symbols:expand-more-rounded" aria-hidden="true" />
 						</button>
 						<div
@@ -85,7 +95,6 @@ const filters = [
 							aria-hidden="true"
 						>
 							<div class="changelog-entry__content-inner">
-								<strong>{entry.title}</strong>
 								<ul>
 									{entry.changes.map((change) => <li>{change}</li>)}
 								</ul>
@@ -351,6 +360,135 @@ const filters = [
 		.changelog-entry__content,
 		.changelog-entry__content-inner {
 			transition: none;
+		}
+	}
+
+	/* The reference uses a dense wall of cards; this version keeps the same
+	 * timeline language while giving each change room to breathe. */
+	.changelog-timeline {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1.6rem;
+		margin: 0;
+		border-left: 0;
+		padding: 0.35rem 0 1rem;
+	}
+
+	.changelog-entry {
+		padding-top: 2.15rem;
+	}
+
+	.changelog-entry__dot {
+		top: 0.45rem;
+		left: 1rem;
+		width: 0.72rem;
+		height: 0.72rem;
+		border-width: 0.16rem;
+	}
+
+	.changelog-entry header {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		margin: 0;
+		padding-left: 2.1rem;
+		font-size: 0.7rem;
+	}
+
+	.changelog-entry header > small {
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.68rem;
+		font-weight: 700;
+	}
+
+	.changelog-entry header > span {
+		margin-left: auto;
+		padding: 0.2rem 0.55rem;
+		font-size: 0.65rem;
+	}
+
+	.changelog-entry__box {
+		border-width: 1.5px;
+		border-radius: 0.9rem;
+		box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 4%);
+	}
+
+	.changelog-entry__summary {
+		min-height: 6.7rem;
+		padding: 1.1rem 1.2rem;
+		font-size: 0.85rem;
+	}
+
+	.changelog-entry__summary > span {
+		display: grid;
+		gap: 0.4rem;
+	}
+
+	.changelog-entry__summary strong {
+		font-size: 1rem;
+		font-weight: 780;
+		line-height: 1.35;
+	}
+
+	.changelog-entry__summary em {
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.75rem;
+		font-style: normal;
+		line-height: 1.55;
+	}
+
+	.changelog-entry__content-inner {
+		padding-inline: 1.2rem;
+	}
+
+	.changelog-entry[data-expanded="true"] .changelog-entry__content-inner {
+		padding: 1rem 1.2rem 1.2rem;
+	}
+
+	.changelog-entry__content-inner ul {
+		display: grid;
+		gap: 0.55rem;
+		margin-top: 0.15rem;
+		font-size: 0.78rem;
+		line-height: 1.6;
+	}
+
+	@media (max-width: 860px) {
+		.changelog-timeline {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 1.25rem;
+		}
+	}
+
+	@media (max-width: 620px) {
+		.changelog-timeline {
+			gap: 1rem;
+			padding-top: 0.15rem;
+		}
+
+		.changelog-entry {
+			padding-top: 2rem;
+		}
+
+		.changelog-entry__dot {
+			left: 0.8rem;
+		}
+
+		.changelog-entry header {
+			padding-left: 1.85rem;
+		}
+
+		.changelog-entry header > span {
+			max-width: 7rem;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.changelog-entry__summary {
+			min-height: 7rem;
+			padding: 1rem;
 		}
 	}
 </style>
