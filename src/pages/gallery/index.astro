@@ -129,7 +129,7 @@ const collectionLinks = [
 					)}
 
 					<div class="gallery-album-grid">
-						{albums.map((album) => (
+						{albums.map((album, index) => (
 							<AlbumCard
 								id={album.id}
 								name={album.name}
@@ -140,6 +140,7 @@ const collectionLinks = [
 								tags={album.tags}
 								photoCount={album.photoCount}
 								encrypted={!!album.password}
+								priority={index === 0}
 							/>
 						))}
 					</div>

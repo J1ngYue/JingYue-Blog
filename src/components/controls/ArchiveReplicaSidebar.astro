@@ -54,8 +54,11 @@ function formatPostDate(date: Date): string {
 ---
 
 {
-	side === "left" ? (
-		<aside class="archive-side archive-side--left" aria-label="归档页左侧信息">
+		side === "left" ? (
+		<aside class="archive-side archive-side--left" aria-label="归档页左侧信息" data-archive-sidebar-shell data-sidebar-side="left">
+			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="收束左侧栏" title="收束侧栏">
+				<Icon is:inline name="material-symbols:keyboard-double-arrow-left-rounded" />
+			</button>
 			<section class="archive-profile-card">
 				<div class="archive-profile-card__cover" data-site-profile-cover>
 					<ImageWrapper
@@ -141,7 +144,10 @@ function formatPostDate(date: Date): string {
 			<SiteStats class="archive-site-stats" variant="sidebar" />
 		</aside>
 	) : (
-		<aside class="archive-side archive-side--right" aria-label="归档页右侧信息">
+		<aside class="archive-side archive-side--right" aria-label="归档页右侧信息" data-archive-sidebar-shell data-sidebar-side="right">
+			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="收束右侧栏" title="收束侧栏">
+				<Icon is:inline name="material-symbols:keyboard-double-arrow-right-rounded" />
+			</button>
 			<section class="archive-side-card archive-milestone">
 				<p>这片小天地已经记录了</p>
 				<div class="archive-milestone__names">
@@ -402,10 +408,39 @@ function formatPostDate(date: Date): string {
 		}
 	}
 
+	function initArchiveSidebarCollapse() {
+		document.querySelectorAll<HTMLElement>("[data-archive-sidebar-shell]").forEach((shell) => {
+			if (shell.dataset.sidebarBound === "true") return;
+			shell.dataset.sidebarBound = "true";
+			const side = shell.dataset.sidebarSide;
+			if (!side) return;
+			const toggle = shell.querySelector<HTMLButtonElement>("[data-archive-sidebar-toggle]");
+			const storageKey = `firefly-archive-sidebar-${side}-collapsed`;
+			const setCollapsed = (collapsed: boolean) => {
+				shell.dataset.collapsed = String(collapsed);
+				toggle?.setAttribute("aria-expanded", String(!collapsed));
+				if (toggle) {
+					toggle.title = collapsed ? "展开侧栏" : "收束侧栏";
+					toggle.setAttribute("aria-label", collapsed ? "展开侧栏" : "收束侧栏");
+				}
+			};
+			let stored = false;
+			try { stored = window.localStorage.getItem(storageKey) === "true"; } catch {}
+			setCollapsed(stored);
+			toggle?.addEventListener("click", () => {
+				const collapsed = shell.dataset.collapsed !== "true";
+				setCollapsed(collapsed);
+				try { window.localStorage.setItem(storageKey, String(collapsed)); } catch {}
+			});
+		});
+	}
+
 	initArchiveWeather();
 	initBilibiliHot();
+	initArchiveSidebarCollapse();
 	document.addEventListener("swup:contentReplaced", initArchiveWeather);
 	document.addEventListener("swup:contentReplaced", initBilibiliHot);
+	document.addEventListener("swup:contentReplaced", initArchiveSidebarCollapse);
 </script>
 
 <style>
@@ -415,6 +450,44 @@ function formatPostDate(date: Date): string {
 		gap: 1rem;
 		min-width: 0;
 		align-self: start;
+	}
+
+	.archive-side__collapse-toggle {
+		display: grid;
+		width: 1.85rem;
+		height: 1.85rem;
+		margin: 0 0 0.15rem auto;
+		place-items: center;
+		border: 1px solid color-mix(in srgb, var(--deep-text) 16%, transparent);
+		border-radius: 0.45rem;
+		background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+		color: var(--content-meta);
+		cursor: pointer;
+		transition: background-color 180ms ease, color 180ms ease;
+	}
+
+	.archive-side--left .archive-side__collapse-toggle {
+		margin-right: auto;
+		margin-left: 0;
+	}
+
+	.archive-side__collapse-toggle:hover,
+	.archive-side__collapse-toggle:focus-visible {
+		background: var(--btn-plain-bg-hover);
+		color: var(--deep-text);
+		outline: none;
+	}
+
+	.archive-side[data-collapsed="true"] {
+		align-items: center;
+	}
+
+	.archive-side[data-collapsed="true"] > :not(.archive-side__collapse-toggle) {
+		display: none;
+	}
+
+	.archive-side[data-collapsed="true"] .archive-side__collapse-toggle {
+		margin-inline: auto;
 	}
 
 	.archive-side-card,
@@ -1016,6 +1089,10 @@ function formatPostDate(date: Date): string {
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.archive-side__collapse-toggle {
+			transition: none;
+		}
+
 		.archive-profile-card__avatar,
 		.archive-profile-card__body nav a {
 			transition: none;

@@ -15,6 +15,7 @@ interface Props {
 	tags?: string[];
 	photoCount: number;
 	encrypted?: boolean;
+	priority?: boolean;
 }
 
 const {
@@ -27,6 +28,7 @@ const {
 	tags,
 	photoCount,
 	encrypted,
+	priority = false,
 } = Astro.props;
 const lqipProps = cover ? getLqipProps(cover, undefined, true) : { style: "" };
 const searchText = [name, description, location, ...(tags || [])]
@@ -48,7 +50,8 @@ const searchText = [name, description, location, ...(tags || [])]
 				<img
 					src={cover}
 					alt={name}
-					loading="lazy"
+					loading={priority ? "eager" : "lazy"}
+					fetchpriority={priority ? "high" : "auto"}
 					decoding="async"
 				/>
 			</>
