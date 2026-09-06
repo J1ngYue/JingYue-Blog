@@ -33,7 +33,8 @@ Use Conventional Commits, matching the current history: `feat: ...`, `fix: ...`,
 
 - Every user-requested code or visual change must add a concise entry to the curated changelog when it needs context, then use a Conventional Commit message.
 - Run `pnpm records` before previewing or committing when commit history changed. `pnpm dev` and `pnpm build` run this synchronization automatically, so newer Conventional Commits appear in the changelog without manual duplication.
-- After local verification, push the focused commit to the configured GitHub remote. Do not claim a deployment is live until the remote push and hosting build have completed.
+- Git remote operations, including `git push` and GitHub CLI commands when needed, are allowed for project delivery.
+- After local verification, commit every completed user-requested change and push it to the configured GitHub remote. Do not claim a deployment is live until the remote push and hosting build have completed.
 
 ## Security & Configuration Tips
 
