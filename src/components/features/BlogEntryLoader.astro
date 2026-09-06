@@ -108,17 +108,16 @@
   .blog-entry-loader__orbit { position: absolute; inset: 0; border: 1px solid color-mix(in srgb, var(--loader-accent) 28%, transparent); border-radius: 50%; }
   .blog-entry-loader__orbit::before { position: absolute; inset: -1px; border-radius: 50%; content: ""; background: conic-gradient(var(--loader-accent) var(--loader-progress), transparent 0); mask-image: radial-gradient(farthest-side, transparent calc(100% - 2px), black 0); }
   .blog-entry-loader__runner { position: absolute; inset: 0; animation: blog-loader-orbit 5s linear infinite; }
-  .blog-entry-loader__pet { position: absolute; top: -2.5rem; left: calc(50% - 2.3rem); width: 4.6rem; aspect-ratio: 96 / 104; background: url("/pio/models/pets/feibi/loader-walk.webp") 0 0 / 800% 100% no-repeat; filter: drop-shadow(0 3px 2px rgb(30 40 35 / 10%)); animation: blog-loader-pet .8s steps(8, end) infinite, blog-loader-upright 5s linear infinite; }
+  .blog-entry-loader__pet { position: absolute; top: -2.9rem; left: calc(50% - 2.7rem); width: 5.4rem; aspect-ratio: 96 / 104; background: url("/pio/models/pets/feibi/loader-walk.webp") 0 0 / 800% 100% no-repeat; filter: drop-shadow(0 3px 2px rgb(30 40 35 / 10%)); animation: blog-loader-upright 5s linear infinite; }
   .blog-entry-loader__center { display: grid; justify-items: center; gap: .7rem; }
   .blog-entry-loader__center strong { font-family: Georgia, serif; font-size: 2.7rem; line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums; }
   .blog-entry-loader__center span { font-size: .8rem; color: var(--loader-accent); }
   .blog-entry-loader__caption { position: absolute; top: calc(100% + 3.1rem); width: calc(100% + 4rem); margin: 0; text-align: center; font-size: .78rem; color: color-mix(in srgb, var(--loader-ink) 68%, transparent); }
   @keyframes blog-loader-orbit { to { transform: rotate(360deg); } }
   @keyframes blog-loader-upright { to { transform: rotate(-360deg); } }
-  @keyframes blog-loader-pet { to { background-position: 114.285714% 0; } }
   @media (max-width: 640px) {
     .blog-entry-loader__composition { width: min(14rem, 60vw); }
-    .blog-entry-loader__pet { width: 4rem; left: calc(50% - 2rem); top: -2.2rem; }
+    .blog-entry-loader__pet { width: 4.7rem; left: calc(50% - 2.35rem); top: -2.5rem; }
     .blog-entry-loader__center strong { font-size: 2.2rem; }
   }
   @media (prefers-reduced-motion: reduce) {
