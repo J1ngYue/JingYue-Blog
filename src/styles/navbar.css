@@ -247,6 +247,10 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 }
 
 #navbar .navbar-profile-card {
+    --profile-card-bg: color-mix(in srgb, var(--card-bg) 78%, transparent);
+    --profile-card-text: var(--deep-text);
+    --profile-card-muted: var(--content-meta);
+    --profile-card-border: var(--line-divider);
     position: absolute;
     top: calc(100% + 0.65rem);
     left: 0;
@@ -258,11 +262,12 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     padding: 1.25rem;
     visibility: hidden;
     overflow: visible;
-    border: 1px solid #3b3b3b;
+    border: 1px solid var(--profile-card-border);
     border-radius: 8px;
-    background: #191919;
+    background: var(--profile-card-bg);
     box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 22%);
-    color: #f2f2f2;
+    color: var(--profile-card-text);
+    backdrop-filter: blur(18px) saturate(1.15);
     letter-spacing: 0;
     opacity: 0;
     pointer-events: none;
@@ -291,7 +296,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 }
 
 #navbar .navbar-profile-card__identity { position: relative; min-width: 0; padding-left: 4.65rem; }
-#navbar .navbar-profile-card__name { display: block; color: #f2f2f2; font-size: 1.25rem; font-weight: 750; line-height: 1.4; }
+#navbar .navbar-profile-card__name { display: block; color: var(--profile-card-text); font-size: 1.25rem; font-weight: 750; line-height: 1.4; }
 
 #navbar .navbar-profile-card__avatar-wrap {
     position: absolute;
@@ -310,7 +315,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     box-sizing: border-box;
     border: 2px solid rgb(255 255 255 / 85%);
     border-radius: 50%;
-    background: #fff;
+    background: var(--card-bg);
     box-shadow: 0 0.75rem 1.8rem rgb(15 23 42 / 32%);
     transition:
         box-shadow 180ms ease,
@@ -533,7 +538,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 
 #navbar .navbar-profile-card__bio {
     margin-top: 0.3rem;
-    color: #aeaeae;
+    color: var(--profile-card-muted);
     font-size: 0.75rem;
     font-weight: 400;
     opacity: 1;
@@ -558,7 +563,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     border: 1px solid rgb(226 232 240 / 25%);
     border-radius: 999px;
     padding: 0;
-    color: #f8fafc;
+    color: var(--profile-card-text);
     font-size: 0.66rem;
     font-weight: 750;
     text-decoration: none;
@@ -591,43 +596,43 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 
 #navbar navbar-profile-overview { display: contents; }
 #navbar .navbar-profile-card__activity { grid-column: 1; min-width: 0; }
-#navbar .navbar-profile-card__activity-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; color: #aaa; font-size: .66rem; }
-#navbar .navbar-profile-card__activity-heading a { display: inline-flex; align-items: center; gap: .2rem; color: #ddd; }
+#navbar .navbar-profile-card__activity-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; color: var(--profile-card-muted); font-size: .66rem; }
+#navbar .navbar-profile-card__activity-heading a { display: inline-flex; align-items: center; gap: .2rem; color: var(--profile-card-text); }
 #navbar .navbar-profile-card__activity-heading svg { width: .8rem; height: .8rem; }
 #navbar .navbar-profile-card__heatmap { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
-#navbar .navbar-profile-card__heat-column { display: grid; gap: 4px; text-align: center; font-size: .62rem; color: #999; }
-#navbar .navbar-profile-card__heat-column button { display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 1px solid transparent; border-radius: 3px; background: #2d2d2d; cursor: pointer; transition: border-color 150ms ease; }
-#navbar .navbar-profile-card__heat-column button[data-level="1"] { background: #555; }
-#navbar .navbar-profile-card__heat-column button[data-level="2"] { background: #818181; }
-#navbar .navbar-profile-card__heat-column button[data-level="3"] { background: #aaa; }
-#navbar .navbar-profile-card__heat-column button[data-level="4"] { background: #dfdfdf; }
+#navbar .navbar-profile-card__heat-column { display: grid; gap: 4px; text-align: center; font-size: .62rem; color: var(--profile-card-muted); }
+#navbar .navbar-profile-card__heat-column button { display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 1px solid transparent; border-radius: 3px; background: color-mix(in srgb, var(--profile-card-text) 14%, transparent); cursor: pointer; transition: border-color 150ms ease; }
+#navbar .navbar-profile-card__heat-column button[data-level="1"] { background: color-mix(in srgb, var(--profile-card-text) 25%, transparent); }
+#navbar .navbar-profile-card__heat-column button[data-level="2"] { background: color-mix(in srgb, var(--profile-card-text) 40%, transparent); }
+#navbar .navbar-profile-card__heat-column button[data-level="3"] { background: color-mix(in srgb, var(--profile-card-text) 58%, transparent); }
+#navbar .navbar-profile-card__heat-column button[data-level="4"] { background: color-mix(in srgb, var(--profile-card-text) 76%, transparent); }
 #navbar .navbar-profile-card__heat-column button:hover,
 #navbar .navbar-profile-card__heat-column button:focus-visible,
 #navbar .navbar-profile-card__heat-column button[aria-pressed="true"] { outline: 1px solid #dba5ba; outline-offset: 1px; }
-#navbar .navbar-profile-card__details { grid-column: 2; grid-row: 1 / span 2; min-width: 0; padding-left: 1.1rem; border-left: 1px solid #333; }
+#navbar .navbar-profile-card__details { grid-column: 2; grid-row: 1 / span 2; min-width: 0; padding-left: 1.1rem; border-left: 1px solid var(--profile-card-border); }
 #navbar .navbar-profile-card__details [hidden] { display: none; }
 #navbar .navbar-profile-card__countdowns { display: grid; gap: .7rem; margin: 0; }
 #navbar .navbar-profile-card__countdowns > div,
 #navbar .navbar-profile-card__event > div { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 #navbar .navbar-profile-card__countdowns dt,
 #navbar .navbar-profile-card__event time,
-#navbar .navbar-profile-card__event [data-event-days] { color: #aaa; font-size: .76rem; white-space: nowrap; }
+#navbar .navbar-profile-card__event [data-event-days] { color: var(--profile-card-muted); font-size: .76rem; white-space: nowrap; }
 #navbar .navbar-profile-card__countdowns dd { margin: 0; font-size: 1.14rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 #navbar .navbar-profile-card__event { display: grid; gap: .65rem; margin-top: 1rem; }
 #navbar .navbar-profile-card__event strong { font-size: .9rem; }
-#navbar .navbar-profile-card__event progress { display: block; flex: 1; min-width: 0; width: 100%; height: 7px; overflow: hidden; border: 0; border-radius: 999px; background: #333; color: #ddd; appearance: none; }
-#navbar .navbar-profile-card__event progress::-webkit-progress-bar { background: #333; border-radius: 999px; }
-#navbar .navbar-profile-card__event progress::-webkit-progress-value { background: #ddd; border-radius: 999px; }
-#navbar .navbar-profile-card__event progress::-moz-progress-bar { background: #ddd; border-radius: 999px; }
+#navbar .navbar-profile-card__event progress { display: block; flex: 1; min-width: 0; width: 100%; height: 7px; overflow: hidden; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--profile-card-text) 14%, transparent); color: var(--profile-card-text); appearance: none; }
+#navbar .navbar-profile-card__event progress::-webkit-progress-bar { background: color-mix(in srgb, var(--profile-card-text) 14%, transparent); border-radius: 999px; }
+#navbar .navbar-profile-card__event progress::-webkit-progress-value { background: color-mix(in srgb, var(--primary) 72%, var(--profile-card-text)); border-radius: 999px; }
+#navbar .navbar-profile-card__event progress::-moz-progress-bar { background: color-mix(in srgb, var(--primary) 72%, var(--profile-card-text)); border-radius: 999px; }
 #navbar .navbar-profile-card__posts-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .8rem; }
-#navbar .navbar-profile-card__posts-heading button { display: grid; flex: none; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: #ddd; background: #303030; cursor: pointer; }
+#navbar .navbar-profile-card__posts-heading button { display: grid; flex: none; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: var(--profile-card-text); background: color-mix(in srgb, var(--profile-card-text) 12%, transparent); cursor: pointer; }
 #navbar .navbar-profile-card__posts-heading svg { width: 1rem; height: 1rem; }
-#navbar .navbar-profile-card__post-list { display: grid; gap: .7rem; max-height: 12.5rem; overflow-y: auto; margin-top: .8rem; color: #aaa; font-size: .76rem; }
-#navbar .navbar-profile-card__post-list a { padding-bottom: .6rem; border-bottom: 1px solid #333; color: #e5e5e5; line-height: 1.6; overflow-wrap: anywhere; }
+#navbar .navbar-profile-card__post-list { display: grid; gap: .7rem; max-height: 12.5rem; overflow-y: auto; margin-top: .8rem; color: var(--profile-card-muted); font-size: .76rem; }
+#navbar .navbar-profile-card__post-list a { padding-bottom: .6rem; border-bottom: 1px solid var(--profile-card-border); color: var(--profile-card-text); line-height: 1.6; overflow-wrap: anywhere; }
 
 @media (max-width: 700px) {
     #navbar .navbar-profile-card { grid-template-columns: minmax(0, 1fr); gap: .85rem; padding: 1rem; max-height: calc(100dvh - 6rem); overflow-y: auto; }
-    #navbar .navbar-profile-card__details { grid-column: 1; grid-row: auto; padding: .85rem 0 0; border-left: 0; border-top: 1px solid #333; }
+    #navbar .navbar-profile-card__details { grid-column: 1; grid-row: auto; padding: .85rem 0 0; border-left: 0; border-top: 1px solid var(--profile-card-border); }
     #navbar .navbar-profile-card__countdowns { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
     #navbar .navbar-profile-card__countdowns > div { flex-direction: column; align-items: flex-start; gap: .25rem; }
     #navbar .navbar-profile-card__event { gap: .45rem; margin-top: .75rem; }

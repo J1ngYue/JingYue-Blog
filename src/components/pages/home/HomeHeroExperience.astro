@@ -666,6 +666,10 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-hero-mode-panel small { color: rgb(210 255 238 / 0.9); }
 
 	.home-dialogue-launch {
+		--dialogue-surface: color-mix(in srgb, var(--card-bg) 48%, transparent);
+		--dialogue-text: var(--deep-text);
+		--dialogue-muted: var(--content-meta);
+		--dialogue-border: color-mix(in srgb, var(--dialogue-text) 28%, transparent);
 		position: absolute;
 		right: clamp(4.5rem, 7vw, 7rem);
 		bottom: clamp(5.7rem, 10vh, 8rem);
@@ -674,12 +678,12 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		gap: 0.72rem;
 		min-width: 13.5rem;
 		padding: 0.58rem 0.72rem;
-		border: 1px solid rgb(255 255 255 / 0.32);
+		border: 1px solid var(--dialogue-border);
 		border-radius: 999px;
-		background: rgb(15 24 32 / 0.58);
+		background: var(--dialogue-surface);
 		box-shadow: 0 1rem 2.5rem rgb(4 12 20 / 0.2);
 		backdrop-filter: blur(16px) saturate(1.2);
-		color: inherit;
+		color: var(--dialogue-text);
 		pointer-events: auto;
 		cursor: pointer;
 		transition: opacity 180ms ease, border-color 180ms ease, background 180ms ease;
@@ -687,8 +691,8 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 
 	.home-dialogue-launch:hover,
 	.home-dialogue-launch:focus-visible {
-		border-color: rgb(190 255 232 / 0.72);
-		background: rgb(15 40 36 / 0.72);
+		border-color: color-mix(in srgb, var(--primary) 68%, var(--dialogue-text));
+		background: color-mix(in srgb, var(--dialogue-surface) 82%, var(--primary));
 	}
 
 	.home-dialogue-launch.is-hidden {
@@ -728,10 +732,14 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 
 	.home-dialogue-launch > span:nth-child(2) { display: grid; text-align: left; }
 	.home-dialogue-launch strong { font-size: 0.78rem; }
-	.home-dialogue-launch small { color: rgb(255 255 255 / 0.65); font-size: 0.66rem; }
+	.home-dialogue-launch small { color: var(--dialogue-muted); font-size: 0.66rem; }
 	.home-dialogue-launch > :global(svg) { margin-left: auto; font-size: 1.15rem; }
 
 	.home-hero-dialogue {
+		--dialogue-surface: color-mix(in srgb, var(--card-bg) 42%, transparent);
+		--dialogue-text: var(--deep-text);
+		--dialogue-muted: var(--content-meta);
+		--dialogue-border: color-mix(in srgb, var(--dialogue-text) 28%, transparent);
 		--dialogue-inset: clamp(2.25rem, 15vw, 19rem);
 		position: absolute;
 		inset-inline: 0;
@@ -741,17 +749,17 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		display: flex;
 		flex-direction: column;
 		padding: clamp(1.5rem, 3.5svh, 2.5rem) clamp(5rem, 7vw, 8rem) 1rem var(--dialogue-inset);
-		color: #fff;
+		color: var(--dialogue-text);
 		box-sizing: border-box;
 		border: 0;
-		border-top: 2px solid rgb(255 255 255 / 0.9);
+		border-top: 2px solid var(--dialogue-border);
 		border-radius: 0;
-		background-color: rgb(0 0 0 / 0.68);
+		background-color: var(--dialogue-surface);
 		background-image:
-			linear-gradient(90deg, rgb(255 255 255 / 0.075) 1px, transparent 1px),
-			linear-gradient(rgb(255 255 255 / 0.075) 1px, transparent 1px);
+			linear-gradient(90deg, color-mix(in srgb, var(--dialogue-text) 9%, transparent) 1px, transparent 1px),
+			linear-gradient(color-mix(in srgb, var(--dialogue-text) 9%, transparent) 1px, transparent 1px);
 		background-size: clamp(2.5rem, 4vw, 4rem) clamp(2.5rem, 4vw, 4rem);
-		backdrop-filter: blur(7px);
+		backdrop-filter: blur(12px) saturate(1.08);
 		overflow: visible;
 		pointer-events: auto;
 		opacity: 0;
@@ -814,7 +822,7 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		justify-content: flex-end;
 		min-height: 2.75rem;
 		margin-top: auto;
-		color: rgb(255 255 255 / 0.58);
+		color: var(--dialogue-muted);
 		font-size: 0.72rem;
 	}
 	.home-hero-dialogue__footer > span { display: none; }
@@ -857,7 +865,7 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-hero-dialogue__controls button.is-active,
 	.home-hero-dialogue__footer button:hover,
 	.home-hero-dialogue__footer button:focus-visible {
-		color: #fff;
+		color: var(--dialogue-text);
 		transform: translateY(-1px);
 	}
 
@@ -865,7 +873,7 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-hero-dialogue__controls button[aria-disabled="true"],
 	.home-hero-dialogue__footer button:disabled,
 	.home-hero-dialogue__footer button[aria-disabled="true"] {
-		color: rgb(255 255 255 / 0.25);
+		color: color-mix(in srgb, var(--dialogue-text) 30%, transparent);
 		cursor: not-allowed;
 		transform: none;
 	}
@@ -883,7 +891,7 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-hero-dialogue__text {
 		max-width: 68rem;
 		margin: 0;
-		color: rgb(255 255 255 / 0.96);
+		color: var(--dialogue-text);
 		font-size: clamp(1.45rem, 4svh, 2rem);
 		font-weight: 500;
 		line-height: 1.4;
@@ -938,6 +946,14 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	@keyframes hero-rec-pulse {
 		0%, 100% { opacity: 0.45; transform: scale(0.82); }
 		50% { opacity: 1; transform: scale(1); }
+	}
+
+	:global(html.dark) .home-dialogue-launch,
+	:global(html.dark) .home-hero-dialogue {
+		--dialogue-surface: rgb(0 0 0 / 0.48);
+		--dialogue-text: #fff;
+		--dialogue-muted: rgb(255 255 255 / 0.66);
+		--dialogue-border: rgb(255 255 255 / 0.26);
 	}
 
 	@media (max-width: 900px) {
