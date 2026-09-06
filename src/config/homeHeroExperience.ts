@@ -22,7 +22,7 @@ export const homeHeroExperience = {
 		typingSpeed: 38,
 		autoDelay: 1800,
 		intro: [
-			{ speaker: "host", text: "欢迎来到 JingYue，随便坐，别客气。" },
+			{ speaker: "host", text: "欢迎来到JingYue的博客" },
 			{ speaker: "host", text: "这里记录代码、生活，也收藏偶尔闪过的微光。" },
 			{
 				speaker: "host",

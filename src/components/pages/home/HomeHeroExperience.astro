@@ -557,6 +557,43 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 			listen(state, advanceButton, "click", () => advanceDialogue(state));
 			listen(state, backButton, "click", () => backDialogue(state));
 			listen(state, autoButton, "click", () => toggleAuto(state));
+			const portrait = root.querySelector<HTMLElement>(".home-hero-dialogue__portrait");
+			if (portrait) {
+				let blinkTimer = 0;
+				let blinkReleaseTimer = 0;
+				const resetGaze = () => {
+					portrait.style.setProperty("--eye-shift-x", "0px");
+					portrait.style.setProperty("--eye-shift-y", "0px");
+				};
+				const followPointer = (event: Event) => {
+					const pointer = event as PointerEvent;
+					const bounds = portrait.getBoundingClientRect();
+					if (!bounds.width || !bounds.height) return;
+					const normalizedX = (pointer.clientX - (bounds.left + bounds.width / 2)) / (bounds.width / 2);
+					const normalizedY = (pointer.clientY - (bounds.top + bounds.height / 2)) / (bounds.height / 2);
+					const clamp = (value: number) => Math.max(-1, Math.min(1, value));
+					portrait.style.setProperty("--eye-shift-x", `${clamp(normalizedX) * 4}px`);
+					portrait.style.setProperty("--eye-shift-y", `${clamp(normalizedY) * 3}px`);
+				};
+				const scheduleBlink = () => {
+					blinkTimer = window.setTimeout(() => {
+						portrait.classList.add("is-blinking");
+						blinkReleaseTimer = window.setTimeout(() => {
+							portrait.classList.remove("is-blinking");
+							scheduleBlink();
+						}, 170);
+					}, 2600 + Math.random() * 2600);
+				};
+				listen(state, window, "pointermove", followPointer, { passive: true });
+				listen(state, window, "blur", resetGaze);
+				scheduleBlink();
+				state.cleanup.push(() => {
+					window.clearTimeout(blinkTimer);
+					window.clearTimeout(blinkReleaseTimer);
+					portrait.classList.remove("is-blinking");
+					resetGaze();
+				});
+			}
 			const hide = root.querySelector<HTMLButtonElement>('[data-dialogue-action="hide"]');
 			if (hide) listen(state, hide, "click", () => setDialogueOpen(state, false));
 
@@ -736,10 +773,10 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-dialogue-launch > :global(svg) { margin-left: auto; font-size: 1.15rem; }
 
 	.home-hero-dialogue {
-		--dialogue-surface: color-mix(in srgb, var(--card-bg) 42%, transparent);
-		--dialogue-text: var(--deep-text);
-		--dialogue-muted: var(--content-meta);
-		--dialogue-border: color-mix(in srgb, var(--dialogue-text) 28%, transparent);
+		--dialogue-surface: rgb(0 0 0 / 0.24);
+		--dialogue-text: #fff;
+		--dialogue-muted: rgb(255 255 255 / 0.66);
+		--dialogue-border: rgb(255 255 255 / 0.26);
 		--dialogue-inset: clamp(2.25rem, 15vw, 19rem);
 		position: absolute;
 		inset-inline: 0;
@@ -756,8 +793,8 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		border-radius: 0;
 		background-color: var(--dialogue-surface);
 		background-image:
-			linear-gradient(90deg, color-mix(in srgb, var(--dialogue-text) 9%, transparent) 1px, transparent 1px),
-			linear-gradient(color-mix(in srgb, var(--dialogue-text) 9%, transparent) 1px, transparent 1px);
+			linear-gradient(90deg, color-mix(in srgb, var(--dialogue-text) 5%, transparent) 1px, transparent 1px),
+			linear-gradient(color-mix(in srgb, var(--dialogue-text) 5%, transparent) 1px, transparent 1px);
 		background-size: clamp(2.5rem, 4vw, 4rem) clamp(2.5rem, 4vw, 4rem);
 		backdrop-filter: blur(12px) saturate(1.08);
 		overflow: visible;
@@ -769,6 +806,16 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 			opacity 260ms ease-out,
 			transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
 			visibility 260ms ease-out;
+	}
+	.home-hero-dialogue::before {
+		position: absolute;
+		inset-inline: 0;
+		top: -1px;
+		z-index: 4;
+		height: 2px;
+		content: "";
+		background: var(--dialogue-border);
+		pointer-events: none;
 	}
 
 	.home-hero-dialogue.is-open {
@@ -793,6 +840,8 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-hero-dialogue__eye,
 	.home-hero-dialogue__mouth { position: absolute; display: block; background: #080808; transform: translate(-50%, -50%); }
 	.home-hero-dialogue__eye { width: 8.5%; aspect-ratio: 1; border-radius: 50%; }
+	.home-hero-dialogue__eye { transform: translate(-50%, -50%) translate(var(--eye-shift-x, 0px), var(--eye-shift-y, 0px)) scaleY(var(--eye-scale, 1)); transition: transform 120ms ease-out; transform-origin: center; }
+	.home-hero-dialogue__portrait.is-blinking { --eye-scale: 0.12; }
 	.home-hero-dialogue__eye--left { left: 41.1%; top: 48.2%; }
 	.home-hero-dialogue__eye--right { left: 64.1%; top: 44.7%; }
 	.home-hero-dialogue__mouth { left: 53.4%; top: 50.7%; width: 7.2%; height: 1.9%; border-radius: 999px; transform: translate(-50%, -50%) rotate(-6deg); }
@@ -950,7 +999,7 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 
 	:global(html.dark) .home-dialogue-launch,
 	:global(html.dark) .home-hero-dialogue {
-		--dialogue-surface: rgb(0 0 0 / 0.48);
+		--dialogue-surface: rgb(0 0 0 / 0.24);
 		--dialogue-text: #fff;
 		--dialogue-muted: rgb(255 255 255 / 0.66);
 		--dialogue-border: rgb(255 255 255 / 0.26);
