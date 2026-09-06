@@ -59,6 +59,7 @@ function formatPostDate(date: Date): string {
 			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="收束左侧栏" title="收束侧栏">
 				<Icon is:inline name="material-symbols:keyboard-double-arrow-left-rounded" />
 			</button>
+			<div class="archive-side__content" data-archive-sidebar-content>
 			<section class="archive-profile-card">
 				<div class="archive-profile-card__cover" data-site-profile-cover>
 					<ImageWrapper
@@ -142,12 +143,14 @@ function formatPostDate(date: Date): string {
 			</div>
 
 			<SiteStats class="archive-site-stats" variant="sidebar" />
+			</div>
 		</aside>
 	) : (
 		<aside class="archive-side archive-side--right" aria-label="归档页右侧信息" data-archive-sidebar-shell data-sidebar-side="right">
 			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="收束右侧栏" title="收束侧栏">
 				<Icon is:inline name="material-symbols:keyboard-double-arrow-right-rounded" />
 			</button>
+			<div class="archive-side__content" data-archive-sidebar-content>
 			<section class="archive-side-card archive-milestone">
 				<p>这片小天地已经记录了</p>
 				<div class="archive-milestone__names">
@@ -244,6 +247,7 @@ function formatPostDate(date: Date): string {
 					))}
 				</div>
 			</section>
+			</div>
 		</aside>
 	)
 }
@@ -418,6 +422,9 @@ function formatPostDate(date: Date): string {
 			const storageKey = `firefly-archive-sidebar-${side}-collapsed`;
 			const setCollapsed = (collapsed: boolean) => {
 				shell.dataset.collapsed = String(collapsed);
+				const content = shell.querySelector<HTMLElement>("[data-archive-sidebar-content]");
+				content?.toggleAttribute("inert", collapsed);
+				content?.setAttribute("aria-hidden", String(collapsed));
 				toggle?.setAttribute("aria-expanded", String(!collapsed));
 				if (toggle) {
 					toggle.title = collapsed ? "展开侧栏" : "收束侧栏";
@@ -441,6 +448,8 @@ function formatPostDate(date: Date): string {
 	document.addEventListener("swup:contentReplaced", initArchiveWeather);
 	document.addEventListener("swup:contentReplaced", initBilibiliHot);
 	document.addEventListener("swup:contentReplaced", initArchiveSidebarCollapse);
+	document.addEventListener("astro:page-load", initArchiveSidebarCollapse);
+	window.addEventListener("pageshow", initArchiveSidebarCollapse);
 </script>
 
 <style>
@@ -450,6 +459,17 @@ function formatPostDate(date: Date): string {
 		gap: 1rem;
 		min-width: 0;
 		align-self: start;
+	}
+
+	.archive-side__content {
+		display: flex;
+		width: 100%;
+		max-height: 2400px;
+		flex-direction: column;
+		gap: 1rem;
+		opacity: 1;
+		transform: translateY(0);
+		transition: max-height 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.archive-side__collapse-toggle {
@@ -463,7 +483,7 @@ function formatPostDate(date: Date): string {
 		background: color-mix(in srgb, var(--card-bg) 90%, transparent);
 		color: var(--content-meta);
 		cursor: pointer;
-		transition: background-color 180ms ease, color 180ms ease;
+		transition: background-color 180ms ease, color 180ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.archive-side--left .archive-side__collapse-toggle {
@@ -480,14 +500,20 @@ function formatPostDate(date: Date): string {
 
 	.archive-side[data-collapsed="true"] {
 		align-items: center;
+		min-height: 2.25rem;
 	}
 
-	.archive-side[data-collapsed="true"] > :not(.archive-side__collapse-toggle) {
-		display: none;
+	.archive-side[data-collapsed="true"] .archive-side__content {
+		max-height: 0;
+		opacity: 0;
+		overflow: hidden;
+		pointer-events: none;
+		transform: translateY(-0.35rem);
 	}
 
 	.archive-side[data-collapsed="true"] .archive-side__collapse-toggle {
 		margin-inline: auto;
+		transform: rotate(180deg);
 	}
 
 	.archive-side-card,
@@ -1089,7 +1115,8 @@ function formatPostDate(date: Date): string {
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.archive-side__collapse-toggle {
+		.archive-side__collapse-toggle,
+		.archive-side__content {
 			transition: none;
 		}
 
@@ -1182,5 +1209,71 @@ function formatPostDate(date: Date): string {
 		font-size: 0.68rem;
 		font-style: normal;
 		font-weight: 800;
+	}
+
+	@media (min-width: 1100px) {
+		:is(.category-replica-page, .tag-replica-page, .gallery-replica-page) {
+			--archive-expanded-sidebar-width: 14rem;
+			transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1), grid-template-columns 420ms cubic-bezier(0.22, 1, 0.36, 1);
+		}
+
+		:is(.category-replica-page, .tag-replica-page, .gallery-replica-page):has(.archive-side--left[data-collapsed="true"]):not(:has(.archive-side--right[data-collapsed="true"])) {
+			grid-template-columns: 2.25rem minmax(0, 1fr) var(--archive-expanded-sidebar-width) !important;
+		}
+
+		:is(.category-replica-page, .tag-replica-page, .gallery-replica-page):has(.archive-side--right[data-collapsed="true"]):not(:has(.archive-side--left[data-collapsed="true"])) {
+			grid-template-columns: var(--archive-expanded-sidebar-width) minmax(0, 1fr) 2.25rem !important;
+		}
+
+		:is(.category-replica-page, .tag-replica-page, .gallery-replica-page):has(.archive-side--left[data-collapsed="true"]):has(.archive-side--right[data-collapsed="true"]) {
+			grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem !important;
+			width: calc(100vw - 2rem) !important;
+		}
+	}
+
+	@media (min-width: 1400px) {
+		:is(.archive-replica-page, .category-replica-page, .tag-replica-page, .gallery-replica-page, .record-replica-page) {
+			--archive-expanded-sidebar-width: 17.5rem;
+			transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1), grid-template-columns 420ms cubic-bezier(0.22, 1, 0.36, 1);
+		}
+
+		:is(.archive-replica-page, .category-replica-page, .tag-replica-page, .gallery-replica-page, .record-replica-page):has(.archive-side--left[data-collapsed="true"]):not(:has(.archive-side--right[data-collapsed="true"])) {
+			grid-template-columns: 2.25rem minmax(0, 1fr) var(--archive-expanded-sidebar-width) !important;
+		}
+
+		:is(.archive-replica-page, .category-replica-page, .tag-replica-page, .gallery-replica-page, .record-replica-page):has(.archive-side--right[data-collapsed="true"]):not(:has(.archive-side--left[data-collapsed="true"])) {
+			grid-template-columns: var(--archive-expanded-sidebar-width) minmax(0, 1fr) 2.25rem !important;
+		}
+
+		:is(.archive-replica-page, .category-replica-page, .tag-replica-page, .gallery-replica-page, .record-replica-page):has(.archive-side--left[data-collapsed="true"]):has(.archive-side--right[data-collapsed="true"]) {
+			grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem !important;
+			width: calc(100vw - 2rem) !important;
+		}
+	}
+
+	@media (min-width: 1280px) and (max-width: 1399px) {
+		.archive-replica-page {
+			--archive-expanded-sidebar-width: 17.5rem;
+			transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1), grid-template-columns 420ms cubic-bezier(0.22, 1, 0.36, 1);
+		}
+
+		.archive-replica-page:has(.archive-side--left[data-collapsed="true"]):not(:has(.archive-side--right[data-collapsed="true"])) {
+			grid-template-columns: 2.25rem minmax(0, 1fr) var(--archive-expanded-sidebar-width) !important;
+		}
+
+		.archive-replica-page:has(.archive-side--right[data-collapsed="true"]):not(:has(.archive-side--left[data-collapsed="true"])) {
+			grid-template-columns: var(--archive-expanded-sidebar-width) minmax(0, 1fr) 2.25rem !important;
+		}
+
+		.archive-replica-page:has(.archive-side--left[data-collapsed="true"]):has(.archive-side--right[data-collapsed="true"]) {
+			grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem !important;
+			width: calc(100vw - 2rem) !important;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:is(.archive-replica-page, .category-replica-page, .tag-replica-page, .gallery-replica-page, .record-replica-page) {
+			transition: none;
+		}
 	}
 </style>
