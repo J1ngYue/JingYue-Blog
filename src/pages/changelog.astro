@@ -65,7 +65,13 @@ const typeLabels = {
 
 		<div class="changelog-timeline" data-changelog-list>
 			{changelogEntries.map((entry, index) => (
-				<article class="changelog-entry" data-log-entry data-log-type={entry.type} data-expanded="false">
+				<article
+					class="changelog-entry"
+					data-log-entry
+					data-log-type={entry.type}
+					data-log-index={index}
+					data-expanded="false"
+				>
 					<span class="changelog-entry__dot" aria-hidden="true"></span>
 					<header>
 						<time datetime={`${entry.date}T${entry.time}`}>
@@ -75,6 +81,7 @@ const typeLabels = {
 						<span>{entry.version}</span>
 					</header>
 					<div class="changelog-entry__box">
+						<span class="changelog-entry__index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
 						<button
 							type="button"
 							class="changelog-entry__summary"
@@ -110,14 +117,15 @@ const typeLabels = {
 <style>
 	.changelog-filter {
 		display: flex;
-		min-height: 3.45rem;
+		min-height: 3.6rem;
 		align-items: center;
-		gap: 0.22rem;
+		gap: 0.3rem;
 		overflow-x: auto;
-		margin: 0 0 1.6rem;
-		border: 2px solid var(--record-ink, #111);
-		border-radius: 1.1rem;
-		padding: 0.34rem;
+		margin: 0 0 2.4rem;
+		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 16%, transparent);
+		border-radius: 1.25rem;
+		background: color-mix(in srgb, var(--card-bg, #fff) 76%, transparent);
+		padding: 0.38rem;
 		scrollbar-width: none;
 	}
 
@@ -127,14 +135,14 @@ const typeLabels = {
 
 	.changelog-filter button {
 		display: inline-flex;
-		min-height: 2.45rem;
+		min-height: 2.55rem;
 		flex: 0 0 auto;
 		align-items: center;
-		gap: 0.42rem;
+		gap: 0.45rem;
 		border: 0;
 		border-radius: 999px;
 		background: transparent;
-		padding: 0.4rem 0.85rem;
+		padding: 0.4rem 0.95rem;
 		color: var(--record-ink, var(--deep-text));
 		font: inherit;
 		font-size: 0.8rem;
@@ -176,15 +184,16 @@ const typeLabels = {
 	.changelog-timeline {
 		position: relative;
 		display: grid;
-		gap: 1.15rem;
-		margin-left: 0.45rem;
-		border-left: 1px solid color-mix(in srgb, var(--record-ink, #111) 20%, transparent);
-		padding: 0 0 0.3rem 1.75rem;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		column-gap: clamp(2.1rem, 4vw, 4.6rem);
+		row-gap: clamp(3.4rem, 5vw, 5.2rem);
+		padding: 0.7rem 0 2.5rem;
 	}
 
 	.changelog-entry {
 		position: relative;
 		min-width: 0;
+		padding-top: 2.15rem;
 	}
 
 	.changelog-entry[hidden] {
@@ -193,38 +202,76 @@ const typeLabels = {
 
 	.changelog-entry__dot {
 		position: absolute;
-		top: 0.38rem;
-		left: -2.13rem;
-		width: 0.82rem;
-		height: 0.82rem;
-		border: 0.18rem solid var(--card-bg);
+		top: 0.55rem;
+		left: 1.25rem;
+		z-index: 2;
+		width: 0.7rem;
+		height: 0.7rem;
+		border: 0.16rem solid var(--card-bg);
 		border-radius: 50%;
-		background: var(--record-ink, #111);
-		box-shadow: 0 0 0 1px var(--record-ink, #111);
+		background: var(--primary, #0ea5a4);
+		box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary, #0ea5a4) 55%, transparent);
 	}
 
 	.changelog-entry header {
+		position: absolute;
+		top: 0;
+		left: 0;
 		display: flex;
+		width: 100%;
 		align-items: center;
-		gap: 0.55rem;
-		margin: 0 0 0.55rem;
+		gap: 0.45rem;
+		margin: 0;
+		padding-left: 2.2rem;
 		color: var(--content-meta);
-		font-size: 0.72rem;
+		font-size: 0.68rem;
 		font-variant-numeric: tabular-nums;
 	}
 
+	.changelog-entry header > small {
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.68rem;
+		font-weight: 700;
+	}
+
 	.changelog-entry header > span {
+		margin-left: auto;
 		border-radius: 999px;
-		background: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
-		padding: 0.18rem 0.55rem;
+		background: color-mix(in srgb, var(--primary, #0ea5a4) 12%, transparent);
+		padding: 0.2rem 0.55rem;
 		color: var(--record-ink, #111);
+		font-size: 0.64rem;
 		font-weight: 750;
 	}
 
 	.changelog-entry__box {
+		position: relative;
 		overflow: hidden;
-		border: 2px solid var(--record-ink, #111);
-		background: color-mix(in srgb, var(--card-bg, #fff) 96%, transparent);
+		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 12%, transparent);
+		border-radius: 1rem;
+		background: color-mix(in srgb, var(--card-bg, #fff) 86%, transparent);
+		box-shadow: 0 1rem 2.5rem rgb(15 23 42 / 5%);
+		backdrop-filter: blur(10px);
+		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+	}
+
+	.changelog-entry__box:hover {
+		border-color: color-mix(in srgb, var(--primary, #0ea5a4) 40%, transparent);
+		box-shadow: 0 1.25rem 2.8rem rgb(15 23 42 / 9%);
+		transform: translateY(-2px);
+	}
+
+	.changelog-entry__index {
+		position: absolute;
+		right: 0.55rem;
+		bottom: -0.85rem;
+		color: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
+		font-size: clamp(3.5rem, 6vw, 5.2rem);
+		font-weight: 850;
+		letter-spacing: -0.06em;
+		line-height: 1;
+		pointer-events: none;
+		user-select: none;
 	}
 
 	.changelog-entry__summary {
@@ -232,14 +279,14 @@ const typeLabels = {
 		width: 100%;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
+		gap: 0.85rem;
 		border: 0;
 		background: transparent;
-		padding: 0.85rem 1rem;
+		padding: 1.15rem 1.15rem 1.25rem;
 		color: var(--record-ink, var(--deep-text));
 		font: inherit;
-		font-size: 0.78rem;
-		line-height: 1.55;
+		font-size: 0.84rem;
+		line-height: 1.6;
 		text-align: left;
 		cursor: pointer;
 		transition:
@@ -259,6 +306,21 @@ const typeLabels = {
 
 	.changelog-entry__summary > span {
 		min-width: 0;
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.changelog-entry__summary strong {
+		font-size: 1rem;
+		font-weight: 780;
+		line-height: 1.4;
+	}
+
+	.changelog-entry__summary em {
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.76rem;
+		font-style: normal;
+		line-height: 1.65;
 	}
 
 	.changelog-entry__summary :global(svg) {
@@ -295,12 +357,12 @@ const typeLabels = {
 	.changelog-entry__content-inner {
 		min-height: 0;
 		overflow: hidden;
-		padding: 0 1rem;
+		padding: 0 1.15rem;
 		transition: padding 360ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.changelog-entry[data-expanded="true"] .changelog-entry__content-inner {
-		padding: 0.85rem 1rem 1rem;
+		padding: 0 1.15rem 1.2rem;
 	}
 
 	.changelog-entry__content-inner strong {
@@ -310,13 +372,13 @@ const typeLabels = {
 	}
 
 	.changelog-entry__content-inner ul {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.3rem 1.15rem;
-		margin: 0.55rem 0 0;
+		display: grid;
+		gap: 0.55rem;
+		margin: 0;
 		padding: 0;
 		color: var(--record-ink, var(--deep-text));
-		font-size: 0.75rem;
+		font-size: 0.78rem;
+		line-height: 1.6;
 		list-style-position: inside;
 	}
 
@@ -324,17 +386,86 @@ const typeLabels = {
 		color: var(--content-meta);
 	}
 
-	@media (max-width: 620px) {
-		.changelog-filter {
-			margin-bottom: 1.25rem;
+	/* Short connector segments keep the graph readable without forming a dense web. */
+	@media (min-width: 861px) {
+		.changelog-entry:nth-child(3n + 1):not(:first-child)::before {
+			position: absolute;
+			top: -3.7rem;
+			left: -2.3rem;
+			width: 2.3rem;
+			height: 3.7rem;
+			border-top: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 32%, transparent);
+			border-left: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 32%, transparent);
+			content: "";
 		}
 
+		.changelog-entry:nth-child(3n + 1):not(:first-child)::after,
+		.changelog-entry:nth-child(3n + 2)::after {
+			position: absolute;
+			top: 0.9rem;
+			right: calc(-1 * clamp(2.1rem, 4vw, 4.6rem) / 2);
+			width: calc(clamp(2.1rem, 4vw, 4.6rem) / 2);
+			border-top: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 32%, transparent);
+			content: "";
+		}
+
+		.changelog-entry:nth-child(3n + 1):not(:first-child)::before {
+			border-top-left-radius: 0.5rem;
+		}
+
+		.changelog-entry:nth-child(3n + 1):not(:first-child) .changelog-entry__dot,
+		.changelog-entry:nth-child(3n + 2) .changelog-entry__dot,
+		.changelog-entry:nth-child(3n + 3) .changelog-entry__dot {
+			box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary, #0ea5a4) 55%, transparent), 0 0 0 5px color-mix(in srgb, var(--primary, #0ea5a4) 8%, transparent);
+		}
+	}
+
+	@media (max-width: 860px) {
 		.changelog-timeline {
-			padding-left: 1.1rem;
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: 2rem;
+			padding-left: 1.35rem;
+		}
+
+		.changelog-timeline::before {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0.35rem;
+			border-left: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 28%, transparent);
+			content: "";
+		}
+
+		.changelog-entry {
+			padding-top: 2.05rem;
 		}
 
 		.changelog-entry__dot {
-			left: -1.49rem;
+			left: -1.32rem;
+		}
+
+		.changelog-entry:not(:first-child)::before {
+			position: absolute;
+			top: -2rem;
+			left: -1.32rem;
+			height: 2rem;
+			border-left: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 28%, transparent);
+			content: "";
+		}
+	}
+
+	@media (max-width: 620px) {
+		.changelog-filter {
+			margin-bottom: 1.7rem;
+		}
+
+		.changelog-timeline {
+			padding-left: 1.15rem;
+			padding-bottom: 1.5rem;
+		}
+
+		.changelog-entry__dot {
+			left: -1.12rem;
 		}
 
 		.changelog-entry__box {
@@ -342,15 +473,19 @@ const typeLabels = {
 		}
 
 		.changelog-entry__summary {
-			padding: 0.75rem;
+			padding: 1rem;
 		}
 
 		.changelog-entry__content-inner {
-			padding-inline: 0.75rem;
+			padding-inline: 1rem;
 		}
 
 		.changelog-entry[data-expanded="true"] .changelog-entry__content-inner {
-			padding: 0.75rem 0.75rem 0.85rem;
+			padding: 0 1rem 1rem;
+		}
+
+		.changelog-entry__index {
+			font-size: 3.8rem;
 		}
 	}
 
@@ -363,132 +498,4 @@ const typeLabels = {
 		}
 	}
 
-	/* The reference uses a dense wall of cards; this version keeps the same
-	 * timeline language while giving each change room to breathe. */
-	.changelog-timeline {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1.6rem;
-		margin: 0;
-		border-left: 0;
-		padding: 0.35rem 0 1rem;
-	}
-
-	.changelog-entry {
-		padding-top: 2.15rem;
-	}
-
-	.changelog-entry__dot {
-		top: 0.45rem;
-		left: 1rem;
-		width: 0.72rem;
-		height: 0.72rem;
-		border-width: 0.16rem;
-	}
-
-	.changelog-entry header {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		margin: 0;
-		padding-left: 2.1rem;
-		font-size: 0.7rem;
-	}
-
-	.changelog-entry header > small {
-		color: var(--record-muted, var(--content-meta));
-		font-size: 0.68rem;
-		font-weight: 700;
-	}
-
-	.changelog-entry header > span {
-		margin-left: auto;
-		padding: 0.2rem 0.55rem;
-		font-size: 0.65rem;
-	}
-
-	.changelog-entry__box {
-		border-width: 1.5px;
-		border-radius: 0.9rem;
-		box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 4%);
-	}
-
-	.changelog-entry__summary {
-		min-height: 6.7rem;
-		padding: 1.1rem 1.2rem;
-		font-size: 0.85rem;
-	}
-
-	.changelog-entry__summary > span {
-		display: grid;
-		gap: 0.4rem;
-	}
-
-	.changelog-entry__summary strong {
-		font-size: 1rem;
-		font-weight: 780;
-		line-height: 1.35;
-	}
-
-	.changelog-entry__summary em {
-		color: var(--record-muted, var(--content-meta));
-		font-size: 0.75rem;
-		font-style: normal;
-		line-height: 1.55;
-	}
-
-	.changelog-entry__content-inner {
-		padding-inline: 1.2rem;
-	}
-
-	.changelog-entry[data-expanded="true"] .changelog-entry__content-inner {
-		padding: 1rem 1.2rem 1.2rem;
-	}
-
-	.changelog-entry__content-inner ul {
-		display: grid;
-		gap: 0.55rem;
-		margin-top: 0.15rem;
-		font-size: 0.78rem;
-		line-height: 1.6;
-	}
-
-	@media (max-width: 860px) {
-		.changelog-timeline {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 1.25rem;
-		}
-	}
-
-	@media (max-width: 620px) {
-		.changelog-timeline {
-			gap: 1rem;
-			padding-top: 0.15rem;
-		}
-
-		.changelog-entry {
-			padding-top: 2rem;
-		}
-
-		.changelog-entry__dot {
-			left: 0.8rem;
-		}
-
-		.changelog-entry header {
-			padding-left: 1.85rem;
-		}
-
-		.changelog-entry header > span {
-			max-width: 7rem;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
-
-		.changelog-entry__summary {
-			min-height: 7rem;
-			padding: 1rem;
-		}
-	}
 </style>
