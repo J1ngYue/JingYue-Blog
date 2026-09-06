@@ -98,7 +98,7 @@ const navbarProfileLinks = profileConfig.links.map((item) => ({
 	isExternal: /^https?:\/\//.test(item.url),
 }));
 
-const navbarProfileTerminalLines = ["whoami", "cat ./about.txt", "ls ./social"];
+const navbarProfileTerminalLines = ["cat ./about.txt"];
 const navbarProfileAvatarResponses = [
 	"收到你的问候啦！",
 	"今天也要闪闪发光。",
@@ -204,8 +204,8 @@ const navbarProfileAvatarParticles = [
                             alt={`${profileConfig.name} 的头像`}
                             class="navbar-profile-card__avatar"
                             loading="eager"
-                            widths={[96, 192]}
-                            sizes="84px"
+                            widths={[64, 128]}
+                            sizes="52px"
                             fadeIn={false}
                             siteAvatar
                         />
@@ -250,7 +250,7 @@ const navbarProfileAvatarParticles = [
                                 class="navbar-profile-card__command-word"
                                 data-navbar-profile-terminal
                                 data-lines={JSON.stringify(navbarProfileTerminalLines)}
-                            >whoami</span>
+                            >cat ./about.txt</span>
                             <i aria-hidden="true"></i>
                         </p>
                         <p class="navbar-profile-card__bio">{profileConfig.bio}</p>
