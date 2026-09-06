@@ -846,6 +846,200 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 }
 
+/* 首页参考站黑白导航的最终覆盖。
+ * 使用首页容器限定范围，保留现有菜单内容与移动端导航。 */
+@media (min-width: 1024px) {
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div {
+        position: relative;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 100% !important;
+        max-width: none !important;
+        gap: 0.45rem;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand-shell,
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu,
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-actions {
+        position: relative;
+        flex: 0 0 auto;
+        grid-column: auto;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-brand-shell > .navbar-brand,
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-main-menu,
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-actions {
+        box-sizing: border-box;
+        height: 2.75rem !important;
+        min-height: 2.75rem !important;
+        border: 1px solid rgb(24 24 27 / 12%) !important;
+        border-radius: 999px !important;
+        background: #e7e7e7 !important;
+        box-shadow: 0 0.55rem 1.4rem rgb(24 24 27 / 14%) !important;
+        color: #18181b !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-brand-shell > .navbar-brand,
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-main-menu,
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-actions {
+        border-color: rgb(255 255 255 / 14%) !important;
+        background: #0a0a0a !important;
+        box-shadow: 0 0.55rem 1.4rem rgb(0 0 0 / 30%) !important;
+        color: #f4f4f5 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] > div > div > .navbar-main-menu {
+        display: flex !important;
+        align-items: center;
+        gap: 0.125rem;
+        padding: 0.22rem;
+        isolation: isolate;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-hover-indicator {
+        display: block !important;
+        border: 0 !important;
+        border-radius: 999px;
+        background: #000 !important;
+        box-shadow: 0 0.18rem 0.5rem rgb(15 23 42 / 18%) !important;
+        transition:
+            transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            width 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            height 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            opacity 180ms ease,
+            background-color 180ms ease;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-hover-indicator {
+        background: #fff !important;
+        box-shadow: 0 0.18rem 0.5rem rgb(0 0 0 / 24%) !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item {
+        height: 2.25rem;
+        border: 0 !important;
+        border-radius: 999px;
+        background: transparent !important;
+        padding-inline: 0.72rem;
+        color: #18181b !important;
+        font-size: 1rem;
+        font-weight: 700;
+        text-shadow: none !important;
+        transition: color 180ms ease, transform 180ms ease;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item {
+        color: #f4f4f5 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]),
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) {
+        background: transparent !important;
+        color: #fff !important;
+        outline: none;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) {
+        color: #000 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"]::after {
+        content: none !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-icon {
+        display: none !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .dropdown-container.is-active > :is(a, button) .navbar-icon,
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .dropdown-container:focus-within > :is(a, button) .navbar-icon {
+        display: inline-block !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__default,
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__mark,
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__avatar {
+        color: #18181b !important;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__default,
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__mark,
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__avatar {
+        color: #f4f4f5 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] #search-switch {
+        height: 2.25rem;
+        border: 0 !important;
+        border-radius: 999px;
+        background: transparent !important;
+        color: #18181b !important;
+        box-shadow: none !important;
+        transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] #search-switch {
+        color: #f4f4f5 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible),
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible) {
+        background: #000 !important;
+        color: #fff !important;
+        outline: none;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible) {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .search-shortcut {
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-content {
+        border-color: rgb(24 24 27 / 28%) !important;
+        border-radius: 0.75rem;
+        background: #fff !important;
+        box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 16%) !important;
+        color: #18181b !important;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-content {
+        border-color: rgb(255 255 255 / 28%) !important;
+        background: #0a0a0a !important;
+        box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 42%) !important;
+        color: #f4f4f5 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-item {
+        border-radius: 0.55rem;
+        color: #18181b !important;
+        transition: background-color 180ms ease, color 180ms ease;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-item {
+        color: #f4f4f5 !important;
+    }
+
+    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-item:is(:hover, :focus-visible),
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-item:is(:hover, :focus-visible) {
+        background: #000 !important;
+        color: #fff !important;
+        outline: none;
+    }
+
+    html.dark body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-item:is(:hover, :focus-visible) {
+        background: #fff !important;
+        color: #000 !important;
+    }
+}
+
 /* ============================================
  * Editorial floating navigation
  * 独立品牌、主菜单与操作区，避免整条顶栏形成厚重色块。
@@ -1270,8 +1464,6 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"][data-enab
     transition: none !important;
 }
 
-
-
 /* 调整下拉菜单和浮动面板的背景透明度 */
 /* 亮色主题 */
 #wallpaper-wrapper~* .dropdown-content,
@@ -1349,5 +1541,45 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
         -webkit-backdrop-filter: none !important;
         filter: none !important;
         outline: 0 !important;
+    }
+}
+
+/* 首页激活项文字需要压过 HomeLanding 的全局主题文字规则。 */
+@media (min-width: 1024px) {
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]),
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div * {
+        background: transparent !important;
+        color: #fff !important;
+        text-shadow: none !important;
+    }
+
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]),
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div * {
+        color: #000 !important;
+    }
+
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch * {
+        color: #18181b !important;
+    }
+
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch * {
+        color: #f4f4f5 !important;
+    }
+
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible),
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible) *,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible),
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible) * {
+        background: transparent !important;
+        color: #fff !important;
+    }
+
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible),
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible) * {
+        color: #000 !important;
     }
 }
