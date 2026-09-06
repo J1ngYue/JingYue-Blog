@@ -1,0 +1,75 @@
+/* 知识图谱页（/categories/）的全屏外壳。
+   手法照抄 src/styles/pages/music-visualizer.css:1-95 —— 不新建 layout，
+   用 position:fixed 破框 + html:has() 抑制容器外的持久组件。
+   这样 #swup-container 的 DOM 结构不动，swup 的容器配置与 definePageIsland
+   的代数机制完全不受影响。 */
+
+.graph-page {
+	position: fixed;
+	inset: 0;
+	/* 必须低于 #floating-dock(70) / #mobile-dock(73-74) / #top-row(260)：
+	   全屏层如果盖过它们，右下角工具栏和主题切换就没了 */
+	z-index: 10;
+	overflow: hidden;
+	background: var(--page-bg);
+	/* 画布顶部安全区：导航栏悬浮其上，节点不该被盖住 */
+	--kg-top-inset: 4.75rem;
+	--kg-panel-width: 19rem;
+}
+
+/* 导航栏保持可达（音乐页同样保留），只把它提到画布之上 */
+html:has(.graph-page) #top-row {
+	position: fixed;
+	top: 0;
+	left: 50%;
+	z-index: 260;
+	margin-inline: auto;
+	transform: translateX(-50%);
+}
+
+html:has(.graph-page) #swup-container {
+	min-height: 100vh !important;
+	padding: 0 !important;
+}
+
+/* 全屏页不需要入场位移，否则 fixed 子元素会跟着 transform 抖 */
+html:has(.graph-page) #content-wrapper {
+	opacity: 1 !important;
+	transform: none !important;
+	animation: none !important;
+}
+
+html:has(.graph-page),
+body:has(.graph-page) {
+	overflow: hidden !important;
+}
+
+/* 容器外的持久组件在全屏图谱上没有位置。
+   刻意保留 #floating-dock / #mobile-dock：主题切换按钮和移动端导航都在里面，
+   隐藏它们会让用户在全屏页里无处可去（音乐页隐藏是因为要做沉浸式 3D）。 */
+html:has(.graph-page) #left-sidebar-dynamic,
+html:has(.graph-page) #right-sidebar-dynamic,
+html:has(.graph-page) #progress-bar,
+html:has(.graph-page) .footer,
+html:has(.graph-page) #live2d-widget,
+html:has(.graph-page) #spine-model-container {
+	display: none !important;
+}
+
+/* 中和 swup 转场动画：fixed 元素在 filter/transform 动画下会整块闪 */
+html:has(.graph-page).is-leaving #swup-container.transition-swup-main,
+html:has(.graph-page).is-rendering #swup-container.transition-swup-main {
+	opacity: 1 !important;
+	filter: none !important;
+	transform: none !important;
+	animation: none !important;
+}
+
+@media (max-width: 768px) {
+	.graph-page {
+		--kg-top-inset: 4rem;
+		--kg-panel-width: 100%;
+	}
+}
+
+

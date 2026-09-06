@@ -1,11 +1,9 @@
 ---
 import { Icon } from "astro-icon/components";
-import ArchiveKnowledgeGraph from "@/components/controls/ArchiveKnowledgeGraph.astro";
 import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import { buildArchiveKnowledgeGraph } from "@/utils/archive-knowledge-graph";
 import { getCategoryList, getSortedPostsList } from "@/utils/content-utils";
 import { getTagUrl } from "@/utils/url-utils";
 
@@ -44,12 +42,6 @@ const totalPosts = categories.reduce(
 const maxCategoryCount = Math.max(
 	...categoryData.map((category) => category.count),
 	1,
-);
-const tagGraph = buildArchiveKnowledgeGraph(
-	posts.map((post) => ({
-		title: post.data.title,
-		tags: post.data.tags ?? [],
-	})),
 );
 
 const chartColors = [
@@ -300,15 +292,6 @@ for (const side of ["left", "right"] as const) {
 					<p>共 {totalPosts} 篇文章</p>
 				</section>
 			</div>
-
-			<ArchiveKnowledgeGraph
-				graph={tagGraph}
-				id="category-tag-graph"
-				title="标签关系图谱"
-				eyebrow={`${tagGraph.nodes.length} 个标签`}
-				description="标签之间的连线表示它们曾在同一篇文章中出现，节点越大代表使用频率越高。"
-				variant="categories"
-			/>
 		</div>
 
 		{categories.length === 0 && (

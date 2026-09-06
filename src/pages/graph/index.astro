@@ -1,0 +1,43 @@
+---
+import KnowledgeGraph from "@/components/widget/KnowledgeGraph.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { getKnowledgeGraphData, getTagList } from "@/utils/content-utils";
+import { getTagUrl, url } from "@/utils/url-utils";
+import "@/styles/pages/graph.css";
+import "@/styles/widgets/knowledge-graph.css";
+import "@/styles/widgets/graph-filter-panel.css";
+import "@/styles/widgets/graph-detail-panel.css";
+
+const { meta } = await getKnowledgeGraphData();
+const tags = await getTagList();
+const title = "文章图谱";
+const description = "从分类、标签与文章之间的关联，探索 JingYue 的内容脉络。";
+---
+
+<MainGridLayout title={title} description={description}>
+	<Fragment slot="head">
+		<link rel="prefetch" href={url("/api/knowledge-graph.json")} as="fetch" crossorigin="anonymous" />
+	</Fragment>
+
+	<h1 class="sr-only">{title}</h1>
+	<nav class="sr-only" aria-label={title}>
+		<h2>分类</h2>
+		<ul>
+			{meta.categories.map((category) => (
+				<li><a href={category.url}>{category.name}</a>（{category.postCount}）</li>
+			))}
+		</ul>
+		<h2>{i18n(I18nKey.tags)}</h2>
+		<ul>
+			{tags.map((tag) => (
+				<li><a href={getTagUrl(tag.name)}>#{tag.name}</a>（{tag.count}）</li>
+			))}
+		</ul>
+	</nav>
+
+	<div class="graph-page">
+		<KnowledgeGraph meta={meta} />
+	</div>
+</MainGridLayout>

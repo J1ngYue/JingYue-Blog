@@ -32,6 +32,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				},
 				LinkPresets.Archive,
 				LinkPresets.Categories,
+				LinkPresets.Graph,
 				LinkPresets.Tags,
 			],
 		},
@@ -134,6 +135,11 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		name: "分类",
 		url: "/categories/",
 		icon: "material-symbols:folder-open-outline-rounded",
+	},
+	Graph: {
+		name: "图谱",
+		url: "/graph/",
+		icon: "material-symbols:share",
 	},
 	Tags: {
 		name: "标签",

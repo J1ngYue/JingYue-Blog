@@ -4,11 +4,9 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { Icon } from "astro-icon/components";
-import ArchiveKnowledgeGraph from "@/components/controls/ArchiveKnowledgeGraph.astro";
 import ArchiveReplicaSidebar from "@/components/controls/ArchiveReplicaSidebar.astro";
 import ArchiveYearHeatmap from "@/components/controls/ArchiveYearHeatmap.astro";
 import { siteConfig } from "@/config";
-import { buildArchiveKnowledgeGraph } from "@/utils/archive-knowledge-graph";
 import { getSortedPostsList } from "@/utils/content-utils";
 import { getBlogActivityCalendar } from "@/utils/home-activity";
 
@@ -22,12 +20,6 @@ const currentYear = Number(
 		timeZone: timezone,
 		year: "numeric",
 	}).format(new Date()),
-);
-const knowledgeGraph = buildArchiveKnowledgeGraph(
-	sortedPostsList.map((post) => ({
-		title: post.data.title,
-		tags: post.data.tags,
-	})),
 );
 ---
 
@@ -56,10 +48,6 @@ const knowledgeGraph = buildArchiveKnowledgeGraph(
 			</header>
 
 			<ArchivePanel />
-
-			<div class="archive-replica__knowledge">
-				<ArchiveKnowledgeGraph graph={knowledgeGraph} />
-			</div>
 		</section>
 
 		<ArchiveReplicaSidebar side="right" posts={sortedPostsList} />

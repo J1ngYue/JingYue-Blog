@@ -1,13 +1,32 @@
-import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection, render } from "astro:content";
+import type { MarkdownHeading } from "astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
-import { getCategoryUrl } from "@utils/url-utils";
+import {
+	buildKnowledgeGraphData,
+	type KGData,
+} from "@utils/knowledge-graph-data";
+import {
+	getCategoryUrl,
+	getPostUrlBySlug,
+	getTagUrl,
+} from "@utils/url-utils";
+import { siteConfig } from "@/config";
+
+let cachedPosts: CollectionEntry<"posts">[] | null = null;
+let cachedHeadings: Map<string, MarkdownHeading[]> | null = null;
+
+async function getAllPosts(): Promise<CollectionEntry<"posts">[]> {
+	if (cachedPosts) return cachedPosts;
+	cachedPosts = await getCollection("posts", ({ data }) => {
+		return import.meta.env.PROD ? data.draft !== true : true;
+	});
+	return cachedPosts;
+}
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts() {
-	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
-	});
+	const allBlogPosts = await getAllPosts();
 
 	const sorted = allBlogPosts.sort((a, b) => {
 		// 首先按置顶状态排序，置顶文章在前
@@ -57,9 +76,7 @@ export type Tag = {
 };
 
 export async function getTagList(): Promise<Tag[]> {
-	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
-	});
+	const allBlogPosts = await getAllPosts();
 
 	const countMap: { [key: string]: number } = {};
 	allBlogPosts.forEach((post: { data: { tags: string[] } }) => {
@@ -84,9 +101,7 @@ export type Category = {
 };
 
 export async function getCategoryList(): Promise<Category[]> {
-	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
-	});
+	const allBlogPosts = await getAllPosts();
 	const count: { [key: string]: number } = {};
 	allBlogPosts.forEach((post: { data: { category: string | null } }) => {
 		if (!post.data.category) {
@@ -118,6 +133,54 @@ export async function getCategoryList(): Promise<Category[]> {
 		});
 	}
 	return ret;
+}
+
+/**
+ * Extract headings with the same Markdown pipeline used to render each article.
+ * Keeping rehype-slug as the source of truth makes heading links in the graph exact.
+ */
+export async function getAllPostHeadings(): Promise<
+	Map<string, MarkdownHeading[]>
+> {
+	if (cachedHeadings) return cachedHeadings;
+
+	const posts = await getAllPosts();
+	const headingMap = new Map<string, MarkdownHeading[]>();
+	for (const post of posts) {
+		const { headings } = await render(post);
+		headingMap.set(post.id, headings);
+	}
+
+	cachedHeadings = headingMap;
+	return headingMap;
+}
+
+/** Build the four-level graph data used by the standalone article graph page. */
+export async function getKnowledgeGraphData(): Promise<KGData> {
+	const posts = await getAllPosts();
+	const headingMap = await getAllPostHeadings();
+
+	return buildKnowledgeGraphData(
+		posts.map((post) => ({
+			id: post.id,
+			title: post.data.title,
+			url: getPostUrlBySlug(post.id),
+			published: post.data.published,
+			category: post.data.category,
+			tags: post.data.tags,
+			headings: (headingMap.get(post.id) ?? []).map((heading) => ({
+				depth: heading.depth,
+				slug: heading.slug,
+				text: heading.text,
+			})),
+		})),
+		{
+			uncategorizedName: i18n(I18nKey.uncategorized),
+			categoryUrl: getCategoryUrl,
+			tagUrl: getTagUrl,
+			siteStartDate: siteConfig.siteStartDate,
+		},
+	);
 }
 
 /**
