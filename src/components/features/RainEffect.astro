@@ -12,6 +12,7 @@ const config = rainConfig;
 			constructor(config) {
 				this.config = config;
 				this.canvas = null;
+				this.host = null;
 				this.context = null;
 				this.drops = [];
 				this.splashes = [];
@@ -40,24 +41,32 @@ const config = rainConfig;
 			}
 
 			getDropCount() {
-				const count = window.innerWidth <= 700
+				const baseCount = window.innerWidth <= 768
 					? this.config.dropCount.mobile
 					: this.config.dropCount.desktop;
-				return Math.max(18, Math.round(count * Math.min(1, this.viewportWidth / 1280)));
+				const intensity = Math.min(1, Math.max(0, this.config.intensity));
+				const areaScale = Math.min(
+					1.4,
+					(this.viewportWidth * this.viewportHeight) / 1100000,
+				);
+				return Math.max(
+					10,
+					Math.round(baseCount * intensity * Math.max(0.65, areaScale)),
+				);
 			}
 
 			createDrop(randomY) {
 				const speed = this.random(this.config.speed.min, this.config.speed.max);
 				return {
-					x: this.randomUnit() * Math.max(1, this.viewportWidth),
+					x: this.randomUnit() * this.viewportWidth,
 					y: randomY
-						? this.randomUnit() * Math.max(1, this.viewportHeight)
-						: -this.randomUnit() * Math.max(1, this.viewportHeight) * 0.5,
+						? this.randomUnit() * this.viewportHeight
+						: -40 - this.randomUnit() * this.viewportHeight * 0.3,
 					speed,
 					length: this.random(this.config.length.min, this.config.length.max),
 					opacity: this.random(this.config.opacity.min, this.config.opacity.max),
-					wind: this.config.wind * this.random(0.72, 1.18),
-					radius: this.random(0.55, 1.25),
+					wind: speed * this.config.wind,
+					radius: this.random(0.55, 1.35),
 					finished: false,
 				};
 			}
@@ -71,29 +80,23 @@ const config = rainConfig;
 			}
 
 			createCanvas() {
-				document.getElementById("canvas_rain")?.remove();
-				this.canvas = document.createElement("canvas");
-				this.canvas.id = "canvas_rain";
-				this.canvas.setAttribute("aria-hidden", "true");
-				this.canvas.style.cssText = [
-					"position:fixed",
-					"inset:0",
-					"width:100vw",
-					"height:100vh",
-					"pointer-events:none",
-					`z-index:${this.config.zIndex}`,
-					"contain:strict",
-				].join(";");
-				document.documentElement.appendChild(this.canvas);
+				this.canvas = document.querySelector("[data-hero-rain]");
+				this.host = this.canvas?.parentElement ?? null;
+				if (!this.canvas || !this.host) return;
+				this.canvas.style.zIndex = String(this.config.zIndex);
+				this.canvas.classList.add("is-active");
 				this.context = this.canvas.getContext("2d", { alpha: true });
 				this.resizeCanvas();
 			}
 
 			resizeCanvas() {
-				if (!this.canvas) return;
-				this.viewportWidth = Math.max(1, window.innerWidth);
-				this.viewportHeight = Math.max(1, window.innerHeight);
-				this.pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+				if (!this.canvas || !this.host) return;
+				const bounds = this.host.getBoundingClientRect();
+				this.viewportWidth = Math.max(1, Math.round(bounds.width));
+				this.viewportHeight = Math.max(1, Math.round(bounds.height));
+				this.pixelRatio = window.innerWidth <= 768
+					? 1
+					: Math.min(window.devicePixelRatio || 1, 1.5);
 				this.canvas.width = Math.round(this.viewportWidth * this.pixelRatio);
 				this.canvas.height = Math.round(this.viewportHeight * this.pixelRatio);
 				this.context?.setTransform(
@@ -111,16 +114,18 @@ const config = rainConfig;
 				const now = performance.now();
 				if (!force && now < this.collisionRefreshAt) return;
 				this.collisionRefreshAt = now + 500;
+				const hostRect = this.host?.getBoundingClientRect();
+				if (!hostRect) return;
 				const selectors = [".home-hero-dialogue.is-open"];
 				this.collisionEdges = selectors.flatMap((selector) =>
 					Array.from(document.querySelectorAll(selector), (element) => {
 						const rect = element.getBoundingClientRect();
 						return {
-							left: Math.max(0, rect.left),
-							right: Math.min(window.innerWidth, rect.right),
-							top: rect.top,
+							left: Math.max(0, rect.left - hostRect.left),
+							right: Math.min(this.viewportWidth, rect.right - hostRect.left),
+							top: rect.top - hostRect.top,
 						};
-					}).filter((edge) => edge.right > edge.left && edge.top > 0 && edge.top < window.innerHeight),
+					}).filter((edge) => edge.right > edge.left && edge.top > 0 && edge.top < this.viewportHeight),
 				);
 			}
 
@@ -153,34 +158,28 @@ const config = rainConfig;
 			}
 
 			resetDrop(drop) {
-				drop.x = this.randomUnit() * this.viewportWidth;
-				drop.y = -this.randomUnit() * 40;
-				drop.finished = false;
+				Object.assign(drop, this.createDrop(false));
+				drop.x = this.randomUnit() * (this.viewportWidth + 80);
 			}
 
 			spawnSplash(x, y) {
-				if (this.splashes.length > 90) return;
-				const particleCount = 6 + Math.floor(this.randomUnit() * 4);
+				const particleCount = window.innerWidth <= 768 ? 3 : 6;
 				for (let index = 0; index < particleCount; index += 1) {
-					const angle =
-						-Math.PI / 2 + (this.randomUnit() - 0.5) * 1.9;
-					const speed = this.random(1.1, 3.3);
 					this.splashes.push({
 						x,
-						y,
-						vx: Math.cos(angle) * speed,
-						vy: Math.sin(angle) * speed,
-						radius: this.random(0.8, 1.9),
+						y: y - 1,
+						vx: this.random(-1.9, 1.9),
+						vy: -this.random(1.4, 4.8),
+						radius: this.random(0.7, 2.2),
+						opacity: this.random(0.24, 0.56),
 						life: 0,
-						maxLife: 22 + Math.floor(this.randomUnit() * 16),
+						maxLife: 14 + Math.floor(this.randomUnit() * 16),
 					});
 				}
 			}
 
 			getRainColor() {
-				return document.documentElement.classList.contains("dark")
-					? "235, 244, 255"
-					: "42, 58, 72";
+				return "255, 255, 255";
 			}
 
 			isHomePage() {
@@ -214,11 +213,13 @@ const config = rainConfig;
 					drop.x += drop.wind * delta;
 					drop.y += drop.speed * delta;
 
-					const hitEdge = this.collisionEdges.find((edge) =>
-						drop.x >= edge.left &&
-						drop.x <= edge.right &&
-						previousY < edge.top &&
-						drop.y >= edge.top,
+					const hitEdge = this.collisionEdges.find(
+						(edge) =>
+							drop.x >= edge.left &&
+							drop.x <= edge.right &&
+							previousY < edge.top &&
+							drop.y >= edge.top &&
+							this.randomUnit() <= 0.62,
 					);
 					if (hitEdge) {
 						this.spawnSplash(drop.x, hitEdge.top);
@@ -230,7 +231,7 @@ const config = rainConfig;
 						continue;
 					}
 
-					if (drop.y > height + drop.length) {
+					if (drop.y - drop.length > height || drop.x < -drop.length) {
 						if (this.state === "draining") {
 							this.spawnSplash(drop.x, height - 1);
 							drop.finished = true;
@@ -241,21 +242,16 @@ const config = rainConfig;
 						continue;
 					}
 
-					if (drop.x > width + 12 || drop.x < -12) {
-						if (this.state === "draining") {
-							drop.finished = true;
-							continue;
-						}
-						drop.x = drop.x > width ? -8 : width + 8;
-					}
-
 					visibleCount += 1;
 					context.globalAlpha = 1;
 					context.strokeStyle = `rgba(${rainColor}, ${drop.opacity})`;
 					context.lineWidth = drop.radius;
 					context.beginPath();
-					context.moveTo(drop.x - drop.wind * 0.9, drop.y - drop.length);
-					context.lineTo(drop.x, drop.y);
+					context.moveTo(drop.x, drop.y);
+					context.lineTo(
+						drop.x - this.config.wind * drop.length,
+						drop.y - drop.length,
+					);
 					context.stroke();
 				}
 
@@ -269,7 +265,7 @@ const config = rainConfig;
 					splash.x += splash.vx * delta;
 					splash.y += splash.vy * delta;
 					splash.vy += 0.16 * delta;
-					const opacity = 0.4 * (1 - splash.life / splash.maxLife);
+					const opacity = splash.opacity * (1 - splash.life / splash.maxLife);
 					context.globalAlpha = 1;
 					context.fillStyle = `rgba(${rainColor}, ${opacity})`;
 					context.beginPath();
@@ -347,8 +343,10 @@ const config = rainConfig;
 					"visibilitychange",
 					this.boundVisibility,
 				);
-				this.canvas?.remove();
+				this.context?.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
+				this.canvas?.classList.remove("is-active");
 				this.canvas = null;
+				this.host = null;
 				this.context = null;
 				this.drops = [];
 				this.splashes = [];
@@ -403,3 +401,27 @@ const config = rainConfig;
 		window.addEventListener("beforeunload", () => manager.stopImmediate());
 	})();
 </script>
+
+<style is:global>
+	.home-hero-rain {
+		position: absolute;
+		inset: 0;
+		z-index: 20;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+		pointer-events: none;
+		contain: strict;
+		transition: opacity 240ms ease;
+	}
+
+	.home-hero-rain.is-active {
+		opacity: 1;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-hero-rain {
+			display: none;
+		}
+	}
+</style>

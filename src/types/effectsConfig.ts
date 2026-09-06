@@ -52,6 +52,7 @@ export type SnowConfig = {
 export type RainConfig = {
 	enable: boolean; // 是否启用雨滴特效
 	switchable?: boolean; // 是否允许用户在设置中切换雨滴特效
+	intensity: number;
 	dropCount: {
 		desktop: number;
 		mobile: number;
@@ -68,6 +69,6 @@ export type RainConfig = {
 		min: number;
 		max: number;
 	};
-	wind: number; // 水平方向偏移速度
+	wind: number; // 水平风速相对垂直速度的比例
 	zIndex: number;
 };
