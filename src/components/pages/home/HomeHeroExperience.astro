@@ -67,6 +67,7 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		aria-label="与 JingYue 对话"
 		aria-hidden="true"
 	>
+		<div class="home-hero-dialogue__menu" data-dialogue-menu hidden></div>
 		<div class="home-hero-dialogue__sticker" aria-hidden="true">
 		<div class="home-hero-dialogue__portrait">
 		<img
@@ -91,7 +92,6 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 
 		<div class="home-hero-dialogue__body" data-dialogue-body tabindex="0">
 			<p class="home-hero-dialogue__text" data-dialogue-text aria-live="polite"></p>
-			<div class="home-hero-dialogue__menu" data-dialogue-menu hidden></div>
 		</div>
 
 		<footer class="home-hero-dialogue__footer">
@@ -320,7 +320,9 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	function showTopicMenu(state: ExperienceState) {
 		clearDialogueTimers(state);
 		state.mode = "menu";
-		state.text.hidden = true;
+		state.typing = false;
+		state.text.hidden = false;
+		state.text.textContent = state.config.menuTitle;
 		state.menu.hidden = false;
 		state.menu.replaceChildren();
 		state.name.textContent = state.config.hostName;
@@ -330,9 +332,14 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 
 		for (const [index, topic] of state.config.topics.entries()) {
 			const button = document.createElement("button");
+			const particles = document.createElement("span");
+			const label = document.createElement("strong");
 			button.type = "button";
 			button.className = "home-hero-dialogue__topic";
-			button.innerHTML = `<span>${String(index + 1).padStart(2, "0")}</span><strong>${topic.title}</strong><i aria-hidden="true">→</i>`;
+			particles.className = "home-hero-dialogue__topic-particles";
+			particles.setAttribute("aria-hidden", "true");
+			label.textContent = topic.title;
+			button.append(particles, label);
 			button.addEventListener("click", (event) => {
 				event.stopPropagation();
 				state.history.push(captureDialogueView(state));
@@ -792,10 +799,6 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		border-top: 2px solid var(--dialogue-border);
 		border-radius: 0;
 		background-color: var(--dialogue-surface);
-		background-image:
-			linear-gradient(90deg, color-mix(in srgb, var(--dialogue-text) 5%, transparent) 1px, transparent 1px),
-			linear-gradient(color-mix(in srgb, var(--dialogue-text) 5%, transparent) 1px, transparent 1px);
-		background-size: clamp(2.5rem, 4vw, 4rem) clamp(2.5rem, 4vw, 4rem);
 		backdrop-filter: blur(12px) saturate(1.08);
 		overflow: visible;
 		pointer-events: auto;
@@ -947,39 +950,101 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		letter-spacing: 0.015em;
 	}
 
-	.home-hero-dialogue__menu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.85rem; }
+	.home-hero-dialogue__menu {
+		position: absolute;
+		left: 50%;
+		bottom: calc(100% + clamp(3rem, 20svh, 15rem));
+		z-index: 6;
+		display: flex;
+		flex-direction: column;
+		gap: clamp(0.9rem, 1.6svh, 1.35rem);
+		width: min(48rem, calc(100vw - 2rem));
+		transform: translateX(-50%);
+	}
 	.home-hero-dialogue__menu[hidden] { display: none; }
 	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic) {
-		display: grid;
-		grid-template-columns: auto 1fr auto;
+		position: relative;
+		isolation: isolate;
+		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		min-height: 4.65rem;
-		padding: 0.95rem 1.1rem;
-		border: 1px solid rgb(255 255 255 / 0.13);
-		border-radius: 1rem;
-		background: rgb(255 255 255 / 0.055);
+		justify-content: center;
+		width: 100%;
+		min-height: 3.6rem;
+		padding: 0.75rem clamp(2.5rem, 7vw, 5.5rem);
+		border: 0;
+		border-radius: 0;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			rgb(0 0 0 / 18%) 12%,
+			rgb(0 0 0 / 62%) 31%,
+			rgb(0 0 0 / 82%) 50%,
+			rgb(0 0 0 / 62%) 69%,
+			rgb(0 0 0 / 18%) 88%,
+			transparent 100%
+		);
+		backdrop-filter: blur(8px);
 		color: inherit;
-		text-align: left;
+		font: inherit;
+		font-size: 1.15rem;
+		font-weight: 700;
+		line-height: 1.2;
 		cursor: pointer;
+		overflow: hidden;
 		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			box-shadow 160ms ease,
-			transform 160ms ease;
+			background 200ms ease,
+			color 200ms ease;
 	}
 
 	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic:hover),
 	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic:focus-visible) {
-		border-color: hsl(var(--hue) 70% 75% / 0.62);
-		background: hsl(var(--hue) 65% 55% / 0.14);
-		box-shadow: 0 0.7rem 1.8rem rgb(0 0 0 / 0.18);
-		transform: translateY(-2px);
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			rgb(196 133 172 / 28%) 15%,
+			rgb(159 112 159 / 86%) 35%,
+			rgb(109 121 156) 50%,
+			rgb(82 145 177 / 86%) 65%,
+			rgb(71 169 194 / 28%) 85%,
+			transparent 100%
+		);
 	}
 
-	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic span) { color: hsl(var(--hue) 75% 78%); font: 750 0.72rem var(--font-monospace, monospace); }
-	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic strong) { font-size: clamp(0.9rem, 1vw, 1rem); }
-	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic i) { font-size: 1.2rem; font-style: normal; }
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic:focus-visible) {
+		outline: 2px solid #fff;
+		outline-offset: 3px;
+	}
+
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic strong) {
+		position: relative;
+		z-index: 1;
+		font-size: inherit;
+		text-shadow: 0 1px 0 rgb(0 0 0 / 0.65);
+	}
+
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic-particles) {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		background-image:
+			radial-gradient(circle at 13% 78%, rgb(255 255 255 / 0.9) 0 1px, transparent 2px),
+			radial-gradient(circle at 31% 26%, rgb(229 218 255 / 0.85) 0 1px, transparent 2px),
+			radial-gradient(circle at 54% 72%, rgb(255 255 255 / 0.82) 0 1px, transparent 2px),
+			radial-gradient(circle at 72% 31%, rgb(205 238 255 / 0.88) 0 1px, transparent 2px),
+			radial-gradient(circle at 89% 67%, rgb(255 255 255 / 0.8) 0 1px, transparent 2px);
+		opacity: 0;
+		transform: translateY(0.35rem);
+		transition:
+			opacity 200ms ease,
+			transform 360ms ease;
+		pointer-events: none;
+	}
+
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic:hover .home-hero-dialogue__topic-particles),
+	.home-hero-dialogue__menu :global(.home-hero-dialogue__topic:focus-visible .home-hero-dialogue__topic-particles) {
+		opacity: 1;
+		transform: translateY(0);
+	}
 
 	.home-hero-dialogue__footer button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 	.home-hero-dialogue__controls [data-dialogue-action="auto"] :global(svg:last-child),
@@ -1018,10 +1083,19 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		.home-hero-dialogue__sticker {
 			width: min(23rem, 56vw, 48svh);
 		}
-		.home-hero-dialogue__menu { grid-template-columns: 1fr; }
+		.home-hero-dialogue__menu {
+			bottom: calc(100% + clamp(2rem, 18svh, 8rem));
+			gap: 0.85rem;
+		}
+		:global(.home-landing.is-home-wordmark-ready .home-hero-frame:has(.home-hero-dialogue__menu:not([hidden])) .home-mobile-profile) {
+			opacity: 0;
+			visibility: hidden;
+			transform: translate(-50%, 0.75rem);
+		}
 		.home-hero-dialogue__menu :global(.home-hero-dialogue__topic) {
-			min-height: 3.85rem;
+			min-height: 3.25rem;
 			padding: 0.78rem 1rem;
+			font-size: 1rem;
 		}
 		.home-hero-dialogue__text {
 			font-size: clamp(1.125rem, 3.4svh, 1.5rem);
@@ -1070,6 +1144,8 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	@media (prefers-reduced-motion: reduce) {
 		.home-camera-rec i { animation: none; }
 		.home-dialogue-launch,
-		.home-hero-dialogue { transition: none; }
+		.home-hero-dialogue,
+		.home-hero-dialogue__menu :global(.home-hero-dialogue__topic),
+		.home-hero-dialogue__menu :global(.home-hero-dialogue__topic-particles) { transition: none; }
 	}
 </style>
