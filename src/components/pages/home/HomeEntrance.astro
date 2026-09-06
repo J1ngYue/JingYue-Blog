@@ -51,10 +51,14 @@ const tileSlots = Array.from({ length: 120 });
 		const tiles = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-home-entrance-tile]"),
 		);
+		const { width: entranceWidth, height: entranceHeight } =
+			root.getBoundingClientRect();
+		root.style.setProperty("--home-entrance-width", `${entranceWidth}px`);
+		root.style.setProperty("--home-entrance-height", `${entranceHeight}px`);
 		const columns =
-			window.innerWidth <= 640 ? 5 : window.innerWidth < window.innerHeight ? 6 : 10;
-		const tileSize = Math.ceil(window.innerWidth / columns);
-		const rows = Math.ceil(window.innerHeight / tileSize);
+			entranceWidth <= 640 ? 5 : entranceWidth < entranceHeight ? 6 : 10;
+		const tileSize = Math.ceil(entranceWidth / columns);
+		const rows = Math.ceil(entranceHeight / tileSize);
 		const activeCount = columns * rows;
 
 		tiles.forEach((tile, index) => {
@@ -162,8 +166,8 @@ const tileSlots = Array.from({ length: 120 });
 		top: calc(-1 * var(--tile-top));
 		left: calc(-1 * var(--tile-left));
 		display: block;
-		width: 100vw;
-		height: 100vh;
+		width: var(--home-entrance-width);
+		height: var(--home-entrance-height);
 		background-image:
 			linear-gradient(rgb(3 8 17 / 0.12), rgb(3 8 17 / 0.12)),
 			var(
