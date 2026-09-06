@@ -81,6 +81,17 @@ const postView = (post: (typeof posts)[number]) => ({
 });
 const pinnedViews = pinnedPosts.map(postView);
 const latestViews = latestPosts.map(postView);
+const contactRegions = [
+	...profileConfig.links,
+	{
+		name: "留言板",
+		icon: "material-symbols:edit-square-outline-rounded",
+		url: "/guestbook/",
+	},
+].slice(0, 5).map((link, index) => ({
+	...link,
+	region: ["top-left", "top-right", "bottom-left", "bottom-right", "center"][index],
+}));
 ---
 
 <section
@@ -88,6 +99,7 @@ const latestViews = latestPosts.map(postView);
 	class:list={["home-capabilities", !embedded && "home-scroll-scene"]}
 	aria-labelledby="home-capabilities-title"
 	data-home-map-guide
+	data-guide-opening="pending"
 	data-home-scroll-scene={embedded ? undefined : ""}
 	data-home-page={embedded ? undefined : ""}
 	data-home-section-tone={embedded ? undefined : "light"}
@@ -100,7 +112,7 @@ const latestViews = latestPosts.map(postView);
 		</header>
 
 		<div class="home-capabilities__top-grid">
-			<article class="guide-card guide-card--metric guide-card--visits">
+			<article class="guide-card guide-card--motion guide-card--metric guide-card--visits" data-guide-metric="visits">
 				<Image src={homeData1} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 50vw, 28vw" />
 				<div class="guide-card__shade"></div>
 				<div class="guide-card__copy">
@@ -108,9 +120,14 @@ const latestViews = latestPosts.map(postView);
 					<h3>站点访问</h3>
 					<span>运行 {runningDays} 天 · {dynamics.length} 条动态</span>
 				</div>
+				<div class="guide-card__hover" aria-hidden="true">
+					<div class="guide-card__hover-header"><span>01</span><small>LIVE SYSTEM</small></div>
+					<strong>访问轨迹<span>·</span></strong>
+					<div class="guide-card__hover-pills"><span>运行 {runningDays} 天</span><span>{dynamics.length} 条动态</span></div>
+				</div>
 			</article>
 
-			<a class="guide-card guide-card--metric guide-card--archive" href="/archive/">
+			<a class="guide-card guide-card--motion guide-card--metric guide-card--archive" data-guide-metric="archive" href="/archive/">
 				<Image src={homeData2} alt="" loading="lazy" widths={[720, 1080]} sizes="(max-width: 1023px) 50vw, 56vw" />
 				<div class="guide-card__shade"></div>
 				<div class="guide-card__copy">
@@ -119,11 +136,16 @@ const latestViews = latestPosts.map(postView);
 					<span>{posts.length} 篇文章 · {compactNumber.format(totalWords)} 字</span>
 				</div>
 				<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+				<div class="guide-card__hover" aria-hidden="true">
+					<div class="guide-card__hover-header"><span>02</span><small>CONTENT INDEX</small></div>
+					<strong>文章档案<span>·</span></strong>
+					<div class="guide-card__hover-pills"><span>{posts.length} 篇文章</span><span>{compactNumber.format(totalWords)} 字</span></div>
+				</div>
 			</a>
 		</div>
 
 		<div class="home-capabilities__content-grid">
-			<section class="guide-card guide-card--pinned" aria-labelledby="guide-pinned-title" data-map-rotator data-map-delay="5200">
+			<section class="guide-card guide-card--motion guide-card--pinned" aria-labelledby="guide-pinned-title" data-map-rotator data-map-delay="5200" data-guide-axis="vertical">
 				<h3 id="guide-pinned-title">置顶文章</h3>
 				<div class="guide-rotator">
 					{pinnedViews.length > 0 ? pinnedViews.map((post, index) => (
@@ -150,7 +172,7 @@ const latestViews = latestPosts.map(postView);
 				)}
 			</section>
 
-			<section class="guide-card guide-card--latest" aria-labelledby="guide-latest-title" data-map-rotator data-map-delay="6100">
+			<section class="guide-card guide-card--motion guide-card--latest" aria-labelledby="guide-latest-title" data-map-rotator data-map-delay="6100" data-guide-axis="horizontal">
 				<Image class="guide-latest__fallback" src={homeData2} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 50vw, 28vw" />
 				<h3 id="guide-latest-title">最新更新</h3>
 				<div class="guide-rotator guide-rotator--latest">
@@ -178,7 +200,7 @@ const latestViews = latestPosts.map(postView);
 				)}
 			</section>
 
-			<section class="guide-card guide-card--index" aria-labelledby="guide-categories-title">
+			<section class="guide-card guide-card--motion guide-card--index guide-card--categories" aria-labelledby="guide-categories-title">
 				<p class="guide-card__eyebrow">CATEGORIES</p>
 				<h3 id="guide-categories-title">分类索引</h3>
 				<div class="guide-link-list">
@@ -187,7 +209,7 @@ const latestViews = latestPosts.map(postView);
 				</div>
 			</section>
 
-			<section class="guide-card guide-card--index guide-card--tags" aria-labelledby="guide-tags-title">
+			<section class="guide-card guide-card--motion guide-card--index guide-card--tags" aria-labelledby="guide-tags-title" data-tag-fan>
 				<p class="guide-card__eyebrow">TAGS</p>
 				<h3 id="guide-tags-title">标签索引</h3>
 				<div class="guide-tag-list">
@@ -196,21 +218,26 @@ const latestViews = latestPosts.map(postView);
 				</div>
 			</section>
 
-			<section class="guide-card guide-card--contact" aria-labelledby="guide-contact-title">
+			<section class="guide-card guide-card--motion guide-card--contact" aria-labelledby="guide-contact-title" data-guide-contact tabindex="0">
 				<Image src={homeData3} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 50vw, 28vw" />
 				<div class="guide-card__shade"></div>
 				<div class="guide-card__copy">
 					<p class="guide-card__eyebrow">SUBSCRIBE</p>
 					<h3 id="guide-contact-title">订阅与联系</h3>
 				</div>
-				<nav aria-label="订阅与联系">
-					{profileConfig.links.map((link) => (
-						<a href={link.url} aria-label={link.name} title={link.name} target={externalLink(link.url) ? "_blank" : undefined} rel={externalLink(link.url) ? "noopener noreferrer" : undefined}>
+				<div class="guide-contact__overlay" role="group" aria-label="订阅与联系">
+					<svg class="guide-contact__overlay-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+						<line x1="50" y1="0" x2="50" y2="26" />
+						<line x1="50" y1="100" x2="50" y2="74" />
+						<line x1="0" y1="50" x2="32" y2="50" />
+						<line x1="100" y1="50" x2="68" y2="50" />
+					</svg>
+					{contactRegions.map((link) => (
+						<a class={`guide-contact__region guide-contact__region--${link.region}`} href={link.url} aria-label={link.name} title={link.name} target={externalLink(link.url) ? "_blank" : undefined} rel={externalLink(link.url) ? "noopener noreferrer" : undefined}>
 							<Icon is:inline name={link.icon} />
 						</a>
 					))}
-					<a href="/guestbook/" aria-label="留言板" title="留言板"><Icon is:inline name="material-symbols:edit-square-outline-rounded" /></a>
-				</nav>
+				</div>
 			</section>
 		</div>
 	</div>
@@ -224,20 +251,61 @@ const latestViews = latestPosts.map(postView);
 		const controller = new AbortController();
 		const timers = new Set<number>();
 		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const observers: IntersectionObserver[] = [];
+
+		const wait = (callback: () => void, delay: number) => {
+			const timer = window.setTimeout(() => {
+				timers.delete(timer);
+				callback();
+			}, delay);
+			timers.add(timer);
+		};
 
 		document.querySelectorAll<HTMLElement>("[data-home-map-guide]").forEach((guide) => {
+			const playOpening = () => {
+				if (guide.dataset.guideOpening !== "pending") return;
+				guide.classList.add("is-visible");
+				guide.dataset.guideOpening = reducedMotion.matches ? "complete" : "playing";
+				if (!reducedMotion.matches) wait(() => {
+					guide.dataset.guideOpening = "complete";
+				}, 1300);
+			};
+
+			if (guide.classList.contains("is-visible")) {
+				requestAnimationFrame(playOpening);
+			} else if ("IntersectionObserver" in window) {
+				const openingObserver = new IntersectionObserver((entries) => {
+					if (!entries.some((entry) => entry.isIntersecting)) return;
+					playOpening();
+					openingObserver.disconnect();
+				}, { threshold: 0.2 });
+				openingObserver.observe(guide);
+				observers.push(openingObserver);
+			} else {
+				playOpening();
+			}
+
+			const tagFan = guide.querySelector<HTMLElement>("[data-tag-fan]");
+			if (tagFan) {
+				const focus = () => tagFan.classList.add("is-focused");
+				const blur = () => tagFan.classList.remove("is-focused");
+				tagFan.addEventListener("pointerenter", focus, { signal: controller.signal });
+				tagFan.addEventListener("pointerleave", blur, { signal: controller.signal });
+				tagFan.addEventListener("focusin", focus, { signal: controller.signal });
+				tagFan.addEventListener("focusout", blur, { signal: controller.signal });
+			}
+
 			guide.querySelectorAll<HTMLElement>("[data-map-rotator]").forEach((rotator) => {
 				const slides = Array.from(rotator.querySelectorAll<HTMLElement>("[data-map-slide]"));
 				const dots = Array.from(rotator.querySelectorAll<HTMLButtonElement>("[data-map-dot]"));
 				if (slides.length < 1) return;
 				let activeIndex = 0;
 				let timer: number | undefined;
+				let transitionTimer: number | undefined;
 
-				const show = (nextIndex: number) => {
-					activeIndex = (nextIndex + slides.length) % slides.length;
+				const syncAccessibility = () => {
 					slides.forEach((slide, index) => {
 						const active = index === activeIndex;
-						slide.classList.toggle("is-active", active);
 						slide.setAttribute("aria-hidden", String(!active));
 						slide.querySelectorAll<HTMLElement>("a, button").forEach((control) => {
 							control.tabIndex = active ? 0 : -1;
@@ -247,6 +315,39 @@ const latestViews = latestPosts.map(postView);
 						if (index === activeIndex) dot.setAttribute("aria-current", "true");
 						else dot.removeAttribute("aria-current");
 					});
+				};
+
+				const show = (nextIndex: number, direction = 1) => {
+					const next = (nextIndex + slides.length) % slides.length;
+					if (next === activeIndex || slides.length < 2) return;
+					const previousSlide = slides[activeIndex];
+					const nextSlide = slides[next];
+					if (!previousSlide || !nextSlide) return;
+					if (transitionTimer !== undefined) {
+						window.clearTimeout(transitionTimer);
+						timers.delete(transitionTimer);
+					}
+					slides.forEach((slide, index) => {
+						slide.classList.remove("is-entering", "is-leaving");
+						slide.classList.toggle("is-active", index === activeIndex);
+					});
+					activeIndex = next;
+					rotator.dataset.direction = direction >= 0 ? "next" : "previous";
+					nextSlide.classList.add("is-active", "is-entering");
+					previousSlide.classList.add("is-leaving");
+					syncAccessibility();
+					if (reducedMotion.matches) {
+						previousSlide.classList.remove("is-active", "is-leaving");
+						nextSlide.classList.remove("is-entering");
+						return;
+					}
+					transitionTimer = window.setTimeout(() => {
+						previousSlide.classList.remove("is-active", "is-leaving");
+						nextSlide.classList.remove("is-entering");
+						if (transitionTimer !== undefined) timers.delete(transitionTimer);
+						transitionTimer = undefined;
+					}, 560);
+					timers.add(transitionTimer);
 				};
 
 				const stop = () => {
@@ -265,7 +366,7 @@ const latestViews = latestPosts.map(postView);
 
 				dots.forEach((dot, index) => {
 					dot.addEventListener("click", () => {
-						show(index);
+						show(index, index >= activeIndex ? 1 : -1);
 						start();
 					}, { signal: controller.signal });
 				});
@@ -273,13 +374,16 @@ const latestViews = latestPosts.map(postView);
 				rotator.addEventListener("pointerleave", start, { signal: controller.signal });
 				rotator.addEventListener("focusin", stop, { signal: controller.signal });
 				rotator.addEventListener("focusout", start, { signal: controller.signal });
+				syncAccessibility();
 				start();
 			});
 		});
 
 		cleanupHomeMapGuide = () => {
 			controller.abort();
+			observers.forEach((observer) => observer.disconnect());
 			timers.forEach((timer) => window.clearInterval(timer));
+			timers.forEach((timer) => window.clearTimeout(timer));
 			timers.clear();
 		};
 	}

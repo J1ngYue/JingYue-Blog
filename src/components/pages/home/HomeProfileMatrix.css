@@ -668,3 +668,396 @@ html.dark .guide-latest__shade {
 		transition: none;
 	}
 }
+
+/* Reference-style guide opening and interactive card choreography. */
+.home-capabilities[data-guide-opening="pending"].is-visible .home-capabilities__heading > *,
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card {
+	opacity: 0;
+	transform: translateY(1rem);
+}
+
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--visits,
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--archive {
+	transform: translateY(-1.3rem) scaleY(0.94);
+}
+
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--pinned {
+	transform: translateX(-2rem) rotate(-1deg);
+}
+
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--latest {
+	transform: translateX(2rem) rotate(1deg);
+}
+
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--categories {
+	transform: translateY(1.6rem) rotate(-7deg);
+}
+
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--tags {
+	transform: translateY(1.8rem) rotate(4deg);
+}
+
+.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--contact {
+	transform: translateY(1.6rem) rotate(7deg);
+}
+
+.home-capabilities[data-guide-opening="playing"].is-visible .home-capabilities__heading > *,
+.home-capabilities[data-guide-opening="complete"].is-visible .home-capabilities__heading > * {
+	opacity: 1;
+	transform: translateY(0);
+	filter: blur(0);
+}
+
+.home-capabilities[data-guide-opening="playing"].is-visible .guide-card,
+.home-capabilities[data-guide-opening="complete"].is-visible .guide-card {
+	opacity: 1;
+	transform: translate(0) rotate(0);
+	transition-delay: var(--guide-delay, 0ms);
+}
+
+.home-capabilities[data-guide-opening="playing"] .home-capabilities__heading > *,
+.home-capabilities[data-guide-opening="complete"] .home-capabilities__heading > * {
+	filter: blur(0);
+	transition: opacity 420ms ease, transform 620ms cubic-bezier(0.16, 1, 0.3, 1), filter 620ms ease;
+}
+
+.home-capabilities__heading > p { --guide-heading-delay: 0ms; }
+.home-capabilities__heading > strong { --guide-heading-delay: 70ms; }
+.home-capabilities__heading > h2 { --guide-heading-delay: 140ms; }
+.home-capabilities[data-guide-opening="playing"] .home-capabilities__heading > *,
+.home-capabilities[data-guide-opening="complete"] .home-capabilities__heading > * {
+	transition-delay: var(--guide-heading-delay);
+}
+
+.home-capabilities__top-grid .guide-card--visits { --guide-delay: 230ms; }
+.home-capabilities__top-grid .guide-card--archive { --guide-delay: 320ms; }
+.home-capabilities__content-grid .guide-card--pinned { --guide-delay: 470ms; }
+.home-capabilities__content-grid .guide-card--latest { --guide-delay: 570ms; }
+.home-capabilities__content-grid .guide-card--categories { --guide-delay: 700ms; }
+.home-capabilities__content-grid .guide-card--tags { --guide-delay: 790ms; }
+.home-capabilities__content-grid .guide-card--contact { --guide-delay: 880ms; }
+
+.guide-card--motion {
+	isolation: isolate;
+}
+
+.guide-card--motion::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	border-radius: inherit;
+	background: var(--guide-ink);
+	clip-path: circle(0 at 0 100%);
+	pointer-events: none;
+	transition: clip-path 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guide-card--motion > :not(.guide-card__hover):not(.guide-card__shade):not(.guide-contact__overlay):not(.guide-rotator):not(img) {
+	position: relative;
+	z-index: 1;
+}
+
+.guide-card--motion > img,
+.guide-card--motion .guide-latest__fallback {
+	z-index: -2;
+}
+
+.guide-card--motion:hover,
+.guide-card--motion:focus-within {
+	color: var(--guide-card);
+}
+
+.guide-card--motion:hover > .guide-card__shade,
+.guide-card--motion:focus-within > .guide-card__shade {
+	opacity: 0;
+}
+
+.guide-card--motion > .guide-card__shade {
+	transition: opacity 220ms ease;
+}
+
+.guide-card--motion:hover::after,
+.guide-card--motion:focus-within::after {
+	clip-path: circle(150% at 0 100%);
+}
+
+.guide-card--motion .guide-card__copy,
+.guide-card--motion > svg {
+	transition: opacity 220ms ease;
+}
+
+.guide-card--motion:hover .guide-card__copy,
+.guide-card--motion:focus-within .guide-card__copy {
+	opacity: 0;
+}
+
+.guide-card__hover {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	display: flex;
+	flex-direction: column;
+	padding: clamp(1rem, 1.6vw, 1.45rem);
+	color: var(--guide-card);
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 260ms ease 80ms;
+}
+
+.guide-card--metric:hover .guide-card__hover,
+.guide-card--metric:focus-within .guide-card__hover {
+	opacity: 1;
+	visibility: visible;
+}
+
+.guide-card__hover-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	font-size: 0.72rem;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+}
+
+.guide-card__hover-header > span {
+	display: grid;
+	place-items: center;
+	min-width: 2.5rem;
+	height: 1.55rem;
+	padding-inline: 0.55rem;
+	border: 1.5px solid currentColor;
+	border-radius: 999px;
+}
+
+.guide-card__hover strong {
+	margin-top: clamp(1rem, 2vw, 1.6rem);
+	font-size: clamp(1.35rem, 3vw, 2.8rem);
+	line-height: 0.95;
+}
+
+.guide-card__hover strong span {
+	color: var(--guide-accent, #b8ff1f);
+}
+
+.guide-card__hover-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	margin-top: auto;
+}
+
+.guide-card__hover-pills span {
+	padding: 0.4rem 0.65rem;
+	border: 1.5px solid currentColor;
+	border-radius: 999px;
+	font-size: 0.66rem;
+	font-weight: 850;
+}
+
+.guide-card--index.guide-card--motion::after {
+	display: block;
+}
+
+.guide-card--index.guide-card--motion:hover .guide-link-list a,
+.guide-card--index.guide-card--motion:focus-within .guide-link-list a {
+	color: var(--guide-card);
+}
+
+.guide-tag-list a {
+	transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1), background-color 240ms ease, color 240ms ease;
+}
+
+.guide-card--tags.is-focused .guide-tag-list a,
+.guide-card--tags:hover .guide-tag-list a,
+.guide-card--tags:focus-within .guide-tag-list a {
+	transform: rotate(0deg) translateY(-0.12rem);
+}
+
+.guide-card--tags.is-focused .guide-tag-list a:nth-child(2n),
+.guide-card--tags.is-focused .guide-tag-list a:nth-child(3n),
+.guide-card--tags:hover .guide-tag-list a:nth-child(2n),
+.guide-card--tags:hover .guide-tag-list a:nth-child(3n),
+.guide-card--tags:focus-within .guide-tag-list a:nth-child(2n),
+.guide-card--tags:focus-within .guide-tag-list a:nth-child(3n) {
+	transform: rotate(0deg) translateY(-0.12rem);
+}
+
+.guide-rotator__slide.is-entering,
+.guide-rotator__slide.is-leaving {
+	visibility: visible;
+}
+
+.guide-rotator__slide.is-entering {
+	animation: guide-rotator-enter 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.guide-rotator__slide.is-leaving {
+	animation: guide-rotator-leave 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.guide-rotator[data-direction="previous"] .guide-rotator__slide.is-entering {
+	animation-name: guide-rotator-enter-previous;
+}
+
+.guide-rotator[data-direction="previous"] .guide-rotator__slide.is-leaving {
+	animation-name: guide-rotator-leave-previous;
+}
+
+.guide-rotator--latest .guide-rotator__slide.is-entering {
+	animation-name: guide-rotator-enter-horizontal;
+}
+
+.guide-rotator--latest .guide-rotator__slide.is-leaving {
+	animation-name: guide-rotator-leave-horizontal;
+}
+
+.guide-rotator--latest[data-direction="previous"] .guide-rotator__slide.is-entering {
+	animation-name: guide-rotator-enter-horizontal-previous;
+}
+
+.guide-rotator--latest[data-direction="previous"] .guide-rotator__slide.is-leaving {
+	animation-name: guide-rotator-leave-horizontal-previous;
+}
+
+.guide-card--contact {
+	cursor: pointer;
+}
+
+.guide-card--contact .guide-contact__overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	overflow: hidden;
+	border-radius: inherit;
+	opacity: 0;
+	visibility: hidden;
+	transform: scale(0.92);
+	transition: opacity 280ms ease, transform 520ms cubic-bezier(0.16, 1, 0.3, 1), visibility 280ms;
+}
+
+.guide-card--contact:hover .guide-contact__overlay,
+.guide-card--contact:focus .guide-contact__overlay,
+.guide-card--contact:focus-within .guide-contact__overlay {
+	opacity: 1;
+	visibility: visible;
+	transform: scale(1);
+}
+
+.guide-contact__overlay-svg {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+.guide-contact__overlay-svg line {
+	fill: none;
+	stroke: var(--guide-ink);
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-dasharray: 1;
+	stroke-dashoffset: 1;
+	vector-effect: non-scaling-stroke;
+	transition: stroke-dashoffset 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guide-card--contact:hover .guide-contact__overlay-svg line,
+.guide-card--contact:focus-within .guide-contact__overlay-svg line {
+	stroke-dashoffset: 0;
+}
+
+.guide-contact__region {
+	position: absolute;
+	inset: 0;
+	color: var(--guide-ink);
+	background: var(--guide-paper);
+	font-size: 1.5rem;
+	text-decoration: none;
+	transition: background-color 180ms ease, color 180ms ease;
+}
+
+.guide-contact__region svg {
+	position: absolute;
+	left: var(--guide-region-x, 50%);
+	top: var(--guide-region-y, 50%);
+	transform: translate(-50%, -50%);
+	transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guide-contact__region:hover svg,
+.guide-contact__region:focus-visible svg {
+	transform: translate(-50%, -50%) scale(1.18);
+}
+
+.guide-contact__region--top-left { --guide-region-x: 22%; --guide-region-y: 22%; clip-path: polygon(0 0, 50% 0, 50% 26%, 32% 26%, 32% 50%, 0 50%); }
+.guide-contact__region--top-right { --guide-region-x: 78%; --guide-region-y: 22%; clip-path: polygon(50% 0, 100% 0, 100% 50%, 68% 50%, 68% 26%, 50% 26%); }
+.guide-contact__region--bottom-left { --guide-region-x: 22%; --guide-region-y: 78%; clip-path: polygon(0 50%, 32% 50%, 32% 74%, 50% 74%, 50% 100%, 0 100%); }
+.guide-contact__region--bottom-right { --guide-region-x: 78%; --guide-region-y: 78%; clip-path: polygon(100% 50%, 100% 100%, 50% 100%, 50% 74%, 68% 74%, 68% 50%); }
+.guide-contact__region--center { inset: 26% 32% 26% 32%; border: 2px solid currentColor; }
+
+@keyframes guide-rotator-enter {
+	from { opacity: 0; transform: translateY(1.1rem); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes guide-rotator-leave {
+	from { opacity: 1; transform: translateY(0); }
+	to { opacity: 0; transform: translateY(-1.1rem); }
+}
+
+@keyframes guide-rotator-enter-previous {
+	from { opacity: 0; transform: translateY(-1.1rem); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes guide-rotator-leave-previous {
+	from { opacity: 1; transform: translateY(0); }
+	to { opacity: 0; transform: translateY(1.1rem); }
+}
+
+@keyframes guide-rotator-enter-horizontal {
+	from { opacity: 0; transform: translateX(1.1rem); }
+	to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes guide-rotator-leave-horizontal {
+	from { opacity: 1; transform: translateX(0); }
+	to { opacity: 0; transform: translateX(-1.1rem); }
+}
+
+@keyframes guide-rotator-enter-horizontal-previous {
+	from { opacity: 0; transform: translateX(-1.1rem); }
+	to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes guide-rotator-leave-horizontal-previous {
+	from { opacity: 1; transform: translateX(0); }
+	to { opacity: 0; transform: translateX(1.1rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.home-capabilities[data-guide-opening].is-visible .home-capabilities__heading > *,
+	.home-capabilities[data-guide-opening].is-visible .guide-card,
+	.guide-card--motion::after,
+	.guide-card__hover,
+	.guide-contact__overlay,
+	.guide-contact__overlay-svg line,
+	.guide-rotator__slide,
+	.guide-tag-list a {
+		animation: none !important;
+		transition: none !important;
+	}
+
+	.home-capabilities[data-guide-opening].is-visible .home-capabilities__heading > *,
+	.home-capabilities[data-guide-opening].is-visible .guide-card {
+		opacity: 1;
+		transform: none;
+		filter: none;
+	}
+
+}
