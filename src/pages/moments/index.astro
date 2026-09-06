@@ -41,12 +41,10 @@ const showComments = Boolean(
 					loading="eager"
 					fadeIn={false}
 				/>
+				<strong class="moments-profile__name">{profileConfig.name}</strong>
 			</div>
 			<div class="moments-profile__body">
-				<div>
-					<strong>{profileConfig.name}</strong>
-					<span>{profileConfig.bio}</span>
-				</div>
+				<span>{profileConfig.bio}</span>
 				<a href={url("/about/")} aria-label={`了解 ${profileConfig.name}`}>
 					<ImageWrapper
 						src={profileConfig.avatar || ""}
