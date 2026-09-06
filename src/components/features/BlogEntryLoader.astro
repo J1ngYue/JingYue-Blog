@@ -1,13 +1,48 @@
-<div class="blog-entry-loader" data-blog-entry-loader role="status" aria-label="菲比啾比正在加载博客">
+<div
+  class="blog-entry-loader"
+  data-blog-entry-loader
+  role="status"
+  aria-live="polite"
+  aria-label="菲比啾比正在加载 JingYue 博客"
+>
+  <div class="blog-entry-loader__frame" aria-hidden="true"></div>
+  <div class="blog-entry-loader__brand" aria-hidden="true">
+    <span>JY</span><i></i><span>JINGYUE / PERSONAL BLOG</span>
+  </div>
+
   <div class="blog-entry-loader__composition">
-  <div class="blog-entry-loader__orbit" aria-hidden="true">
-    <span class="blog-entry-loader__runner"><span class="blog-entry-loader__pet"></span></span>
+    <div class="blog-entry-loader__meta">
+      <span>ENTRY SEQUENCE</span><i></i><span data-loader-stage>正在连接</span>
+    </div>
+    <div
+      class="blog-entry-loader__dial"
+      data-loader-dial
+      role="progressbar"
+      aria-label="博客加载进度"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+    >
+      <span class="blog-entry-loader__ticks" aria-hidden="true"></span>
+      <span class="blog-entry-loader__trail is-third" aria-hidden="true"><i></i></span>
+      <span class="blog-entry-loader__trail is-second" aria-hidden="true"><i></i></span>
+      <span class="blog-entry-loader__trail is-first" aria-hidden="true"><i></i></span>
+      <span class="blog-entry-loader__runner" aria-hidden="true">
+        <span class="blog-entry-loader__pet">
+          <img src="/pio/models/pets/feibi/loader-idle.webp" width="192" height="208" alt="" decoding="sync" />
+        </span>
+      </span>
+      <div class="blog-entry-loader__center">
+        <span>LOADING</span>
+        <strong><span data-loader-progress>0</span><small>%</small></strong>
+        <i></i><b>JINGYUE</b>
+      </div>
+    </div>
+    <p class="blog-entry-loader__caption" data-loader-caption>正在准备雨夜与故事</p>
   </div>
-  <div class="blog-entry-loader__center">
-    <strong data-loader-progress>0%</strong>
-    <span>JingYue</span>
-  </div>
-  <p class="blog-entry-loader__caption" data-loader-caption>稍等，马上见面。</p>
+
+  <div class="blog-entry-loader__footer" aria-hidden="true">
+    <span>HELLO, VISITOR</span><span>EST. 2025 / SHANGHAI</span>
   </div>
 </div>
 
@@ -16,111 +51,270 @@
     const loader = document.querySelector("[data-blog-entry-loader]");
     if (!loader || loader.dataset.loaderReady === "true") return;
     loader.dataset.loaderReady = "true";
-    const progress = loader.querySelector("[data-loader-progress]");
-    const caption = loader.querySelector("[data-loader-caption]");
-    // Run on a fresh document, not on every Swup navigation or anchor change.
     if (window.__blogEntryStarted) return;
     window.__blogEntryStarted = true;
+
+    const progress = loader.querySelector("[data-loader-progress]");
+    const dial = loader.querySelector("[data-loader-dial]");
+    const stage = loader.querySelector("[data-loader-stage]");
+    const caption = loader.querySelector("[data-loader-caption]");
     const html = document.documentElement;
-    html.classList.add("blog-entry-loading");
-    loader.classList.add("is-visible");
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let value = 0;
-    let target = 8;
+    let target = 10;
     let frame = 0;
     let finished = false;
+    let failsafe = 0;
+
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     const decode = async (src) => {
       const image = new Image();
       image.src = src;
       return image.decode().catch(() => {});
     };
+    const updateStage = (label, message) => {
+      if (stage) stage.textContent = label;
+      if (caption) caption.textContent = message;
+    };
+    const renderProgress = (nextValue) => {
+      const normalized = Math.max(0, Math.min(100, nextValue));
+      const displayed = Math.floor(normalized);
+      if (progress) progress.textContent = String(displayed);
+      if (dial) dial.setAttribute("aria-valuenow", String(displayed));
+      loader.style.setProperty("--loader-progress", `${normalized}%`);
+      loader.style.setProperty("--loader-angle", `${normalized * 3.6}deg`);
+      loader.style.setProperty("--loader-counter-angle", `${normalized * -3.6}deg`);
+    };
     const paintProgress = () => {
-      value += (target - value) * .09;
-      const displayed = Math.floor(value);
-      if (progress) progress.textContent = `${displayed}%`;
-      loader.style.setProperty("--loader-progress", `${value}%`);
+      if (finished) return;
+      value += (target - value) * .085;
+      renderProgress(value);
       frame = requestAnimationFrame(paintProgress);
     };
-    frame = requestAnimationFrame(paintProgress);
+    const completeProgress = () => new Promise((resolve) => {
+      cancelAnimationFrame(frame);
+      if (reducedMotion) {
+        value = 100;
+        renderProgress(value);
+        resolve();
+        return;
+      }
+      const initialValue = value;
+      const startedAt = performance.now();
+      const completeFrame = (time) => {
+        const position = Math.min(1, (time - startedAt) / 360);
+        value = initialValue + (100 - initialValue) * (1 - Math.pow(1 - position, 3));
+        renderProgress(value);
+        if (position < 1) frame = requestAnimationFrame(completeFrame);
+        else resolve();
+      };
+      frame = requestAnimationFrame(completeFrame);
+    });
     const finish = async (timedOut = false) => {
       if (finished) return;
       finished = true;
       clearTimeout(failsafe);
-      cancelAnimationFrame(frame);
-      if (progress) progress.textContent = timedOut ? "…" : "100%";
-      loader.style.setProperty("--loader-progress", "100%");
-      if (caption) caption.textContent = timedOut ? "先见面，再慢慢加载。" : "欢迎回来。";
-      await delay(180);
-      loader.classList.remove("is-visible");
-      await delay(320);
+      updateStage(timedOut ? "CONTINUE" : "READY", timedOut ? "先见面，内容继续加载" : "准备好了，欢迎回来");
+      await completeProgress();
+      loader.classList.add("is-complete");
+      await delay(reducedMotion ? 40 : 220);
+      loader.classList.add("is-leaving");
+      await delay(reducedMotion ? 120 : 680);
+      loader.classList.remove("is-visible", "is-complete", "is-leaving");
       html.classList.remove("blog-entry-loading");
       window.dispatchEvent(new CustomEvent("firefly:blog-entry-complete"));
     };
-    const failsafe = setTimeout(() => finish(true), 9000);
+
+    html.classList.add("blog-entry-loading");
+    loader.classList.add("is-visible");
+    frame = requestAnimationFrame(paintProgress);
+    failsafe = setTimeout(() => finish(true), 8000);
     const domReady = document.readyState === "loading"
       ? new Promise((resolve) => document.addEventListener("DOMContentLoaded", resolve, { once: true }))
       : Promise.resolve();
-    // Percentages represent completed preparation stages, not downloaded bytes.
-    const petReady = decode("/pio/models/pets/feibi/loader-walk.webp").then(async () => {
-      target = Math.max(target, 25);
-      await delay(matchMedia("(prefers-reduced-motion: reduce)").matches ? 200 : 900);
+    const petReady = decode("/pio/models/pets/feibi/loader-idle.webp").then(() => {
+      target = Math.max(target, 30);
+      updateStage("菲比已就位", "正在整理沿途的星光");
     });
     const pageReady = domReady.then(async () => {
       const wallpaper = getComputedStyle(html).getPropertyValue("--home-wallpaper-bootstrap");
       const url = wallpaper.match(/url\(["']?(.*?)["']?\)/)?.[1];
       if (url) await decode(url);
-      target = Math.max(target, 65);
+      target = Math.max(target, 68);
+      updateStage("正在展开首页", "雨夜、文字与故事正在抵达");
       await Promise.all([
         document.fonts.ready,
         ...Array.from(document.querySelectorAll(".home-hero-dialogue__sticker img"), (img) => img.decode().catch(() => {})),
       ]);
-      target = 95;
+      target = 92;
+      updateStage("最后整理", "马上就能见面了");
     });
-    Promise.all([petReady, pageReady]).then(() => finish());
+    Promise.all([petReady, pageReady, delay(reducedMotion ? 0 : 650)]).then(() => finish());
   })();
 </script>
 
 <style is:global>
   .blog-entry-loader {
-    --loader-progress: 8%;
-    --loader-ink: #303c39;
-    --loader-accent: #69998c;
+    --loader-progress: 0%;
+    --loader-angle: 0deg;
+    --loader-counter-angle: 0deg;
+    --loader-paper: #f6f5f0;
+    --loader-ink: #17181c;
+    --loader-muted: #6f6d69;
+    --loader-line: rgb(23 24 28 / 14%);
+    --loader-track: rgb(23 24 28 / 10%);
+    --loader-pink: #e95091;
+    --loader-blue: #348da8;
     position: fixed;
     inset: 0;
     z-index: 2147482000;
     display: grid;
     place-items: center;
     overflow: hidden;
-    background: #f5f6f2;
+    background: var(--loader-paper);
     color: var(--loader-ink);
     opacity: 0;
+    clip-path: inset(0 0 100% 0);
     pointer-events: none;
     visibility: hidden;
-    transition: opacity 320ms ease, visibility 320ms;
     letter-spacing: 0;
   }
-  .dark .blog-entry-loader { --loader-ink: #e8eee8; --loader-accent: #a1c7b2; background: #202724; }
-  .blog-entry-loader.is-visible { opacity: 1; pointer-events: auto; visibility: visible; transition: none; }
+  .blog-entry-loader::before,
+  .blog-entry-loader::after { position: absolute; content: ""; background: var(--loader-line); pointer-events: none; }
+  .blog-entry-loader::before { top: 50%; right: 0; left: 0; height: 1px; }
+  .blog-entry-loader::after { top: 0; bottom: 0; left: 50%; width: 1px; }
+  .dark .blog-entry-loader {
+    --loader-paper: #18191e;
+    --loader-ink: #f5f2e9;
+    --loader-muted: #aaa7a1;
+    --loader-line: rgb(245 242 233 / 12%);
+    --loader-track: rgb(245 242 233 / 11%);
+    --loader-pink: #f173ab;
+    --loader-blue: #70bdd0;
+  }
+  .blog-entry-loader.is-visible { opacity: 1; clip-path: inset(0); pointer-events: auto; visibility: visible; }
+  .blog-entry-loader.is-visible.is-leaving {
+    clip-path: inset(0 0 100% 0);
+    pointer-events: none;
+    transition: clip-path 680ms cubic-bezier(.76, 0, .24, 1);
+  }
   html.blog-entry-loading .home-entrance,
   html.blog-entry-loading .home-entrance::after,
   html.blog-entry-loading .home-entrance__tile { animation-play-state: paused !important; }
-  .blog-entry-loader__composition { position: relative; display: grid; place-items: center; width: min(18rem, 64vw); aspect-ratio: 1; margin-top: -3rem; }
-  .blog-entry-loader__orbit { position: absolute; inset: 0; border: 1px solid color-mix(in srgb, var(--loader-accent) 28%, transparent); border-radius: 50%; }
-  .blog-entry-loader__orbit::before { position: absolute; inset: -1px; border-radius: 50%; content: ""; background: conic-gradient(var(--loader-accent) var(--loader-progress), transparent 0); mask-image: radial-gradient(farthest-side, transparent calc(100% - 2px), black 0); }
-  .blog-entry-loader__runner { position: absolute; inset: 0; animation: blog-loader-orbit 5s linear infinite; }
-  .blog-entry-loader__pet { position: absolute; top: -2.9rem; left: calc(50% - 2.7rem); width: 5.4rem; aspect-ratio: 96 / 104; background: url("/pio/models/pets/feibi/loader-walk.webp") 0 0 / 800% 100% no-repeat; filter: drop-shadow(0 3px 2px rgb(30 40 35 / 10%)); animation: blog-loader-upright 5s linear infinite; }
-  .blog-entry-loader__center { display: grid; justify-items: center; gap: .7rem; }
-  .blog-entry-loader__center strong { font-family: Georgia, serif; font-size: 2.7rem; line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums; }
-  .blog-entry-loader__center span { font-size: .8rem; color: var(--loader-accent); }
-  .blog-entry-loader__caption { position: absolute; top: calc(100% + 3.1rem); width: calc(100% + 4rem); margin: 0; text-align: center; font-size: .78rem; color: color-mix(in srgb, var(--loader-ink) 68%, transparent); }
-  @keyframes blog-loader-orbit { to { transform: rotate(360deg); } }
-  @keyframes blog-loader-upright { to { transform: rotate(-360deg); } }
+  html.blog-entry-loading { scrollbar-color: transparent transparent; }
+  html.blog-entry-loading::-webkit-scrollbar-thumb,
+  html.blog-entry-loading::-webkit-scrollbar-track { background: transparent !important; }
+  .blog-entry-loader__frame { position: absolute; inset: clamp(1rem, 2.3vw, 2.15rem); border: 1px solid var(--loader-line); pointer-events: none; }
+  .blog-entry-loader__brand,
+  .blog-entry-loader__footer {
+    position: absolute;
+    z-index: 2;
+    font-family: var(--font-jetbrains-mono), monospace;
+    font-size: .65rem;
+    font-weight: 600;
+    color: var(--loader-muted);
+    letter-spacing: .08em;
+  }
+  .blog-entry-loader__brand { top: clamp(1.75rem, 3.2vw, 3rem); left: clamp(1.75rem, 3.2vw, 3rem); display: flex; align-items: center; gap: .7rem; }
+  .blog-entry-loader__brand span:first-child { color: var(--loader-ink); font-size: .75rem; }
+  .blog-entry-loader__brand i { width: 2.5rem; height: 1px; background: var(--loader-pink); }
+  .blog-entry-loader__footer { right: clamp(1.75rem, 3.2vw, 3rem); bottom: clamp(1.75rem, 3.2vw, 3rem); left: clamp(1.75rem, 3.2vw, 3rem); display: flex; justify-content: space-between; }
+  .blog-entry-loader__composition {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    justify-items: center;
+    width: min(27rem, 72vw);
+    transition: opacity 240ms ease, transform 500ms cubic-bezier(.22, 1, .36, 1);
+  }
+  .is-leaving .blog-entry-loader__composition { opacity: 0; transform: translateY(-1.25rem); }
+  .blog-entry-loader__meta {
+    display: flex;
+    align-items: center;
+    width: min(20rem, 100%);
+    margin-bottom: 2.5rem;
+    font-family: var(--font-jetbrains-mono), monospace;
+    font-size: .63rem;
+    font-weight: 600;
+    color: var(--loader-muted);
+    letter-spacing: .06em;
+  }
+  .blog-entry-loader__meta i { flex: 1; height: 1px; margin: 0 .8rem; background: var(--loader-line); }
+  .blog-entry-loader__meta span:last-child { color: var(--loader-blue); }
+  .blog-entry-loader__dial { position: relative; display: grid; place-items: center; width: clamp(14.5rem, 25vw, 20rem); aspect-ratio: 1; border-radius: 50%; }
+  .blog-entry-loader__dial::before {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    content: "";
+    background: conic-gradient(from -90deg, var(--loader-pink) 0 var(--loader-progress), var(--loader-track) var(--loader-progress) 100%);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  }
+  .blog-entry-loader__dial::after { position: absolute; inset: 1.15rem; border: 1px solid var(--loader-line); border-radius: inherit; content: ""; }
+  .blog-entry-loader__ticks {
+    position: absolute;
+    inset: -.75rem;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from -90deg, var(--loader-line) 0 1deg, transparent 1deg 9deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  }
+  .blog-entry-loader__runner,
+  .blog-entry-loader__trail { position: absolute; inset: 0; z-index: 4; border-radius: 50%; transform: rotate(var(--loader-angle)); }
+  .blog-entry-loader__pet { position: absolute; top: -3.4rem; left: 50%; width: 5.8rem; transform: translateX(-50%) rotate(var(--loader-counter-angle)); }
+  .blog-entry-loader__pet img {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 .35rem .45rem rgb(23 24 28 / 14%));
+    animation: blog-loader-feibi-breathe 1.2s ease-in-out infinite;
+  }
+  .blog-entry-loader__trail { transform: rotate(calc(var(--loader-angle) - var(--trail-offset))); }
+  .blog-entry-loader__trail i { position: absolute; top: -.2rem; left: 50%; width: var(--trail-size); height: var(--trail-size); border-radius: 50%; background: var(--loader-pink); transform: translateX(-50%); opacity: var(--trail-opacity); }
+  .blog-entry-loader__trail.is-first { --trail-offset: 9deg; --trail-size: .42rem; --trail-opacity: .62; }
+  .blog-entry-loader__trail.is-second { --trail-offset: 17deg; --trail-size: .28rem; --trail-opacity: .38; }
+  .blog-entry-loader__trail.is-third { --trail-offset: 24deg; --trail-size: .18rem; --trail-opacity: .2; }
+  .blog-entry-loader__center { display: grid; z-index: 2; justify-items: center; color: var(--loader-ink); }
+  .blog-entry-loader__center > span,
+  .blog-entry-loader__center b { font-family: var(--font-jetbrains-mono), monospace; font-size: .62rem; font-weight: 600; color: var(--loader-muted); letter-spacing: .14em; }
+  .blog-entry-loader__center strong {
+    display: flex;
+    align-items: flex-start;
+    margin: .65rem 0 .45rem;
+    font-family: var(--font-inter), sans-serif;
+    font-size: clamp(3.2rem, 6vw, 4.8rem);
+    line-height: .9;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .blog-entry-loader__center small { margin: .25rem 0 0 .25rem; font-size: .9rem; color: var(--loader-pink); }
+  .blog-entry-loader__center > i { width: 2rem; height: 2px; margin: .2rem 0 .7rem; background: var(--loader-blue); }
+  .blog-entry-loader__caption { min-height: 1.4em; margin: 2.8rem 0 0; text-align: center; font-size: .82rem; color: var(--loader-muted); }
+  .blog-entry-loader.is-complete .blog-entry-loader__pet img { animation: blog-loader-feibi-ready 420ms cubic-bezier(.22, 1, .36, 1) both; }
+  @keyframes blog-loader-feibi-breathe {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-.22rem) rotate(1deg); }
+  }
+  @keyframes blog-loader-feibi-ready {
+    0% { transform: translateY(0) scale(1); }
+    55% { transform: translateY(-.45rem) scale(1.04); }
+    100% { transform: translateY(0) scale(1); }
+  }
   @media (max-width: 640px) {
-    .blog-entry-loader__composition { width: min(14rem, 60vw); }
-    .blog-entry-loader__pet { width: 4.7rem; left: calc(50% - 2.35rem); top: -2.5rem; }
-    .blog-entry-loader__center strong { font-size: 2.2rem; }
+    .blog-entry-loader__brand span:last-child,
+    .blog-entry-loader__footer span:last-child { display: none; }
+    .blog-entry-loader__brand i { width: 1.75rem; }
+    .blog-entry-loader__footer { font-size: .56rem; }
+    .blog-entry-loader__composition { width: min(19rem, 76vw); }
+    .blog-entry-loader__meta { margin-bottom: 2.2rem; }
+    .blog-entry-loader__dial { width: min(15rem, 64vw); }
+    .blog-entry-loader__pet { top: -2.9rem; width: 5rem; }
+    .blog-entry-loader__caption { margin-top: 2.5rem; font-size: .76rem; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .blog-entry-loader__runner, .blog-entry-loader__pet { animation: none; }
+    .blog-entry-loader__pet img { animation: none; }
+    .blog-entry-loader.is-visible.is-leaving { opacity: 0; clip-path: inset(0); transition: opacity 120ms ease; }
+    .is-leaving .blog-entry-loader__composition { transform: none; }
   }
 </style>
