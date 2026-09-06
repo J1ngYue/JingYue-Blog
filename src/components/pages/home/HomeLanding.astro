@@ -24,7 +24,6 @@ import HomeExhibitCarousel from "./HomeExhibitCarousel.astro";
 import HomeHeroExperience from "./HomeHeroExperience.astro";
 import HomeMobileOverview from "./HomeMobileOverview.astro";
 import HomeProfileMatrix from "./HomeProfileMatrix.astro";
-import HomeSiteData from "./HomeSiteData.astro";
 import JingYueWordmark from "./JingYueWordmark.astro";
 
 interface Props {
@@ -420,21 +419,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				<div class="home-overview-illustration-shade"></div>
 				<span class="home-overview-illustration-index">片段 01</span>
 			</div>
-			<a class="home-scene-next home-section-next" href="#home-dashboard" aria-label="向下探索站点数据">
-				<span>向下探索</span>
-				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
-			</a>
-		</section>
-
-		<section
-			id="home-dashboard"
-			class="home-section home-dashboard home-scroll-scene"
-			aria-labelledby="home-dashboard-title"
-			data-home-scroll-scene
-			data-home-page
-			data-home-section-tone="light"
-		>
-			<HomeSiteData images={[galleryImage1, galleryImage2, galleryImage3, galleryImage4, galleryImage5]} />
 			<a class="home-scene-next home-section-next" href="#home-exhibit" aria-label="向下探索横向影像叙事">
 				<span>向下探索</span>
 				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
@@ -5877,15 +5861,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			min-height: 100vh;
 			min-height: 100svh;
 			overflow: hidden;
-		}
-
-		.home-dashboard-heading {
-			margin-bottom: 1rem;
-		}
-
-		.home-dashboard .home-overview-grid {
-			align-items: stretch;
-			max-height: calc(100svh - 13rem);
 		}
 
 		.home-overview-illustration {
