@@ -638,13 +638,19 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		let exhibitProgressFrame = 0;
 		let exhibitProgressStartTime = 0;
 		let exhibitProgressPosition = 0;
-		let exhibitWheelDelta = 0;
-		let exhibitWheelQuietTimer = 0;
+		let exhibitHoldTimer = 0;
+		let exhibitHoldFrame = 0;
+		let exhibitHoldLastTime = 0;
+		let exhibitHoldDirection = 0;
+		let exhibitHoldButton = null;
+		let exhibitHoldPointerId = -1;
+		let exhibitHoldStarted = false;
+		let exhibitSuppressClick = false;
+		let exhibitSuppressClickTimer = 0;
 		let exhibitVisible = false;
 		let exhibitInteractionPaused = false;
 		let exhibitUserPaused = false;
 		let exhibitTransition = null;
-		let exhibitLastWheelTime = 0;
 		let exhibitObserver = null;
 		let wordmarkFrame = 0;
 		let wordmarkReadyFrame = 0;
@@ -919,7 +925,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		};
 
 		const exhibitSlideDuration = 12000;
-		const exhibitWheelThreshold = 80;
+		const exhibitHoldDelay = 300;
+		const exhibitHoldSpeed = .85;
 		const exhibitModulo = (value) =>
 			((value % exhibitSlides.length) + exhibitSlides.length) % exhibitSlides.length;
 
@@ -1036,42 +1043,94 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			showExhibitSlide(exhibitTransition ? exhibitTransition.to + 1 : Math.ceil(exhibitProgressPosition + .05));
 			releaseExhibitPointerFocus(event);
 		};
-		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
-		const scheduleExhibitWheelResume = () => {
-			if (exhibitWheelQuietTimer) window.clearTimeout(exhibitWheelQuietTimer);
-			exhibitWheelQuietTimer = window.setTimeout(() => {
-				exhibitWheelQuietTimer = 0;
-				exhibitWheelDelta = 0;
-				exhibitInteractionPaused = false;
-				syncExhibitPlayback();
-			}, 900);
+		const clearExhibitClickSuppression = () => {
+			if (exhibitSuppressClickTimer) window.clearTimeout(exhibitSuppressClickTimer);
+			exhibitSuppressClickTimer = 0;
+			exhibitSuppressClick = false;
 		};
-		const eventTargetIsInteractive = (target) =>
-			target instanceof Element &&
-			Boolean(target.closest("button, a, input, textarea, select, [contenteditable='true']"));
-		const handleExhibitWheel = (event) => {
-			if (
-				!exhibitVisible ||
-				reducedMotion.matches ||
-				event.ctrlKey ||
-				event.altKey ||
-				eventTargetIsInteractive(event.target)
-			) return;
-			const delta =
-				Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-			if (Math.abs(delta) < 1) return;
-			event.preventDefault();
-			event.stopPropagation();
+		const handlePreviousExhibitClick = (event) => {
+			if (exhibitSuppressClick) {
+				clearExhibitClickSuppression();
+				event.preventDefault();
+				return;
+			}
+			showPreviousExhibitSlide(event);
+		};
+		const handleNextExhibitClick = (event) => {
+			if (exhibitSuppressClick) {
+				clearExhibitClickSuppression();
+				event.preventDefault();
+				return;
+			}
+			showNextExhibitSlide(event);
+		};
+		const tickExhibitHold = (timestamp) => {
+			exhibitHoldFrame = 0;
+			if (!exhibitHoldStarted || !exhibitHoldDirection) return;
+			const elapsed = exhibitHoldLastTime ? Math.min(timestamp - exhibitHoldLastTime, 64) : 0;
+			exhibitHoldLastTime = timestamp;
+			exhibitProgressPosition += exhibitHoldDirection * exhibitHoldSpeed * elapsed / 1000;
+			renderExhibitMeter(exhibitProgressPosition);
+			exhibitHoldFrame = requestAnimationFrame(tickExhibitHold);
+		};
+		const startExhibitHold = () => {
+			exhibitHoldTimer = 0;
+			if (!exhibitHoldButton || !exhibitHoldDirection) return;
+			exhibitHoldStarted = true;
+			exhibitTransition = null;
 			exhibitInteractionPaused = true;
-			scheduleExhibitWheelResume();
-			exhibitWheelDelta += normalizeWheelDelta(event, delta);
-			if (Math.abs(exhibitWheelDelta) < exhibitWheelThreshold) return;
-			if (performance.now() - exhibitLastWheelTime < 650) return;
-			exhibitLastWheelTime = performance.now();
-			const direction = exhibitWheelDelta > 0 ? 1 : -1;
-			exhibitWheelDelta = 0;
-			showExhibitSlide(exhibitActiveIndex + direction);
+			stopExhibitProgress();
+			exhibitHoldButton.setAttribute("data-holding", "true");
+			exhibitHoldLastTime = 0;
+			exhibitHoldFrame = requestAnimationFrame(tickExhibitHold);
 		};
+		const finishExhibitHold = (suppressClick = false) => {
+			if (exhibitHoldTimer) window.clearTimeout(exhibitHoldTimer);
+			if (exhibitHoldFrame) window.cancelAnimationFrame(exhibitHoldFrame);
+			const heldButton = exhibitHoldButton;
+			const wasHolding = exhibitHoldStarted;
+			exhibitHoldTimer = 0;
+			exhibitHoldFrame = 0;
+			exhibitHoldLastTime = 0;
+			exhibitHoldDirection = 0;
+			exhibitHoldButton = null;
+			exhibitHoldPointerId = -1;
+			exhibitHoldStarted = false;
+			heldButton?.removeAttribute("data-holding");
+			if (!wasHolding) return;
+			clearExhibitClickSuppression();
+			if (suppressClick) {
+				exhibitSuppressClick = true;
+				exhibitSuppressClickTimer = window.setTimeout(clearExhibitClickSuppression, 0);
+			}
+			exhibitInteractionPaused = false;
+			heldButton?.blur();
+			syncExhibitPlayback();
+		};
+		const handleExhibitHoldPointerDown = (event) => {
+			if (!event.isPrimary || event.button !== 0 || reducedMotion.matches) return;
+			clearExhibitClickSuppression();
+			finishExhibitHold();
+			exhibitHoldButton = event.currentTarget;
+			exhibitHoldPointerId = event.pointerId;
+			exhibitHoldDirection = event.currentTarget === exhibitPrevious ? -1 : 1;
+			event.currentTarget.setPointerCapture?.(event.pointerId);
+			exhibitHoldTimer = window.setTimeout(startExhibitHold, exhibitHoldDelay);
+		};
+		const handleExhibitHoldPointerUp = (event) => {
+			if (event.pointerId !== exhibitHoldPointerId) return;
+			finishExhibitHold(exhibitHoldStarted);
+		};
+		const handleExhibitHoldPointerCancel = (event) => {
+			if (event.pointerId !== exhibitHoldPointerId) return;
+			finishExhibitHold();
+		};
+		const handleExhibitHoldLostCapture = (event) => {
+			if (event.pointerId !== exhibitHoldPointerId) return;
+			finishExhibitHold();
+		};
+		const handleExhibitHoldWindowBlur = () => finishExhibitHold();
+		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
 
 		const handleLocalCoverState = (event) => {
 			const localCoverActive = Boolean(event.detail?.active);
@@ -1932,9 +1991,15 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		coverOrbit?.addEventListener("focusin", handleCoverOrbitFocusIn);
 		exhibitCarousel?.addEventListener("focusin", pauseExhibitInteraction);
 		exhibitCarousel?.addEventListener("focusout", handleExhibitFocusOut);
-		exhibitCarousel?.addEventListener("wheel", handleExhibitWheel, { passive: false });
-		exhibitPrevious?.addEventListener("click", showPreviousExhibitSlide);
-		exhibitNext?.addEventListener("click", showNextExhibitSlide);
+		exhibitPrevious?.addEventListener("click", handlePreviousExhibitClick);
+		exhibitNext?.addEventListener("click", handleNextExhibitClick);
+		[exhibitPrevious, exhibitNext].filter(Boolean).forEach((button) => {
+			button.addEventListener("pointerdown", handleExhibitHoldPointerDown);
+			button.addEventListener("pointerup", handleExhibitHoldPointerUp);
+			button.addEventListener("pointercancel", handleExhibitHoldPointerCancel);
+			button.addEventListener("lostpointercapture", handleExhibitHoldLostCapture);
+		});
+		window.addEventListener("blur", handleExhibitHoldWindowBlur);
 		exhibitToggle?.addEventListener("click", toggleExhibitPlayback);
 		document.addEventListener("visibilitychange", handleExhibitVisibilityChange);
 		window.addEventListener("jingyue:local-cover-state-change", handleLocalCoverState);
@@ -2058,9 +2123,15 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			coverOrbit?.removeEventListener("focusin", handleCoverOrbitFocusIn);
 			exhibitCarousel?.removeEventListener("focusin", pauseExhibitInteraction);
 			exhibitCarousel?.removeEventListener("focusout", handleExhibitFocusOut);
-			exhibitCarousel?.removeEventListener("wheel", handleExhibitWheel);
-			exhibitPrevious?.removeEventListener("click", showPreviousExhibitSlide);
-			exhibitNext?.removeEventListener("click", showNextExhibitSlide);
+			exhibitPrevious?.removeEventListener("click", handlePreviousExhibitClick);
+			exhibitNext?.removeEventListener("click", handleNextExhibitClick);
+			[exhibitPrevious, exhibitNext].filter(Boolean).forEach((button) => {
+				button.removeEventListener("pointerdown", handleExhibitHoldPointerDown);
+				button.removeEventListener("pointerup", handleExhibitHoldPointerUp);
+				button.removeEventListener("pointercancel", handleExhibitHoldPointerCancel);
+				button.removeEventListener("lostpointercapture", handleExhibitHoldLostCapture);
+			});
+			window.removeEventListener("blur", handleExhibitHoldWindowBlur);
 			exhibitToggle?.removeEventListener("click", toggleExhibitPlayback);
 			document.removeEventListener("visibilitychange", handleExhibitVisibilityChange);
 			overviewVideo?.removeEventListener("playing", markOverviewVideoPlaying);
@@ -2075,9 +2146,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			sceneObserver?.disconnect();
 			overviewVideoObserver?.disconnect();
 			exhibitObserver?.disconnect();
-			if (exhibitWheelQuietTimer) window.clearTimeout(exhibitWheelQuietTimer);
-			exhibitWheelQuietTimer = 0;
-			exhibitWheelDelta = 0;
+			finishExhibitHold();
+			clearExhibitClickSuppression();
 			stopExhibitProgress(true);
 			themeClassObserver.disconnect();
 			root.removeAttribute("data-home-scenes-ready");

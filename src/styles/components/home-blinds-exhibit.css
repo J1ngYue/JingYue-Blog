@@ -62,8 +62,9 @@
 .home-blinds-scene__signature svg { display: block; width: 5rem; height: .6rem; }
 
 .home-blinds-scenes__navigation { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
-.home-blinds-scenes__navigation-button { position: absolute; top: 48%; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid rgb(255 255 255 / 55%); border-radius: 50%; background: rgb(24 27 25 / 75%); color: #fff; cursor: pointer; pointer-events: auto; transition: background 180ms ease; }
+.home-blinds-scenes__navigation-button { position: absolute; top: 48%; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid rgb(255 255 255 / 55%); border-radius: 50%; background: rgb(24 27 25 / 75%); color: #fff; cursor: pointer; pointer-events: auto; touch-action: manipulation; user-select: none; transition: background 180ms ease, border-color 180ms ease; }
 .home-blinds-scenes__navigation-button:hover { background: #398f88; }
+.home-blinds-scenes__navigation-button[data-holding="true"] { border-color: #fff; background: #28766f; }
 .home-blinds-scenes__navigation-button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
 .home-blinds-scenes__navigation-button svg { width: 1.4rem; height: 1.4rem; }
 .home-blinds-scenes__navigation-button.is-previous { left: 1.25rem; }
