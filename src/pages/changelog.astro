@@ -33,6 +33,60 @@ const typeLabels = {
 	fix: "问题修复",
 	remove: "功能删除",
 } as const;
+
+type ChangelogLink = { t: number; p: string[] };
+
+// Keep generic words out of the relation graph so arrows describe a real feature area.
+const relationStopWords = new Set([
+	"功能", "新增", "优化", "问题", "修复", "页面", "博客", "站点", "全站",
+	"内容", "系统", "支持", "加入", "更新", "调整", "统一", "改为", "移除",
+	"增加", "默认", "当前", "避免", "保持", "同步", "显示", "设置", "按钮",
+	"布局", "模式", "背景", "加载", "效果", "动画", "文章", "数据", "组件",
+]);
+
+function relationTerms(entry: (typeof changelogEntries)[number]): Set<string> {
+	const source = [entry.title, entry.summary, ...entry.changes].join(" ");
+	const terms = new Set<string>();
+	for (const match of source.matchAll(/[\u4e00-\u9fff]{2,}|[A-Za-z][A-Za-z0-9-]{2,}/g)) {
+		const term = match[0].toLocaleLowerCase();
+		if (!relationStopWords.has(term)) terms.add(term);
+	}
+	return terms;
+}
+
+const entryTerms = changelogEntries.map(relationTerms);
+const relationLinks: ChangelogLink[][] = changelogEntries.map(() => []);
+
+for (let index = 0; index < changelogEntries.length; index += 1) {
+	const entry = changelogEntries[index];
+	const candidates = changelogEntries
+		.map((candidate, target) => {
+			if (target === index) return null;
+			const shared = [...entryTerms[index]].filter((term) => entryTerms[target].has(term));
+			const sameType = candidate.type === entry.type;
+			const featurePair = entry.type === "feature" && candidate.type === "feature";
+			const distance = Math.abs(target - index);
+			const score = shared.length * 8 + (featurePair ? 5 : 0) + (sameType ? 2 : 0) - distance * 0.04;
+			return { target, shared, score };
+		})
+		.filter((candidate): candidate is { target: number; shared: string[]; score: number } => candidate !== null)
+		.filter((candidate) => candidate.shared.length > 0 || (entry.type === "feature" && changelogEntries[candidate.target].type === "feature"))
+		.sort((a, b) => b.score - a.score || a.target - b.target)
+		.slice(0, entry.type === "feature" ? 4 : 2);
+
+	for (const candidate of candidates) {
+		const target = changelogEntries[candidate.target];
+		const label = entry.type === "feature" || target.type === "feature"
+			? "功能新增"
+			: typeLabels[target.type];
+		if (!relationLinks[index].some((link) => link.t === candidate.target)) {
+			relationLinks[index].push({ t: candidate.target, p: [label] });
+		}
+		if (!relationLinks[candidate.target].some((link) => link.t === index)) {
+			relationLinks[candidate.target].push({ t: index, p: [label] });
+		}
+	}
+}
 ---
 
 <MainGridLayout
@@ -63,56 +117,242 @@ const typeLabels = {
 			))}
 		</nav>
 
-		<div class="changelog-timeline" data-changelog-list>
+		<div class="changelog-board" data-changelog>
+			<svg class="changelog-wires" data-changelog-wires aria-hidden="true">
+				<defs>
+					<marker id="changelog-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+						<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+					</marker>
+				</defs>
+			</svg>
+			<ol class="changelog-grid" data-changelog-grid>
 			{changelogEntries.map((entry, index) => (
-				<article
-					class="changelog-entry"
+				<li
+					class="changelog-card"
+					data-changelog-card
 					data-log-entry
 					data-log-type={entry.type}
 					data-log-index={index}
+					data-index={index}
+					data-links={JSON.stringify(relationLinks[index])}
 					data-expanded="false"
 				>
-					<span class="changelog-entry__dot" aria-hidden="true"></span>
-					<header>
+					<button
+						type="button"
+						class="changelog-card__inner"
+						data-log-toggle
+						aria-expanded="false"
+						aria-controls={`changelog-details-${index}`}
+					>
+						<span class="changelog-card__num" aria-hidden="true">{String(changelogEntries.length - index).padStart(2, "0")}</span>
+						<span class="changelog-card__meta">
+							<span class="changelog-card__type">{typeLabels[entry.type]}</span>
 						<time datetime={`${entry.date}T${entry.time}`}>
-							{entry.date} · {entry.time}
+								{entry.date}
 						</time>
-						<small>{typeLabels[entry.type]}</small>
-						<span>{entry.version}</span>
-					</header>
-					<div class="changelog-entry__box">
-						<span class="changelog-entry__index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-						<button
-							type="button"
-							class="changelog-entry__summary"
-							data-log-toggle
-							aria-expanded="false"
-							aria-controls={`changelog-details-${index}`}
-						>
-							<span>
-								<strong>{entry.title}</strong>
-								<em>{entry.summary}</em>
-							</span>
-							<Icon is:inline name="material-symbols:expand-more-rounded" aria-hidden="true" />
-						</button>
-						<div
+						</span>
+						<strong class="changelog-card__title">{entry.title}</strong>
+						<em class="changelog-card__summary">{entry.summary}</em>
+						<span class="changelog-card__version">{entry.version}</span>
+					</button>
+					<div
 							id={`changelog-details-${index}`}
-							class="changelog-entry__content"
+							class="changelog-card__detail"
 							data-log-content
 							aria-hidden="true"
 						>
-							<div class="changelog-entry__content-inner">
+							<div class="changelog-card__detail-inner">
 								<ul>
 									{entry.changes.map((change) => <li>{change}</li>)}
 								</ul>
 							</div>
 						</div>
-					</div>
-				</article>
+				</li>
 			))}
+			</ol>
 		</div>
 	</RecordPageShell>
 </MainGridLayout>
+
+<script>
+	type ChangelogGraphWindow = Window & {
+		__jingyueChangelogGraphCleanup?: () => void;
+		__jingyueChangelogGraphBound?: boolean;
+	};
+	type ClientChangelogLink = { t: number; p: string[] };
+
+	const changelogGraphWindow = window as ChangelogGraphWindow;
+
+	function initChangelogGraph() {
+		changelogGraphWindow.__jingyueChangelogGraphCleanup?.();
+		const root = document.querySelector<HTMLElement>("[data-changelog]");
+		const grid = root?.querySelector<HTMLOListElement>("[data-changelog-grid]");
+		const wires = root?.querySelector<SVGSVGElement>("[data-changelog-wires]");
+		if (!root || !grid || !wires) return;
+
+		const controller = new AbortController();
+		const { signal } = controller;
+		const hoverAnimations = new Set<() => void>();
+		let activeCard: HTMLElement | null = null;
+		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+		const visibleCards = () =>
+			Array.from(grid.querySelectorAll<HTMLElement>("[data-changelog-card]:not([hidden])"));
+		const boardRect = () => root.getBoundingClientRect();
+		const cardCenter = (card: HTMLElement) => {
+			const rect = card.getBoundingClientRect();
+			const board = boardRect();
+			return { x: rect.left - board.left + rect.width / 2, y: rect.top - board.top + rect.height / 2 };
+		};
+		const makePath = (d: string, className: string, marker = true) => {
+			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			path.setAttribute("d", d);
+			path.setAttribute("class", className);
+			if (marker) path.setAttribute("marker-end", "url(#changelog-arrow)");
+			return path;
+		};
+		const clearHoverWires = () => {
+			for (const cancel of hoverAnimations) cancel();
+			hoverAnimations.clear();
+			root.querySelectorAll("[data-hover-wire]").forEach((node) => node.remove());
+			root.querySelectorAll(".is-active, .is-linked").forEach((node) => node.classList.remove("is-active", "is-linked"));
+			root.classList.remove("is-hovering");
+		};
+		const drawRowArrows = (cards: HTMLElement[], columns: number) => {
+			wires.setAttribute("viewBox", `0 0 ${Math.max(root.scrollWidth, root.clientWidth)} ${Math.max(root.scrollHeight, root.clientHeight)}`);
+			wires.querySelectorAll("[data-row-arrow]").forEach((node) => node.remove());
+			const board = boardRect();
+			const rows = Math.ceil(cards.length / columns);
+			for (let row = 0; row < rows - 1; row += 1) {
+				const fromCard = cards[row * columns + columns - 1];
+				const toCard = cards[(row + 1) * columns];
+				if (!fromCard || !toCard) continue;
+				const from = fromCard.getBoundingClientRect();
+				const to = toCard.getBoundingClientRect();
+				const fy = from.top - board.top + from.height / 2;
+				const ty = to.top - board.top + to.height / 2;
+				const x1 = row % 2 === 0 ? from.right - board.left : from.left - board.left;
+				const x2 = row % 2 === 0 ? to.right - board.left : to.left - board.left;
+				const outward = row % 2 === 0 ? Math.max(x1, x2) + 16 : Math.min(x1, x2) - 16;
+				const path = makePath(`M ${x2} ${ty} H ${outward} V ${fy} H ${x1}`, "changelog-wire changelog-wire--row");
+				path.setAttribute("data-row-arrow", "true");
+				wires.appendChild(path);
+			}
+		};
+		const layout = () => {
+			const cards = visibleCards();
+			if (!cards.length) return;
+			const columns = Math.max(1, getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length);
+			cards.forEach((card, index) => {
+				const row = Math.floor(index / columns);
+				const column = index % columns;
+				const visualColumn = row % 2 === 0 ? column : columns - 1 - column;
+				card.style.order = String(row * columns + visualColumn);
+			});
+			clearHoverWires();
+			requestAnimationFrame(() => drawRowArrows(cards, columns));
+		};
+		const drawHoverWire = (d: string, midpoint: { x: number; y: number }, labelText: string) => {
+			const path = makePath(d, "changelog-wire changelog-wire--hover", false);
+			path.setAttribute("data-hover-wire", "true");
+			wires.appendChild(path);
+			const label = document.createElement("span");
+			label.className = "changelog-wire-label";
+			label.textContent = labelText;
+			label.setAttribute("data-hover-wire", "true");
+			label.style.left = `${midpoint.x}px`;
+			label.style.top = `${midpoint.y}px`;
+			root.appendChild(label);
+			if (reducedMotion) {
+				path.classList.add("is-drawn");
+				path.setAttribute("marker-end", "url(#changelog-arrow)");
+				label.classList.add("is-in");
+				return;
+			}
+			const length = path.getTotalLength();
+			const start = performance.now();
+			let frame = 0;
+			const cancel = () => cancelAnimationFrame(frame);
+			hoverAnimations.add(cancel);
+			const tick = (now: number) => {
+				const progress = Math.min(1, (now - start) / Math.min(760, Math.max(350, length / 0.7)));
+				path.style.strokeDasharray = `${length * progress} ${length + 20}`;
+				if (progress < 1) {
+					frame = requestAnimationFrame(tick);
+					return;
+				}
+				hoverAnimations.delete(cancel);
+				path.style.strokeDasharray = "6 5";
+				path.classList.add("is-drawn");
+				path.setAttribute("marker-end", "url(#changelog-arrow)");
+				label.classList.add("is-in");
+			};
+			frame = requestAnimationFrame(tick);
+		};
+		const onCardEnter = (card: HTMLElement) => {
+			clearHoverWires();
+			root.classList.add("is-hovering");
+			card.classList.add("is-active");
+			const from = cardCenter(card);
+			const cardIndex = Number(card.dataset.index);
+			let links: ClientChangelogLink[] = [];
+			try {
+				links = JSON.parse(card.dataset.links ?? "[]") as ClientChangelogLink[];
+			} catch {
+				return;
+			}
+			for (const link of links) {
+				const target = grid.querySelector<HTMLElement>(`[data-changelog-card][data-index="${link.t}"]:not([hidden])`);
+				if (!target) continue;
+				target.classList.add("is-linked");
+				const to = cardCenter(target);
+				const dx = to.x - from.x;
+				const dy = to.y - from.y;
+				const length = Math.max(1, Math.hypot(dx, dy));
+				const curve = Math.min(56, length * 0.12);
+				const cx = (from.x + to.x) / 2 - (dy / length) * curve;
+				const cy = (from.y + to.y) / 2 + (dx / length) * curve;
+				const midpoint = { x: from.x * 0.25 + cx * 0.5 + to.x * 0.25, y: from.y * 0.25 + cy * 0.5 + to.y * 0.25 };
+				const start = link.t < cardIndex ? from : to;
+				const end = link.t < cardIndex ? to : from;
+				drawHoverWire(`M ${start.x} ${start.y} Q ${cx} ${cy} ${end.x} ${end.y}`, midpoint, link.p.join("、"));
+			}
+		};
+
+		grid.addEventListener("pointerover", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const card = target.closest<HTMLElement>("[data-changelog-card]");
+			if (!card || card === activeCard) return;
+			activeCard = card;
+			onCardEnter(card);
+		}, { signal });
+		grid.addEventListener("pointerleave", () => {
+			activeCard = null;
+			clearHoverWires();
+		}, { signal });
+		window.addEventListener("resize", layout, { signal });
+		const mutationObserver = new MutationObserver(layout);
+		mutationObserver.observe(grid, { subtree: true, attributes: true, attributeFilter: ["hidden", "data-expanded"] });
+		const resizeObserver = new ResizeObserver(layout);
+		resizeObserver.observe(grid);
+		changelogGraphWindow.__jingyueChangelogGraphCleanup = () => {
+			controller.abort();
+			mutationObserver.disconnect();
+			resizeObserver.disconnect();
+			clearHoverWires();
+		};
+		layout();
+	}
+
+	if (!changelogGraphWindow.__jingyueChangelogGraphBound) {
+		changelogGraphWindow.__jingyueChangelogGraphBound = true;
+		document.addEventListener("astro:page-load", initChangelogGraph);
+		document.addEventListener("swup:contentReplaced", initChangelogGraph);
+		document.addEventListener("swup:content:replaced", initChangelogGraph);
+	}
+	initChangelogGraph();
+</script>
 
 <style>
 	.changelog-filter {
@@ -495,6 +735,276 @@ const typeLabels = {
 		.changelog-entry__content,
 		.changelog-entry__content-inner {
 			transition: none;
+		}
+	}
+
+	/* 关系图层：卡片保持方形网格，SVG 只负责连接关系，不参与布局。 */
+	.changelog-board {
+		position: relative;
+		isolation: isolate;
+		min-width: 0;
+		overflow: visible;
+	}
+
+	.changelog-wires {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		width: 100%;
+		height: 100%;
+		overflow: visible;
+		pointer-events: none;
+	}
+
+	.changelog-grid {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 0.875rem;
+		margin: 0;
+		padding: 0.15rem 0 2.5rem;
+		list-style: none;
+	}
+
+	.changelog-card {
+		position: relative;
+		min-width: 0;
+		aspect-ratio: 1;
+		transition: opacity 250ms ease;
+	}
+
+	.changelog-card[hidden] {
+		display: none;
+	}
+
+	.changelog-card__inner {
+		display: flex;
+		position: relative;
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.42rem;
+		overflow: hidden;
+		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 12%, transparent);
+		border-radius: 0.8rem;
+		background: color-mix(in srgb, var(--card-bg, #fff) 88%, transparent);
+		padding: 0.85rem 0.9rem;
+		color: var(--record-ink, var(--deep-text));
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		backdrop-filter: blur(10px);
+		box-shadow: 0 0.7rem 1.8rem rgb(15 23 42 / 5%);
+		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease;
+	}
+
+	.changelog-card__inner:hover,
+	.changelog-card__inner:focus-visible,
+	.changelog-card.is-active .changelog-card__inner,
+	.changelog-card.is-linked .changelog-card__inner {
+		border-color: color-mix(in srgb, #00a29b 76%, transparent);
+		background: color-mix(in srgb, var(--card-bg, #fff) 96%, #00a29b 4%);
+		box-shadow: 0 1rem 2rem rgb(15 23 42 / 10%);
+		outline: none;
+	}
+
+	.changelog-card__inner:hover,
+	.changelog-card__inner:focus-visible {
+		transform: translateY(-2px);
+	}
+
+	.changelog-board.is-hovering .changelog-card:not(.is-active):not(.is-linked) {
+		opacity: 0.48;
+	}
+
+	.changelog-card__num {
+		position: absolute;
+		right: 0.5rem;
+		bottom: -0.72rem;
+		color: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
+		font-size: clamp(3.2rem, 5vw, 4.8rem);
+		font-weight: 850;
+		letter-spacing: -0.08em;
+		line-height: 1;
+		pointer-events: none;
+		user-select: none;
+	}
+
+	.changelog-card__meta {
+		display: flex;
+		position: relative;
+		z-index: 1;
+		align-items: center;
+		gap: 0.45rem;
+		min-width: 0;
+		color: var(--content-meta);
+		font-size: 0.68rem;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.35;
+	}
+
+	.changelog-card__type {
+		color: #00a29b;
+		font-weight: 760;
+	}
+
+	.changelog-card__meta time {
+		white-space: nowrap;
+	}
+
+	.changelog-card__title,
+	.changelog-card__summary {
+		position: relative;
+		z-index: 1;
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+	}
+
+	.changelog-card__title {
+		-webkit-line-clamp: 4;
+		font-size: 0.94rem;
+		font-weight: 780;
+		line-height: 1.45;
+	}
+
+	.changelog-card__summary {
+		margin-top: auto;
+		-webkit-line-clamp: 3;
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.73rem;
+		font-style: normal;
+		line-height: 1.55;
+	}
+
+	.changelog-card__version {
+		position: relative;
+		z-index: 1;
+		align-self: flex-start;
+		border-radius: 999px;
+		background: color-mix(in srgb, #00a29b 11%, transparent);
+		padding: 0.18rem 0.48rem;
+		color: var(--record-ink, #111);
+		font-size: 0.62rem;
+		font-weight: 730;
+	}
+
+	.changelog-card__detail {
+		display: grid;
+		grid-template-rows: 0fr;
+		overflow: hidden;
+		opacity: 0;
+		transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
+	}
+
+	.changelog-card[data-expanded="true"] .changelog-card__detail {
+		grid-template-rows: 1fr;
+		opacity: 1;
+	}
+
+	.changelog-card__detail-inner {
+		min-height: 0;
+		overflow: hidden;
+		padding: 0 0.9rem;
+	}
+
+	.changelog-card[data-expanded="true"] .changelog-card__detail-inner {
+		padding: 0 0.9rem 0.9rem;
+	}
+
+	.changelog-card__detail ul {
+		display: grid;
+		gap: 0.45rem;
+		margin: 0;
+		padding: 0;
+		color: var(--record-ink, var(--deep-text));
+		font-size: 0.73rem;
+		line-height: 1.55;
+		list-style-position: inside;
+	}
+
+	:global(.changelog-wire) {
+		fill: none;
+		stroke-width: 1.5px;
+	}
+
+	:global(.changelog-wire--row) {
+		stroke: #00a29b;
+		opacity: 0.38;
+	}
+
+	:global(.changelog-wire--hover) {
+		stroke: #00a29b;
+		stroke-width: 1.75px;
+	}
+
+	:global(.changelog-wire--hover.is-drawn) {
+		stroke-dasharray: 6 5;
+		animation: changelog-dash 0.7s linear infinite;
+	}
+
+	:global(.changelog-wire-label) {
+		position: absolute;
+		z-index: 3;
+		max-width: 12rem;
+		overflow: hidden;
+		transform: translate(-50%, -50%);
+		visibility: hidden;
+		border: 1px solid color-mix(in srgb, #00a29b 38%, transparent);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--card-bg, #fff) 92%, transparent);
+		padding: 0.25rem 0.62rem;
+		color: #008e88;
+		font-size: 0.68rem;
+		font-weight: 750;
+		line-height: 1.4;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		opacity: 0;
+		pointer-events: none;
+		box-shadow: 0 0.25rem 0.8rem rgb(0 0 0 / 8%);
+		transition: opacity 350ms ease 100ms, visibility 350ms ease 100ms;
+	}
+
+	:global(.changelog-wire-label.is-in) {
+		visibility: visible;
+		opacity: 1;
+	}
+
+	@keyframes changelog-dash {
+		to { stroke-dashoffset: -11px; }
+	}
+
+	@media (max-width: 1024px) {
+		.changelog-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	}
+
+	@media (max-width: 768px) {
+		.changelog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7rem; }
+		.changelog-card__inner { padding: 0.75rem; }
+		.changelog-card__title { font-size: 0.84rem; }
+		.changelog-card__summary { font-size: 0.68rem; }
+	}
+
+	@media (max-width: 560px) {
+		.changelog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+		.changelog-card__inner { padding: 0.7rem; }
+		.changelog-card__num { font-size: 3.2rem; }
+		.changelog-card__title { -webkit-line-clamp: 5; font-size: 0.82rem; }
+		.changelog-card__summary { -webkit-line-clamp: 3; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.changelog-card,
+		.changelog-card__inner,
+		.changelog-card__detail,
+		:global(.changelog-wire--hover),
+		:global(.changelog-wire-label) {
+			transition: none;
+			animation: none;
 		}
 	}
 
