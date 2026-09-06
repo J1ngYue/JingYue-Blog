@@ -64,24 +64,24 @@ export const sakuraConfig: SakuraConfig = {
 export const rainConfig: RainConfig = {
 	enable: true,
 	switchable: true,
-	intensity: 0.6,
+	intensity: 0.82,
 	dropCount: {
-		desktop: 86,
-		mobile: 34,
+		desktop: 104,
+		mobile: 46,
 	},
 	speed: {
-		min: 5,
-		max: 13,
+		min: 8,
+		max: 18,
 	},
 	length: {
-		min: 14,
-		max: 48,
+		min: 18,
+		max: 58,
 	},
 	opacity: {
-		min: 0.14,
-		max: 0.48,
+		min: 0.18,
+		max: 0.6,
 	},
-	wind: -0.13,
+	wind: -0.16,
 	zIndex: 20,
 };
 
