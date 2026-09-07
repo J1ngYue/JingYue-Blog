@@ -1560,6 +1560,18 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
         color: #000 !important;
     }
 
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible),
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div * {
+        color: #18181b !important;
+    }
+
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible),
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div * {
+        color: #f4f4f5 !important;
+    }
+
     html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch,
     html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch * {
         color: #18181b !important;
