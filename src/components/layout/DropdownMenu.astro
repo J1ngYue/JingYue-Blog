@@ -37,7 +37,9 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 				{processedLink.icon && <Icon is:inline name={processedLink.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
 				{processedLink.name}
 			</div>
-			<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" class="text-[1.2rem] transition-transform duration-200 dropdown-arrow ml-1" />
+			{!processedLink.hideDropdownArrow && (
+				<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" class="text-[1.2rem] transition-transform duration-200 dropdown-arrow ml-1" />
+			)}
 		</button>
 		<div class="dropdown-menu" data-dropdown-menu>
 			<DropdownPanel class="dropdown-content">

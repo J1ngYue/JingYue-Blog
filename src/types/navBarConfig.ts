@@ -3,6 +3,7 @@ export type NavBarLink = {
 	url: string;
 	external?: boolean;
 	icon?: string; // 菜单项图标
+	hideDropdownArrow?: boolean;
 	children?: NavBarLink[]; // 支持子菜单
 	pageKey?: string;
 };

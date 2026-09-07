@@ -93,6 +93,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			name: "关于",
 			url: "/about/",
 			icon: "material-symbols:info-outline-rounded",
+			hideDropdownArrow: true,
 			children: [LinkPresets.About, LinkPresets.Friends, LinkPresets.Sponsor],
 		},
 	];
