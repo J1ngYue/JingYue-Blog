@@ -950,15 +950,6 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         content: none !important;
     }
 
-    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-icon {
-        display: none !important;
-    }
-
-    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .dropdown-container.is-active > :is(a, button) .navbar-icon,
-    html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .dropdown-container:focus-within > :is(a, button) .navbar-icon {
-        display: inline-block !important;
-    }
-
     html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__default,
     html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__mark,
     html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-brand__avatar {
@@ -1211,15 +1202,6 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         content: none;
     }
 
-    #navbar .navbar-main-menu .navbar-icon {
-        display: none !important;
-    }
-
-    #navbar .navbar-main-menu .dropdown-container.is-active > :is(a, button) .navbar-icon,
-    #navbar .navbar-main-menu .dropdown-container:focus-within > :is(a, button) .navbar-icon {
-        display: inline-block !important;
-    }
-
     #navbar .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] {
         color: #18181b;
     }
@@ -1323,12 +1305,6 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     :root.dark #navbar .dropdown-item:active {
         background: #27272a !important;
         color: #f4f4f5 !important;
-    }
-}
-
-@media (min-width: 1100px) and (max-width: 1279px) {
-    #navbar .navbar-icon {
-        display: inline-block !important;
     }
 }
 
@@ -1596,10 +1572,8 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
     margin: 0 !important;
 }
 
-/* ============================================
- * 小于1280px时隐藏导航栏菜单图标
- * ============================================ */
-@media (max-width: 1279px) {
+/* 移动导航使用独立菜单，桌面导航始终保留原有栏目图标。 */
+@media (max-width: 1023px) {
     .navbar-icon {
         display: none !important;
     }
