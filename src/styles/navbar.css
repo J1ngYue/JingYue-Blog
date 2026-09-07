@@ -1245,11 +1245,19 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         color: #45454a;
         font-size: 1rem;
         font-weight: 500;
-        transition: color 120ms ease;
+        transition:
+            background-color 120ms ease,
+            color 120ms ease;
+    }
+
+    #navbar .dropdown-item::before {
+        content: none;
     }
 
     #navbar .dropdown-item:hover,
-    #navbar .dropdown-item:focus-visible {
+    #navbar .dropdown-item:focus,
+    #navbar .dropdown-item:focus-visible,
+    #navbar .dropdown-item:active {
         background: #e7e7e7 !important;
         color: #18181b !important;
         transform: none;
@@ -1310,7 +1318,9 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 
     :root.dark #navbar .dropdown-item:hover,
-    :root.dark #navbar .dropdown-item:focus-visible {
+    :root.dark #navbar .dropdown-item:focus,
+    :root.dark #navbar .dropdown-item:focus-visible,
+    :root.dark #navbar .dropdown-item:active {
         background: #27272a !important;
         color: #f4f4f5 !important;
     }
