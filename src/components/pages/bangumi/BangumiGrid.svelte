@@ -54,6 +54,7 @@ $effect(() => {
 let errorTitle = $state("");
 let errorDesc = $state("");
 let updateTimestamp = $state("");
+let loadNotice = $state("");
 
 // 动态模式的数据
 let dynamicTabs = $state<Array<{ id: string; name: string; count: number }>>(
@@ -91,8 +92,10 @@ const categoryMap: Record<string, { name: string; subjectType: number }> = {
 };
 
 const CACHE_VERSION = 1;
-const CACHE_TTL = 15 * 60 * 1000;
+const CACHE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 const MAX_PARALLEL_PAGES = 4;
+const REQUEST_TIMEOUT = 8_000;
+const OFFICIAL_API_URL = "https://api.bgm.tv";
 
 type CategoryLoadResult = {
 	items: UserSubjectCollection[];
@@ -113,23 +116,31 @@ function readCategoryCache(
 	username: string,
 	subjectType: number,
 ): CategoryCache | null {
-	try {
-		const raw = sessionStorage.getItem(
-			getCacheKey(apiUrl, username, subjectType),
-		);
-		if (!raw) return null;
-		const cached = JSON.parse(raw) as CategoryCache;
-		if (
-			cached.version !== CACHE_VERSION ||
-			!Array.isArray(cached.items) ||
-			Date.now() - cached.savedAt > CACHE_TTL
-		) {
-			return null;
+	const key = getCacheKey(apiUrl, username, subjectType);
+	for (const storageName of ["localStorage", "sessionStorage"] as const) {
+		try {
+			const storage = window[storageName];
+			const raw = storage.getItem(key);
+			if (!raw) continue;
+			const cached = JSON.parse(raw) as CategoryCache;
+			if (
+				cached.version !== CACHE_VERSION ||
+				!Array.isArray(cached.items) ||
+				!Number.isFinite(cached.savedAt) ||
+				Date.now() - cached.savedAt > CACHE_MAX_AGE
+			) {
+				storage.removeItem(key);
+				continue;
+			}
+			if (storageName === "sessionStorage") {
+				localStorage.setItem(key, raw);
+			}
+			return cached;
+		} catch {
+			// Continue without cache when storage is blocked or data is malformed.
 		}
-		return cached;
-	} catch {
-		return null;
 	}
+	return null;
 }
 
 function writeCategoryCache(
@@ -144,7 +155,7 @@ function writeCategoryCache(
 			version: CACHE_VERSION,
 			savedAt: Date.now(),
 		};
-		sessionStorage.setItem(
+		localStorage.setItem(
 			getCacheKey(apiUrl, username, subjectType),
 			JSON.stringify(cached),
 		);
@@ -160,10 +171,31 @@ async function fetchCategoryPage(
 	limit: number,
 	offset: number,
 ): Promise<UserSubjectCollectionResponse> {
-	const url = `${apiUrl}/v0/users/${username}/collections?subject_type=${subjectType}&limit=${limit}&offset=${offset}`;
-	const resp = await fetch(url, { headers: { Accept: "application/json" } });
-	if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-	return (await resp.json()) as UserSubjectCollectionResponse;
+	const endpoints = apiUrl === OFFICIAL_API_URL
+		? [apiUrl, apiUrl]
+		: [apiUrl, OFFICIAL_API_URL, apiUrl];
+	let lastError: unknown;
+	for (const [attempt, endpoint] of endpoints.entries()) {
+		if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, attempt * 300));
+		const url = `${endpoint}/v0/users/${username}/collections?subject_type=${subjectType}&limit=${limit}&offset=${offset}`;
+		const controller = new AbortController();
+		const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+		try {
+			const resp = await fetch(url, {
+				headers: { Accept: "application/json" },
+				signal: controller.signal,
+			});
+			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+			const payload = (await resp.json()) as UserSubjectCollectionResponse;
+			if (!Array.isArray(payload.data)) throw new Error("Invalid Bangumi response");
+			return payload;
+		} catch (error) {
+			lastError = error;
+		} finally {
+			window.clearTimeout(timeout);
+		}
+	}
+	throw lastError instanceof Error ? lastError : new Error("Bangumi request failed");
 }
 
 function handleTabChange(tabId: string) {
@@ -230,6 +262,9 @@ async function fetchCategory(
 
 async function loadDynamicData() {
 	if (!fetchConfig) return;
+	fetchLoading = true;
+	error = false;
+	loadNotice = "";
 	const { username, apiUrl, categories, categoryOrder, pagination } =
 		fetchConfig;
 
@@ -274,17 +309,20 @@ async function loadDynamicData() {
 	};
 
 	let hasPreferredCache = false;
+	let latestCacheTimestamp = 0;
 	for (const catKey of enabled) {
 		const info = categoryMap[catKey];
 		if (!info) continue;
 		const cached = readCategoryCache(apiUrl, username, info.subjectType);
 		if (!cached) continue;
 		publishCategory(catKey, cached.items, cached.total);
+		latestCacheTimestamp = Math.max(latestCacheTimestamp, cached.savedAt);
 		if (catKey === preferredTab) hasPreferredCache = true;
 	}
 	if (hasPreferredCache) fetchLoading = false;
 
 	let successfulRequests = 0;
+	let failedRequests = 0;
 	await Promise.all(
 		enabled.map(async (catKey) => {
 			const info = categoryMap[catKey];
@@ -304,6 +342,7 @@ async function loadDynamicData() {
 				writeCategoryCache(apiUrl, username, info.subjectType, result);
 				successfulRequests += 1;
 			} catch (e) {
+				failedRequests += 1;
 				console.error(`[Bangumi] 获取 ${catKey} 数据失败:`, e);
 			}
 		}),
@@ -314,10 +353,10 @@ async function loadDynamicData() {
 		error = true;
 		errorTitle = successfulRequests
 			? i18n(I18nKey.bangumiNoData)
-			: i18n(I18nKey.bangumiFetchError);
+			: "Bangumi 暂时无法连接";
 		errorDesc = successfulRequests
 			? i18n(I18nKey.bangumiNoDataDescription)
-			: i18n(I18nKey.bangumiFetchErrorDesc);
+			: "网络可能正在波动，请稍后重新加载。";
 		return;
 	}
 
@@ -325,10 +364,19 @@ async function loadDynamicData() {
 		activeTab = dynamicTabs[0].id;
 	}
 	fetchLoading = false;
+	if (failedRequests > 0) {
+		loadNotice = "Bangumi 暂时无法刷新，当前显示上次成功加载的数据。";
+	}
 
-	const now = new Date();
+	const now = successfulRequests > 0
+		? new Date()
+		: new Date(latestCacheTimestamp || Date.now());
 	const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
 	updateTimestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+function retryLoad() {
+	if (!fetchLoading) void loadDynamicData();
 }
 
 // 从 URL hash 恢复 tab
@@ -390,10 +438,14 @@ onMount(async () => {
     </div>
     <h2 class="text-xl font-semibold text-black/80 dark:text-white/80 mb-3">{errorTitle}</h2>
     <p class="text-black/60 dark:text-white/60 mb-4 max-w-md mx-auto">{errorDesc}</p>
+	<button type="button" class="bangumi-retry" onclick={retryLoad}>重新加载</button>
   </div>
 {:else if tabs.length > 0}
 	<div class="bangumi-update-row">
-		{#if updateTimestamp}<span>上次更新：{updateTimestamp}</span>{/if}
+		<div class="bangumi-update-meta">
+			{#if updateTimestamp}<span>上次更新：{updateTimestamp}</span>{/if}
+			{#if loadNotice}<span class="bangumi-load-notice">{loadNotice}</span>{/if}
+		</div>
 		<div aria-label="收藏状态统计">
 			<span class="is-collected">{activeStatusLabels[0]} {activeStatusCounts().collect}</span>
 			<span class="is-doing">{activeStatusLabels[1]} {activeStatusCounts().doing}</span>
@@ -434,12 +486,39 @@ onMount(async () => {
 		gap: 0.65rem;
 	}
 
-	.bangumi-update-row > div span {
+	.bangumi-update-meta {
+		align-items: center;
+	}
+
+	.bangumi-load-notice {
+		color: #c97808;
+	}
+
+	.bangumi-retry {
+		border: 1px solid var(--line-divider);
+		border-radius: 0.6rem;
+		background: var(--btn-regular-bg);
+		padding: 0.55rem 1rem;
+		color: var(--btn-content);
+		font-size: 0.82rem;
+		font-weight: 650;
+		cursor: pointer;
+		transition: background-color 160ms ease, transform 160ms ease;
+	}
+
+	.bangumi-retry:hover,
+	.bangumi-retry:focus-visible {
+		background: color-mix(in srgb, var(--primary) 12%, var(--btn-regular-bg));
+		outline: none;
+		transform: translateY(-1px);
+	}
+
+	.bangumi-update-row > div[aria-label] span {
 		position: relative;
 		padding-left: 0.75rem;
 	}
 
-	.bangumi-update-row > div span::before {
+	.bangumi-update-row > div[aria-label] span::before {
 		position: absolute;
 		top: 50%;
 		left: 0;
