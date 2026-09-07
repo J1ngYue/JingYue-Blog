@@ -1548,7 +1548,11 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
 @media (min-width: 1024px) {
     html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]),
     html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div * {
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div *,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div *,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > .dropdown-arrow {
         background: transparent !important;
         color: #fff !important;
         text-shadow: none !important;
@@ -1556,19 +1560,23 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
 
     html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]),
     html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div * {
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div *,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div *,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > .dropdown-arrow {
         color: #000 !important;
     }
 
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible),
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div * {
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"],
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div * {
         color: #18181b !important;
     }
 
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible),
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(.navbar-menu-item:is(:hover, :focus-visible)) .navbar-menu-item.is-active[aria-current="page"]:not(:hover):not(:focus-visible) > div * {
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"],
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div * {
         color: #f4f4f5 !important;
     }
 
