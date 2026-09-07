@@ -1061,22 +1061,36 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 
     #navbar > div > div {
+        position: relative;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
         width: 100% !important;
         max-width: none !important;
-        gap: 1rem;
+        gap: 0.45rem;
+    }
+
+    #navbar .navbar-brand-shell,
+    #navbar .navbar-main-menu,
+    #navbar .navbar-actions {
+        position: relative;
+        flex: 0 0 auto;
+        grid-column: auto;
     }
 
     #navbar .navbar-brand,
     #navbar .navbar-main-menu,
     #navbar .navbar-actions {
-        min-height: 2.75rem;
-        border: 1px solid rgb(24 24 27 / 7%) !important;
+        box-sizing: border-box;
+        height: 2.75rem !important;
+        min-height: 2.75rem !important;
+        border: 1px solid rgb(24 24 27 / 12%) !important;
         border-radius: 999px !important;
-        background: rgb(255 255 255 / 94%) !important;
-        box-shadow:
-            0 0.45rem 1.25rem rgb(24 24 27 / 7%),
-            inset 0 1px 0 rgb(255 255 255 / 90%) !important;
-        backdrop-filter: blur(1rem) saturate(1.05) !important;
+        background: #e7e7e7 !important;
+        box-shadow: 0 0.55rem 1.4rem rgb(24 24 27 / 14%) !important;
+        color: #18181b !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 
     #navbar .navbar-brand {
@@ -1088,8 +1102,9 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         width: fit-content;
         min-height: 2.75rem;
         justify-self: center;
-        gap: 0;
+        gap: 0.125rem;
         padding: 0.22rem;
+        isolation: isolate;
     }
 
     #navbar .navbar-main-menu .navbar-hover-indicator {
@@ -1102,10 +1117,8 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         height: 0;
         border: 0;
         border-radius: 999px;
-        background: #dedee0;
-        box-shadow:
-            0 0.18rem 0.5rem rgb(15 23 42 / 10%),
-            inset 0 1px 0 rgb(255 255 255 / 65%);
+        background: #000;
+        box-shadow: 0 0.18rem 0.5rem rgb(15 23 42 / 18%);
         opacity: 0;
         pointer-events: none;
         transform: translate3d(0, 0, 0);
@@ -1137,16 +1150,13 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
 
     #navbar .navbar-actions:has(#search-switch:hover),
     #navbar .navbar-actions:has(#search-switch:focus-visible) {
-        background: var(--btn-regular-bg-hover) !important;
-        border-color: rgb(24 24 27 / 14%) !important;
-        box-shadow:
-            0 0.85rem 2.1rem rgb(24 24 27 / 14%),
-            0 0.22rem 0.7rem rgb(24 24 27 / 8%),
-            inset 0 1px 0 rgb(255 255 255 / 94%) !important;
+        background: #e7e7e7 !important;
+        border-color: rgb(24 24 27 / 12%) !important;
+        box-shadow: 0 0.55rem 1.4rem rgb(24 24 27 / 14%) !important;
     }
 
     #navbar .navbar-actions:has(#search-switch:focus-visible) {
-        outline: 2px solid color-mix(in oklch, var(--primary) 62%, transparent);
+        outline: 2px solid rgb(24 24 27 / 38%);
         outline-offset: 0.16rem;
     }
 
@@ -1155,7 +1165,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         border: 0;
         border-radius: 999px;
         padding-inline: 0.72rem;
-        color: #3f3f46;
+        color: #18181b;
         font-size: 1rem;
         font-weight: 700;
         box-shadow: none;
@@ -1187,28 +1197,31 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 
     #navbar .navbar-main-menu .navbar-menu-item:hover,
-    #navbar .navbar-main-menu .navbar-menu-item:focus-visible {
-        background: transparent;
-        color: #18181b;
-    }
-
+    #navbar .navbar-main-menu .navbar-menu-item:focus-visible,
+    #navbar .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
     #navbar .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"] {
         border: 0;
         background: transparent;
-        color: #18181b;
+        color: #fff;
         box-shadow: none;
+        outline: none;
     }
 
     #navbar .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"]::after {
-        position: absolute;
-        right: 24%;
-        bottom: 0.12rem;
-        left: 24%;
-        height: 2px;
-        border-radius: 99px;
-        background: currentColor;
-        content: "";
-        opacity: 0.78;
+        content: none;
+    }
+
+    #navbar .navbar-main-menu .navbar-icon {
+        display: none !important;
+    }
+
+    #navbar .navbar-main-menu .dropdown-container.is-active > :is(a, button) .navbar-icon,
+    #navbar .navbar-main-menu .dropdown-container:focus-within > :is(a, button) .navbar-icon {
+        display: inline-block !important;
+    }
+
+    #navbar .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] {
+        color: #18181b;
     }
 
     #navbar .dropdown-menu {
@@ -1218,11 +1231,12 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     #navbar .dropdown-content {
         min-width: 12rem;
         padding: 0.5rem;
-        border: 1px solid #d7d7da !important;
-        border-radius: 0.85rem;
-        background: rgb(255 255 255 / 98%) !important;
-        box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 12%) !important;
-        backdrop-filter: blur(1rem);
+        border: 1px solid rgb(24 24 27 / 28%) !important;
+        border-radius: 0.75rem;
+        background: #fff !important;
+        box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 16%) !important;
+        color: #18181b !important;
+        backdrop-filter: none;
     }
 
     #navbar .dropdown-item {
@@ -1236,8 +1250,8 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
 
     #navbar .dropdown-item:hover,
     #navbar .dropdown-item:focus-visible {
-        background: #eeeeef;
-        color: #18181b;
+        background: #e7e7e7 !important;
+        color: #18181b !important;
         transform: none;
     }
 
@@ -1249,45 +1263,46 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     :root.dark #navbar .navbar-brand,
     :root.dark #navbar .navbar-main-menu,
     :root.dark #navbar .navbar-actions {
-        border-color: rgb(255 255 255 / 10%) !important;
-        background: #000 !important;
-        box-shadow:
-            0 0.5rem 1.4rem rgb(0 0 0 / 24%),
-            inset 0 1px 0 rgb(255 255 255 / 6%) !important;
+        border-color: rgb(255 255 255 / 14%) !important;
+        background: #0a0a0a !important;
+        box-shadow: 0 0.55rem 1.4rem rgb(0 0 0 / 30%) !important;
+        color: #f4f4f5 !important;
     }
 
     :root.dark #navbar .navbar-actions:has(#search-switch:hover),
     :root.dark #navbar .navbar-actions:has(#search-switch:focus-visible) {
-        background: var(--btn-regular-bg-hover) !important;
-        border-color: rgb(255 255 255 / 18%) !important;
-        box-shadow:
-            0 0.9rem 2.3rem rgb(0 0 0 / 38%),
-            0 0.24rem 0.75rem rgb(0 0 0 / 22%),
-            inset 0 1px 0 rgb(255 255 255 / 9%) !important;
+        background: #0a0a0a !important;
+        border-color: rgb(255 255 255 / 14%) !important;
+        box-shadow: 0 0.55rem 1.4rem rgb(0 0 0 / 30%) !important;
     }
 
     :root.dark #navbar .navbar-main-menu .navbar-menu-item {
-        color: #d4d4d8;
+        color: #f4f4f5;
     }
 
     :root.dark #navbar .navbar-main-menu .navbar-menu-item:hover,
     :root.dark #navbar .navbar-main-menu .navbar-menu-item:focus-visible,
+    :root.dark #navbar .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
     :root.dark #navbar .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"] {
         border: 0;
         background: transparent;
-        color: #fff;
+        color: #000;
     }
 
     :root.dark #navbar .navbar-main-menu .navbar-hover-indicator {
-        background: #2a2a2a;
-        box-shadow:
-            0 0.24rem 0.75rem rgb(0 0 0 / 20%),
-            inset 0 1px 0 rgb(255 255 255 / 9%);
+        background: #fff;
+        box-shadow: 0 0.18rem 0.5rem rgb(0 0 0 / 24%);
+    }
+
+    :root.dark #navbar .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] {
+        color: #f4f4f5;
     }
 
     :root.dark #navbar .dropdown-content {
-        border-color: #48484f !important;
-        background: #000 !important;
+        border-color: rgb(255 255 255 / 28%) !important;
+        background: #0a0a0a !important;
+        box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 42%) !important;
+        color: #f4f4f5 !important;
     }
 
     :root.dark #navbar .dropdown-item {
@@ -1296,8 +1311,8 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
 
     :root.dark #navbar .dropdown-item:hover,
     :root.dark #navbar .dropdown-item:focus-visible {
-        background: #1a1a1a;
-        color: #fff;
+        background: #27272a !important;
+        color: #f4f4f5 !important;
     }
 }
 
@@ -1307,9 +1322,9 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 }
 
-#navbar .navbar-icon,
-#navbar .dropdown-arrow {
-    color: var(--ui-icon-color) !important;
+#navbar .navbar-main-menu .navbar-icon,
+#navbar .navbar-main-menu .dropdown-arrow {
+    color: inherit !important;
 }
 
 #navbar :is(#nav-menu-switch, #search-switch),
@@ -1318,6 +1333,51 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     border-color: var(--ui-icon-border) !important;
     background: var(--ui-icon-surface) !important;
     color: var(--ui-icon-color) !important;
+}
+
+@media (min-width: 1024px) {
+    #navbar .navbar-brand__default,
+    #navbar .navbar-brand__mark,
+    #navbar .navbar-brand__avatar {
+        color: #18181b !important;
+    }
+
+    :root.dark #navbar .navbar-brand__default,
+    :root.dark #navbar .navbar-brand__mark,
+    :root.dark #navbar .navbar-brand__avatar {
+        color: #f4f4f5 !important;
+    }
+
+    #navbar #search-switch {
+        height: 2.25rem;
+        border: 0 !important;
+        border-radius: 999px;
+        background: transparent !important;
+        color: #18181b !important;
+        box-shadow: none !important;
+        transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    #navbar #search-switch:is(:hover, :focus-visible) {
+        border: 0 !important;
+        background: #000 !important;
+        color: #fff !important;
+        outline: none;
+    }
+
+    :root.dark #navbar #search-switch {
+        color: #f4f4f5 !important;
+    }
+
+    :root.dark #navbar #search-switch:is(:hover, :focus-visible) {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    #navbar .search-shortcut {
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
 }
 
 /* ============================================
@@ -1622,5 +1682,19 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
     html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible),
     html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch:is(:hover, :focus-visible) * {
         color: #000 !important;
+    }
+
+    html:not(.dark) body #navbar#navbar .dropdown-content {
+        border-color: rgb(24 24 27 / 28%) !important;
+        background: #fff !important;
+        box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 16%) !important;
+        color: #18181b !important;
+    }
+
+    html.dark body #navbar#navbar .dropdown-content {
+        border-color: rgb(255 255 255 / 28%) !important;
+        background: #0a0a0a !important;
+        box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 42%) !important;
+        color: #f4f4f5 !important;
     }
 }
