@@ -1160,6 +1160,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         font-size: 1rem;
         font-weight: 700;
         box-shadow: none;
+        transition-property: background-color, border-color, box-shadow, transform;
     }
 
     #navbar .navbar-main-menu .navbar-menu-item.dropdown-trigger {
@@ -1187,10 +1188,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         translate: 0 -50%;
     }
 
-    #navbar .navbar-main-menu .navbar-menu-item:hover,
-    #navbar .navbar-main-menu .navbar-menu-item:focus-visible,
-    #navbar .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
-    #navbar .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"] {
+    #navbar .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item {
         border: 0;
         background: transparent;
         color: #fff;
@@ -1200,10 +1198,6 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
 
     #navbar .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"]::after {
         content: none;
-    }
-
-    #navbar .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] {
-        color: #18181b;
     }
 
     #navbar .dropdown-menu {
@@ -1270,10 +1264,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         color: #f4f4f5;
     }
 
-    :root.dark #navbar .navbar-main-menu .navbar-menu-item:hover,
-    :root.dark #navbar .navbar-main-menu .navbar-menu-item:focus-visible,
-    :root.dark #navbar .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
-    :root.dark #navbar .navbar-main-menu .navbar-menu-item.is-active[aria-current="page"] {
+    :root.dark #navbar .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item {
         border: 0;
         background: transparent;
         color: #000;
@@ -1282,10 +1273,6 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     :root.dark #navbar .navbar-main-menu .navbar-hover-indicator {
         background: #fff;
         box-shadow: 0 0.18rem 0.5rem rgb(0 0 0 / 24%);
-    }
-
-    :root.dark #navbar .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] {
-        color: #f4f4f5;
     }
 
     :root.dark #navbar .dropdown-content {
@@ -1609,40 +1596,40 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
     }
 }
 
-/* 首页激活项文字需要压过 HomeLanding 的全局主题文字规则。 */
+/* 首页导航文字跟随滑块完成状态，并压过 HomeLanding 的主题文字规则。 */
 @media (min-width: 1024px) {
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]),
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div *,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div *,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > .dropdown-arrow {
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item > div,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item > div *,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item > .dropdown-arrow {
         background: transparent !important;
-        color: #fff !important;
+        color: #18181b !important;
         text-shadow: none !important;
     }
 
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]),
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item:is(:hover, :focus-visible, .is-active[aria-current="page"]) > div *,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > div *,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container:is(:hover, :focus-within) > .navbar-menu-item > .dropdown-arrow {
-        color: #000 !important;
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item {
+        transition-property: background-color, border-color, box-shadow, transform !important;
     }
 
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"],
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div,
-    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div * {
-        color: #18181b !important;
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item > div,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item > div *,
+    html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item > .dropdown-arrow {
+        color: #fff !important;
     }
 
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"],
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div,
-    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu:has(> .dropdown-container:is(:hover, :focus-within)) > .dropdown-container.is-active:not(:hover):not(:focus-within) > .navbar-menu-item.is-active[aria-current="page"] > div * {
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item > div,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item > div *,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container > .navbar-menu-item > .dropdown-arrow {
         color: #f4f4f5 !important;
+    }
+
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item > div,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item > div *,
+    html.dark body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu > .dropdown-container[data-navbar-indicator-settled] > .navbar-menu-item > .dropdown-arrow {
+        color: #000 !important;
     }
 
     html body.home-landing-active #top-row#top-row #navbar#navbar[data-is-home="true"][data-home-section-tone] #search-switch,

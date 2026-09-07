@@ -343,6 +343,13 @@ function initNavbarHoverIndicator() {
     let measureFrame = 0;
     let focusFrame = 0;
     let transitionFrame = 0;
+    let settleTimer = 0;
+
+    const setSettledItem = (item: HTMLElement | null) => {
+        items.forEach((candidate) => {
+            candidate.toggleAttribute("data-navbar-indicator-settled", candidate === item);
+        });
+    };
 
     const activeItem = () =>
         items.find(
@@ -355,10 +362,15 @@ function initNavbarHoverIndicator() {
                 ),
         ) || null;
 
-    const currentItem = () => focusItem || pointerItem || activeItem();
+    const currentItem = () => pointerItem || focusItem || activeItem();
 
     const moveIndicator = (item: HTMLElement | null, instant = false) => {
         if (measureFrame) window.cancelAnimationFrame(measureFrame);
+        if (settleTimer) {
+            window.clearTimeout(settleTimer);
+            settleTimer = 0;
+        }
+        setSettledItem(null);
         measureFrame = window.requestAnimationFrame(() => {
             measureFrame = 0;
             if (!item?.isConnected) {
@@ -381,12 +393,19 @@ function initNavbarHoverIndicator() {
             indicator.setAttribute("data-visible", "true");
 
             if (shouldSkipMotion) {
+                setSettledItem(item);
                 if (transitionFrame) window.cancelAnimationFrame(transitionFrame);
                 transitionFrame = window.requestAnimationFrame(() => {
                     transitionFrame = 0;
                     indicator.removeAttribute("data-instant");
                 });
+                return;
             }
+
+            settleTimer = window.setTimeout(() => {
+                settleTimer = 0;
+                if (currentItem() === item) setSettledItem(item);
+            }, 250);
         });
     };
 
@@ -471,6 +490,7 @@ function initNavbarHoverIndicator() {
         if (measureFrame) window.cancelAnimationFrame(measureFrame);
         if (focusFrame) window.cancelAnimationFrame(focusFrame);
         if (transitionFrame) window.cancelAnimationFrame(transitionFrame);
+        if (settleTimer) window.clearTimeout(settleTimer);
     };
 }
 
