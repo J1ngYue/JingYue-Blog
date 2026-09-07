@@ -1,6 +1,6 @@
 ---
-import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
+import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
 import homeData1 from "@/assets/images/HomeReference/home-data-1.webp";
 import homeData2 from "@/assets/images/HomeReference/home-data-2.webp";
@@ -88,10 +88,14 @@ const contactRegions = [
 		icon: "material-symbols:edit-square-outline-rounded",
 		url: "/guestbook/",
 	},
-].slice(0, 5).map((link, index) => ({
-	...link,
-	region: ["top-left", "top-right", "bottom-left", "bottom-right", "center"][index],
-}));
+]
+	.slice(0, 5)
+	.map((link, index) => ({
+		...link,
+		region: ["top-left", "top-right", "bottom-left", "bottom-right", "center"][
+			index
+		],
+	}));
 ---
 
 <section
@@ -145,7 +149,7 @@ const contactRegions = [
 		</div>
 
 		<div class="home-capabilities__content-grid">
-			<section class="guide-card guide-card--motion guide-card--pinned" aria-labelledby="guide-pinned-title" data-map-rotator data-map-delay="5200" data-guide-axis="vertical">
+			<section class="guide-card guide-card--motion guide-card--pinned" aria-labelledby="guide-pinned-title" data-map-rotator data-map-delay="5000" data-guide-axis="vertical">
 				<h3 id="guide-pinned-title">置顶文章</h3>
 				<div class="guide-rotator">
 					{pinnedViews.length > 0 ? pinnedViews.map((post, index) => (
@@ -172,7 +176,7 @@ const contactRegions = [
 				)}
 			</section>
 
-			<section class="guide-card guide-card--motion guide-card--latest" aria-labelledby="guide-latest-title" data-map-rotator data-map-delay="6100" data-guide-axis="horizontal">
+			<section class="guide-card guide-card--motion guide-card--latest" aria-labelledby="guide-latest-title" data-map-rotator data-map-delay="5000" data-guide-axis="horizontal">
 				<Image class="guide-latest__fallback" src={homeData2} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 50vw, 28vw" />
 				<h3 id="guide-latest-title">最新更新</h3>
 				<div class="guide-rotator guide-rotator--latest">
@@ -571,7 +575,7 @@ const contactRegions = [
 						nextSlide.classList.remove("is-entering");
 						if (transitionTimer !== undefined) timers.delete(transitionTimer);
 						transitionTimer = undefined;
-					}, 560);
+					}, 540);
 					timers.add(transitionTimer);
 				};
 
@@ -584,7 +588,7 @@ const contactRegions = [
 				const start = () => {
 					stop();
 					if (slides.length < 2 || reducedMotion.matches) return;
-					const delay = Number(rotator.dataset.mapDelay) || 5600;
+					const delay = Number(rotator.dataset.mapDelay) || 5000;
 					timer = window.setInterval(() => show(activeIndex + 1), delay);
 					timers.add(timer);
 				};

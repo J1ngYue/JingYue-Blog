@@ -231,6 +231,7 @@ html.dark .guide-latest__fallback {
 	position: relative;
 	height: calc(100% - 2.55rem);
 	min-height: 0;
+	overflow: hidden;
 	margin-top: 0.5rem;
 }
 
@@ -685,6 +686,11 @@ html.dark .guide-latest__shade {
 	z-index: 1;
 }
 
+.guide-card--pinned > .guide-rotator,
+.guide-card--latest > .guide-rotator {
+	z-index: 1;
+}
+
 .guide-card--motion > img,
 .guide-card--motion .guide-latest__fallback {
 	z-index: -2;
@@ -717,6 +723,37 @@ html.dark .guide-latest__shade {
 .guide-card--motion:hover .guide-card__copy,
 .guide-card--motion:focus-within .guide-card__copy {
 	opacity: 0;
+}
+
+.guide-card--motion:hover .guide-rotator__body > span,
+.guide-card--motion:hover .guide-rotator__body > p,
+.guide-card--motion:hover .guide-latest__body > span,
+.guide-card--motion:focus-within .guide-rotator__body > span,
+.guide-card--motion:focus-within .guide-rotator__body > p,
+.guide-card--motion:focus-within .guide-latest__body > span {
+	color: color-mix(in srgb, var(--guide-card) 76%, transparent);
+}
+
+.guide-card--motion:hover .guide-dots button,
+.guide-card--motion:focus-within .guide-dots button {
+	border-color: var(--guide-card);
+}
+
+.guide-card--motion:hover .guide-dots button[aria-current="true"],
+.guide-card--motion:focus-within .guide-dots button[aria-current="true"] {
+	background: var(--guide-card);
+}
+
+.guide-card--latest:hover .guide-latest__cover,
+.guide-card--latest:hover .guide-latest__shade,
+.guide-card--latest:focus-within .guide-latest__cover,
+.guide-card--latest:focus-within .guide-latest__shade {
+	opacity: 0;
+}
+
+.guide-latest__cover,
+.guide-latest__shade {
+	transition: opacity 220ms ease;
 }
 
 .guide-card__hover {
@@ -814,22 +851,24 @@ html.dark .guide-latest__shade {
 
 .guide-rotator__slide.is-entering,
 .guide-rotator__slide.is-leaving {
+	opacity: 1;
 	visibility: visible;
+	transition: none;
 }
 
 .guide-rotator__slide.is-entering {
-	animation: guide-rotator-enter 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+	animation: guide-rotator-enter 520ms cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 
 .guide-rotator__slide.is-leaving {
-	animation: guide-rotator-leave 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+	animation: guide-rotator-leave 520ms cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 
-.guide-rotator[data-direction="previous"] .guide-rotator__slide.is-entering {
+[data-map-rotator][data-direction="previous"] .guide-rotator__slide.is-entering {
 	animation-name: guide-rotator-enter-previous;
 }
 
-.guide-rotator[data-direction="previous"] .guide-rotator__slide.is-leaving {
+[data-map-rotator][data-direction="previous"] .guide-rotator__slide.is-leaving {
 	animation-name: guide-rotator-leave-previous;
 }
 
@@ -841,11 +880,11 @@ html.dark .guide-latest__shade {
 	animation-name: guide-rotator-leave-horizontal;
 }
 
-.guide-rotator--latest[data-direction="previous"] .guide-rotator__slide.is-entering {
+[data-map-rotator][data-direction="previous"] .guide-rotator--latest .guide-rotator__slide.is-entering {
 	animation-name: guide-rotator-enter-horizontal-previous;
 }
 
-.guide-rotator--latest[data-direction="previous"] .guide-rotator__slide.is-leaving {
+[data-map-rotator][data-direction="previous"] .guide-rotator--latest .guide-rotator__slide.is-leaving {
 	animation-name: guide-rotator-leave-horizontal-previous;
 }
 
@@ -928,43 +967,43 @@ html.dark .guide-latest__shade {
 .guide-contact__region--center { inset: 26% 32% 26% 32%; border: 2px solid currentColor; }
 
 @keyframes guide-rotator-enter {
-	from { opacity: 0; transform: translateY(1.1rem); }
-	to { opacity: 1; transform: translateY(0); }
+	from { transform: translateY(110%); }
+	to { transform: translateY(0); }
 }
 
 @keyframes guide-rotator-leave {
-	from { opacity: 1; transform: translateY(0); }
-	to { opacity: 0; transform: translateY(-1.1rem); }
+	from { transform: translateY(0); }
+	to { transform: translateY(-110%); }
 }
 
 @keyframes guide-rotator-enter-previous {
-	from { opacity: 0; transform: translateY(-1.1rem); }
-	to { opacity: 1; transform: translateY(0); }
+	from { transform: translateY(-110%); }
+	to { transform: translateY(0); }
 }
 
 @keyframes guide-rotator-leave-previous {
-	from { opacity: 1; transform: translateY(0); }
-	to { opacity: 0; transform: translateY(1.1rem); }
+	from { transform: translateY(0); }
+	to { transform: translateY(110%); }
 }
 
 @keyframes guide-rotator-enter-horizontal {
-	from { opacity: 0; transform: translateX(1.1rem); }
-	to { opacity: 1; transform: translateX(0); }
+	from { transform: translateX(110%); }
+	to { transform: translateX(0); }
 }
 
 @keyframes guide-rotator-leave-horizontal {
-	from { opacity: 1; transform: translateX(0); }
-	to { opacity: 0; transform: translateX(-1.1rem); }
+	from { transform: translateX(0); }
+	to { transform: translateX(-110%); }
 }
 
 @keyframes guide-rotator-enter-horizontal-previous {
-	from { opacity: 0; transform: translateX(-1.1rem); }
-	to { opacity: 1; transform: translateX(0); }
+	from { transform: translateX(-110%); }
+	to { transform: translateX(0); }
 }
 
 @keyframes guide-rotator-leave-horizontal-previous {
-	from { opacity: 1; transform: translateX(0); }
-	to { opacity: 0; transform: translateX(1.1rem); }
+	from { transform: translateX(0); }
+	to { transform: translateX(110%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
