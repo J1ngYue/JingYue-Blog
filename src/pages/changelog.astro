@@ -135,14 +135,18 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 					data-log-index={index}
 					data-index={index}
 					data-links={JSON.stringify(relationLinks[index])}
-					data-expanded="false"
+					data-log-title={entry.title}
+					data-log-summary={entry.summary}
+					data-log-date={entry.date}
+					data-log-time={entry.time}
+					data-log-version={entry.version}
+					data-log-type-label={typeLabels[entry.type]}
 				>
 					<button
 						type="button"
 						class="changelog-card__inner"
 						data-log-toggle
 						aria-expanded="false"
-						aria-controls={`changelog-details-${index}`}
 					>
 						<span class="changelog-card__num" aria-hidden="true">{String(changelogEntries.length - index).padStart(2, "0")}</span>
 						<span class="changelog-card__meta">
@@ -155,22 +159,34 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 						<em class="changelog-card__summary">{entry.summary}</em>
 						<span class="changelog-card__version">{entry.version}</span>
 					</button>
-					<div
-							id={`changelog-details-${index}`}
-							class="changelog-card__detail"
-							data-log-content
-							aria-hidden="true"
-						>
-							<div class="changelog-card__detail-inner">
-								<ul>
-									{entry.changes.map((change) => <li>{change}</li>)}
-								</ul>
-							</div>
-						</div>
 				</li>
 			))}
 			</ol>
 		</div>
+
+		<dialog class="changelog-dialog" data-changelog-dialog aria-labelledby="changelog-dialog-title">
+			<button type="button" class="changelog-dialog__close" data-changelog-dialog-close aria-label="关闭更新详情">
+				<Icon is:inline name="material-symbols:close-rounded" />
+			</button>
+			<div class="changelog-dialog__body">
+				<header class="changelog-dialog__meta">
+					<strong data-dialog-number></strong>
+					<b data-dialog-type></b>
+					<time data-dialog-date></time>
+				</header>
+				<h2 id="changelog-dialog-title" data-dialog-title></h2>
+				<p class="changelog-dialog__summary" data-dialog-summary></p>
+				<p class="changelog-dialog__version" data-dialog-version></p>
+				<section class="changelog-dialog__section">
+					<h3>涉及页面</h3>
+					<span class="changelog-dialog__type-pill" data-dialog-type-pill></span>
+				</section>
+				<section class="changelog-dialog__section">
+					<h3>相关更新</h3>
+					<div class="changelog-dialog__related" data-dialog-related></div>
+				</section>
+			</div>
+		</dialog>
 	</RecordPageShell>
 </MainGridLayout>
 
@@ -203,6 +219,27 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 			const rect = card.getBoundingClientRect();
 			const board = boardRect();
 			return { x: rect.left - board.left + rect.width / 2, y: rect.top - board.top + rect.height / 2 };
+		};
+		const cardEdgePoint = (card: HTMLElement, target: HTMLElement) => {
+			const rect = card.getBoundingClientRect();
+			const board = boardRect();
+			const center = {
+				x: rect.left - board.left + rect.width / 2,
+				y: rect.top - board.top + rect.height / 2,
+			};
+			const targetRect = target.getBoundingClientRect();
+			const targetCenter = {
+				x: targetRect.left - board.left + targetRect.width / 2,
+				y: targetRect.top - board.top + targetRect.height / 2,
+			};
+			const dx = targetCenter.x - center.x;
+			const dy = targetCenter.y - center.y;
+			if (Math.abs(dx) * rect.height >= Math.abs(dy) * rect.width) {
+				const x = center.x + (dx < 0 ? -rect.width / 2 : rect.width / 2);
+				return { x, y: center.y + (dx === 0 ? 0 : (dy * (x - center.x)) / dx) };
+			}
+			const y = center.y + (dy < 0 ? -rect.height / 2 : rect.height / 2);
+			return { x: center.x + (dy === 0 ? 0 : (dx * (y - center.y)) / dy), y };
 		};
 		const makePath = (d: string, className: string, marker = true) => {
 			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -313,8 +350,10 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 				const cx = (from.x + to.x) / 2 - (dy / length) * curve;
 				const cy = (from.y + to.y) / 2 + (dx / length) * curve;
 				const midpoint = { x: from.x * 0.25 + cx * 0.5 + to.x * 0.25, y: from.y * 0.25 + cy * 0.5 + to.y * 0.25 };
-				const start = link.t < cardIndex ? from : to;
-				const end = link.t < cardIndex ? to : from;
+				const source = link.t < cardIndex ? card : target;
+				const destination = link.t < cardIndex ? target : card;
+				const start = cardEdgePoint(source, destination);
+				const end = cardEdgePoint(destination, source);
 				drawHoverWire(`M ${start.x} ${start.y} Q ${cx} ${cy} ${end.x} ${end.y}`, midpoint, link.p.join("、"));
 			}
 		};
@@ -333,7 +372,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		}, { signal });
 		window.addEventListener("resize", layout, { signal });
 		const mutationObserver = new MutationObserver(layout);
-		mutationObserver.observe(grid, { subtree: true, attributes: true, attributeFilter: ["hidden", "data-expanded"] });
+		mutationObserver.observe(grid, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
 		const resizeObserver = new ResizeObserver(layout);
 		resizeObserver.observe(grid);
 		changelogGraphWindow.__jingyueChangelogGraphCleanup = () => {
@@ -352,6 +391,109 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		document.addEventListener("swup:content:replaced", initChangelogGraph);
 	}
 	initChangelogGraph();
+</script>
+
+<script>
+	type ClientChangelogLink = { t: number; p: string[] };
+	type ChangelogDialogWindow = Window & {
+		__jingyueChangelogDialogCleanup?: () => void;
+		__jingyueChangelogDialogBound?: boolean;
+	};
+
+	const changelogDialogWindow = window as ChangelogDialogWindow;
+
+	function initChangelogDialog() {
+		changelogDialogWindow.__jingyueChangelogDialogCleanup?.();
+		const dialog = document.querySelector<HTMLDialogElement>("[data-changelog-dialog]");
+		const board = document.querySelector<HTMLElement>("[data-changelog]");
+		if (!dialog || !board) return;
+
+		const controller = new AbortController();
+		const { signal } = controller;
+		const numberEl = dialog.querySelector<HTMLElement>("[data-dialog-number]");
+		const typeEl = dialog.querySelector<HTMLElement>("[data-dialog-type]");
+		const dateEl = dialog.querySelector<HTMLElement>("[data-dialog-date]");
+		const titleEl = dialog.querySelector<HTMLElement>("[data-dialog-title]");
+		const summaryEl = dialog.querySelector<HTMLElement>("[data-dialog-summary]");
+		const versionEl = dialog.querySelector<HTMLElement>("[data-dialog-version]");
+		const typePillEl = dialog.querySelector<HTMLElement>("[data-dialog-type-pill]");
+		const relatedEl = dialog.querySelector<HTMLElement>("[data-dialog-related]");
+
+		const getCard = (index: number) => board.querySelector<HTMLElement>(`[data-changelog-card][data-index="${index}"]`);
+		const readLinks = (card: HTMLElement) => {
+			try {
+				return JSON.parse(card.dataset.links ?? "[]") as ClientChangelogLink[];
+			} catch {
+				return [];
+			}
+		};
+		const openEntry = (index: number) => {
+			const card = getCard(index);
+			if (!card) return;
+			const total = board.querySelectorAll("[data-changelog-card]").length;
+			if (numberEl) numberEl.textContent = `#${String(total - index).padStart(2, "0")}`;
+			if (typeEl) typeEl.textContent = card.dataset.logTypeLabel ?? "";
+			if (dateEl) {
+				dateEl.textContent = card.dataset.logDate ?? "";
+				dateEl.setAttribute("datetime", `${card.dataset.logDate ?? ""}T${card.dataset.logTime ?? "00:00"}`);
+			}
+			if (titleEl) titleEl.textContent = card.dataset.logTitle ?? "";
+			if (summaryEl) summaryEl.textContent = card.dataset.logSummary ?? "";
+			if (versionEl) versionEl.textContent = card.dataset.logVersion ?? "";
+			if (typePillEl) typePillEl.textContent = card.dataset.logTypeLabel ?? "";
+			if (relatedEl) {
+				relatedEl.replaceChildren();
+				for (const link of readLinks(card)) {
+					const relatedCard = getCard(link.t);
+					if (!relatedCard) continue;
+					const button = document.createElement("button");
+					button.type = "button";
+					button.className = "changelog-dialog__related-item";
+					button.dataset.dialogRelatedIndex = String(link.t);
+					const title = document.createElement("strong");
+					title.textContent = `#${String(total - link.t).padStart(2, "0")} ${relatedCard.dataset.logTitle ?? ""}`;
+					const relation = document.createElement("span");
+					relation.textContent = link.p.join("、");
+					button.append(title, relation);
+					relatedEl.appendChild(button);
+				}
+				if (!relatedEl.childElementCount) {
+					const empty = document.createElement("span");
+					empty.className = "changelog-dialog__empty";
+					empty.textContent = "暂无关联更新";
+					relatedEl.appendChild(empty);
+				}
+			}
+			if (!dialog.open) dialog.showModal();
+		};
+
+		const close = () => {
+			if (dialog.open) dialog.close();
+		};
+		window.addEventListener("firefly:changelog-open", (event) => {
+			const index = (event as CustomEvent<{ index?: number }>).detail?.index;
+			if (typeof index === "number") openEntry(index);
+		}, { signal });
+		dialog.addEventListener("click", (event) => {
+			if (event.target === dialog) close();
+		}, { signal });
+		dialog.querySelector("[data-changelog-dialog-close]")?.addEventListener("click", close, { signal });
+		relatedEl?.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const button = target.closest<HTMLElement>("[data-dialog-related-index]");
+			if (button) openEntry(Number(button.dataset.dialogRelatedIndex));
+		}, { signal });
+		changelogDialogWindow.__jingyueChangelogDialogCleanup = () => controller.abort();
+	}
+
+	if (!changelogDialogWindow.__jingyueChangelogDialogBound) {
+		changelogDialogWindow.__jingyueChangelogDialogBound = true;
+		document.addEventListener("astro:page-load", initChangelogDialog);
+		document.addEventListener("swup:contentReplaced", initChangelogDialog);
+		document.addEventListener("swup:content:replaced", initChangelogDialog);
+	}
+	initChangelogDialog();
 </script>
 
 <style>
@@ -892,38 +1034,177 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		font-weight: 730;
 	}
 
-	.changelog-card__detail {
-		display: grid;
-		grid-template-rows: 0fr;
-		overflow: hidden;
-		opacity: 0;
-		transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
-	}
-
-	.changelog-card[data-expanded="true"] .changelog-card__detail {
-		grid-template-rows: 1fr;
-		opacity: 1;
-	}
-
-	.changelog-card__detail-inner {
-		min-height: 0;
-		overflow: hidden;
-		padding: 0 0.9rem;
-	}
-
-	.changelog-card[data-expanded="true"] .changelog-card__detail-inner {
-		padding: 0 0.9rem 0.9rem;
-	}
-
-	.changelog-card__detail ul {
-		display: grid;
-		gap: 0.45rem;
-		margin: 0;
+	.changelog-dialog {
+		position: relative;
+		width: min(42rem, calc(100vw - 2rem));
+		max-width: none;
+		max-height: min(82vh, 48rem);
+		margin: auto;
+		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 12%, transparent);
+		border-radius: 1rem;
+		background: color-mix(in srgb, var(--card-bg, #fff) 96%, transparent);
 		padding: 0;
 		color: var(--record-ink, var(--deep-text));
-		font-size: 0.73rem;
-		line-height: 1.55;
-		list-style-position: inside;
+		box-shadow: 0 1.5rem 4rem rgb(15 23 42 / 22%);
+		backdrop-filter: blur(18px);
+	}
+
+	.changelog-dialog::backdrop {
+		background: rgb(12 16 22 / 48%);
+		backdrop-filter: blur(8px) saturate(0.82);
+	}
+
+	.changelog-dialog[open] {
+		animation: changelog-dialog-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.changelog-dialog__body {
+		max-height: min(82vh, 48rem);
+		overflow-y: auto;
+		padding: clamp(1.35rem, 3vw, 2rem);
+		scrollbar-width: thin;
+	}
+
+	.changelog-dialog__close {
+		position: absolute;
+		top: 0.85rem;
+		right: 0.85rem;
+		z-index: 2;
+		display: grid;
+		width: 2rem;
+		height: 2rem;
+		place-items: center;
+		border: 0;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
+		color: var(--record-ink, var(--deep-text));
+		cursor: pointer;
+		transition: background-color 160ms ease, transform 160ms ease;
+	}
+
+	.changelog-dialog__close:hover,
+	.changelog-dialog__close:focus-visible {
+		background: color-mix(in srgb, var(--primary, #0ea5a4) 18%, transparent);
+		outline: none;
+		transform: rotate(6deg);
+	}
+
+	.changelog-dialog__close :global(svg) {
+		width: 1.05rem;
+		height: 1.05rem;
+	}
+
+	.changelog-dialog__meta {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding-right: 2.5rem;
+		color: var(--content-meta);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.changelog-dialog__meta strong {
+		color: var(--record-ink, var(--deep-text));
+		font-weight: 800;
+	}
+
+	.changelog-dialog__meta b {
+		color: var(--record-ink, var(--deep-text));
+		font-weight: 750;
+	}
+
+	.changelog-dialog__meta time {
+		color: var(--record-muted, var(--content-meta));
+	}
+
+	.changelog-dialog h2 {
+		margin: 1.05rem 2.4rem 0.85rem 0;
+		font-size: clamp(1.25rem, 2.3vw, 1.72rem);
+		font-weight: 800;
+		line-height: 1.38;
+	}
+
+	.changelog-dialog__summary {
+		margin: 0;
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.88rem;
+		line-height: 1.75;
+	}
+
+	.changelog-dialog__version {
+		margin: 1rem 0 0;
+		font-family: var(--font-jetbrains-mono), monospace;
+		font-size: 0.76rem;
+		font-weight: 650;
+		color: var(--record-ink, var(--deep-text));
+	}
+
+	.changelog-dialog__section {
+		margin-top: 1.45rem;
+	}
+
+	.changelog-dialog__section h3 {
+		margin: 0 0 0.6rem;
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.72rem;
+		font-weight: 750;
+		letter-spacing: 0.04em;
+	}
+
+	.changelog-dialog__type-pill {
+		display: inline-flex;
+		align-items: center;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--primary, #0ea5a4) 12%, transparent);
+		padding: 0.3rem 0.7rem;
+		color: color-mix(in srgb, var(--primary, #0ea5a4) 78%, var(--record-ink, #111));
+		font-size: 0.75rem;
+		font-weight: 750;
+	}
+
+	.changelog-dialog__related {
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	:global(.changelog-dialog__related-item) {
+		display: grid;
+		gap: 0.2rem;
+		width: 100%;
+		border: 0;
+		border-radius: 0.7rem;
+		background: color-mix(in srgb, var(--record-ink, #111) 3%, transparent);
+		padding: 0.72rem 0.8rem;
+		color: var(--record-ink, var(--deep-text));
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		transition: background-color 160ms ease, transform 160ms ease;
+	}
+
+	:global(.changelog-dialog__related-item:hover),
+	:global(.changelog-dialog__related-item:focus-visible) {
+		background: color-mix(in srgb, var(--primary, #0ea5a4) 9%, transparent);
+		outline: none;
+		transform: translateX(2px);
+	}
+
+	:global(.changelog-dialog__related-item strong) {
+		font-size: 0.8rem;
+		font-weight: 750;
+		line-height: 1.45;
+	}
+
+	:global(.changelog-dialog__related-item span),
+	:global(.changelog-dialog__empty) {
+		color: var(--record-muted, var(--content-meta));
+		font-size: 0.7rem;
+	}
+
+	@keyframes changelog-dialog-in {
+		from { opacity: 0; transform: translateY(0.65rem) scale(0.98); }
+		to { opacity: 1; transform: translateY(0) scale(1); }
 	}
 
 	:global(.changelog-wire) {
@@ -1000,7 +1281,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 	@media (prefers-reduced-motion: reduce) {
 		.changelog-card,
 		.changelog-card__inner,
-		.changelog-card__detail,
+		.changelog-dialog,
 		:global(.changelog-wire--hover),
 		:global(.changelog-wire-label) {
 			transition: none;
