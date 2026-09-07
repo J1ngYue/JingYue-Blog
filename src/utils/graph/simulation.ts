@@ -242,5 +242,3 @@ export function createSimulation(scene: Scene): GraphSimulation {
 		},
 	};
 }
-
-

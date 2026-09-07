@@ -109,5 +109,3 @@ export interface GraphController {
 	/** 力导向 ⇄ 脑图切换；脑图入场带「节点滑入 + 连线三波描绘」动效 */
 	toggleLayout(): void;
 }
-
-

@@ -291,5 +291,3 @@ export function applyFilters(scene: Scene, state: FilterState): void {
 		link.visible = Boolean(kindOn && source?.filtered && target?.filtered);
 	}
 }
-
-

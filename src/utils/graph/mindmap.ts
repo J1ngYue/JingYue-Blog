@@ -110,5 +110,3 @@ export function mindmapLinkGrow(progress: number, kind: KGLinkKind): number {
 	const p = progress * MINDMAP_LINE_PHASES - LINK_STAGE[kind];
 	return p <= 0 ? 0 : p >= 1 ? 1 : p;
 }
-
-

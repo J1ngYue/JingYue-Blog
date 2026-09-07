@@ -2,15 +2,17 @@
 import { Icon } from "astro-icon/components";
 import { siteConfig } from "@/config";
 import { getSortedPosts } from "@/utils/content-utils";
-import { getPostUrlBySlug, url } from "@/utils/url-utils";
 import { profileDateKey } from "@/utils/profile-calendar";
+import { getPostUrlBySlug, url } from "@/utils/url-utils";
 
 const timeZone = siteConfig.timezone || "Asia/Shanghai";
-const posts = (await getSortedPosts()).filter((post) => !post.data.draft).map((post) => ({
-	title: post.data.title,
-	date: profileDateKey(post.data.published, timeZone),
-	href: getPostUrlBySlug(post.id),
-}));
+const posts = (await getSortedPosts())
+	.filter((post) => !post.data.draft)
+	.map((post) => ({
+		title: post.data.title,
+		date: profileDateKey(post.data.published, timeZone),
+		href: getPostUrlBySlug(post.id),
+	}));
 ---
 
 <navbar-profile-overview data-posts={JSON.stringify(posts)} data-timezone={timeZone} data-site-start={siteConfig.siteStartDate || "2025-01-01"}>

@@ -38,16 +38,50 @@ type ChangelogLink = { t: number; p: string[] };
 
 // Keep generic words out of the relation graph so arrows describe a real feature area.
 const relationStopWords = new Set([
-	"功能", "新增", "优化", "问题", "修复", "页面", "博客", "站点", "全站",
-	"内容", "系统", "支持", "加入", "更新", "调整", "统一", "改为", "移除",
-	"增加", "默认", "当前", "避免", "保持", "同步", "显示", "设置", "按钮",
-	"布局", "模式", "背景", "加载", "效果", "动画", "文章", "数据", "组件",
+	"功能",
+	"新增",
+	"优化",
+	"问题",
+	"修复",
+	"页面",
+	"博客",
+	"站点",
+	"全站",
+	"内容",
+	"系统",
+	"支持",
+	"加入",
+	"更新",
+	"调整",
+	"统一",
+	"改为",
+	"移除",
+	"增加",
+	"默认",
+	"当前",
+	"避免",
+	"保持",
+	"同步",
+	"显示",
+	"设置",
+	"按钮",
+	"布局",
+	"模式",
+	"背景",
+	"加载",
+	"效果",
+	"动画",
+	"文章",
+	"数据",
+	"组件",
 ]);
 
 function relationTerms(entry: (typeof changelogEntries)[number]): Set<string> {
 	const source = [entry.title, entry.summary, ...entry.changes].join(" ");
 	const terms = new Set<string>();
-	for (const match of source.matchAll(/[\u4e00-\u9fff]{2,}|[A-Za-z][A-Za-z0-9-]{2,}/g)) {
+	for (const match of source.matchAll(
+		/[\u4e00-\u9fff]{2,}|[A-Za-z][A-Za-z0-9-]{2,}/g,
+	)) {
 		const term = match[0].toLocaleLowerCase();
 		if (!relationStopWords.has(term)) terms.add(term);
 	}
@@ -62,23 +96,41 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 	const candidates = changelogEntries
 		.map((candidate, target) => {
 			if (target === index) return null;
-			const shared = [...entryTerms[index]].filter((term) => entryTerms[target].has(term));
+			const shared = [...entryTerms[index]].filter((term) =>
+				entryTerms[target].has(term),
+			);
 			const sameType = candidate.type === entry.type;
-			const featurePair = entry.type === "feature" && candidate.type === "feature";
+			const featurePair =
+				entry.type === "feature" && candidate.type === "feature";
 			const distance = Math.abs(target - index);
-			const score = shared.length * 8 + (featurePair ? 5 : 0) + (sameType ? 2 : 0) - distance * 0.04;
+			const score =
+				shared.length * 8 +
+				(featurePair ? 5 : 0) +
+				(sameType ? 2 : 0) -
+				distance * 0.04;
 			return { target, shared, score };
 		})
-		.filter((candidate): candidate is { target: number; shared: string[]; score: number } => candidate !== null)
-		.filter((candidate) => candidate.shared.length > 0 || (entry.type === "feature" && changelogEntries[candidate.target].type === "feature"))
+		.filter(
+			(
+				candidate,
+			): candidate is { target: number; shared: string[]; score: number } =>
+				candidate !== null,
+		)
+		.filter(
+			(candidate) =>
+				candidate.shared.length > 0 ||
+				(entry.type === "feature" &&
+					changelogEntries[candidate.target].type === "feature"),
+		)
 		.sort((a, b) => b.score - a.score || a.target - b.target)
 		.slice(0, entry.type === "feature" ? 4 : 2);
 
 	for (const candidate of candidates) {
 		const target = changelogEntries[candidate.target];
-		const label = entry.type === "feature" || target.type === "feature"
-			? "功能新增"
-			: typeLabels[target.type];
+		const label =
+			entry.type === "feature" || target.type === "feature"
+				? "功能新增"
+				: typeLabels[target.type];
 		if (!relationLinks[index].some((link) => link.t === candidate.target)) {
 			relationLinks[index].push({ t: candidate.target, p: [label] });
 		}

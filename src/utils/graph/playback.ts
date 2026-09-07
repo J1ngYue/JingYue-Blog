@@ -97,5 +97,3 @@ export function createPlayback(scene: Scene, onChange: () => void): Playback {
 		},
 	};
 }
-
-

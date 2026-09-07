@@ -1,4 +1,7 @@
-import { DEFAULT_PAGE_WALLPAPER_ID, homeWallpaper } from "@/config/pageWallpapers";
+import {
+	DEFAULT_PAGE_WALLPAPER_ID,
+	homeWallpaper,
+} from "@/config/pageWallpapers";
 
 export const PAGE_WALLPAPER_CHANGE_EVENT = "firefly:page-wallpaper-change";
 export const OPEN_WALLPAPER_PICKER_EVENT = "firefly:open-wallpaper-picker";

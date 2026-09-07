@@ -474,5 +474,3 @@ export function buildKnowledgeGraphData(
 		},
 	};
 }
-
-

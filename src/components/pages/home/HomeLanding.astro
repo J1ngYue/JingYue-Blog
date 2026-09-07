@@ -48,8 +48,12 @@ const coverIllustrations = Array.from(
 		),
 	},
 	(_, index) => ({
-		desktop: index === 0 ? heroDesktop : backgroundImages.desktop[index] || heroDesktop,
-		mobile: index === 0 ? heroMobile : backgroundImages.mobile[index] || heroMobile,
+		desktop:
+			index === 0
+				? heroDesktop
+				: backgroundImages.desktop[index] || heroDesktop,
+		mobile:
+			index === 0 ? heroMobile : backgroundImages.mobile[index] || heroMobile,
 	}),
 );
 

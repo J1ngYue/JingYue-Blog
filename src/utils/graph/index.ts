@@ -767,5 +767,3 @@ export function mountKnowledgeGraph(
 		},
 	};
 }
-
-

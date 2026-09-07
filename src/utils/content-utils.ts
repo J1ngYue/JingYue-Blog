@@ -1,16 +1,12 @@
 import { type CollectionEntry, getCollection, render } from "astro:content";
-import type { MarkdownHeading } from "astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import {
 	buildKnowledgeGraphData,
 	type KGData,
 } from "@utils/knowledge-graph-data";
-import {
-	getCategoryUrl,
-	getPostUrlBySlug,
-	getTagUrl,
-} from "@utils/url-utils";
+import { getCategoryUrl, getPostUrlBySlug, getTagUrl } from "@utils/url-utils";
+import type { MarkdownHeading } from "astro";
 import { siteConfig } from "@/config";
 
 let cachedPosts: CollectionEntry<"posts">[] | null = null;

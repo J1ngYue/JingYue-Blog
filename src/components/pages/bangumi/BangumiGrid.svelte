@@ -171,15 +171,20 @@ async function fetchCategoryPage(
 	limit: number,
 	offset: number,
 ): Promise<UserSubjectCollectionResponse> {
-	const endpoints = apiUrl === OFFICIAL_API_URL
-		? [apiUrl, apiUrl]
-		: [apiUrl, OFFICIAL_API_URL, apiUrl];
+	const endpoints =
+		apiUrl === OFFICIAL_API_URL
+			? [apiUrl, apiUrl]
+			: [apiUrl, OFFICIAL_API_URL, apiUrl];
 	let lastError: unknown;
 	for (const [attempt, endpoint] of endpoints.entries()) {
-		if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, attempt * 300));
+		if (attempt > 0)
+			await new Promise((resolve) => setTimeout(resolve, attempt * 300));
 		const url = `${endpoint}/v0/users/${username}/collections?subject_type=${subjectType}&limit=${limit}&offset=${offset}`;
 		const controller = new AbortController();
-		const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+		const timeout = window.setTimeout(
+			() => controller.abort(),
+			REQUEST_TIMEOUT,
+		);
 		try {
 			const resp = await fetch(url, {
 				headers: { Accept: "application/json" },
@@ -187,7 +192,8 @@ async function fetchCategoryPage(
 			});
 			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 			const payload = (await resp.json()) as UserSubjectCollectionResponse;
-			if (!Array.isArray(payload.data)) throw new Error("Invalid Bangumi response");
+			if (!Array.isArray(payload.data))
+				throw new Error("Invalid Bangumi response");
 			return payload;
 		} catch (error) {
 			lastError = error;
@@ -195,7 +201,9 @@ async function fetchCategoryPage(
 			window.clearTimeout(timeout);
 		}
 	}
-	throw lastError instanceof Error ? lastError : new Error("Bangumi request failed");
+	throw lastError instanceof Error
+		? lastError
+		: new Error("Bangumi request failed");
 }
 
 function handleTabChange(tabId: string) {
@@ -368,9 +376,10 @@ async function loadDynamicData() {
 		loadNotice = "Bangumi 暂时无法刷新，当前显示上次成功加载的数据。";
 	}
 
-	const now = successfulRequests > 0
-		? new Date()
-		: new Date(latestCacheTimestamp || Date.now());
+	const now =
+		successfulRequests > 0
+			? new Date()
+			: new Date(latestCacheTimestamp || Date.now());
 	const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
 	updateTimestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
