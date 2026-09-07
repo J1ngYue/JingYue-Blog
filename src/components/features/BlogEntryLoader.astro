@@ -162,7 +162,8 @@
     display: grid;
     place-items: center;
     overflow: hidden;
-    background: #11131c;
+    isolation: isolate;
+    background: #090b12;
     color: var(--loader-ink);
     opacity: 0;
     pointer-events: none;
@@ -173,17 +174,17 @@
   .blog-entry-loader__backdrop,
   .blog-entry-loader__veil { position: absolute; inset: -2rem; pointer-events: none; }
   .blog-entry-loader__backdrop {
-    background-image: var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"));
-    background-position: center;
-    background-size: cover;
-    filter: blur(12px) saturate(.9);
-    opacity: .48;
-    transform: scale(1.06);
+    background:
+      radial-gradient(circle at 50% 44%, rgb(71 35 72 / 24%) 0, transparent 28%),
+      radial-gradient(circle at 50% 44%, rgb(15 104 126 / 18%) 0, transparent 50%),
+      linear-gradient(135deg, #090b12 0%, #111421 52%, #0b0d16 100%);
+    opacity: 1;
   }
   .blog-entry-loader__veil {
     background:
-      radial-gradient(circle at 50% 43%, rgb(25 28 44 / 8%), rgb(8 10 17 / 70%) 72%),
-      linear-gradient(135deg, rgb(10 11 18 / 62%), rgb(33 18 40 / 52%));
+      linear-gradient(90deg, transparent 0 16%, rgb(255 255 255 / 3%) 16.05%, transparent 16.1% 83.9%, rgb(255 255 255 / 3%) 83.95%, transparent 84%),
+      radial-gradient(circle at 50% 44%, transparent 0 29%, rgb(255 255 255 / 3%) 29.1%, transparent 29.2% 100%);
+    opacity: .8;
   }
   .blog-entry-loader.is-visible { opacity: 1; pointer-events: auto; visibility: visible; }
   .blog-entry-loader.is-visible.is-leaving {
@@ -194,6 +195,9 @@
   html.blog-entry-loading .home-entrance,
   html.blog-entry-loading .home-entrance::after,
   html.blog-entry-loading .home-entrance__tile { animation-play-state: paused !important; }
+  html.blog-entry-loading #wallpaper-wrapper,
+  html.blog-entry-loading .local-wallpaper-layer,
+  html.blog-entry-loading .home-entrance { visibility: hidden !important; }
   html.blog-entry-loading { scrollbar-color: transparent transparent; }
   html.blog-entry-loading::-webkit-scrollbar-thumb,
   html.blog-entry-loading::-webkit-scrollbar-track { background: transparent !important; }
@@ -228,7 +232,7 @@
     text-transform: uppercase;
   }
   .blog-entry-loader__eyebrow span { color: var(--loader-pink); padding: 0 .35em; }
-  .blog-entry-loader__dial { position: relative; display: grid; place-items: center; width: clamp(17rem, 42vw, 24rem); aspect-ratio: 1; border-radius: 50%; isolation: isolate; }
+  .blog-entry-loader__dial { position: relative; display: grid; place-items: center; width: clamp(18rem, 43vw, 26rem); aspect-ratio: 1; border-radius: 50%; isolation: isolate; }
   .blog-entry-loader__dial::before {
     position: absolute;
     inset: .2rem;
@@ -237,7 +241,7 @@
     background: conic-gradient(from -90deg, var(--loader-pink) 0 var(--loader-progress), var(--loader-track) var(--loader-progress) 100%);
     -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
     mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
-    filter: drop-shadow(0 0 8px rgb(255 139 189 / 45%));
+    filter: drop-shadow(0 0 10px rgb(255 139 189 / 45%));
   }
   .blog-entry-loader__dial::after { position: absolute; inset: 1.45rem; border: 1px solid var(--loader-soft); border-radius: inherit; content: ""; }
   .blog-entry-loader__halo {
@@ -254,11 +258,12 @@
     left: 50%;
     z-index: 4;
     display: block;
-    width: calc(100% + 4rem);
+    width: calc(100% + 3.5rem);
     max-width: none;
     height: auto;
-    filter: drop-shadow(0 .75rem 1rem rgb(0 0 0 / 38%));
+    filter: drop-shadow(0 .75rem 1rem rgb(0 0 0 / 42%));
     transform: translate(-48%, -50%);
+    animation: blog-loader-feibi-float 5.5s ease-in-out infinite;
   }
   .blog-entry-loader__center {
     display: grid;
@@ -268,8 +273,8 @@
     aspect-ratio: 1;
     border: 1px solid rgb(255 255 255 / 12%);
     border-radius: 50%;
-    background: rgb(12 14 23 / 78%);
-    box-shadow: 0 0 3rem rgb(7 8 14 / 46%);
+    background: linear-gradient(145deg, rgb(10 12 21 / 92%), rgb(19 15 28 / 84%));
+    box-shadow: 0 0 3rem rgb(7 8 14 / 52%), inset 0 1px 0 rgb(255 255 255 / 8%);
     color: var(--loader-ink);
     backdrop-filter: blur(7px);
   }
@@ -292,6 +297,10 @@
   .blog-entry-loader.is-complete .blog-entry-loader__dial { animation: blog-loader-ready 500ms cubic-bezier(.22, 1, .36, 1) both; }
   @keyframes blog-loader-compose-in { from { opacity: 0; transform: translateY(.9rem) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes blog-loader-ready { 0% { transform: scale(1); } 45% { transform: scale(1.035); } 100% { transform: scale(1); } }
+  @keyframes blog-loader-feibi-float {
+    0%, 100% { transform: translate(-48%, -50%) rotate(-1deg); }
+    50% { transform: translate(-48%, calc(-50% - .3rem)) rotate(1deg); }
+  }
   @media (max-width: 640px) {
     .blog-entry-loader__footer span:last-child { display: none; }
     .blog-entry-loader__footer { font-size: .56rem; }
@@ -304,6 +313,7 @@
     .blog-entry-loader__caption { margin-top: 2.3rem; font-size: .78rem; }
   }
   @media (prefers-reduced-motion: reduce) {
+    .blog-entry-loader__feibi { animation: none; }
     .blog-entry-loader.is-visible.is-leaving { opacity: 0; transition: opacity 120ms ease; }
     .is-leaving .blog-entry-loader__composition { transform: none; }
   }
