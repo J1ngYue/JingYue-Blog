@@ -673,22 +673,22 @@ html.dark .guide-latest__shade {
 	content: "";
 	position: absolute;
 	inset: 0;
-	z-index: 0;
+	z-index: 2;
 	border-radius: inherit;
 	background: var(--guide-ink);
 	clip-path: circle(0 at 0 100%);
 	pointer-events: none;
-	transition: clip-path 620ms cubic-bezier(0.16, 1, 0.3, 1);
+	transition: clip-path 580ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .guide-card--motion > :not(.guide-card__hover):not(.guide-card__shade):not(.guide-contact__overlay):not(.guide-rotator):not(img) {
 	position: relative;
-	z-index: 1;
+	z-index: 3;
 }
 
 .guide-card--pinned > .guide-rotator,
 .guide-card--latest > .guide-rotator {
-	z-index: 1;
+	z-index: 3;
 }
 
 .guide-card--motion > img,
@@ -713,6 +713,23 @@ html.dark .guide-latest__shade {
 .guide-card--motion:hover::after,
 .guide-card--motion:focus-within::after {
 	clip-path: circle(150% at 0 100%);
+}
+
+.home-capabilities__content-grid > .guide-card--motion:hover,
+.home-capabilities__content-grid > .guide-card--motion:focus-within {
+	border-color: var(--guide-ink);
+}
+
+.guide-card--tags:hover .guide-tag-list a,
+.guide-card--tags:focus-within .guide-tag-list a {
+	border-color: var(--guide-card);
+	background: transparent;
+	color: var(--guide-card);
+}
+
+.guide-card--tags:hover .guide-tag-list span,
+.guide-card--tags:focus-within .guide-tag-list span {
+	border-color: color-mix(in srgb, var(--guide-card) 45%, transparent);
 }
 
 .guide-card--motion .guide-card__copy,
@@ -895,7 +912,7 @@ html.dark .guide-latest__shade {
 .guide-card--contact .guide-contact__overlay {
 	position: absolute;
 	inset: 0;
-	z-index: 3;
+	z-index: 4;
 	overflow: hidden;
 	border-radius: inherit;
 	opacity: 0;
@@ -923,7 +940,7 @@ html.dark .guide-latest__shade {
 
 .guide-contact__overlay-svg line {
 	fill: none;
-	stroke: var(--guide-ink);
+	stroke: var(--guide-card);
 	stroke-width: 2;
 	stroke-linecap: round;
 	stroke-dasharray: 1;
@@ -940,11 +957,17 @@ html.dark .guide-latest__shade {
 .guide-contact__region {
 	position: absolute;
 	inset: 0;
-	color: var(--guide-ink);
-	background: var(--guide-paper);
+	color: var(--guide-card);
+	background: transparent;
 	font-size: 1.5rem;
 	text-decoration: none;
 	transition: background-color 180ms ease, color 180ms ease;
+}
+
+.guide-contact__region:hover,
+.guide-contact__region:focus-visible {
+	color: var(--guide-ink);
+	background: var(--guide-card);
 }
 
 .guide-contact__region svg {
