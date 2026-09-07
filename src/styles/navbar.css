@@ -646,8 +646,8 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 #navbar .navbar-profile-card__event strong { font-size: .82rem; }
 #navbar .navbar-profile-card__event progress { display: block; flex: 1; min-width: 0; width: 100%; height: .38rem; overflow: hidden; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--profile-card-text) 14%, transparent); color: var(--profile-card-text); appearance: none; }
 #navbar .navbar-profile-card__event progress::-webkit-progress-bar { background: color-mix(in srgb, var(--profile-card-text) 14%, transparent); border-radius: 999px; }
-#navbar .navbar-profile-card__event progress::-webkit-progress-value { background: color-mix(in srgb, var(--primary) 72%, var(--profile-card-text)); border-radius: 999px; }
-#navbar .navbar-profile-card__event progress::-moz-progress-bar { background: color-mix(in srgb, var(--primary) 72%, var(--profile-card-text)); border-radius: 999px; }
+#navbar .navbar-profile-card__event progress::-webkit-progress-value { background: var(--profile-card-text); border-radius: 999px; }
+#navbar .navbar-profile-card__event progress::-moz-progress-bar { background: var(--profile-card-text); border-radius: 999px; }
 #navbar .navbar-profile-card__posts-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .8rem; }
 #navbar .navbar-profile-card__posts-heading button { display: grid; flex: none; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: var(--profile-card-text); background: color-mix(in srgb, var(--profile-card-text) 12%, transparent); cursor: pointer; }
 #navbar .navbar-profile-card__posts-heading svg { width: 1rem; height: 1rem; }
