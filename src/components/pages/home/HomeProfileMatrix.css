@@ -41,14 +41,7 @@ html.dark .home-capabilities {
 }
 
 .home-capabilities__heading {
-	opacity: 0;
-	transform: translateY(1rem);
-	transition: opacity 480ms ease 80ms, transform 480ms ease 80ms;
-}
-
-.home-capabilities.is-visible .home-capabilities__heading {
 	opacity: 1;
-	transform: translateY(0);
 }
 
 .home-capabilities__heading p,
@@ -107,25 +100,10 @@ html.dark .home-capabilities {
 	background: var(--guide-card);
 	color: var(--guide-ink);
 	box-shadow: none;
-	opacity: 0;
-	transform: translateY(1rem);
-	transition:
-		opacity 480ms ease,
-		transform 480ms ease,
-		background-color 200ms ease;
-}
-
-.home-capabilities.is-visible .guide-card {
 	opacity: 1;
-	transform: translateY(0);
-}
-
-.home-capabilities__top-grid .guide-card {
-	transition-delay: 150ms;
-}
-
-.home-capabilities__content-grid .guide-card {
-	transition-delay: 220ms;
+	transition:
+		transform 200ms ease,
+		background-color 200ms ease;
 }
 
 a.guide-card {
@@ -669,73 +647,22 @@ html.dark .guide-latest__shade {
 	}
 }
 
-/* Reference-style guide opening and interactive card choreography. */
-.home-capabilities[data-guide-opening="pending"].is-visible .home-capabilities__heading > *,
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card {
-	opacity: 0;
-	transform: translateY(1rem);
+/* Match the reference opening: hide the final layout until GSAP has measured it. */
+@media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
+	.home-capabilities[data-guide-opening="pending"] .home-capabilities__heading > *,
+	.home-capabilities[data-guide-opening="pending"] .guide-card {
+		visibility: hidden;
+	}
 }
 
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--visits,
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--archive {
-	transform: translateY(-1.3rem) scaleY(0.94);
+.home-capabilities[data-guide-opening="playing"] .home-capabilities__heading > * {
+	will-change: opacity, filter;
 }
 
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--pinned {
-	transform: translateX(-2rem) rotate(-1deg);
+.home-capabilities[data-guide-opening="playing"] .guide-card {
+	transition: none;
+	will-change: transform, opacity;
 }
-
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--latest {
-	transform: translateX(2rem) rotate(1deg);
-}
-
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--categories {
-	transform: translateY(1.6rem) rotate(-7deg);
-}
-
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--tags {
-	transform: translateY(1.8rem) rotate(4deg);
-}
-
-.home-capabilities[data-guide-opening="pending"].is-visible .guide-card--contact {
-	transform: translateY(1.6rem) rotate(7deg);
-}
-
-.home-capabilities[data-guide-opening="playing"].is-visible .home-capabilities__heading > *,
-.home-capabilities[data-guide-opening="complete"].is-visible .home-capabilities__heading > * {
-	opacity: 1;
-	transform: translateY(0);
-	filter: blur(0);
-}
-
-.home-capabilities[data-guide-opening="playing"].is-visible .guide-card,
-.home-capabilities[data-guide-opening="complete"].is-visible .guide-card {
-	opacity: 1;
-	transform: translate(0) rotate(0);
-	transition-delay: var(--guide-delay, 0ms);
-}
-
-.home-capabilities[data-guide-opening="playing"] .home-capabilities__heading > *,
-.home-capabilities[data-guide-opening="complete"] .home-capabilities__heading > * {
-	filter: blur(0);
-	transition: opacity 420ms ease, transform 620ms cubic-bezier(0.16, 1, 0.3, 1), filter 620ms ease;
-}
-
-.home-capabilities__heading > p { --guide-heading-delay: 0ms; }
-.home-capabilities__heading > strong { --guide-heading-delay: 70ms; }
-.home-capabilities__heading > h2 { --guide-heading-delay: 140ms; }
-.home-capabilities[data-guide-opening="playing"] .home-capabilities__heading > *,
-.home-capabilities[data-guide-opening="complete"] .home-capabilities__heading > * {
-	transition-delay: var(--guide-heading-delay);
-}
-
-.home-capabilities__top-grid .guide-card--visits { --guide-delay: 230ms; }
-.home-capabilities__top-grid .guide-card--archive { --guide-delay: 320ms; }
-.home-capabilities__content-grid .guide-card--pinned { --guide-delay: 470ms; }
-.home-capabilities__content-grid .guide-card--latest { --guide-delay: 570ms; }
-.home-capabilities__content-grid .guide-card--categories { --guide-delay: 700ms; }
-.home-capabilities__content-grid .guide-card--tags { --guide-delay: 790ms; }
-.home-capabilities__content-grid .guide-card--contact { --guide-delay: 880ms; }
 
 .guide-card--motion {
 	isolation: isolate;

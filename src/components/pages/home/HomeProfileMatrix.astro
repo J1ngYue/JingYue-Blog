@@ -244,7 +244,85 @@ const contactRegions = [
 </section>
 
 <script>
+	import { gsap } from "gsap";
+
 	let cleanupHomeMapGuide = () => {};
+	type GuideOpeningTargets = {
+		visitCard: HTMLElement;
+		archiveCard: HTMLElement;
+		pinnedCard: HTMLElement;
+		latestCard: HTMLElement;
+		dealCards: HTMLElement[];
+	};
+	type GuideDealPose = {
+		element: HTMLElement;
+		x: number;
+		y: number;
+		rotation: number;
+		zIndex: number;
+	};
+
+	function getGuideOpeningTargets(guide: HTMLElement): GuideOpeningTargets | null {
+		const visitCard = guide.querySelector<HTMLElement>(".guide-card--visits");
+		const archiveCard = guide.querySelector<HTMLElement>(".guide-card--archive");
+		const pinnedCard = guide.querySelector<HTMLElement>(".guide-card--pinned");
+		const latestCard = guide.querySelector<HTMLElement>(".guide-card--latest");
+		const dealCards = [
+			guide.querySelector<HTMLElement>(".guide-card--categories"),
+			guide.querySelector<HTMLElement>(".guide-card--tags"),
+			guide.querySelector<HTMLElement>(".guide-card--contact"),
+		];
+		if (!visitCard || !archiveCard || !pinnedCard || !latestCard || dealCards.some((card) => !card)) return null;
+		return {
+			visitCard,
+			archiveCard,
+			pinnedCard,
+			latestCard,
+			dealCards: dealCards as HTMLElement[],
+		};
+	}
+
+	function getDropOffset(guideRect: DOMRect, cardRect: DOMRect) {
+		return -(cardRect.top - guideRect.top + cardRect.height * 1.15);
+	}
+
+	function getLeftEntryOffset(guideRect: DOMRect, cardRect: DOMRect) {
+		return -(cardRect.right - guideRect.left + cardRect.width * 0.15);
+	}
+
+	function getLatestPeekOffset(guideRect: DOMRect, cardRect: DOMRect) {
+		return guideRect.right - cardRect.left - cardRect.width * 0.2;
+	}
+
+	function getGuideDealPoses(guideRect: DOMRect, cards: HTMLElement[]): GuideDealPose[] {
+		const deckCenterX = (guideRect.left + guideRect.right) / 2;
+		const handPoses = [
+			{ x: -0.16, y: 6, rotation: -13, zIndex: 1 },
+			{ x: 0, y: -12, rotation: 0, zIndex: 3 },
+			{ x: 0.16, y: 6, rotation: 13, zIndex: 2 },
+		];
+		const fanBottomInset = cards.reduce((inset, element, index) => {
+			const rect = element.getBoundingClientRect();
+			const pose = handPoses[index] ?? handPoses[1];
+			const rotationOverflow = Math.abs(Math.sin((pose.rotation * Math.PI) / 180)) * rect.width * 0.5;
+			return Math.max(inset, rotationOverflow + rect.height * 0.14 + 18);
+		}, 24);
+
+		return cards.map((element, index) => {
+			const rect = element.getBoundingClientRect();
+			const pose = handPoses[index] ?? handPoses[1];
+			const cardCenterX = (rect.left + rect.right) / 2;
+			const cardCenterY = (rect.top + rect.bottom) / 2;
+			const deckCenterY = guideRect.bottom - rect.height * 0.5 - fanBottomInset + pose.y;
+			return {
+				element,
+				x: deckCenterX + rect.width * pose.x - cardCenterX,
+				y: deckCenterY - cardCenterY,
+				rotation: pose.rotation,
+				zIndex: pose.zIndex,
+			};
+		});
+	}
 
 	function initHomeMapGuide() {
 		cleanupHomeMapGuide();
@@ -252,37 +330,184 @@ const contactRegions = [
 		const timers = new Set<number>();
 		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 		const observers: IntersectionObserver[] = [];
-
-		const wait = (callback: () => void, delay: number) => {
-			const timer = window.setTimeout(() => {
-				timers.delete(timer);
-				callback();
-			}, delay);
-			timers.add(timer);
-		};
+		const timelines: Array<ReturnType<typeof gsap.timeline>> = [];
 
 		document.querySelectorAll<HTMLElement>("[data-home-map-guide]").forEach((guide) => {
+			guide.dataset.guideOpening = "pending";
+			const targets = getGuideOpeningTargets(guide);
+			const headings = Array.from(guide.querySelectorAll<HTMLElement>(".home-capabilities__heading > *"));
+			const cards = targets ? [
+				targets.visitCard,
+				targets.archiveCard,
+				targets.pinnedCard,
+				targets.latestCard,
+				...targets.dealCards,
+			] : [];
+			let openingReleased = false;
+
+			const releaseOpening = () => {
+				if (openingReleased) return;
+				openingReleased = true;
+				gsap.set(headings, { clearProps: "opacity,visibility,transform,filter" });
+				gsap.set(cards, {
+					clearProps: "opacity,visibility,transform,pointerEvents,transformOrigin,zIndex",
+				});
+				guide.dataset.guideOpening = "complete";
+			};
+
 			const playOpening = () => {
 				if (guide.dataset.guideOpening !== "pending") return;
 				guide.classList.add("is-visible");
-				guide.dataset.guideOpening = reducedMotion.matches ? "complete" : "playing";
-				if (!reducedMotion.matches) wait(() => {
-					guide.dataset.guideOpening = "complete";
-				}, 1300);
+				if (!targets || headings.length !== 3) {
+					releaseOpening();
+					return;
+				}
+
+				guide.dataset.guideOpening = "playing";
+				const guideRect = guide.getBoundingClientRect();
+				const visitRect = targets.visitCard.getBoundingClientRect();
+				const archiveRect = targets.archiveCard.getBoundingClientRect();
+				const pinnedRect = targets.pinnedCard.getBoundingClientRect();
+				const latestRect = targets.latestCard.getBoundingClientRect();
+				const dealPoses = getGuideDealPoses(guideRect, targets.dealCards);
+				const visitLandingAt = 0.42;
+				const dealStartAt = 1;
+				const latestEntryAt = dealStartAt + 0.5;
+
+				gsap.set(headings, { autoAlpha: 0, filter: "blur(12px)" });
+				gsap.set(cards, { autoAlpha: 1, pointerEvents: "none" });
+				gsap.set([targets.visitCard, targets.archiveCard, targets.pinnedCard, ...targets.dealCards], { autoAlpha: 0 });
+				gsap.set(targets.visitCard, {
+					y: getDropOffset(guideRect, visitRect),
+					scaleX: 1,
+					scaleY: 1,
+					transformOrigin: "50% 100%",
+				});
+				gsap.set(targets.archiveCard, {
+					y: getDropOffset(guideRect, archiveRect),
+					scaleX: 1,
+					scaleY: 1,
+					transformOrigin: "50% 100%",
+				});
+				gsap.set(targets.pinnedCard, {
+					x: getLeftEntryOffset(guideRect, pinnedRect),
+					transformOrigin: "50% 50%",
+				});
+				gsap.set(targets.latestCard, {
+					x: getLatestPeekOffset(guideRect, latestRect),
+					transformOrigin: "50% 100%",
+				});
+				dealPoses.forEach(({ element, x, y, rotation, zIndex }) => {
+					gsap.set(element, {
+						x,
+						y,
+						scale: 0.92,
+						rotation,
+						zIndex,
+						transformOrigin: "50% 108%",
+					});
+				});
+
+				const timeline = gsap.timeline({ onComplete: releaseOpening });
+				timelines.push(timeline);
+				timeline
+					.to(headings, {
+						autoAlpha: 1,
+						filter: "blur(0px)",
+						duration: 0.32,
+						stagger: 0.06,
+						ease: "power2.out",
+					}, 0)
+					.to(targets.visitCard, {
+						autoAlpha: 1,
+						y: 0,
+						scaleX: 1.012,
+						scaleY: 0.976,
+						duration: 0.32,
+						ease: "power2.in",
+					}, 0.1)
+					.to(targets.visitCard, { y: -20, scaleX: 1, scaleY: 1, duration: 0.07, ease: "power2.out" }, visitLandingAt)
+					.to(targets.visitCard, { y: 0, scaleX: 1.007, scaleY: 0.99, duration: 0.08, ease: "power1.in" }, 0.49)
+					.to(targets.visitCard, { y: -9, scaleX: 1, scaleY: 1, duration: 0.06, ease: "power2.out" }, 0.57)
+					.to(targets.visitCard, { y: 0, scale: 1, duration: 0.07, ease: "power1.in" }, 0.63)
+					.to(targets.archiveCard, {
+						autoAlpha: 1,
+						y: 0,
+						scaleX: 1.009,
+						scaleY: 0.982,
+						duration: 0.36,
+						ease: "power2.in",
+					}, visitLandingAt)
+					.to(targets.archiveCard, { y: -14, scaleX: 1, scaleY: 1, duration: 0.1, ease: "power2.out" }, 0.78)
+					.to(targets.archiveCard, { y: 0, scale: 1, duration: 0.1, ease: "power1.in" }, 0.88)
+					.to(targets.pinnedCard, { autoAlpha: 1, x: 0, duration: 0.64, ease: "power4.out" }, 0.32)
+					.to(targets.dealCards, { autoAlpha: 1, duration: 0.12, ease: "power2.out" }, dealStartAt)
+					.to(targets.dealCards, {
+						x: 0,
+						y: 0,
+						scale: 1,
+						rotation: 0,
+						duration: 0.28,
+						stagger: 0.04,
+						ease: "power3.out",
+					}, dealStartAt + 0.14)
+					.to(targets.latestCard, {
+						x: getLatestPeekOffset(guideRect, latestRect) * 0.74,
+						rotation: -3.2,
+						transformOrigin: "0% 100%",
+						duration: 0.12,
+						ease: "power1.inOut",
+					}, latestEntryAt)
+					.to(targets.latestCard, {
+						x: getLatestPeekOffset(guideRect, latestRect) * 0.48,
+						rotation: 3,
+						transformOrigin: "100% 100%",
+						duration: 0.12,
+						ease: "power1.inOut",
+					}, latestEntryAt + 0.12)
+					.to(targets.latestCard, {
+						x: getLatestPeekOffset(guideRect, latestRect) * 0.22,
+						rotation: -1.6,
+						transformOrigin: "0% 100%",
+						duration: 0.12,
+						ease: "power1.inOut",
+					}, latestEntryAt + 0.24)
+					.to(targets.latestCard, {
+						x: 0,
+						rotation: 0,
+						transformOrigin: "50% 50%",
+						duration: 0.14,
+						ease: "power2.out",
+					}, latestEntryAt + 0.36);
 			};
 
-			if (guide.classList.contains("is-visible")) {
-				requestAnimationFrame(playOpening);
-			} else if ("IntersectionObserver" in window) {
+			const observeOpening = () => {
+				if (controller.signal.aborted) return;
+				if (!("IntersectionObserver" in window)) {
+					playOpening();
+					return;
+				}
 				const openingObserver = new IntersectionObserver((entries) => {
 					if (!entries.some((entry) => entry.isIntersecting)) return;
-					playOpening();
 					openingObserver.disconnect();
-				}, { threshold: 0.2 });
+					playOpening();
+				}, { rootMargin: "0px 0px -30% 0px" });
 				openingObserver.observe(guide);
 				observers.push(openingObserver);
+			};
+			if (reducedMotion.matches || !window.matchMedia("(min-width: 769px)").matches) {
+				guide.classList.add("is-visible");
+				releaseOpening();
 			} else {
-				playOpening();
+				const entrance = document.querySelector<HTMLElement>("[data-home-entrance]");
+				if (!entrance || entrance.dataset.homeEntranceState === "complete") {
+					observeOpening();
+				} else {
+					window.addEventListener("firefly:home-entrance-complete", observeOpening, {
+						once: true,
+						signal: controller.signal,
+					});
+				}
 			}
 
 			const tagFan = guide.querySelector<HTMLElement>("[data-tag-fan]");
@@ -382,9 +607,18 @@ const contactRegions = [
 		cleanupHomeMapGuide = () => {
 			controller.abort();
 			observers.forEach((observer) => observer.disconnect());
+			timelines.forEach((timeline) => timeline.kill());
 			timers.forEach((timer) => window.clearInterval(timer));
 			timers.forEach((timer) => window.clearTimeout(timer));
 			timers.clear();
+			document.querySelectorAll<HTMLElement>("[data-home-map-guide]").forEach((guide) => {
+				const targets = getGuideOpeningTargets(guide);
+				const headings = Array.from(guide.querySelectorAll<HTMLElement>(".home-capabilities__heading > *"));
+				const cards = targets ? [targets.visitCard, targets.archiveCard, targets.pinnedCard, targets.latestCard, ...targets.dealCards] : [];
+				gsap.set(headings, { clearProps: "opacity,visibility,transform,filter" });
+				gsap.set(cards, { clearProps: "opacity,visibility,transform,pointerEvents,transformOrigin,zIndex" });
+				guide.dataset.guideOpening = "complete";
+			});
 		};
 	}
 
