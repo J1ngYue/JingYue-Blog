@@ -24,6 +24,7 @@ const config = rainConfig;
 				this.viewportHeight = 0;
 				this.collisionEdges = [];
 				this.collisionRefreshAt = 0;
+				this.entranceAnimation = null;
 				this.seed = 20260710;
 				this.state = "off";
 				this.boundResize = this.handleResize.bind(this);
@@ -53,6 +54,31 @@ const config = rainConfig;
 					10,
 					Math.round(baseCount * intensity * Math.max(0.65, areaScale)),
 				);
+			}
+
+			getRevealProgress() {
+				if (!document.documentElement.classList.contains("home-entrance-active")) {
+					return 1;
+				}
+				if (!this.entranceAnimation) {
+					const entrance = document.querySelector("[data-home-entrance]");
+					this.entranceAnimation = entrance
+						?.getAnimations()
+						.find((item) => item.animationName === "home-entrance-finish") ?? null;
+				}
+				const animation = this.entranceAnimation;
+				const timing = animation?.effect?.getComputedTiming();
+				const currentTime = Number(animation?.currentTime);
+				const duration = Number(timing?.duration);
+				if (!Number.isFinite(currentTime) || !Number.isFinite(duration) || duration <= 0) {
+					return 0;
+				}
+				const timelineProgress = Math.min(1, Math.max(0, currentTime / duration));
+				const rainProgress = Math.min(
+					1,
+					Math.max(0, (timelineProgress - 0.6) / 0.4),
+				);
+				return rainProgress * rainProgress * (3 - 2 * rainProgress);
 			}
 
 			createDrop(randomY) {
@@ -201,17 +227,24 @@ const config = rainConfig;
 				const height = this.viewportHeight;
 				const context = this.context;
 				const rainColor = this.getRainColor();
+				const revealProgress = this.getRevealProgress();
+				const motionProgress = 0.48 + revealProgress * 0.52;
+				const visibleDropLimit = revealProgress <= 0
+					? 0
+					: Math.max(2, Math.ceil(this.drops.length * revealProgress));
 				let visibleCount = 0;
 				this.refreshCollisionEdges();
 
 				context.clearRect(0, 0, width, height);
 				context.lineCap = "round";
 
-				for (const drop of this.drops) {
+				for (let dropIndex = 0; dropIndex < this.drops.length; dropIndex += 1) {
+					if (dropIndex >= visibleDropLimit) continue;
+					const drop = this.drops[dropIndex];
 					if (drop.finished) continue;
 					const previousY = drop.y;
-					drop.x += drop.wind * delta;
-					drop.y += drop.speed * delta;
+					drop.x += drop.wind * delta * motionProgress;
+					drop.y += drop.speed * delta * motionProgress;
 
 					const hitEdge = this.collisionEdges.find(
 						(edge) =>
@@ -222,7 +255,7 @@ const config = rainConfig;
 							this.randomUnit() <= 0.62,
 					);
 					if (hitEdge) {
-						this.spawnSplash(drop.x, hitEdge.top);
+						if (revealProgress > 0.42) this.spawnSplash(drop.x, hitEdge.top);
 						if (this.state === "draining") {
 							drop.finished = true;
 							continue;
@@ -233,18 +266,18 @@ const config = rainConfig;
 
 					if (drop.y - drop.length > height || drop.x < -drop.length) {
 						if (this.state === "draining") {
-							this.spawnSplash(drop.x, height - 1);
+							if (revealProgress > 0.42) this.spawnSplash(drop.x, height - 1);
 							drop.finished = true;
 							continue;
 						}
-						this.spawnSplash(drop.x, height - 1);
+						if (revealProgress > 0.42) this.spawnSplash(drop.x, height - 1);
 						this.resetDrop(drop);
 						continue;
 					}
 
 					visibleCount += 1;
 					context.globalAlpha = 1;
-					context.strokeStyle = `rgba(${rainColor}, ${drop.opacity})`;
+					context.strokeStyle = `rgba(${rainColor}, ${drop.opacity * (0.7 + revealProgress * 0.3)})`;
 					context.lineWidth = drop.radius;
 					context.beginPath();
 					context.moveTo(drop.x, drop.y);
@@ -265,7 +298,7 @@ const config = rainConfig;
 					splash.x += splash.vx * delta;
 					splash.y += splash.vy * delta;
 					splash.vy += 0.16 * delta;
-					const opacity = splash.opacity * (1 - splash.life / splash.maxLife);
+					const opacity = splash.opacity * revealProgress * (1 - splash.life / splash.maxLife);
 					context.globalAlpha = 1;
 					context.fillStyle = `rgba(${rainColor}, ${opacity})`;
 					context.beginPath();
@@ -296,6 +329,7 @@ const config = rainConfig;
 					return;
 				}
 				if (this.state !== "off") this.finishDrain();
+				this.entranceAnimation = null;
 				if (
 					window.matchMedia("(prefers-reduced-motion: reduce)").matches
 				) {
@@ -351,6 +385,7 @@ const config = rainConfig;
 				this.drops = [];
 				this.splashes = [];
 				this.collisionEdges = [];
+				this.entranceAnimation = null;
 			}
 
 			stopImmediate() {
@@ -403,6 +438,34 @@ const config = rainConfig;
 </script>
 
 <style is:global>
+	:root {
+		--home-entrance-duration: 7.5s;
+		--home-rain-atmosphere:
+			radial-gradient(ellipse at 50% 86%, rgb(171 204 224 / 0.1), transparent 48%),
+			linear-gradient(180deg, rgb(8 22 37 / 0.05), rgb(4 14 26 / 0.16));
+	}
+
+	.home-hero-frame::after {
+		position: absolute;
+		inset: -3%;
+		z-index: 0;
+		background: var(--home-rain-atmosphere);
+		content: "";
+		opacity: 0;
+		transform: scale(1.035);
+		pointer-events: none;
+		will-change: opacity, transform;
+	}
+
+	html[data-rain-enabled="true"].home-entrance-active .home-hero-frame::after {
+		animation: home-hero-atmosphere var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
+	}
+
+	html[data-rain-enabled="true"]:not(.home-entrance-active) .home-hero-frame::after {
+		opacity: 1;
+		transform: scale(1);
+	}
+
 	.home-hero-rain {
 		position: absolute;
 		inset: 0;
@@ -412,15 +475,60 @@ const config = rainConfig;
 		opacity: 0;
 		pointer-events: none;
 		contain: strict;
-		transition: opacity 240ms ease;
+		transition: opacity 720ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.home-hero-rain.is-active {
 		opacity: 1;
 	}
 
+	html[data-rain-enabled="true"].home-entrance-active .home-hero-rain.is-active {
+		animation: home-rain-discovery var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
+	}
+
+	html.blog-entry-loading .home-hero-frame::after,
+	html.blog-entry-loading .home-hero-rain {
+		animation-play-state: paused !important;
+	}
+
+	@keyframes home-hero-atmosphere {
+		0%,
+		40% {
+			opacity: 0;
+			transform: scale(1.035);
+		}
+		50% {
+			opacity: 0.34;
+		}
+		60%,
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	@keyframes home-rain-discovery {
+		0%,
+		60% {
+			opacity: 0;
+		}
+		72% {
+			opacity: 0.12;
+		}
+		82% {
+			opacity: 0.3;
+		}
+		92% {
+			opacity: 0.6;
+		}
+		100% {
+			opacity: 1;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
-		.home-hero-rain {
+		.home-hero-rain,
+		.home-hero-frame::after {
 			display: none;
 		}
 	}
