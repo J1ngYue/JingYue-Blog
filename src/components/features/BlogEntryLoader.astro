@@ -96,9 +96,9 @@
     const html = document.documentElement;
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mascotAssets = [
-      "/pio/models/pets/feibi/loader-idle.webp",
-      "/pio/models/pets/doro/loader-doro-hd.webp",
-      "/pio/models/pets/gugugaga/loader-gugugaga-hd.webp",
+      "/pio/models/pets/feibi/loader-feibi-unified.webp",
+      "/pio/models/pets/doro/loader-duro-unified.webp",
+      "/pio/models/pets/gugugaga/loader-gugugaga-unified.webp",
     ];
     let value = 0;
     let target = 8;
@@ -442,22 +442,22 @@
     transform-origin: 50% 88%;
     will-change: transform;
   }
+  .blog-entry-loader__sprite--feibi,
+  .blog-entry-loader__sprite--doro,
+  .blog-entry-loader__sprite--gugu {
+    width: clamp(8rem, 13vw, 11.8rem);
+    aspect-ratio: 1;
+  }
   .blog-entry-loader__sprite--feibi {
-    width: clamp(7.5rem, 12vw, 10.6rem);
-    aspect-ratio: 192 / 208;
-    background: url('/pio/models/pets/feibi/loader-idle.webp') center / contain no-repeat;
+    background: url('/pio/models/pets/feibi/loader-feibi-unified.webp') center / contain no-repeat;
     animation: blog-loader-feibi-idle 2.6s ease-in-out infinite;
   }
   .blog-entry-loader__sprite--doro {
-    width: min(98%, 17.2rem);
-    aspect-ratio: 1;
-    background-image: url('/pio/models/pets/doro/loader-doro-hd.webp');
+    background-image: url('/pio/models/pets/doro/loader-duro-unified.webp');
     animation: blog-loader-doro-peek 2.8s cubic-bezier(.45, 0, .2, 1) infinite;
   }
   .blog-entry-loader__sprite--gugu {
-    width: clamp(8rem, 13vw, 11.8rem);
-    aspect-ratio: 768 / 865;
-    background-image: url('/pio/models/pets/gugugaga/loader-gugugaga-hd.webp');
+    background-image: url('/pio/models/pets/gugugaga/loader-gugugaga-unified.webp');
     animation: blog-loader-gugu-greeting 2.35s cubic-bezier(.45, 0, .2, 1) infinite;
   }
   .blog-entry-loader__shadow {
@@ -618,8 +618,8 @@
     .blog-entry-loader__card { height: 8.3rem; border-width: 1.5px; border-radius: 1rem 1.45rem 1rem 1.35rem; box-shadow: .2rem .25rem 0 var(--loader-ink); }
     .blog-entry-loader__arrival { top: .42rem; left: .42rem; width: 1.5rem; border-width: 1.5px; font-size: .48rem; }
     .blog-entry-loader__sprite--feibi,
+    .blog-entry-loader__sprite--doro,
     .blog-entry-loader__sprite--gugu { width: min(6.2rem, 24vw); }
-    .blog-entry-loader__sprite--doro { width: min(7.5rem, 30vw); }
     .blog-entry-loader__mascot > strong { margin-top: .62rem; font-size: .72rem; }
     .blog-entry-loader__mascot > small { display: none; }
     .blog-entry-loader__progress { width: 100%; padding: .7rem .8rem; }
