@@ -132,20 +132,6 @@ const quickLinks = [
 				</button>
 			)}
 				<button
-					id="quick-tools-theme"
-					class="quick-tools-button quick-tools-theme"
-					type="button"
-					data-tooltip="深色模式"
-					aria-label="深色模式"
-				>
-					<span class="quick-tools-theme-icon quick-tools-theme-icon--dark" aria-hidden="true">
-						<Icon is:inline name="material-symbols:dark-mode-outline-rounded" />
-					</span>
-					<span class="quick-tools-theme-icon quick-tools-theme-icon--light" aria-hidden="true">
-						<Icon is:inline name="material-symbols:wb-sunny-outline-rounded" />
-					</span>
-				</button>
-				<button
 					id="quick-tools-navigation"
 					class="quick-tools-button"
 					type="button"
@@ -187,9 +173,6 @@ const quickLinks = [
 </div>
 
 <script>
-	import { DARK_MODE, LIGHT_MODE } from "@/constants/constants";
-	import { setTheme } from "@/utils/setting-utils";
-
 	function initQuickToolsDock() {
 		const dock = document.getElementById("quick-tools-dock");
 		if (!dock || dock.dataset.bound === "true") return;
@@ -200,7 +183,6 @@ const quickLinks = [
 		const closeButton = document.getElementById("quick-tools-menu-close");
 		const settingsButton = document.getElementById("display-settings-switch");
 		const settingsPanel = document.getElementById("display-setting");
-		const themeButton = document.getElementById("quick-tools-theme");
 		const wallpaperButton = document.getElementById("quick-tools-wallpaper");
 		const collapseButton = document.getElementById("quick-tools-collapse");
 		const actionsShell = document.getElementById("quick-tools-actions");
@@ -349,30 +331,6 @@ const quickLinks = [
 		closeButton?.addEventListener("click", () => setMenuOpen(false, false, true));
 		menu?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenuOpen(false)));
 
-		const syncThemeButton = () => {
-			if (!themeButton) return;
-			const nextTheme = document.documentElement.classList.contains("dark")
-				? "浅色"
-				: "深色";
-			const label = `${nextTheme}模式`;
-			themeButton.setAttribute("aria-label", label);
-			themeButton.dataset.tooltip = label;
-		};
-
-		themeButton?.addEventListener("click", (event) => {
-			event.stopPropagation();
-			const nextTheme = document.documentElement.classList.contains("dark")
-				? LIGHT_MODE
-				: DARK_MODE;
-			setTheme(nextTheme);
-			window.dispatchEvent(new CustomEvent("theme-change"));
-			syncThemeButton();
-		});
-		new MutationObserver(syncThemeButton).observe(document.documentElement, {
-			attributes: true,
-			attributeFilter: ["class"],
-		});
-
 		settingsButton?.addEventListener("click", (event) => {
 			event.stopPropagation();
 			queueMicrotask(() => {
@@ -512,7 +470,6 @@ const quickLinks = [
 			});
 		};
 		syncCurrentLink();
-		syncThemeButton();
 		syncMusicPlaying();
 		syncMusicPanelPosition();
 		if (window.swup?.hooks) bindSwup();
@@ -636,23 +593,6 @@ const quickLinks = [
 	.quick-tools-button :global(svg) {
 		width: 1.65rem;
 		height: 1.65rem;
-	}
-
-	.quick-tools-theme-icon {
-		display: grid;
-		place-items: center;
-	}
-
-	.quick-tools-theme-icon--light {
-		display: none;
-	}
-
-	:global(html.dark) .quick-tools-theme-icon--dark {
-		display: none;
-	}
-
-	:global(html.dark) .quick-tools-theme-icon--light {
-		display: grid;
 	}
 
 	.quick-tools-background-player span {

@@ -1,0 +1,571 @@
+---
+import { Icon } from "astro-icon/components";
+import Search from "@/components/controls/Search.svelte";
+import { announcementConfig } from "@/config/announcementConfig";
+
+const announcementTitle = announcementConfig.title || "公告";
+const announcementContent = announcementConfig.content;
+const announcementSecondary =
+	announcementConfig.secondaryContent || "最近更新：新增文章与动态模块";
+---
+
+<div class="navbar-utility" data-navbar-utility data-open="false" data-announcement-open="false">
+	<Search client:load hideTrigger />
+	<button
+		id="navbar-utility-trigger"
+		class="navbar-utility__trigger"
+		type="button"
+		aria-label="打开快捷功能"
+		aria-haspopup="dialog"
+		aria-controls="navbar-utility-panel"
+		aria-expanded="false"
+	>
+		<Icon is:inline name="material-symbols:tune-rounded" />
+	</button>
+
+	<div
+		id="navbar-utility-panel"
+		class="navbar-utility__panel"
+		role="dialog"
+		aria-label="快捷功能"
+		aria-hidden="true"
+		inert
+	>
+		<div class="navbar-utility__pointer" aria-hidden="true"></div>
+		<div class="navbar-utility__actions" role="group" aria-label="快捷操作">
+			<button
+				class="navbar-utility__action"
+				type="button"
+				data-navbar-utility-announcement
+				aria-label="查看公告"
+				aria-controls="navbar-utility-announcement"
+				aria-expanded="false"
+			>
+				<Icon is:inline name="material-symbols:notifications-outline-rounded" />
+				<span>公告</span>
+			</button>
+			<button
+				class="navbar-utility__action"
+				type="button"
+				data-navbar-utility-theme
+				aria-label="切换为深色模式"
+			>
+				<span class="navbar-utility__theme-icon navbar-utility__theme-icon--dark" aria-hidden="true">
+					<Icon is:inline name="material-symbols:dark-mode-outline-rounded" />
+				</span>
+				<span class="navbar-utility__theme-icon navbar-utility__theme-icon--light" aria-hidden="true">
+					<Icon is:inline name="material-symbols:wb-sunny-outline-rounded" />
+				</span>
+				<span>主题</span>
+			</button>
+			<button
+				class="navbar-utility__action"
+				type="button"
+				data-navbar-utility-search
+				aria-label="打开站内搜索"
+			>
+				<Icon is:inline name="material-symbols:search-rounded" />
+				<span>搜索</span>
+			</button>
+		</div>
+
+		<div
+			id="navbar-utility-announcement"
+			class="navbar-utility__announcement-shell"
+			aria-hidden="true"
+			inert
+		>
+			<div class="navbar-utility__announcement-clip">
+				<div class="navbar-utility__announcement">
+					<div class="navbar-utility__announcement-heading">
+						<span aria-hidden="true"></span>
+						<strong>{announcementTitle}</strong>
+					</div>
+					<p>{announcementContent}</p>
+					<p>{announcementSecondary}</p>
+				</div>
+			</div>
+		</div>
+
+		<button
+			class="navbar-utility__search-field"
+			type="button"
+			data-navbar-utility-search
+			aria-label="搜索文章或内容"
+		>
+			<Icon is:inline name="material-symbols:search-rounded" />
+			<span>搜索文章 / 搜索内容</span>
+			<kbd>Ctrl K</kbd>
+		</button>
+	</div>
+</div>
+
+<script>
+	import { DARK_MODE, LIGHT_MODE } from "@/constants/constants";
+	import { setTheme } from "@/utils/setting-utils";
+
+	type UtilityPanelWindow = Window & {
+		__fireflyNavbarUtilityCleanup?: () => void;
+		__fireflyNavbarUtilityLifecycleBound?: boolean;
+	};
+
+	function initNavbarUtilityPanel() {
+		const utilityWindow = window as UtilityPanelWindow;
+		utilityWindow.__fireflyNavbarUtilityCleanup?.();
+
+		const root = document.querySelector<HTMLElement>("[data-navbar-utility]");
+		const trigger = root?.querySelector<HTMLButtonElement>("#navbar-utility-trigger");
+		const panel = root?.querySelector<HTMLElement>("#navbar-utility-panel");
+		const announcementButton = root?.querySelector<HTMLButtonElement>(
+			"[data-navbar-utility-announcement]",
+		);
+		const announcement = root?.querySelector<HTMLElement>(
+			"#navbar-utility-announcement",
+		);
+		const themeButton = root?.querySelector<HTMLButtonElement>(
+			"[data-navbar-utility-theme]",
+		);
+		const searchButtons = Array.from(
+			root?.querySelectorAll<HTMLButtonElement>("[data-navbar-utility-search]") || [],
+		);
+
+		if (!root || !trigger || !panel || !announcementButton || !announcement || !themeButton) {
+			utilityWindow.__fireflyNavbarUtilityCleanup = undefined;
+			return;
+		}
+
+		let open = false;
+		let announcementOpen = false;
+		let restoreFocusOnClose = true;
+
+		const syncThemeButton = () => {
+			const isDark = document.documentElement.classList.contains("dark");
+			themeButton.setAttribute(
+				"aria-label",
+				isDark ? "切换为浅色模式" : "切换为深色模式",
+			);
+		};
+
+		const setAnnouncementOpen = (nextOpen: boolean) => {
+			announcementOpen = nextOpen;
+			root.dataset.announcementOpen = String(nextOpen);
+			announcementButton.setAttribute("aria-expanded", String(nextOpen));
+			announcement.setAttribute("aria-hidden", String(!nextOpen));
+			announcement.inert = !nextOpen;
+		};
+
+		const setOpen = (nextOpen: boolean, restoreFocus = true) => {
+			if (open === nextOpen) return;
+			open = nextOpen;
+			restoreFocusOnClose = restoreFocus;
+			root.dataset.open = String(nextOpen);
+			trigger.setAttribute("aria-expanded", String(nextOpen));
+			trigger.setAttribute(
+				"aria-label",
+				nextOpen ? "关闭快捷功能" : "打开快捷功能",
+			);
+			panel.setAttribute("aria-hidden", String(!nextOpen));
+			panel.inert = !nextOpen;
+			if (!nextOpen) {
+				setAnnouncementOpen(false);
+				if (restoreFocusOnClose) trigger.focus({ preventScroll: true });
+			}
+		};
+
+		const handleTriggerClick = (event: MouseEvent) => {
+			event.stopPropagation();
+			const nextOpen = !open;
+			if (nextOpen) {
+				window.dispatchEvent(
+					new CustomEvent("jingyue:floating-panel-open", {
+						detail: { panel: "navbar-utility" },
+					}),
+				);
+			}
+			setOpen(nextOpen, false);
+		};
+
+		const handleAnnouncementClick = () => {
+			setAnnouncementOpen(!announcementOpen);
+		};
+
+		const toggleTheme = () => {
+			const nextTheme = document.documentElement.classList.contains("dark")
+				? LIGHT_MODE
+				: DARK_MODE;
+			setTheme(nextTheme);
+			window.dispatchEvent(new CustomEvent("theme-change"));
+		};
+
+		const handleThemeClick = () => toggleTheme();
+
+		const handleSearchClick = () => {
+			setOpen(false, false);
+			window.dispatchEvent(new Event("firefly:open-search"));
+		};
+
+		const handleDocumentClick = (event: MouseEvent) => {
+			if (!open || !(event.target instanceof Node) || root.contains(event.target)) return;
+			setOpen(false, false);
+		};
+
+		const handleDocumentKeydown = (event: KeyboardEvent) => {
+			if (!open || event.key !== "Escape") return;
+			event.preventDefault();
+			setOpen(false, true);
+		};
+
+		const handleExclusivePanelOpen = (event: Event) => {
+			const panelName = (event as CustomEvent<{ panel?: string }>).detail?.panel;
+			if (panelName && panelName !== "navbar-utility") setOpen(false, false);
+		};
+
+		const themeObserver = new MutationObserver(syncThemeButton);
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+
+		trigger.addEventListener("click", handleTriggerClick);
+		announcementButton.addEventListener("click", handleAnnouncementClick);
+		themeButton.addEventListener("click", handleThemeClick);
+		searchButtons.forEach((button) => button.addEventListener("click", handleSearchClick));
+		document.addEventListener("click", handleDocumentClick);
+		document.addEventListener("keydown", handleDocumentKeydown);
+		window.addEventListener("jingyue:floating-panel-open", handleExclusivePanelOpen);
+		window.addEventListener("firefly:toggle-theme", toggleTheme);
+		syncThemeButton();
+
+		utilityWindow.__fireflyNavbarUtilityCleanup = () => {
+			themeObserver.disconnect();
+			trigger.removeEventListener("click", handleTriggerClick);
+			announcementButton.removeEventListener("click", handleAnnouncementClick);
+			themeButton.removeEventListener("click", handleThemeClick);
+			searchButtons.forEach((button) => button.removeEventListener("click", handleSearchClick));
+			document.removeEventListener("click", handleDocumentClick);
+			document.removeEventListener("keydown", handleDocumentKeydown);
+			window.removeEventListener("jingyue:floating-panel-open", handleExclusivePanelOpen);
+			window.removeEventListener("firefly:toggle-theme", toggleTheme);
+		};
+	}
+
+	const utilityWindow = window as UtilityPanelWindow;
+	if (!utilityWindow.__fireflyNavbarUtilityLifecycleBound) {
+		utilityWindow.__fireflyNavbarUtilityLifecycleBound = true;
+		document.addEventListener("astro:page-load", initNavbarUtilityPanel);
+		document.addEventListener("swup:contentReplaced", initNavbarUtilityPanel);
+		document.addEventListener("swup:content:replaced", initNavbarUtilityPanel);
+	}
+	initNavbarUtilityPanel();
+</script>
+
+<style>
+	.navbar-utility {
+		position: relative;
+		display: grid;
+		width: 2.5rem;
+		height: 2.5rem;
+		place-items: center;
+	}
+
+	.navbar-utility__trigger {
+		display: grid;
+		width: 100%;
+		height: 100%;
+		padding: 0;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		color: #18181b;
+		cursor: pointer;
+		place-items: center;
+		transition:
+			background-color 220ms ease,
+			color 220ms ease,
+			transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.navbar-utility__trigger :global(svg) {
+		width: 1.5rem;
+		height: 1.5rem;
+		transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.navbar-utility__trigger:is(:hover, :focus-visible),
+	.navbar-utility[data-open="true"] .navbar-utility__trigger {
+		background: #000;
+		color: #fff;
+		outline: none;
+	}
+
+	.navbar-utility__trigger:focus-visible {
+		box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgb(24 24 27 / 58%);
+	}
+
+	.navbar-utility[data-open="true"] .navbar-utility__trigger :global(svg) {
+		transform: rotate(90deg);
+	}
+
+	.navbar-utility__panel {
+		position: absolute;
+		top: calc(100% + 0.8rem);
+		right: 0;
+		z-index: 90;
+		box-sizing: border-box;
+		width: min(18rem, calc(100vw - 1rem));
+		padding: 0.7rem;
+		border: 1px solid rgb(24 24 27 / 16%);
+		border-radius: 1rem;
+		background:
+			linear-gradient(145deg, rgb(255 255 255 / 98%), rgb(250 248 250 / 92%));
+		box-shadow:
+			0 1.15rem 3rem rgb(7 10 18 / 22%),
+			inset 0 1px rgb(255 255 255 / 92%);
+		color: #18181b;
+		opacity: 0;
+		pointer-events: none;
+		transform: translate3d(0, -0.55rem, 0) scale(0.94);
+		transform-origin: calc(100% - 1.35rem) top;
+		visibility: hidden;
+		backdrop-filter: blur(1.25rem) saturate(1.12);
+		-webkit-backdrop-filter: blur(1.25rem) saturate(1.12);
+		transition:
+			opacity 240ms ease,
+			transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 0s linear 360ms;
+	}
+
+	.navbar-utility[data-open="true"] .navbar-utility__panel {
+		opacity: 1;
+		pointer-events: auto;
+		transform: translate3d(0, 0, 0) scale(1);
+		visibility: visible;
+		transition-delay: 0s;
+	}
+
+	.navbar-utility__pointer {
+		position: absolute;
+		top: -0.42rem;
+		right: 1.02rem;
+		width: 0.8rem;
+		height: 0.8rem;
+		border-top: 1px solid rgb(24 24 27 / 16%);
+		border-left: 1px solid rgb(24 24 27 / 16%);
+		background: rgb(255 255 255 / 98%);
+		transform: rotate(45deg);
+	}
+
+	.navbar-utility__actions {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.38rem;
+	}
+
+	.navbar-utility__action {
+		display: grid;
+		min-width: 0;
+		min-height: 3.35rem;
+		padding: 0.45rem 0.25rem;
+		border: 0;
+		border-radius: 0.78rem;
+		background: transparent;
+		color: #18181b;
+		cursor: pointer;
+		place-items: center;
+		gap: 0.12rem;
+		font-size: 0.68rem;
+		font-weight: 720;
+		line-height: 1;
+		transition:
+			background-color 200ms ease,
+			color 200ms ease,
+			transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.navbar-utility__action :global(svg),
+	.navbar-utility__theme-icon :global(svg) {
+		width: 1.42rem;
+		height: 1.42rem;
+	}
+
+	.navbar-utility__action:is(:hover, :focus-visible),
+	.navbar-utility[data-announcement-open="true"] [data-navbar-utility-announcement] {
+		background: #e7e7e7;
+		color: #111;
+		outline: none;
+		transform: translateY(-0.08rem);
+	}
+
+	.navbar-utility__action:focus-visible,
+	.navbar-utility__search-field:focus-visible {
+		box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgb(24 24 27 / 46%);
+	}
+
+	.navbar-utility__theme-icon {
+		display: grid;
+		place-items: center;
+	}
+
+	.navbar-utility__theme-icon--light {
+		display: none;
+	}
+
+	:global(html.dark) .navbar-utility__theme-icon--dark {
+		display: none;
+	}
+
+	:global(html.dark) .navbar-utility__theme-icon--light {
+		display: grid;
+	}
+
+	.navbar-utility__announcement-shell {
+		display: grid;
+		grid-template-rows: 0fr;
+		opacity: 0;
+		transform: translateY(-0.25rem);
+		transition:
+			grid-template-rows 340ms cubic-bezier(0.22, 1, 0.36, 1),
+			opacity 220ms ease,
+			transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.navbar-utility[data-announcement-open="true"] .navbar-utility__announcement-shell {
+		grid-template-rows: 1fr;
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	.navbar-utility__announcement-clip {
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.navbar-utility__announcement {
+		margin-top: 0.55rem;
+		padding: 0.72rem 0.78rem;
+		border: 1px solid rgb(24 24 27 / 10%);
+		border-radius: 0.8rem;
+		background: rgb(244 240 243 / 74%);
+	}
+
+	.navbar-utility__announcement-heading {
+		display: flex;
+		align-items: center;
+		gap: 0.42rem;
+		margin-bottom: 0.4rem;
+		font-size: 0.76rem;
+	}
+
+	.navbar-utility__announcement-heading > span {
+		width: 0.42rem;
+		height: 0.42rem;
+		border-radius: 50%;
+		background: #dd658f;
+		box-shadow: 0 0 0 0.24rem rgb(221 101 143 / 12%);
+	}
+
+	.navbar-utility__announcement p {
+		margin: 0;
+		color: #4b4850;
+		font-size: 0.71rem;
+		line-height: 1.55;
+	}
+
+	.navbar-utility__announcement p + p {
+		margin-top: 0.18rem;
+	}
+
+	.navbar-utility__search-field {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		width: 100%;
+		min-height: 2.55rem;
+		margin-top: 0.55rem;
+		padding: 0.45rem 0.55rem 0.45rem 0.65rem;
+		border: 1px solid rgb(24 24 27 / 12%);
+		border-radius: 0.78rem;
+		background: rgb(239 239 240 / 82%);
+		color: #18181b;
+		cursor: pointer;
+		gap: 0.48rem;
+		text-align: left;
+		transition:
+			background-color 200ms ease,
+			border-color 200ms ease,
+			transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.navbar-utility__search-field:is(:hover, :focus-visible) {
+		border-color: rgb(24 24 27 / 24%);
+		background: #e7e7e7;
+		outline: none;
+		transform: translateY(-0.06rem);
+	}
+
+	.navbar-utility__search-field :global(svg) {
+		width: 1.12rem;
+		height: 1.12rem;
+	}
+
+	.navbar-utility__search-field > span {
+		overflow: hidden;
+		font-size: 0.75rem;
+		font-weight: 650;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.navbar-utility__search-field kbd {
+		padding: 0.22rem 0.4rem;
+		border: 1px solid rgb(24 24 27 / 12%);
+		border-radius: 0.4rem;
+		background: rgb(255 255 255 / 78%);
+		color: #62606a;
+		font-family: inherit;
+		font-size: 0.61rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	/* 首页深色覆盖曾将导航栏内所有图标强制改白；面板始终保持参考图的浅色纸面。 */
+	:global(html body #top-row #navbar .navbar-actions .navbar-utility__panel),
+	:global(html body #top-row #navbar .navbar-actions .navbar-utility__panel button),
+	:global(html body #top-row #navbar .navbar-actions .navbar-utility__panel svg) {
+		color: #18181b !important;
+	}
+
+	@media (max-width: 1023px) {
+		.navbar-utility__panel {
+			right: -2.9rem;
+			width: min(17.5rem, calc(100vw - 1rem));
+			transform-origin: calc(100% - 4.2rem) top;
+		}
+
+		.navbar-utility__pointer {
+			right: 3.92rem;
+		}
+	}
+
+	@media (max-width: 420px) {
+		.navbar-utility__panel {
+			right: -2.55rem;
+			width: min(16.5rem, calc(100vw - 0.75rem));
+		}
+
+		.navbar-utility__pointer {
+			right: 3.57rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.navbar-utility__trigger,
+		.navbar-utility__trigger :global(svg),
+		.navbar-utility__panel,
+		.navbar-utility__action,
+		.navbar-utility__announcement-shell,
+		.navbar-utility__search-field {
+			transition-duration: 1ms !important;
+		}
+	}
+</style>

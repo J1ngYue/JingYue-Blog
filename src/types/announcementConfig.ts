@@ -2,6 +2,7 @@ export type AnnouncementConfig = {
 	// enable属性已移除，现在通过sidebarLayoutConfig统一控制
 	title?: string; // 公告栏标题
 	content: string; // 公告栏内容
+	secondaryContent?: string; // 快捷公告面板的补充内容
 	icon?: string; // 公告栏图标
 	type?: "info" | "warning" | "success" | "error"; // 公告类型
 	closable?: boolean; // 是否可关闭

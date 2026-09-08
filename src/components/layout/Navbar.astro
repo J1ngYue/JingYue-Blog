@@ -2,7 +2,7 @@
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import DisplaySettings from "@/components/controls/DisplaySettingsIntegrated.svelte";
-import Search from "@/components/controls/Search.svelte";
+import NavbarUtilityPanel from "@/components/controls/NavbarUtilityPanel.astro";
 import CompactMusicPlayer from "@/components/features/CompactMusicPlayer.svelte";
 import ImmersiveMusicPlayer from "@/components/features/ImmersiveMusicPlayer.svelte";
 import { backgroundWallpaper, navBarConfig, siteConfig } from "@/config";
@@ -288,10 +288,7 @@ const navbarProfileAvatarParticles = [
                 })}
             </div>
             <div class="navbar-actions flex col-start-3 justify-self-end">
-                <!--<SearchPanel client:load>-->
-                <Search
-                    client:load
-                />
+				<NavbarUtilityPanel />
                 <button aria-label="导航菜单" name="导航菜单" class="btn-plain scale-animation rounded-lg w-9 h-9 md:w-11 md:h-11 active:scale-90 lg:hidden!" id="nav-menu-switch">
                     <Icon is:inline name="material-symbols:menu-rounded" class="text-[1.25rem]"></Icon>
                 </button>

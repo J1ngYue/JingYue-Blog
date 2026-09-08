@@ -5,6 +5,8 @@ import Icon from "@/components/common/Icon.svelte";
 import type { SearchResult } from "@/global";
 import { url as formatUrl, getSearchUrl } from "@/utils/url-utils";
 
+export let hideTrigger = false;
+
 let keyword = "";
 let result: SearchResult[] = [];
 let isOpen = false;
@@ -228,21 +230,23 @@ onMount(() => {
 $: if (initialized) queueSearch(keyword);
 </script>
 
-<div id="search-bar" class="search-trigger-shell">
-	<button
-		id="search-switch"
-		type="button"
-		class="search-trigger"
-		aria-label="打开站内搜索"
-		aria-haspopup="dialog"
-		aria-controls="global-search-dialog"
-		aria-expanded={isOpen}
-		on:click={toggleSearch}
-	>
-		<span class="search-shortcut" aria-hidden="true">Ctrl K</span>
-		<Icon icon="material-symbols:search-rounded" class="search-trigger-icon" />
-	</button>
-</div>
+{#if !hideTrigger}
+	<div id="search-bar" class="search-trigger-shell">
+		<button
+			id="search-switch"
+			type="button"
+			class="search-trigger"
+			aria-label="打开站内搜索"
+			aria-haspopup="dialog"
+			aria-controls="global-search-dialog"
+			aria-expanded={isOpen}
+			on:click={toggleSearch}
+		>
+			<span class="search-shortcut" aria-hidden="true">Ctrl K</span>
+			<Icon icon="material-symbols:search-rounded" class="search-trigger-icon" />
+		</button>
+	</div>
+{/if}
 
 {#if isOpen}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->

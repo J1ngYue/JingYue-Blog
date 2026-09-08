@@ -6,6 +6,7 @@ export const announcementConfig: AnnouncementConfig = {
 
 	// 公告内容
 	content: "欢迎来到 JingYue，愿你在这里度过一段轻松的时光。",
+	secondaryContent: "最近更新：新增文章与动态模块",
 
 	// 是否允许用户关闭公告
 	closable: true,

@@ -1204,9 +1204,12 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const handleHomeQuickTool = (event) => {
 			event.stopPropagation();
 			const action = event.currentTarget?.dataset.homeQuickTool;
+			if (action === "search") {
+				window.dispatchEvent(new Event("firefly:open-search"));
+				return;
+			}
 			const targetId = {
 				navigation: "quick-tools-navigation",
-				search: "search-switch",
 				settings: "display-settings-switch",
 			}[action];
 			if (targetId) document.getElementById(targetId)?.click();
@@ -1220,7 +1223,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		};
 		const handleMobileTheme = (event) => {
 			event.stopPropagation();
-			document.getElementById("quick-tools-theme")?.click();
+			window.dispatchEvent(new Event("firefly:toggle-theme"));
 		};
 
 		homeQuickTools.forEach((tool) => {
