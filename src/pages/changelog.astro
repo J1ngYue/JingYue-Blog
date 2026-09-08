@@ -36,106 +36,23 @@ const typeLabels = {
 
 type ChangelogLink = { t: number; p: string[] };
 
-// Keep generic words out of the relation graph so arrows describe a real feature area.
-const relationStopWords = new Set([
-	"功能",
-	"新增",
-	"优化",
-	"问题",
-	"修复",
-	"页面",
-	"博客",
-	"站点",
-	"全站",
-	"内容",
-	"系统",
-	"支持",
-	"加入",
-	"更新",
-	"调整",
-	"统一",
-	"改为",
-	"移除",
-	"增加",
-	"默认",
-	"当前",
-	"避免",
-	"保持",
-	"同步",
-	"显示",
-	"设置",
-	"按钮",
-	"布局",
-	"模式",
-	"背景",
-	"加载",
-	"效果",
-	"动画",
-	"文章",
-	"数据",
-	"组件",
-]);
-
-function relationTerms(entry: (typeof changelogEntries)[number]): Set<string> {
-	const source = [entry.title, entry.summary, ...entry.changes].join(" ");
-	const terms = new Set<string>();
-	for (const match of source.matchAll(
-		/[\u4e00-\u9fff]{2,}|[A-Za-z][A-Za-z0-9-]{2,}/g,
-	)) {
-		const term = match[0].toLocaleLowerCase();
-		if (!relationStopWords.has(term)) terms.add(term);
-	}
-	return terms;
-}
-
-const entryTerms = changelogEntries.map(relationTerms);
+const entryIndexByVersion = new Map(
+	changelogEntries.map((entry, index) => [entry.version, index]),
+);
 const relationLinks: ChangelogLink[][] = changelogEntries.map(() => []);
 
-for (let index = 0; index < changelogEntries.length; index += 1) {
-	const entry = changelogEntries[index];
-	const candidates = changelogEntries
-		.map((candidate, target) => {
-			if (target === index) return null;
-			const shared = [...entryTerms[index]].filter((term) =>
-				entryTerms[target].has(term),
-			);
-			const sameType = candidate.type === entry.type;
-			const featurePair =
-				entry.type === "feature" && candidate.type === "feature";
-			const distance = Math.abs(target - index);
-			const score =
-				shared.length * 8 +
-				(featurePair ? 5 : 0) +
-				(sameType ? 2 : 0) -
-				distance * 0.04;
-			return { target, shared, score };
-		})
-		.filter(
-			(
-				candidate,
-			): candidate is { target: number; shared: string[]; score: number } =>
-				candidate !== null,
-		)
-		.filter(
-			(candidate) =>
-				candidate.shared.length > 0 ||
-				(entry.type === "feature" &&
-					changelogEntries[candidate.target].type === "feature"),
-		)
-		.sort((a, b) => b.score - a.score || a.target - b.target)
-		.slice(0, entry.type === "feature" ? 4 : 2);
-
-	for (const candidate of candidates) {
-		const target = changelogEntries[candidate.target];
-		const label =
-			entry.type === "feature" || target.type === "feature"
-				? "功能新增"
-				: typeLabels[target.type];
-		if (!relationLinks[index].some((link) => link.t === candidate.target)) {
-			relationLinks[index].push({ t: candidate.target, p: [label] });
-		}
-		if (!relationLinks[candidate.target].some((link) => link.t === index)) {
-			relationLinks[candidate.target].push({ t: index, p: [label] });
+for (const [sourceIndex, entry] of changelogEntries.entries()) {
+	for (const relatedVersion of entry.related ?? []) {
+		const targetIndex = entryIndexByVersion.get(relatedVersion);
+		if (targetIndex === undefined || targetIndex === sourceIndex) continue;
+		const label = typeLabels[entry.type];
+		for (const [from, to] of [
+			[sourceIndex, targetIndex],
+			[targetIndex, sourceIndex],
+		] as const) {
+			if (!relationLinks[from].some((link) => link.t === to)) {
+				relationLinks[from].push({ t: to, p: [label] });
+			}
 		}
 	}
 }
@@ -154,6 +71,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		description="记录博客项目的功能迭代、问题修复与重要变更。"
 		icon="material-symbols:history"
 	>
+		<div class="changelog-page" data-changelog-page>
 		<nav class="changelog-filter" aria-label="更新类型">
 			{filters.map((filter, index) => (
 				<button
@@ -193,12 +111,13 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 					data-log-time={entry.time}
 					data-log-version={entry.version}
 					data-log-type-label={typeLabels[entry.type]}
+					data-log-changes={JSON.stringify(entry.changes)}
 				>
 					<button
 						type="button"
 						class="changelog-card__inner"
 						data-log-toggle
-						aria-expanded="false"
+						aria-haspopup="dialog"
 					>
 						<span class="changelog-card__num" aria-hidden="true">{String(changelogEntries.length - index).padStart(2, "0")}</span>
 						<span class="changelog-card__meta">
@@ -230,6 +149,10 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 				<p class="changelog-dialog__summary" data-dialog-summary></p>
 				<p class="changelog-dialog__version" data-dialog-version></p>
 				<section class="changelog-dialog__section">
+					<h3>完整变更</h3>
+					<ul class="changelog-dialog__changes" data-dialog-changes></ul>
+				</section>
+				<section class="changelog-dialog__section">
 					<h3>涉及页面</h3>
 					<span class="changelog-dialog__type-pill" data-dialog-type-pill></span>
 				</section>
@@ -239,316 +162,16 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 				</section>
 			</div>
 		</dialog>
+		</div>
 	</RecordPageShell>
 </MainGridLayout>
 
-<script>
-	type ChangelogGraphWindow = Window & {
-		__jingyueChangelogGraphCleanup?: () => void;
-		__jingyueChangelogGraphBound?: boolean;
-	};
-	type ClientChangelogLink = { t: number; p: string[] };
-
-	const changelogGraphWindow = window as ChangelogGraphWindow;
-
-	function initChangelogGraph() {
-		changelogGraphWindow.__jingyueChangelogGraphCleanup?.();
-		const root = document.querySelector<HTMLElement>("[data-changelog]");
-		const grid = root?.querySelector<HTMLOListElement>("[data-changelog-grid]");
-		const wires = root?.querySelector<SVGSVGElement>("[data-changelog-wires]");
-		if (!root || !grid || !wires) return;
-
-		const controller = new AbortController();
-		const { signal } = controller;
-		const hoverAnimations = new Set<() => void>();
-		let activeCard: HTMLElement | null = null;
-		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-		const visibleCards = () =>
-			Array.from(grid.querySelectorAll<HTMLElement>("[data-changelog-card]:not([hidden])"));
-		const boardRect = () => root.getBoundingClientRect();
-		const cardCenter = (card: HTMLElement) => {
-			const rect = card.getBoundingClientRect();
-			const board = boardRect();
-			return { x: rect.left - board.left + rect.width / 2, y: rect.top - board.top + rect.height / 2 };
-		};
-		const cardEdgePoint = (card: HTMLElement, target: HTMLElement) => {
-			const rect = card.getBoundingClientRect();
-			const board = boardRect();
-			const center = {
-				x: rect.left - board.left + rect.width / 2,
-				y: rect.top - board.top + rect.height / 2,
-			};
-			const targetRect = target.getBoundingClientRect();
-			const targetCenter = {
-				x: targetRect.left - board.left + targetRect.width / 2,
-				y: targetRect.top - board.top + targetRect.height / 2,
-			};
-			const dx = targetCenter.x - center.x;
-			const dy = targetCenter.y - center.y;
-			if (Math.abs(dx) * rect.height >= Math.abs(dy) * rect.width) {
-				const x = center.x + (dx < 0 ? -rect.width / 2 : rect.width / 2);
-				return { x, y: center.y + (dx === 0 ? 0 : (dy * (x - center.x)) / dx) };
-			}
-			const y = center.y + (dy < 0 ? -rect.height / 2 : rect.height / 2);
-			return { x: center.x + (dy === 0 ? 0 : (dx * (y - center.y)) / dy), y };
-		};
-		const makePath = (d: string, className: string, marker = true) => {
-			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-			path.setAttribute("d", d);
-			path.setAttribute("class", className);
-			if (marker) path.setAttribute("marker-end", "url(#changelog-arrow)");
-			return path;
-		};
-		const clearHoverWires = () => {
-			for (const cancel of hoverAnimations) cancel();
-			hoverAnimations.clear();
-			root.querySelectorAll("[data-hover-wire]").forEach((node) => node.remove());
-			root.querySelectorAll(".is-active, .is-linked").forEach((node) => node.classList.remove("is-active", "is-linked"));
-			root.classList.remove("is-hovering");
-		};
-		const drawRowArrows = (cards: HTMLElement[], columns: number) => {
-			wires.setAttribute("viewBox", `0 0 ${Math.max(root.scrollWidth, root.clientWidth)} ${Math.max(root.scrollHeight, root.clientHeight)}`);
-			wires.querySelectorAll("[data-row-arrow]").forEach((node) => node.remove());
-			const board = boardRect();
-			const rows = Math.ceil(cards.length / columns);
-			for (let row = 0; row < rows - 1; row += 1) {
-				const fromCard = cards[row * columns + columns - 1];
-				const toCard = cards[(row + 1) * columns];
-				if (!fromCard || !toCard) continue;
-				const from = fromCard.getBoundingClientRect();
-				const to = toCard.getBoundingClientRect();
-				const fy = from.top - board.top + from.height / 2;
-				const ty = to.top - board.top + to.height / 2;
-				const x1 = row % 2 === 0 ? from.right - board.left : from.left - board.left;
-				const x2 = row % 2 === 0 ? to.right - board.left : to.left - board.left;
-				const outward = row % 2 === 0 ? Math.max(x1, x2) + 16 : Math.min(x1, x2) - 16;
-				const path = makePath(`M ${x2} ${ty} H ${outward} V ${fy} H ${x1}`, "changelog-wire changelog-wire--row");
-				path.setAttribute("data-row-arrow", "true");
-				wires.appendChild(path);
-			}
-		};
-		const layout = () => {
-			const cards = visibleCards();
-			if (!cards.length) return;
-			const columns = Math.max(1, getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length);
-			cards.forEach((card, index) => {
-				const row = Math.floor(index / columns);
-				const column = index % columns;
-				const visualColumn = row % 2 === 0 ? column : columns - 1 - column;
-				card.style.order = String(row * columns + visualColumn);
-			});
-			clearHoverWires();
-			requestAnimationFrame(() => drawRowArrows(cards, columns));
-		};
-		const drawHoverWire = (d: string, midpoint: { x: number; y: number }, labelText: string) => {
-			const path = makePath(d, "changelog-wire changelog-wire--hover", false);
-			path.setAttribute("data-hover-wire", "true");
-			wires.appendChild(path);
-			const label = document.createElement("span");
-			label.className = "changelog-wire-label";
-			label.textContent = labelText;
-			label.setAttribute("data-hover-wire", "true");
-			label.style.left = `${midpoint.x}px`;
-			label.style.top = `${midpoint.y}px`;
-			root.appendChild(label);
-			if (reducedMotion) {
-				path.classList.add("is-drawn");
-				path.setAttribute("marker-end", "url(#changelog-arrow)");
-				label.classList.add("is-in");
-				return;
-			}
-			const length = path.getTotalLength();
-			const start = performance.now();
-			let frame = 0;
-			const cancel = () => cancelAnimationFrame(frame);
-			hoverAnimations.add(cancel);
-			const tick = (now: number) => {
-				const progress = Math.min(1, (now - start) / Math.min(760, Math.max(350, length / 0.7)));
-				path.style.strokeDasharray = `${length * progress} ${length + 20}`;
-				if (progress < 1) {
-					frame = requestAnimationFrame(tick);
-					return;
-				}
-				hoverAnimations.delete(cancel);
-				path.style.strokeDasharray = "6 5";
-				path.classList.add("is-drawn");
-				path.setAttribute("marker-end", "url(#changelog-arrow)");
-				label.classList.add("is-in");
-			};
-			frame = requestAnimationFrame(tick);
-		};
-		const onCardEnter = (card: HTMLElement) => {
-			clearHoverWires();
-			root.classList.add("is-hovering");
-			card.classList.add("is-active");
-			const from = cardCenter(card);
-			const cardIndex = Number(card.dataset.index);
-			let links: ClientChangelogLink[] = [];
-			try {
-				links = JSON.parse(card.dataset.links ?? "[]") as ClientChangelogLink[];
-			} catch {
-				return;
-			}
-			for (const link of links) {
-				const target = grid.querySelector<HTMLElement>(`[data-changelog-card][data-index="${link.t}"]:not([hidden])`);
-				if (!target) continue;
-				target.classList.add("is-linked");
-				const to = cardCenter(target);
-				const dx = to.x - from.x;
-				const dy = to.y - from.y;
-				const length = Math.max(1, Math.hypot(dx, dy));
-				const curve = Math.min(56, length * 0.12);
-				const cx = (from.x + to.x) / 2 - (dy / length) * curve;
-				const cy = (from.y + to.y) / 2 + (dx / length) * curve;
-				const midpoint = { x: from.x * 0.25 + cx * 0.5 + to.x * 0.25, y: from.y * 0.25 + cy * 0.5 + to.y * 0.25 };
-				const source = link.t < cardIndex ? card : target;
-				const destination = link.t < cardIndex ? target : card;
-				const start = cardEdgePoint(source, destination);
-				const end = cardEdgePoint(destination, source);
-				drawHoverWire(`M ${start.x} ${start.y} Q ${cx} ${cy} ${end.x} ${end.y}`, midpoint, link.p.join("、"));
-			}
-		};
-
-		grid.addEventListener("pointerover", (event) => {
-			const target = event.target;
-			if (!(target instanceof Element)) return;
-			const card = target.closest<HTMLElement>("[data-changelog-card]");
-			if (!card || card === activeCard) return;
-			activeCard = card;
-			onCardEnter(card);
-		}, { signal });
-		grid.addEventListener("pointerleave", () => {
-			activeCard = null;
-			clearHoverWires();
-		}, { signal });
-		window.addEventListener("resize", layout, { signal });
-		const mutationObserver = new MutationObserver(layout);
-		mutationObserver.observe(grid, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
-		const resizeObserver = new ResizeObserver(layout);
-		resizeObserver.observe(grid);
-		changelogGraphWindow.__jingyueChangelogGraphCleanup = () => {
-			controller.abort();
-			mutationObserver.disconnect();
-			resizeObserver.disconnect();
-			clearHoverWires();
-		};
-		layout();
-	}
-
-	if (!changelogGraphWindow.__jingyueChangelogGraphBound) {
-		changelogGraphWindow.__jingyueChangelogGraphBound = true;
-		document.addEventListener("astro:page-load", initChangelogGraph);
-		document.addEventListener("swup:contentReplaced", initChangelogGraph);
-		document.addEventListener("swup:content:replaced", initChangelogGraph);
-	}
-	initChangelogGraph();
-</script>
-
-<script>
-	type ClientChangelogLink = { t: number; p: string[] };
-	type ChangelogDialogWindow = Window & {
-		__jingyueChangelogDialogCleanup?: () => void;
-		__jingyueChangelogDialogBound?: boolean;
-	};
-
-	const changelogDialogWindow = window as ChangelogDialogWindow;
-
-	function initChangelogDialog() {
-		changelogDialogWindow.__jingyueChangelogDialogCleanup?.();
-		const dialog = document.querySelector<HTMLDialogElement>("[data-changelog-dialog]");
-		const board = document.querySelector<HTMLElement>("[data-changelog]");
-		if (!dialog || !board) return;
-
-		const controller = new AbortController();
-		const { signal } = controller;
-		const numberEl = dialog.querySelector<HTMLElement>("[data-dialog-number]");
-		const typeEl = dialog.querySelector<HTMLElement>("[data-dialog-type]");
-		const dateEl = dialog.querySelector<HTMLElement>("[data-dialog-date]");
-		const titleEl = dialog.querySelector<HTMLElement>("[data-dialog-title]");
-		const summaryEl = dialog.querySelector<HTMLElement>("[data-dialog-summary]");
-		const versionEl = dialog.querySelector<HTMLElement>("[data-dialog-version]");
-		const typePillEl = dialog.querySelector<HTMLElement>("[data-dialog-type-pill]");
-		const relatedEl = dialog.querySelector<HTMLElement>("[data-dialog-related]");
-
-		const getCard = (index: number) => board.querySelector<HTMLElement>(`[data-changelog-card][data-index="${index}"]`);
-		const readLinks = (card: HTMLElement) => {
-			try {
-				return JSON.parse(card.dataset.links ?? "[]") as ClientChangelogLink[];
-			} catch {
-				return [];
-			}
-		};
-		const openEntry = (index: number) => {
-			const card = getCard(index);
-			if (!card) return;
-			const total = board.querySelectorAll("[data-changelog-card]").length;
-			if (numberEl) numberEl.textContent = `#${String(total - index).padStart(2, "0")}`;
-			if (typeEl) typeEl.textContent = card.dataset.logTypeLabel ?? "";
-			if (dateEl) {
-				dateEl.textContent = card.dataset.logDate ?? "";
-				dateEl.setAttribute("datetime", `${card.dataset.logDate ?? ""}T${card.dataset.logTime ?? "00:00"}`);
-			}
-			if (titleEl) titleEl.textContent = card.dataset.logTitle ?? "";
-			if (summaryEl) summaryEl.textContent = card.dataset.logSummary ?? "";
-			if (versionEl) versionEl.textContent = card.dataset.logVersion ?? "";
-			if (typePillEl) typePillEl.textContent = card.dataset.logTypeLabel ?? "";
-			if (relatedEl) {
-				relatedEl.replaceChildren();
-				for (const link of readLinks(card)) {
-					const relatedCard = getCard(link.t);
-					if (!relatedCard) continue;
-					const button = document.createElement("button");
-					button.type = "button";
-					button.className = "changelog-dialog__related-item";
-					button.dataset.dialogRelatedIndex = String(link.t);
-					const title = document.createElement("strong");
-					title.textContent = `#${String(total - link.t).padStart(2, "0")} ${relatedCard.dataset.logTitle ?? ""}`;
-					const relation = document.createElement("span");
-					relation.textContent = link.p.join("、");
-					button.append(title, relation);
-					relatedEl.appendChild(button);
-				}
-				if (!relatedEl.childElementCount) {
-					const empty = document.createElement("span");
-					empty.className = "changelog-dialog__empty";
-					empty.textContent = "暂无关联更新";
-					relatedEl.appendChild(empty);
-				}
-			}
-			if (!dialog.open) dialog.showModal();
-		};
-
-		const close = () => {
-			if (dialog.open) dialog.close();
-		};
-		window.addEventListener("firefly:changelog-open", (event) => {
-			const index = (event as CustomEvent<{ index?: number }>).detail?.index;
-			if (typeof index === "number") openEntry(index);
-		}, { signal });
-		dialog.addEventListener("click", (event) => {
-			if (event.target === dialog) close();
-		}, { signal });
-		dialog.querySelector("[data-changelog-dialog-close]")?.addEventListener("click", close, { signal });
-		relatedEl?.addEventListener("click", (event) => {
-			const target = event.target;
-			if (!(target instanceof Element)) return;
-			const button = target.closest<HTMLElement>("[data-dialog-related-index]");
-			if (button) openEntry(Number(button.dataset.dialogRelatedIndex));
-		}, { signal });
-		changelogDialogWindow.__jingyueChangelogDialogCleanup = () => controller.abort();
-	}
-
-	if (!changelogDialogWindow.__jingyueChangelogDialogBound) {
-		changelogDialogWindow.__jingyueChangelogDialogBound = true;
-		document.addEventListener("astro:page-load", initChangelogDialog);
-		document.addEventListener("swup:contentReplaced", initChangelogDialog);
-		document.addEventListener("swup:content:replaced", initChangelogDialog);
-	}
-	initChangelogDialog();
-</script>
 
 <style>
+	.changelog-page {
+		min-width: 0;
+	}
+
 	.changelog-filter {
 		display: flex;
 		min-height: 3.6rem;
@@ -592,7 +215,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 	}
 
 	.changelog-filter button:focus-visible {
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+		box-shadow: 0 0 0 3px color-mix(in srgb, #00a29b 22%, transparent);
 	}
 
 	.changelog-filter button.is-active {
@@ -613,323 +236,6 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		border-radius: 999px;
 		background: color-mix(in srgb, currentColor 14%, transparent);
 		font-size: 0.64rem;
-	}
-
-	.changelog-timeline {
-		position: relative;
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		column-gap: clamp(2.1rem, 4vw, 4.6rem);
-		row-gap: clamp(3.4rem, 5vw, 5.2rem);
-		padding: 0.7rem 0 2.5rem;
-	}
-
-	.changelog-entry {
-		position: relative;
-		min-width: 0;
-		padding-top: 2.15rem;
-	}
-
-	.changelog-entry[hidden] {
-		display: none;
-	}
-
-	.changelog-entry__dot {
-		position: absolute;
-		top: 0.55rem;
-		left: 1.25rem;
-		z-index: 2;
-		width: 0.7rem;
-		height: 0.7rem;
-		border: 0.16rem solid var(--card-bg);
-		border-radius: 50%;
-		background: var(--primary, #0ea5a4);
-		box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary, #0ea5a4) 55%, transparent);
-	}
-
-	.changelog-entry header {
-		position: absolute;
-		top: 0;
-		left: 0;
-		display: flex;
-		width: 100%;
-		align-items: center;
-		gap: 0.45rem;
-		margin: 0;
-		padding-left: 2.2rem;
-		color: var(--content-meta);
-		font-size: 0.68rem;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.changelog-entry header > small {
-		color: var(--record-muted, var(--content-meta));
-		font-size: 0.68rem;
-		font-weight: 700;
-	}
-
-	.changelog-entry header > span {
-		margin-left: auto;
-		border-radius: 999px;
-		background: color-mix(in srgb, var(--primary, #0ea5a4) 12%, transparent);
-		padding: 0.2rem 0.55rem;
-		color: var(--record-ink, #111);
-		font-size: 0.64rem;
-		font-weight: 750;
-	}
-
-	.changelog-entry__box {
-		position: relative;
-		overflow: hidden;
-		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 12%, transparent);
-		border-radius: 1rem;
-		background: color-mix(in srgb, var(--card-bg, #fff) 86%, transparent);
-		box-shadow: 0 1rem 2.5rem rgb(15 23 42 / 5%);
-		backdrop-filter: blur(10px);
-		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-	}
-
-	.changelog-entry__box:hover {
-		border-color: color-mix(in srgb, var(--primary, #0ea5a4) 40%, transparent);
-		box-shadow: 0 1.25rem 2.8rem rgb(15 23 42 / 9%);
-		transform: translateY(-2px);
-	}
-
-	.changelog-entry__index {
-		position: absolute;
-		right: 0.55rem;
-		bottom: -0.85rem;
-		color: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
-		font-size: clamp(3.5rem, 6vw, 5.2rem);
-		font-weight: 850;
-		letter-spacing: -0.06em;
-		line-height: 1;
-		pointer-events: none;
-		user-select: none;
-	}
-
-	.changelog-entry__summary {
-		display: flex;
-		width: 100%;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.85rem;
-		border: 0;
-		background: transparent;
-		padding: 1.15rem 1.15rem 1.25rem;
-		color: var(--record-ink, var(--deep-text));
-		font: inherit;
-		font-size: 0.84rem;
-		line-height: 1.6;
-		text-align: left;
-		cursor: pointer;
-		transition:
-			background-color 180ms ease,
-			color 180ms ease;
-	}
-
-	.changelog-entry__summary:hover,
-	.changelog-entry__summary:focus-visible {
-		background: color-mix(in srgb, var(--primary) 7%, transparent);
-		outline: none;
-	}
-
-	.changelog-entry__summary:focus-visible {
-		box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
-	}
-
-	.changelog-entry__summary > span {
-		min-width: 0;
-		display: grid;
-		gap: 0.45rem;
-	}
-
-	.changelog-entry__summary strong {
-		font-size: 1rem;
-		font-weight: 780;
-		line-height: 1.4;
-	}
-
-	.changelog-entry__summary em {
-		color: var(--record-muted, var(--content-meta));
-		font-size: 0.76rem;
-		font-style: normal;
-		line-height: 1.65;
-	}
-
-	.changelog-entry__summary :global(svg) {
-		width: 1.15rem;
-		height: 1.15rem;
-		flex: none;
-		color: var(--content-meta);
-		transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	.changelog-entry[data-expanded="true"] .changelog-entry__summary {
-		border-bottom: 1px solid color-mix(in srgb, var(--record-ink, #111) 18%, transparent);
-	}
-
-	.changelog-entry[data-expanded="true"] .changelog-entry__summary :global(svg) {
-		transform: rotate(180deg);
-	}
-
-	.changelog-entry__content {
-		display: grid;
-		grid-template-rows: 0fr;
-		overflow: hidden;
-		opacity: 0;
-		transition:
-			grid-template-rows 360ms cubic-bezier(0.22, 1, 0.36, 1),
-			opacity 220ms ease;
-	}
-
-	.changelog-entry[data-expanded="true"] .changelog-entry__content {
-		grid-template-rows: 1fr;
-		opacity: 1;
-	}
-
-	.changelog-entry__content-inner {
-		min-height: 0;
-		overflow: hidden;
-		padding: 0 1.15rem;
-		transition: padding 360ms cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	.changelog-entry[data-expanded="true"] .changelog-entry__content-inner {
-		padding: 0 1.15rem 1.2rem;
-	}
-
-	.changelog-entry__content-inner strong {
-		display: block;
-		font-size: 0.9rem;
-		font-weight: 720;
-	}
-
-	.changelog-entry__content-inner ul {
-		display: grid;
-		gap: 0.55rem;
-		margin: 0;
-		padding: 0;
-		color: var(--record-ink, var(--deep-text));
-		font-size: 0.78rem;
-		line-height: 1.6;
-		list-style-position: inside;
-	}
-
-	.changelog-entry__content-inner li::marker {
-		color: var(--content-meta);
-	}
-
-	/* Short connector segments keep the graph readable without forming a dense web. */
-	@media (min-width: 861px) {
-		.changelog-entry:nth-child(3n + 1):not(:first-child)::before {
-			position: absolute;
-			top: -3.7rem;
-			left: -2.3rem;
-			width: 2.3rem;
-			height: 3.7rem;
-			border-top: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 32%, transparent);
-			border-left: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 32%, transparent);
-			content: "";
-		}
-
-		.changelog-entry:nth-child(3n + 1):not(:first-child)::after,
-		.changelog-entry:nth-child(3n + 2)::after {
-			position: absolute;
-			top: 0.9rem;
-			right: calc(-1 * clamp(2.1rem, 4vw, 4.6rem) / 2);
-			width: calc(clamp(2.1rem, 4vw, 4.6rem) / 2);
-			border-top: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 32%, transparent);
-			content: "";
-		}
-
-		.changelog-entry:nth-child(3n + 1):not(:first-child)::before {
-			border-top-left-radius: 0.5rem;
-		}
-
-		.changelog-entry:nth-child(3n + 1):not(:first-child) .changelog-entry__dot,
-		.changelog-entry:nth-child(3n + 2) .changelog-entry__dot,
-		.changelog-entry:nth-child(3n + 3) .changelog-entry__dot {
-			box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary, #0ea5a4) 55%, transparent), 0 0 0 5px color-mix(in srgb, var(--primary, #0ea5a4) 8%, transparent);
-		}
-	}
-
-	@media (max-width: 860px) {
-		.changelog-timeline {
-			grid-template-columns: minmax(0, 1fr);
-			row-gap: 2rem;
-			padding-left: 1.35rem;
-		}
-
-		.changelog-timeline::before {
-			position: absolute;
-			top: 0;
-			bottom: 0;
-			left: 0.35rem;
-			border-left: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 28%, transparent);
-			content: "";
-		}
-
-		.changelog-entry {
-			padding-top: 2.05rem;
-		}
-
-		.changelog-entry__dot {
-			left: -1.32rem;
-		}
-
-		.changelog-entry:not(:first-child)::before {
-			position: absolute;
-			top: -2rem;
-			left: -1.32rem;
-			height: 2rem;
-			border-left: 1px solid color-mix(in srgb, var(--primary, #0ea5a4) 28%, transparent);
-			content: "";
-		}
-	}
-
-	@media (max-width: 620px) {
-		.changelog-filter {
-			margin-bottom: 1.7rem;
-		}
-
-		.changelog-timeline {
-			padding-left: 1.15rem;
-			padding-bottom: 1.5rem;
-		}
-
-		.changelog-entry__dot {
-			left: -1.12rem;
-		}
-
-		.changelog-entry__box {
-			margin-inline: 0;
-		}
-
-		.changelog-entry__summary {
-			padding: 1rem;
-		}
-
-		.changelog-entry__content-inner {
-			padding-inline: 1rem;
-		}
-
-		.changelog-entry[data-expanded="true"] .changelog-entry__content-inner {
-			padding: 0 1rem 1rem;
-		}
-
-		.changelog-entry__index {
-			font-size: 3.8rem;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.changelog-entry__summary,
-		.changelog-entry__summary :global(svg),
-		.changelog-entry__content,
-		.changelog-entry__content-inner {
-			transition: none;
-		}
 	}
 
 	/* 关系图层：卡片保持方形网格，SVG 只负责连接关系，不参与布局。 */
@@ -965,7 +271,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		position: relative;
 		min-width: 0;
 		aspect-ratio: 1;
-		transition: opacity 250ms ease;
+		transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.changelog-card[hidden] {
@@ -983,15 +289,15 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		gap: 0.42rem;
 		overflow: hidden;
 		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 12%, transparent);
-		border-radius: 0.8rem;
-		background: color-mix(in srgb, var(--card-bg, #fff) 88%, transparent);
+		border-radius: 0.7rem;
+		background: color-mix(in srgb, var(--card-bg, #fff) 94%, transparent);
 		padding: 0.85rem 0.9rem;
 		color: var(--record-ink, var(--deep-text));
 		font: inherit;
 		text-align: left;
 		cursor: pointer;
-		backdrop-filter: blur(10px);
-		box-shadow: 0 0.7rem 1.8rem rgb(15 23 42 / 5%);
+		backdrop-filter: blur(8px);
+		box-shadow: 0 0.4rem 1rem rgb(15 23 42 / 4%);
 		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease;
 	}
 
@@ -1001,7 +307,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 	.changelog-card.is-linked .changelog-card__inner {
 		border-color: color-mix(in srgb, #00a29b 76%, transparent);
 		background: color-mix(in srgb, var(--card-bg, #fff) 96%, #00a29b 4%);
-		box-shadow: 0 1rem 2rem rgb(15 23 42 / 10%);
+		box-shadow: 0 0.7rem 1.4rem rgb(15 23 42 / 8%);
 		outline: none;
 	}
 
@@ -1019,7 +325,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		right: 0.5rem;
 		bottom: -0.72rem;
 		color: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
-		font-size: clamp(3.2rem, 5vw, 4.8rem);
+		font-size: clamp(3rem, 4vw, 4rem);
 		font-weight: 850;
 		letter-spacing: -0.08em;
 		line-height: 1;
@@ -1060,8 +366,8 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 
 	.changelog-card__title {
 		-webkit-line-clamp: 4;
-		font-size: 0.94rem;
-		font-weight: 780;
+		font-size: 0.9rem;
+		font-weight: 650;
 		line-height: 1.45;
 	}
 
@@ -1069,9 +375,9 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		margin-top: auto;
 		-webkit-line-clamp: 3;
 		color: var(--record-muted, var(--content-meta));
-		font-size: 0.73rem;
+		font-size: 0.77rem;
 		font-style: normal;
-		line-height: 1.55;
+		line-height: 1.6;
 	}
 
 	.changelog-card__version {
@@ -1092,22 +398,26 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		max-width: none;
 		max-height: min(82vh, 48rem);
 		margin: auto;
-		border: 1px solid color-mix(in srgb, var(--record-ink, #111) 12%, transparent);
+		border: 1px solid rgb(17 24 39 / 12%);
 		border-radius: 1rem;
-		background: color-mix(in srgb, var(--card-bg, #fff) 96%, transparent);
+		background: #fff;
 		padding: 0;
-		color: var(--record-ink, var(--deep-text));
-		box-shadow: 0 1.5rem 4rem rgb(15 23 42 / 22%);
-		backdrop-filter: blur(18px);
+		color: #18181b;
+		box-shadow: 0 1.25rem 3.5rem rgb(15 23 42 / 18%);
 	}
 
 	.changelog-dialog::backdrop {
 		background: rgb(12 16 22 / 48%);
-		backdrop-filter: blur(8px) saturate(0.82);
+		backdrop-filter: blur(6px) saturate(0.86);
+		animation: changelog-backdrop-in 190ms ease-out both;
 	}
 
 	.changelog-dialog[open] {
-		animation: changelog-dialog-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation: changelog-dialog-in 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.changelog-dialog.is-closing::backdrop {
+		animation: changelog-backdrop-out 170ms cubic-bezier(0.4, 0, 1, 1) both;
 	}
 
 	.changelog-dialog__body {
@@ -1129,14 +439,14 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		border: 0;
 		border-radius: 50%;
 		background: color-mix(in srgb, var(--record-ink, #111) 8%, transparent);
-		color: var(--record-ink, var(--deep-text));
+		color: #18181b;
 		cursor: pointer;
 		transition: background-color 160ms ease, transform 160ms ease;
 	}
 
 	.changelog-dialog__close:hover,
 	.changelog-dialog__close:focus-visible {
-		background: color-mix(in srgb, var(--primary, #0ea5a4) 18%, transparent);
+		background: rgb(24 24 27 / 10%);
 		outline: none;
 		transform: rotate(6deg);
 	}
@@ -1151,35 +461,35 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		align-items: center;
 		gap: 0.65rem;
 		padding-right: 2.5rem;
-		color: var(--content-meta);
+		color: #71717a;
 		font-size: 0.75rem;
 		font-variant-numeric: tabular-nums;
 	}
 
 	.changelog-dialog__meta strong {
-		color: var(--record-ink, var(--deep-text));
+		color: #18181b;
 		font-weight: 800;
 	}
 
 	.changelog-dialog__meta b {
-		color: var(--record-ink, var(--deep-text));
+		color: #18181b;
 		font-weight: 750;
 	}
 
 	.changelog-dialog__meta time {
-		color: var(--record-muted, var(--content-meta));
+		color: #71717a;
 	}
 
 	.changelog-dialog h2 {
 		margin: 1.05rem 2.4rem 0.85rem 0;
-		font-size: clamp(1.25rem, 2.3vw, 1.72rem);
-		font-weight: 800;
+		font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+		font-weight: 700;
 		line-height: 1.38;
 	}
 
 	.changelog-dialog__summary {
 		margin: 0;
-		color: var(--record-muted, var(--content-meta));
+		color: #52525b;
 		font-size: 0.88rem;
 		line-height: 1.75;
 	}
@@ -1189,7 +499,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		font-family: var(--font-jetbrains-mono), monospace;
 		font-size: 0.76rem;
 		font-weight: 650;
-		color: var(--record-ink, var(--deep-text));
+		color: #18181b;
 	}
 
 	.changelog-dialog__section {
@@ -1198,7 +508,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 
 	.changelog-dialog__section h3 {
 		margin: 0 0 0.6rem;
-		color: var(--record-muted, var(--content-meta));
+		color: #71717a;
 		font-size: 0.72rem;
 		font-weight: 750;
 		letter-spacing: 0.04em;
@@ -1208,11 +518,25 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		display: inline-flex;
 		align-items: center;
 		border-radius: 999px;
-		background: color-mix(in srgb, var(--primary, #0ea5a4) 12%, transparent);
+		background: color-mix(in srgb, #00a29b 12%, transparent);
 		padding: 0.3rem 0.7rem;
-		color: color-mix(in srgb, var(--primary, #0ea5a4) 78%, var(--record-ink, #111));
+		color: color-mix(in srgb, #00a29b 78%, #18181b);
 		font-size: 0.75rem;
 		font-weight: 750;
+	}
+
+	.changelog-dialog__changes {
+		display: grid;
+		gap: 0.5rem;
+		margin: 0;
+		padding-left: 1.15rem;
+		color: #3f3f46;
+		font-size: 0.8rem;
+		line-height: 1.65;
+	}
+
+	.changelog-dialog__changes li::marker {
+		color: #00a29b;
 	}
 
 	.changelog-dialog__related {
@@ -1228,7 +552,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		border-radius: 0.7rem;
 		background: color-mix(in srgb, var(--record-ink, #111) 3%, transparent);
 		padding: 0.72rem 0.8rem;
-		color: var(--record-ink, var(--deep-text));
+		color: #18181b;
 		font: inherit;
 		text-align: left;
 		cursor: pointer;
@@ -1237,7 +561,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 
 	:global(.changelog-dialog__related-item:hover),
 	:global(.changelog-dialog__related-item:focus-visible) {
-		background: color-mix(in srgb, var(--primary, #0ea5a4) 9%, transparent);
+		background: color-mix(in srgb, #00a29b 9%, transparent);
 		outline: none;
 		transform: translateX(2px);
 	}
@@ -1250,13 +574,23 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 
 	:global(.changelog-dialog__related-item span),
 	:global(.changelog-dialog__empty) {
-		color: var(--record-muted, var(--content-meta));
+		color: #71717a;
 		font-size: 0.7rem;
 	}
 
 	@keyframes changelog-dialog-in {
-		from { opacity: 0; transform: translateY(0.65rem) scale(0.98); }
+		from { opacity: 0; transform: translateY(6px) scale(0.97); }
 		to { opacity: 1; transform: translateY(0) scale(1); }
+	}
+
+	@keyframes changelog-backdrop-in {
+		from { background: rgb(12 16 22 / 0%); backdrop-filter: blur(0); }
+		to { background: rgb(12 16 22 / 48%); backdrop-filter: blur(6px) saturate(0.86); }
+	}
+
+	@keyframes changelog-backdrop-out {
+		from { background: rgb(12 16 22 / 48%); backdrop-filter: blur(6px) saturate(0.86); }
+		to { background: rgb(12 16 22 / 0%); backdrop-filter: blur(0); }
 	}
 
 	:global(.changelog-wire) {
@@ -1266,17 +600,21 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 
 	:global(.changelog-wire--row) {
 		stroke: #00a29b;
-		opacity: 0.38;
+		opacity: 0.34;
 	}
 
 	:global(.changelog-wire--hover) {
 		stroke: #00a29b;
 		stroke-width: 1.75px;
+		stroke-dasharray: 6 5;
+		stroke-dashoffset: 11px;
+		opacity: 0;
+		transition: opacity 240ms ease-out, stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	:global(.changelog-wire--hover.is-drawn) {
-		stroke-dasharray: 6 5;
-		animation: changelog-dash 0.7s linear infinite;
+		stroke-dashoffset: 0;
+		opacity: 0.84;
 	}
 
 	:global(.changelog-wire-label) {
@@ -1288,7 +626,7 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		visibility: hidden;
 		border: 1px solid color-mix(in srgb, #00a29b 38%, transparent);
 		border-radius: 999px;
-		background: color-mix(in srgb, var(--card-bg, #fff) 92%, transparent);
+		background: rgb(255 255 255 / 94%);
 		padding: 0.25rem 0.62rem;
 		color: #008e88;
 		font-size: 0.68rem;
@@ -1299,16 +637,12 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		opacity: 0;
 		pointer-events: none;
 		box-shadow: 0 0.25rem 0.8rem rgb(0 0 0 / 8%);
-		transition: opacity 350ms ease 100ms, visibility 350ms ease 100ms;
+		transition: opacity 220ms ease-out 70ms, visibility 220ms ease-out 70ms;
 	}
 
 	:global(.changelog-wire-label.is-in) {
 		visibility: visible;
 		opacity: 1;
-	}
-
-	@keyframes changelog-dash {
-		to { stroke-dashoffset: -11px; }
 	}
 
 	@media (max-width: 1024px) {
@@ -1328,6 +662,11 @@ for (let index = 0; index < changelogEntries.length; index += 1) {
 		.changelog-card__num { font-size: 3.2rem; }
 		.changelog-card__title { -webkit-line-clamp: 5; font-size: 0.82rem; }
 		.changelog-card__summary { -webkit-line-clamp: 3; }
+		.changelog-board.is-hovering .changelog-card:not(.is-active):not(.is-linked) { opacity: 1; }
+		:global(.changelog-wire--hover),
+		:global(.changelog-wire-label) { display: none; }
+		.changelog-dialog { width: calc(100vw - 1rem); max-height: 88vh; }
+		.changelog-dialog__body { max-height: 88vh; padding: 1.15rem; }
 	}
 
 	@media (prefers-reduced-motion: reduce) {

@@ -8,6 +8,7 @@ export interface ChangelogEntry {
 	title: string;
 	summary: string;
 	changes: string[];
+	related?: string[];
 }
 
 export interface RecordApp {
@@ -914,6 +915,7 @@ export const changelogEntries: ChangelogEntry[] = [
 	...generatedChangelogEntries.map((entry) => ({
 		...entry,
 		changes: [...entry.changes],
+		related: [...entry.related],
 	})),
 	...manualChangelogEntries,
 ];
