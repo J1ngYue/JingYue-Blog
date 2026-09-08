@@ -342,14 +342,8 @@ function initNavbarHoverIndicator() {
     let focusItem: HTMLElement | null = null;
     let measureFrame = 0;
     let focusFrame = 0;
+    let clipFrame = 0;
     let transitionFrame = 0;
-    let settleTimer = 0;
-
-    const setSettledItem = (item: HTMLElement | null) => {
-        items.forEach((candidate) => {
-            candidate.toggleAttribute("data-navbar-indicator-settled", candidate === item);
-        });
-    };
 
     const activeItem = () =>
         items.find(
@@ -364,23 +358,64 @@ function initNavbarHoverIndicator() {
 
     const currentItem = () => pointerItem || focusItem || activeItem();
 
+    const syncInverseLayers = (targetRect: DOMRect | null) => {
+        items.forEach((candidate) => {
+            const item = candidate.querySelector<HTMLElement>(
+                ":scope > .navbar-menu-item",
+            );
+            if (!item) return;
+
+            const itemRect = item.getBoundingClientRect();
+            const intersectionLeft = targetRect
+                ? Math.min(itemRect.width, Math.max(0, targetRect.left - itemRect.left))
+                : 0;
+            const intersectionRight = targetRect
+                ? Math.min(itemRect.width, Math.max(0, targetRect.right - itemRect.left))
+                : 0;
+
+            item.style.setProperty(
+                "--navbar-inverse-clip-left",
+                `${intersectionLeft}px`,
+            );
+            item.style.setProperty(
+                "--navbar-inverse-clip-right",
+                `${Math.max(0, itemRect.width - intersectionRight)}px`,
+            );
+        });
+    };
+
+    const followIndicator = () => {
+        if (clipFrame) window.cancelAnimationFrame(clipFrame);
+        const startedAt = performance.now();
+        const track = () => {
+            syncInverseLayers(indicator.getBoundingClientRect());
+            if (performance.now() - startedAt < 420) {
+                clipFrame = window.requestAnimationFrame(track);
+            } else {
+                clipFrame = 0;
+            }
+        };
+        track();
+    };
+
     const moveIndicator = (item: HTMLElement | null, instant = false) => {
         if (measureFrame) window.cancelAnimationFrame(measureFrame);
-        if (settleTimer) {
-            window.clearTimeout(settleTimer);
-            settleTimer = 0;
-        }
-        setSettledItem(null);
         measureFrame = window.requestAnimationFrame(() => {
             measureFrame = 0;
             if (!item?.isConnected) {
+                if (clipFrame) window.cancelAnimationFrame(clipFrame);
+                clipFrame = 0;
+                syncInverseLayers(null);
                 indicator.removeAttribute("data-visible");
                 return;
             }
 
-            const itemRect = item.getBoundingClientRect();
+            const trigger = item.querySelector<HTMLElement>(
+                ":scope > .navbar-menu-item",
+            );
+            const itemRect = trigger?.getBoundingClientRect();
             const menuRect = menu.getBoundingClientRect();
-            if (itemRect.width <= 0 || itemRect.height <= 0 || menuRect.width <= 0) {
+            if (!itemRect || itemRect.width <= 0 || itemRect.height <= 0 || menuRect.width <= 0) {
                 indicator.removeAttribute("data-visible");
                 return;
             }
@@ -391,21 +426,16 @@ function initNavbarHoverIndicator() {
             indicator.style.height = `${itemRect.height}px`;
             indicator.style.transform = `translate3d(${itemRect.left - menuRect.left}px, ${itemRect.top - menuRect.top}px, 0)`;
             indicator.setAttribute("data-visible", "true");
+            if (shouldSkipMotion) syncInverseLayers(itemRect);
+            else followIndicator();
 
             if (shouldSkipMotion) {
-                setSettledItem(item);
                 if (transitionFrame) window.cancelAnimationFrame(transitionFrame);
                 transitionFrame = window.requestAnimationFrame(() => {
                     transitionFrame = 0;
                     indicator.removeAttribute("data-instant");
                 });
-                return;
             }
-
-            settleTimer = window.setTimeout(() => {
-                settleTimer = 0;
-                if (currentItem() === item) setSettledItem(item);
-            }, 250);
         });
     };
 
@@ -489,8 +519,8 @@ function initNavbarHoverIndicator() {
         resizeObserver.disconnect();
         if (measureFrame) window.cancelAnimationFrame(measureFrame);
         if (focusFrame) window.cancelAnimationFrame(focusFrame);
+        if (clipFrame) window.cancelAnimationFrame(clipFrame);
         if (transitionFrame) window.cancelAnimationFrame(transitionFrame);
-        if (settleTimer) window.clearTimeout(settleTimer);
     };
 }
 
