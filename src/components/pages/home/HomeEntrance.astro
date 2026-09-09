@@ -14,27 +14,66 @@ const tileSlots = Array.from({ length: 120 });
 
 <script>
 	const ACTIVE_CLASS = "home-entrance-active";
+	const PLAYING_CLASS = "home-entrance-playing";
 	const COMPLETE_EVENT = "firefly:home-entrance-complete";
+	const STAGE_EVENT = "firefly:home-entrance-stage";
+	const REVEAL_STAGES = [
+		{ name: "wordmark", progress: 0.63 },
+		{ name: "clock", progress: 0.75 },
+		{ name: "dialogue", progress: 0.82 },
+	] as const;
 
-	function initHomeEntrance() {
+	async function initHomeEntrance() {
 		const root = document.querySelector<HTMLElement>(
 			"[data-home-entrance]:not([data-home-entrance-ready])",
 		);
 		if (!root) return;
 
 		root.dataset.homeEntranceReady = "true";
+		root.dataset.homeEntranceStage = "cover";
+		const html = document.documentElement;
+		let finished = false;
+		let stageFrame = 0;
+		const publishedStages = new Set<string>();
+
+		const publishStage = (stage: string) => {
+			if (publishedStages.has(stage)) return;
+			publishedStages.add(stage);
+			root.dataset.homeEntranceStage = stage;
+			window.dispatchEvent(
+				new CustomEvent(STAGE_EVENT, { detail: { stage } }),
+			);
+		};
 		const finish = () => {
+			if (finished) return;
+			finished = true;
+			if (stageFrame) cancelAnimationFrame(stageFrame);
+			for (const stage of REVEAL_STAGES) publishStage(stage.name);
 			root.dataset.homeEntranceState = "complete";
-			document.documentElement.classList.remove(ACTIVE_CLASS);
+			html.classList.remove(ACTIVE_CLASS, PLAYING_CLASS);
 			window.dispatchEvent(new CustomEvent(COMPLETE_EVENT));
 
 			const removeEntrance = () => root.remove();
 			if ("requestIdleCallback" in window) {
-				window.requestIdleCallback(removeEntrance, { timeout: 1200 });
+				window.requestIdleCallback(removeEntrance, { timeout: 2000 });
 			} else {
-				setTimeout(removeEntrance, 600);
+				requestAnimationFrame(() => requestAnimationFrame(removeEntrance));
 			}
 		};
+
+		html.classList.add(ACTIVE_CLASS);
+		window.scrollTo(0, 0);
+		requestAnimationFrame(() => window.scrollTo(0, 0));
+		const waitForEntryLoader = () =>
+			new Promise<void>((resolve) => {
+				if (!html.classList.contains("blog-entry-loader-active")) {
+					resolve();
+					return;
+				}
+				window.addEventListener("firefly:blog-entry-complete", () => resolve(), {
+					once: true,
+				});
+			});
 
 		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 			finish();
@@ -47,6 +86,39 @@ const tileSlots = Array.from({ length: 120 });
 		if (bootstrapWallpaper) {
 			root.style.setProperty("--home-entrance-wallpaper", bootstrapWallpaper);
 		}
+
+		const landing = root.closest<HTMLElement>("[data-home-landing]");
+		try {
+			const assets = JSON.parse(landing?.dataset.homeWallpaperAssets ?? "[]");
+			const choice = html.getAttribute("data-page-wallpaper");
+			const asset = Array.isArray(assets)
+				? assets.find((item) => item?.id === choice)
+				: null;
+			const mobile = window.matchMedia("(max-width: 640px)").matches;
+			const wallpaperUrl = asset
+				? asset.type === "video"
+					? asset.posterUrl
+					: mobile
+						? asset.mobileUrl
+						: asset.desktopUrl
+				: "";
+			if (wallpaperUrl) {
+				const wallpaper = new Image();
+				wallpaper.decoding = "async";
+				wallpaper.fetchPriority = "high";
+				wallpaper.src = wallpaperUrl;
+				await wallpaper.decode().catch(() => undefined);
+				if (!root.isConnected) return;
+				root.style.setProperty(
+					"--home-entrance-wallpaper",
+					`url(${JSON.stringify(wallpaperUrl)})`,
+				);
+			}
+		} catch {
+			// The bootstrap wallpaper remains the visual source if metadata is unavailable.
+		}
+		await waitForEntryLoader();
+		if (!root.isConnected) return;
 
 		const tiles = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-home-entrance-tile]"),
@@ -70,7 +142,7 @@ const tileSlots = Array.from({ length: 120 });
 			const row = Math.floor(index / columns);
 			const left = column * tileSize;
 			const top = row * tileSize;
-			const wave = (column + row * 2) % 7;
+			const wave = (column + row * 2) % 6;
 			const offsetX = (((index * 37) % 9) - 4) * tileSize * 0.62;
 			const offsetY = (((index * 53) % 11) - 5) * tileSize * 0.52;
 
@@ -80,12 +152,8 @@ const tileSlots = Array.from({ length: 120 });
 			tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
 			tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
 			tile.style.setProperty("--tile-rotation", `${((index * 29) % 15) - 7}deg`);
-			tile.style.setProperty("--tile-delay", `${0.12 + wave * 0.035}s`);
+			tile.style.setProperty("--tile-delay", `${0.04 + wave * 0.13}s`);
 		});
-
-		document.documentElement.classList.add(ACTIVE_CLASS);
-		window.scrollTo(0, 0);
-		requestAnimationFrame(() => window.scrollTo(0, 0));
 
 		const handleAnimationEnd = (event: AnimationEvent) => {
 			if (event.target !== root || event.animationName !== "home-entrance-finish") {
@@ -95,26 +163,61 @@ const tileSlots = Array.from({ length: 120 });
 			finish();
 		};
 		root.addEventListener("animationend", handleAnimationEnd);
+		root.dataset.homeEntrancePlaying = "true";
+		html.classList.add(PLAYING_CLASS);
+
+		const updateStages = () => {
+			const animation = root
+				.getAnimations()
+				.find(
+					(item) =>
+						item instanceof CSSAnimation &&
+						item.animationName === "home-entrance-finish",
+				);
+			const timing = animation?.effect?.getComputedTiming();
+			const currentTime = Number(animation?.currentTime);
+			const duration = Number(timing?.duration);
+			if (Number.isFinite(currentTime) && Number.isFinite(duration) && duration > 0) {
+				const progress = Math.min(1, Math.max(0, currentTime / duration));
+				for (const stage of REVEAL_STAGES) {
+					if (progress >= stage.progress) publishStage(stage.name);
+				}
+			}
+			if (!finished && root.isConnected) {
+				stageFrame = requestAnimationFrame(updateStages);
+			}
+		};
+		stageFrame = requestAnimationFrame(updateStages);
 	}
 
 	initHomeEntrance();
 	document.addEventListener("astro:page-load", initHomeEntrance);
 	document.addEventListener("astro:before-swap", () => {
-		document.documentElement.classList.remove(ACTIVE_CLASS);
+		document.documentElement.classList.remove(ACTIVE_CLASS, PLAYING_CLASS);
 	});
 </script>
 
 <style>
 	.home-entrance {
-		--home-entrance-duration: 7.5s;
-		--home-entrance-veil: rgb(7 13 19 / var(--wallpaper-veil-opacity, 0.2));
+		--home-entrance-duration: 3.2s;
+		--home-puzzle-duration: 1.78s;
 		position: fixed;
 		inset: 0;
-		z-index: 44;
+		z-index: 0;
 		overflow: hidden;
-		background: #05070a;
+		background-color: #05070a;
+		background-image: var(
+			--home-entrance-wallpaper,
+			var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"))
+		);
+		background-position: center;
+		background-size: cover;
 		pointer-events: none;
-		will-change: opacity, transform;
+		will-change: opacity;
+		contain: paint;
+	}
+
+	.home-entrance[data-home-entrance-playing="true"] {
 		animation: home-entrance-finish var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
 	}
 
@@ -134,7 +237,7 @@ const tileSlots = Array.from({ length: 120 });
 		will-change: opacity, transform;
 	}
 
-	:global(html[data-rain-enabled="true"]) .home-entrance::before {
+	:global(html[data-rain-enabled="true"].home-entrance-playing) .home-entrance::before {
 		animation: home-entrance-atmosphere var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
 	}
 
@@ -142,18 +245,12 @@ const tileSlots = Array.from({ length: 120 });
 		position: absolute;
 		inset: 0;
 		z-index: 4;
-		background-image:
-			linear-gradient(var(--home-entrance-veil), var(--home-entrance-veil)),
-			var(
-				--home-entrance-wallpaper,
-				var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"))
-			);
-		background-position: center;
-		background-size: cover;
+		background:
+			linear-gradient(90deg, rgba(7, 13, 19, 0.58), rgba(7, 13, 19, 0.12) 58%, rgba(7, 13, 19, 0.36)),
+			linear-gradient(180deg, rgba(7, 13, 19, 0.08), rgba(7, 13, 19, 0.3));
 		content: "";
-		opacity: 0;
-		will-change: opacity;
-		animation: home-entrance-final-cover var(--home-entrance-duration) cubic-bezier(0.22, 1, 0.36, 1) both;
+		opacity: 1;
+		pointer-events: none;
 	}
 
 	.home-entrance__mosaic {
@@ -168,16 +265,17 @@ const tileSlots = Array.from({ length: 120 });
 		top: var(--tile-top);
 		left: var(--tile-left);
 		display: block;
-		width: var(--tile-size);
-		height: var(--tile-size);
+		width: calc(var(--tile-size) + 1px);
+		height: calc(var(--tile-size) + 1px);
 		overflow: hidden;
 		border: 0;
-		box-shadow:
-			inset 0 0 0 1px rgb(255 255 255 / 0.14),
-			0 0.65rem 1.6rem rgb(0 0 0 / 0.28);
+		box-shadow: none;
 		opacity: 0;
 		will-change: transform, opacity;
-		animation: home-entrance-tile var(--home-entrance-duration) var(--tile-delay) cubic-bezier(0.16, 1, 0.3, 1) both;
+	}
+
+	.home-entrance[data-home-entrance-playing="true"] .home-entrance__tile {
+		animation: home-entrance-tile var(--home-puzzle-duration) var(--tile-delay) cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
 	.home-entrance__tile[hidden] {
@@ -191,37 +289,26 @@ const tileSlots = Array.from({ length: 120 });
 		display: block;
 		width: var(--home-entrance-width);
 		height: var(--home-entrance-height);
-		background-image:
-			linear-gradient(var(--home-entrance-veil), var(--home-entrance-veil)),
-			var(
-				--home-entrance-wallpaper,
-				var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"))
-			);
+		background-image: var(
+			--home-entrance-wallpaper,
+			var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"))
+		);
 		background-position: center;
 		background-size: cover;
-	}
-
-	:global(html[data-wallpaper-mode="overlay"]) .home-entrance {
-		--home-entrance-veil: transparent;
 	}
 
 	@keyframes home-entrance-tile {
 		0% {
 			opacity: 0;
-			box-shadow:
-				inset 0 0 0 1px rgb(255 255 255 / 0.14),
-				0 0.65rem 1.6rem rgb(0 0 0 / 0.28);
+			box-shadow: 0 0.65rem 1.6rem rgb(0 0 0 / 0.22);
 			transform: translate3d(var(--tile-offset-x), var(--tile-offset-y), 0) rotate(var(--tile-rotation)) scale(0.72);
 		}
-		6% {
-			opacity: 0.94;
+		12% {
+			opacity: 0.96;
 		}
-		25% {
-			box-shadow:
-				inset 0 0 0 1px rgb(255 255 255 / 0.14),
-				0 0.65rem 1.6rem rgb(0 0 0 / 0.28);
+		70% {
+			box-shadow: 0 0.28rem 0.65rem rgb(0 0 0 / 0.08);
 		}
-		28%,
 		100% {
 			opacity: 1;
 			box-shadow: none;
@@ -229,27 +316,18 @@ const tileSlots = Array.from({ length: 120 });
 		}
 	}
 
-	@keyframes home-entrance-final-cover {
-		0%,
-		30% {
-			opacity: 0;
-		}
-		33.333%,
-		100% {
-			opacity: 1;
-		}
-	}
-
 	@keyframes home-entrance-atmosphere {
 		0%,
-		40% {
+		52% {
 			opacity: 0;
 			transform: scale(1.035);
 		}
-		50% {
-			opacity: 0.34;
+		66% {
+			opacity: 0.24;
 		}
-		60%,
+		80% {
+			opacity: 0.58;
+		}
 		100% {
 			opacity: 1;
 			transform: scale(1);
@@ -258,41 +336,21 @@ const tileSlots = Array.from({ length: 120 });
 
 	@keyframes home-entrance-finish {
 		0%,
-		33.333% {
+		80% {
 			opacity: 1;
 			visibility: visible;
-			transform: scale(1);
 		}
-		36.667% {
-			opacity: 1;
+		88% {
+			opacity: 0.68;
 			visibility: visible;
-			transform: scale(1.012);
 		}
-		40%,
-		60% {
-			opacity: 1;
+		95% {
+			opacity: 0.18;
 			visibility: visible;
-			transform: scale(1);
-		}
-		72% {
-			opacity: 0.92;
-			visibility: visible;
-			transform: scale(1);
-		}
-		84% {
-			opacity: 0.62;
-			visibility: visible;
-			transform: scale(1);
-		}
-		94% {
-			opacity: 0.24;
-			visibility: visible;
-			transform: scale(1);
 		}
 		100% {
 			opacity: 0;
 			visibility: hidden;
-			transform: scale(1);
 		}
 	}
 

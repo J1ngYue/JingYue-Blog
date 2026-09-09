@@ -130,7 +130,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	data-home-default-hue={siteConfig.themeColor.hue}
 	data-home-wallpaper-assets={JSON.stringify(pageWallpaperAssets)}
 >
-	<HomeEntrance />
 	<LocalWallpaperLayer client:load surface="home" />
 
 	{musicPlayerConfig.showInNavbar && (
@@ -218,6 +217,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	>
 		<div class="home-hero-sticky">
 			<div class="home-hero-frame" data-home-hero-frame>
+				<HomeEntrance />
 				{coverIllustrations.map((cover, index) => (
 					<>
 						<ImageWrapper
@@ -629,8 +629,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		let pageScrollTransitionActive = false;
 		let sceneMetricsFrame = 0;
 		let terminalTimer = 0;
-		let homeRevealStarted = false;
-		let homeRevealTimers = [];
 		let sceneWheelQuietTimer = 0;
 		let sceneLockTimer = 0;
 		let quoteTimer = 0;
@@ -1818,57 +1816,48 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			terminalTimer = window.setTimeout(type, 450);
 		};
 
-		const clearHomeRevealTimers = () => {
-			homeRevealTimers.forEach((timer) => window.clearTimeout(timer));
-			homeRevealTimers = [];
-		};
-		const queueHomeReveal = (callback, delay) => {
-			const timer = window.setTimeout(callback, delay);
-			homeRevealTimers.push(timer);
-		};
 		const setHomeRevealStage = (stage) => {
 			root.dataset.homeRevealStage = stage;
 		};
-		const startHomeReveal = () => {
-			if (homeRevealStarted) return;
-			homeRevealStarted = true;
-			clearHomeRevealTimers();
-			setHomeRevealStage("cover");
-
-			const revealClock = () => {
-				root.classList.add("is-home-clock-ready");
-				setHomeRevealStage("clock");
-			};
-			const revealWordmark = () => {
-				root.classList.add("is-home-wordmark-ready");
-				setHomeRevealStage("wordmark");
-				playWordmark();
-				startTerminal();
-			};
-			const revealDialogue = () => {
-				root.classList.add("is-home-dialogue-ready");
-				setHomeRevealStage("dialogue");
-				window.dispatchEvent(new CustomEvent("firefly:home-dialogue-reveal"));
-			};
-
-			if (reducedMotion.matches) {
-				revealClock();
-				revealWordmark();
-				revealDialogue();
-				return;
-			}
-
-			queueHomeReveal(revealClock, 280);
-			queueHomeReveal(revealWordmark, 900);
-			queueHomeReveal(revealDialogue, 2700);
+		const revealWordmark = () => {
+			if (root.classList.contains("is-home-wordmark-ready")) return;
+			root.classList.add("is-home-wordmark-ready");
+			setHomeRevealStage("wordmark");
+			playWordmark();
+			startTerminal();
 		};
-		const handleHomeEntranceComplete = () => startHomeReveal();
-		window.addEventListener("firefly:home-entrance-complete", handleHomeEntranceComplete, {
-			once: true,
-		});
+		const revealClock = () => {
+			if (!root.classList.contains("is-home-clock-ready")) {
+				root.classList.add("is-home-clock-ready");
+			}
+			setHomeRevealStage("clock");
+		};
+		const revealDialogue = () => {
+			if (!root.classList.contains("is-home-dialogue-ready")) {
+				root.classList.add("is-home-dialogue-ready");
+				window.dispatchEvent(new CustomEvent("firefly:home-dialogue-reveal"));
+			}
+			setHomeRevealStage("dialogue");
+		};
+		const applyHomeRevealStage = (stage) => {
+			if (["wordmark", "clock", "dialogue", "complete"].includes(stage)) {
+				revealWordmark();
+			}
+			if (["clock", "dialogue", "complete"].includes(stage)) revealClock();
+			if (["dialogue", "complete"].includes(stage)) revealDialogue();
+			if (stage === "complete") setHomeRevealStage("complete");
+		};
+		const handleHomeEntranceStage = (event) => {
+			applyHomeRevealStage(event.detail?.stage || "cover");
+		};
+		const handleHomeEntranceComplete = () => applyHomeRevealStage("complete");
+		window.addEventListener("firefly:home-entrance-stage", handleHomeEntranceStage);
+		window.addEventListener("firefly:home-entrance-complete", handleHomeEntranceComplete);
 		const entrance = document.querySelector("[data-home-entrance]");
 		if (!entrance || entrance.dataset.homeEntranceState === "complete") {
-			startHomeReveal();
+			applyHomeRevealStage("complete");
+		} else {
+			applyHomeRevealStage(entrance.dataset.homeEntranceStage || "cover");
 		}
 
 		updateSceneMetrics();
@@ -2084,8 +2073,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		render();
 
 		window.__fireflyHomeLandingCleanup = () => {
+			window.removeEventListener("firefly:home-entrance-stage", handleHomeEntranceStage);
 			window.removeEventListener("firefly:home-entrance-complete", handleHomeEntranceComplete);
-			clearHomeRevealTimers();
 			window.removeEventListener("scroll", scheduleRender);
 			window.removeEventListener("resize", handleViewportResize);
 			window.removeEventListener("theme-change", handleThemeChange);
