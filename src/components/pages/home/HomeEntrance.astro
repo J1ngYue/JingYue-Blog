@@ -74,51 +74,68 @@ const tileSlots = Array.from({ length: 120 });
 					once: true,
 				});
 			});
+		const getReadyWallpaperPreview = () => {
+			const layer = landing?.querySelector<HTMLElement>(
+				'[data-local-wallpaper-surface="home"][data-wallpaper-ready="true"]',
+			);
+			const image = layer?.querySelector<HTMLImageElement>("img");
+			if (image) return image.currentSrc || image.src;
+			const video = layer?.querySelector<HTMLVideoElement>("video");
+			return video?.poster || "";
+		};
+		const waitForWallpaperPreview = () =>
+			new Promise<string>((resolve) => {
+				let settled = false;
+				const settle = (previewUrl = "") => {
+					if (settled) return;
+					settled = true;
+					window.clearTimeout(safetyTimer);
+					window.removeEventListener(
+						"firefly:home-wallpaper-ready",
+						handleReady,
+					);
+					resolve(previewUrl);
+				};
+				const handleReady = (event: Event) => {
+					const detail = (
+						event as CustomEvent<{
+							previewUrl?: string;
+							fallback?: boolean;
+							skipped?: boolean;
+						}>
+					).detail;
+					settle(
+						detail?.fallback || detail?.skipped
+							? ""
+							: detail?.previewUrl || getReadyWallpaperPreview(),
+					);
+				};
+				window.addEventListener("firefly:home-wallpaper-ready", handleReady);
+				const safetyTimer = window.setTimeout(() => settle(), 12_000);
+				const readyPreview = getReadyWallpaperPreview();
+				if (readyPreview) settle(readyPreview);
+			});
 
 		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 			finish();
 			return;
 		}
 
-		const bootstrapWallpaper = getComputedStyle(document.documentElement)
-			.getPropertyValue("--home-wallpaper-bootstrap")
-			.trim();
-		if (bootstrapWallpaper) {
-			root.style.setProperty("--home-entrance-wallpaper", bootstrapWallpaper);
+		const landing = root.closest<HTMLElement>("[data-home-landing]");
+		const [wallpaperUrl] = await Promise.all([
+			waitForWallpaperPreview(),
+			waitForEntryLoader(),
+		]);
+		if (!root.isConnected) return;
+		if (!wallpaperUrl) {
+			finish();
+			return;
 		}
 
-		const landing = root.closest<HTMLElement>("[data-home-landing]");
-		try {
-			const assets = JSON.parse(landing?.dataset.homeWallpaperAssets ?? "[]");
-			const choice = html.getAttribute("data-page-wallpaper");
-			const asset = Array.isArray(assets)
-				? assets.find((item) => item?.id === choice)
-				: null;
-			const mobile = window.matchMedia("(max-width: 640px)").matches;
-			const wallpaperUrl = asset
-				? asset.type === "video"
-					? asset.posterUrl
-					: mobile
-						? asset.mobileUrl
-						: asset.desktopUrl
-				: "";
-			if (wallpaperUrl) {
-				const wallpaper = new Image();
-				wallpaper.decoding = "async";
-				wallpaper.fetchPriority = "high";
-				wallpaper.src = wallpaperUrl;
-				await wallpaper.decode().catch(() => undefined);
-				if (!root.isConnected) return;
-				root.style.setProperty(
-					"--home-entrance-wallpaper",
-					`url(${JSON.stringify(wallpaperUrl)})`,
-				);
-			}
-		} catch {
-			// The bootstrap wallpaper remains the visual source if metadata is unavailable.
-		}
-		await waitForEntryLoader();
-		if (!root.isConnected) return;
+		root.style.setProperty(
+			"--home-entrance-wallpaper",
+			`url(${JSON.stringify(wallpaperUrl)})`,
+		);
 
 		const tiles = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-home-entrance-tile]"),
@@ -206,10 +223,7 @@ const tileSlots = Array.from({ length: 120 });
 		z-index: 0;
 		overflow: hidden;
 		background-color: #05070a;
-		background-image: var(
-			--home-entrance-wallpaper,
-			var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"))
-		);
+		background-image: var(--home-entrance-wallpaper, none);
 		background-position: center;
 		background-size: cover;
 		pointer-events: none;
@@ -289,10 +303,7 @@ const tileSlots = Array.from({ length: 120 });
 		display: block;
 		width: var(--home-entrance-width);
 		height: var(--home-entrance-height);
-		background-image: var(
-			--home-entrance-wallpaper,
-			var(--home-wallpaper-bootstrap, url("/assets/images/blue-melancholy-poster.webp"))
-		);
+		background-image: var(--home-entrance-wallpaper, none);
 		background-position: center;
 		background-size: cover;
 	}

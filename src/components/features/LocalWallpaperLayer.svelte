@@ -65,7 +65,11 @@ function markMediaReady() {
 	if (!sourceUrl || mediaReady) return;
 	mediaReady = true;
 	syncActiveWallpaperClass();
-	dispatchHomeWallpaperState("ready");
+	dispatchHomeWallpaperState("ready", {
+		choice: document.documentElement.getAttribute("data-page-wallpaper"),
+		sourceUrl,
+		previewUrl: mediaType === "image" ? sourceUrl : posterUrl,
+	});
 	finishBootstrapHandoff();
 }
 
