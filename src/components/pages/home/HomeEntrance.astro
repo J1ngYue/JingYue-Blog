@@ -122,12 +122,12 @@ const tileSlots = Array.from({ length: 120 });
 		}
 
 		const landing = root.closest<HTMLElement>("[data-home-landing]");
-		const [wallpaperUrl] = await Promise.all([
-			waitForWallpaperPreview(),
-			waitForEntryLoader(),
-		]);
+		const wallpaperPromise = waitForWallpaperPreview();
+		const entryLoaderPromise = waitForEntryLoader();
+		const wallpaperUrl = await wallpaperPromise;
 		if (!root.isConnected) return;
 		if (!wallpaperUrl) {
+			await entryLoaderPromise;
 			finish();
 			return;
 		}
@@ -171,6 +171,8 @@ const tileSlots = Array.from({ length: 120 });
 			tile.style.setProperty("--tile-rotation", `${((index * 29) % 15) - 7}deg`);
 			tile.style.setProperty("--tile-delay", `${0.04 + wave * 0.13}s`);
 		});
+		await entryLoaderPromise;
+		if (!root.isConnected) return;
 
 		const handleAnimationEnd = (event: AnimationEvent) => {
 			if (event.target !== root || event.animationName !== "home-entrance-finish") {
@@ -267,6 +269,16 @@ const tileSlots = Array.from({ length: 120 });
 		pointer-events: none;
 	}
 
+	:global(.home-landing.has-local-wallpaper) .home-entrance::after,
+	:global(html[data-has-local-wallpaper="true"]:not([data-wallpaper-mode="none"])) .home-entrance::after {
+		background: transparent;
+	}
+
+	:global(html[data-has-local-wallpaper="true"][data-wallpaper-mode="fullscreen"]) .home-entrance::after,
+	:global(html[data-has-local-wallpaper="true"][data-wallpaper-mode="banner"]) .home-entrance::after {
+		background: rgb(7 13 19 / var(--wallpaper-veil-opacity, 0.2));
+	}
+
 	.home-entrance__mosaic {
 		position: absolute;
 		inset: 0;
@@ -306,6 +318,7 @@ const tileSlots = Array.from({ length: 120 });
 		background-image: var(--home-entrance-wallpaper, none);
 		background-position: center;
 		background-size: cover;
+		backface-visibility: hidden;
 	}
 
 	@keyframes home-entrance-tile {
@@ -329,15 +342,18 @@ const tileSlots = Array.from({ length: 120 });
 
 	@keyframes home-entrance-atmosphere {
 		0%,
-		52% {
+		34% {
 			opacity: 0;
-			transform: scale(1.035);
+			transform: scale(1.025);
 		}
-		66% {
-			opacity: 0.24;
+		48% {
+			opacity: 0.2;
 		}
-		80% {
-			opacity: 0.58;
+		64% {
+			opacity: 0.56;
+		}
+		82% {
+			opacity: 0.9;
 		}
 		100% {
 			opacity: 1;
@@ -347,16 +363,16 @@ const tileSlots = Array.from({ length: 120 });
 
 	@keyframes home-entrance-finish {
 		0%,
-		80% {
+		70% {
 			opacity: 1;
 			visibility: visible;
 		}
-		88% {
-			opacity: 0.68;
+		80% {
+			opacity: 0.82;
 			visibility: visible;
 		}
-		95% {
-			opacity: 0.18;
+		92% {
+			opacity: 0.28;
 			visibility: visible;
 		}
 		100% {
