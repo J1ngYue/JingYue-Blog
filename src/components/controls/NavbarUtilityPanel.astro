@@ -58,15 +58,6 @@ const announcementSecondary =
 				</span>
 				<span>主题</span>
 			</button>
-			<button
-				class="navbar-utility__action"
-				type="button"
-				data-navbar-utility-search
-				aria-label="打开站内搜索"
-			>
-				<Icon is:inline name="material-symbols:search-rounded" />
-				<span>搜索</span>
-			</button>
 		</div>
 
 		<div
@@ -293,8 +284,8 @@ const announcementSecondary =
 
 	.navbar-utility__trigger:is(:hover, :focus-visible),
 	.navbar-utility[data-open="true"] .navbar-utility__trigger {
-		background: #000;
-		color: #fff;
+		background: #e7e7e7;
+		color: #18181b;
 		outline: none;
 	}
 
@@ -357,7 +348,7 @@ const announcementSecondary =
 
 	.navbar-utility__actions {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.38rem;
 	}
 
