@@ -218,7 +218,7 @@ onMount(() => {
 			<span><Activity size={16} />活跃 <strong>{stats?.active_num || 0}</strong></span>
 			<span><Newspaper size={16} />动态 <strong>{stats?.article_num || articles.length}</strong></span>
 		</div>
-		<div class="circle-sort" aria-label="文章排序">
+		<div class="circle-sort" aria-label="文章排序" data-sliding-pill-group>
 			<button
 				type="button"
 				class:is-active={sort === "created"}

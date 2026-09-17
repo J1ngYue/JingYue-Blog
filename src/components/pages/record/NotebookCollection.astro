@@ -62,7 +62,7 @@ const formatDate = (date: Date) =>
 		<span aria-current="page">{notebook.title}</span>
 	</nav>
 
-	<nav class="notebook-switcher" aria-label="切换笔记本">
+	<nav class="notebook-switcher" aria-label="切换笔记本" data-sliding-pill-group>
 		{notebookDefinitions.map((item) => (
 			<a
 				href={`/life/notebooks/${item.slug}/`}

@@ -264,7 +264,7 @@ onMount(() => {
 });
 </script>
 
-<div class="moments-filter" aria-label="说说年份筛选">
+<div class="moments-filter" aria-label="说说年份筛选" data-sliding-pill-group>
 	<button
 		type="button"
 		class:is-active={activeYear === "all"}

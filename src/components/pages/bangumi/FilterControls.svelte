@@ -14,7 +14,7 @@ interface Props {
 const { filters, activeFilter, onFilterChange }: Props = $props();
 </script>
 
-<nav class="bangumi-filters" aria-label="收藏状态">
+<nav class="bangumi-filters" aria-label="收藏状态" data-sliding-pill-group>
 	{#each filters as filter}
 		<button
 			class:is-active={filter.value === activeFilter}

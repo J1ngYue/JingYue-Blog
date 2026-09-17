@@ -36,7 +36,7 @@ function clickTab(tabId: string) {
 }
 </script>
 
-<nav class="bangumi-tabs" aria-label="作品分类">
+<nav class="bangumi-tabs" aria-label="作品分类" data-sliding-pill-group>
 	{#each tabs as tab}
 		<button
 			class:is-active={tab.id === activeTab}

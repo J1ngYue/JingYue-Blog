@@ -122,7 +122,7 @@ const formatCardDate = (date: Date) =>
 			</nav>
 		</header>
 
-		<div class="article-index__mobile-filter" aria-label="移动端文章分类">
+		<div class="article-index__mobile-filter" aria-label="移动端文章分类" data-sliding-pill-group>
 			<button type="button" class="is-active" data-article-filter="">全部 {posts.length}</button>
 			{categories.map((category) => (
 				<button type="button" data-article-filter={category.name}>

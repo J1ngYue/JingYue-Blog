@@ -1,0 +1,221 @@
+<script is:inline>
+	(() => {
+		const pillWindow = window;
+		if (pillWindow.__slidingPillGroupsBound) return;
+		pillWindow.__slidingPillGroupsBound = true;
+
+		let cleanup = () => {};
+		let refreshFrame = 0;
+		const itemSelector = ":scope > button:not([data-sliding-pill-ignore]), :scope > a:not([data-sliding-pill-ignore])";
+		const groupsNeedInit = () =>
+			Array.from(document.querySelectorAll("[data-sliding-pill-group]")).some((group) => {
+				const itemCount = group.querySelectorAll(itemSelector).length;
+				if (itemCount < 2) {
+					return (
+						group.dataset.slidingPillReady === "true" ||
+						Boolean(group.querySelector(":scope > .sliding-pill-indicator"))
+					);
+				}
+				return (
+					group.dataset.slidingPillReady !== "true" ||
+					group.dataset.slidingPillCount !== String(itemCount) ||
+					!group.querySelector(":scope > .sliding-pill-indicator")
+				);
+			});
+
+		const initGroups = () => {
+			cleanup();
+			const controllers = [];
+			const observers = [];
+			const resizeObservers = [];
+			const preparedGroups = [];
+			const indicators = [];
+
+			document.querySelectorAll("[data-sliding-pill-group]").forEach((group) => {
+				const items = Array.from(group.querySelectorAll(itemSelector));
+				if (items.length < 2) return;
+
+				const controller = new AbortController();
+				const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+				const indicator = document.createElement("span");
+				indicator.className = "sliding-pill-indicator";
+				indicator.setAttribute("aria-hidden", "true");
+				group.prepend(indicator);
+				group.dataset.slidingPillReady = "true";
+				group.dataset.slidingPillCount = String(items.length);
+
+				let pointerItem = null;
+				let focusItem = null;
+				let frame = 0;
+
+				const activeItem = () =>
+					items.find((item) =>
+						item.classList.contains("is-active") ||
+						item.getAttribute("aria-selected") === "true" ||
+						item.getAttribute("aria-pressed") === "true" ||
+						item.hasAttribute("data-active") ||
+						item.getAttribute("aria-current") === "page"
+					) || items[0];
+
+				const currentItem = () => pointerItem || focusItem || activeItem();
+
+				const moveIndicator = (item, instant = false) => {
+					if (frame) window.cancelAnimationFrame(frame);
+					frame = window.requestAnimationFrame(() => {
+						frame = 0;
+						if (!item?.isConnected || item.offsetWidth <= 0 || item.offsetHeight <= 0) {
+							indicator.removeAttribute("data-visible");
+							return;
+						}
+
+						indicator.toggleAttribute("data-instant", instant || reducedMotion.matches);
+						indicator.style.width = `${item.offsetWidth}px`;
+						indicator.style.height = `${item.offsetHeight}px`;
+						indicator.style.transform = `translate3d(${item.offsetLeft}px, ${item.offsetTop}px, 0)`;
+						indicator.setAttribute("data-visible", "true");
+
+						if (instant || reducedMotion.matches) {
+							window.requestAnimationFrame(() => indicator.removeAttribute("data-instant"));
+						}
+					});
+				};
+
+				items.forEach((item) => {
+					item.addEventListener("pointerenter", () => {
+						pointerItem = item;
+						moveIndicator(item);
+					}, { signal: controller.signal });
+					item.addEventListener("focus", () => {
+						focusItem = item;
+						moveIndicator(item);
+					}, { signal: controller.signal });
+					item.addEventListener("blur", () => {
+						focusItem = null;
+						moveIndicator(currentItem());
+					}, { signal: controller.signal });
+					item.addEventListener("click", () => {
+						window.requestAnimationFrame(() => moveIndicator(activeItem()));
+					}, { signal: controller.signal });
+				});
+
+				group.addEventListener("pointerleave", () => {
+					pointerItem = null;
+					moveIndicator(currentItem());
+				}, { signal: controller.signal });
+
+				const observer = new MutationObserver(() => moveIndicator(currentItem()));
+				observer.observe(group, {
+					attributes: true,
+					subtree: true,
+					attributeFilter: ["class", "aria-selected", "aria-pressed", "aria-current", "data-active"],
+				});
+
+				const resizeObserver = new ResizeObserver(() => moveIndicator(currentItem(), true));
+				resizeObserver.observe(group);
+				items.forEach((item) => resizeObserver.observe(item));
+
+				controllers.push(controller);
+				observers.push(observer);
+				resizeObservers.push(resizeObserver);
+				preparedGroups.push(group);
+				indicators.push(indicator);
+				moveIndicator(activeItem(), true);
+			});
+
+			cleanup = () => {
+				controllers.forEach((controller) => controller.abort());
+				observers.forEach((observer) => observer.disconnect());
+				resizeObservers.forEach((observer) => observer.disconnect());
+				indicators.forEach((indicator) => indicator.remove());
+				preparedGroups.forEach((group) => {
+					delete group.dataset.slidingPillReady;
+					delete group.dataset.slidingPillCount;
+				});
+			};
+		};
+
+		const dynamicGroupObserver = new MutationObserver(() => {
+			if (!groupsNeedInit() || refreshFrame) return;
+			refreshFrame = window.requestAnimationFrame(() => {
+				refreshFrame = 0;
+				initGroups();
+			});
+		});
+		dynamicGroupObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", initGroups, { once: true });
+		} else {
+			initGroups();
+		}
+		document.addEventListener("astro:page-load", initGroups);
+		document.addEventListener("swup:contentReplaced", initGroups);
+	})();
+</script>
+
+<style is:global>
+	:where([data-sliding-pill-group]) {
+		position: relative;
+	}
+
+	[data-sliding-pill-group][data-sliding-pill-ready="true"] > :is(button, a):not([data-sliding-pill-ignore]) {
+		position: relative;
+		z-index: 1;
+		border-color: transparent !important;
+		border-radius: 999px !important;
+		background: transparent !important;
+		box-shadow: none !important;
+		color: #fff !important;
+		mix-blend-mode: difference;
+		opacity: 1 !important;
+		transition: opacity 180ms ease !important;
+	}
+
+	[data-sliding-pill-group][data-sliding-pill-ready="true"] > :is(button, a):not([data-sliding-pill-ignore]) > * {
+		color: inherit !important;
+	}
+
+	[data-sliding-pill-group][data-sliding-pill-ready="true"] > :is(button, a):not([data-sliding-pill-ignore]):focus-visible {
+		outline: 2px solid #737373 !important;
+		outline-offset: 2px !important;
+	}
+
+	.sliding-pill-indicator {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 0;
+		display: block;
+		width: 0;
+		height: 0;
+		border-radius: 999px;
+		background: #000;
+		box-shadow:
+			inset 0 0 0 1px rgb(255 255 255 / 12%),
+			0 0.18rem 0.5rem rgb(15 23 42 / 18%);
+		opacity: 0;
+		pointer-events: none;
+		transform: translate3d(0, 0, 0);
+		transition:
+			transform 350ms cubic-bezier(0.22, 1, 0.36, 1),
+			width 350ms cubic-bezier(0.22, 1, 0.36, 1),
+			height 350ms cubic-bezier(0.22, 1, 0.36, 1),
+			opacity 180ms cubic-bezier(0.22, 1, 0.36, 1);
+		will-change: transform, width, height;
+	}
+
+	.sliding-pill-indicator[data-visible="true"] {
+		opacity: 1;
+	}
+
+	.sliding-pill-indicator[data-instant] {
+		transition: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.sliding-pill-indicator,
+		[data-sliding-pill-group][data-sliding-pill-ready="true"] > :is(button, a):not([data-sliding-pill-ignore]) {
+			transition: none !important;
+		}
+	}
+</style>

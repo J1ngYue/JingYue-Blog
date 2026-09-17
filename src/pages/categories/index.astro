@@ -158,6 +158,7 @@ for (const side of ["left", "right"] as const) {
 				class="category-workbench__switch"
 				role="tablist"
 				aria-label="分类页视图"
+				data-sliding-pill-group
 			>
 				<button
 					type="button"
@@ -180,7 +181,6 @@ for (const side of ["left", "right"] as const) {
 					<Icon is:inline name="material-symbols:bar-chart-rounded" />
 					数据图
 				</button>
-				<span class="category-workbench__indicator" aria-hidden="true"></span>
 			</div>
 		</header>
 
@@ -322,20 +322,6 @@ for (const side of ["left", "right"] as const) {
 			const panels = root.querySelectorAll<HTMLElement>(
 				"[data-category-panel]",
 			);
-			const viewSwitch = root.querySelector<HTMLElement>(
-				".category-workbench__switch",
-			);
-			const indicator = root.querySelector<HTMLElement>(
-				".category-workbench__indicator",
-			);
-
-			const moveIndicator = (button: HTMLButtonElement) => {
-				if (!viewSwitch || !indicator) return;
-				indicator.style.left = `${button.offsetLeft}px`;
-				indicator.style.width = `${button.offsetWidth}px`;
-				viewSwitch.classList.add("is-ready");
-			};
-
 			for (const button of viewButtons) {
 				button.addEventListener("click", () => {
 					const view = button.dataset.categoryView;
@@ -347,14 +333,8 @@ for (const side of ["left", "right"] as const) {
 					for (const panel of panels) {
 						panel.hidden = panel.dataset.categoryPanel !== view;
 					}
-					moveIndicator(button);
 				});
 			}
-
-			const activeView = root.querySelector<HTMLButtonElement>(
-				"[data-category-view].is-active",
-			);
-			if (activeView) requestAnimationFrame(() => moveIndicator(activeView));
 			for (const link of root.querySelectorAll<HTMLElement>(
 				"[data-category-folder-link]",
 			)) {
@@ -415,12 +395,6 @@ for (const side of ["left", "right"] as const) {
 					}
 				});
 			}
-			window.addEventListener("resize", () => {
-				const active = root.querySelector<HTMLButtonElement>(
-					"[data-category-view].is-active",
-				);
-				if (active) moveIndicator(active);
-			});
 		}
 	}
 
@@ -542,35 +516,12 @@ for (const side of ["left", "right"] as const) {
 		color: var(--card-bg);
 	}
 
-	.category-workbench__switch.is-ready button.is-active {
-		background: transparent;
-	}
-
 	.category-workbench__switch button:hover:not(.is-active) {
 		opacity: 0.7;
 	}
 
 	.category-workbench__switch button:active {
 		transform: scale(0.96);
-	}
-
-	.category-workbench__indicator {
-		position: absolute;
-		top: 0.25rem;
-		bottom: 0.25rem;
-		left: 0.25rem;
-		z-index: 0;
-		width: 0;
-		border-radius: 999rem;
-		background: var(--category-text);
-		box-shadow: 0 1px 3px color-mix(in srgb, var(--category-text) 15%, transparent);
-		opacity: 0;
-		pointer-events: none;
-		transition: left 300ms cubic-bezier(0.4, 0, 0.2, 1), width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms ease;
-	}
-
-	.category-workbench__switch.is-ready .category-workbench__indicator {
-		opacity: 1;
 	}
 
 	.category-workbench__switch button:focus-visible,
@@ -1073,7 +1024,6 @@ for (const side of ["left", "right"] as const) {
 		.category-folder__chevron,
 		.category-folder__tag,
 		.category-folder__tag-count,
-		.category-workbench__indicator,
 		.category-workbench__switch button,
 		.category-radial-chart__bar,
 		.category-radial-chart__leader,

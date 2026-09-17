@@ -12,6 +12,7 @@ import FloatingControls from "@/components/controls/FloatingControls.astro";
 import PageWallpaperPicker from "@/components/controls/PageWallpaperPicker.svelte";
 import QuickToolsDock from "@/components/controls/QuickToolsDock.astro";
 import ScrollDownIndicator from "@/components/controls/ScrollDownIndicator.astro";
+import SlidingPillGroups from "@/components/controls/SlidingPillGroups.astro";
 import BackgroundPlayer from "@/components/features/BackgroundPlayer.astro";
 import LocalWallpaperLayer from "@/components/features/LocalWallpaperLayer.svelte";
 import TypewriterText from "@/components/features/TypewriterText.astro";
@@ -959,6 +960,7 @@ const hasMultipleImages =
 
 <FloatingControls headings={headings} encrypted={encrypted} />
 <QuickToolsDock />
+<SlidingPillGroups />
 <PageWallpaperPicker client:load />
 
 <script>

@@ -69,7 +69,7 @@ const collectionLinks = [
 					</div>
 				</div>
 
-				<nav class="gallery-collection-nav" aria-label="我的收藏">
+				<nav class="gallery-collection-nav" aria-label="我的收藏" data-sliding-pill-group>
 					{collectionLinks.map((item) => (
 						<a
 							href={item.href}
@@ -118,7 +118,7 @@ const collectionLinks = [
 					</div>
 
 					{allTags.length > 0 && (
-						<div class="gallery-filter__tags" aria-label="相册标签">
+						<div class="gallery-filter__tags" aria-label="相册标签" data-sliding-pill-group>
 							<button type="button" data-tag="all" data-active>
 								{ i18n(I18nKey.all) }
 							</button>

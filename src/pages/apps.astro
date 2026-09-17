@@ -20,7 +20,7 @@ const categories = ["全部", ...new Set(recordApps.map((app) => app.category))]
 		description="我使用过的应用和工具推荐。"
 		icon="material-symbols:apps"
 	>
-		<nav class="apps-filter" aria-label="应用分类">
+		<nav class="apps-filter" aria-label="应用分类" data-sliding-pill-group>
 			{categories.map((category, index) => (
 				<button
 					type="button"

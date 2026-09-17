@@ -116,7 +116,7 @@ function formatCellLabel(day: ActivityDay, noun: string): string {
 	</div>
 
 	{hasTabs && (
-		<div class="activity-tabs" role="tablist" aria-label="活动数据来源">
+		<div class="activity-tabs" role="tablist" aria-label="活动数据来源" data-sliding-pill-group>
 			{datasets.map((dataset, index) => (
 				<button
 					type="button"

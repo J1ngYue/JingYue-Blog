@@ -447,9 +447,14 @@ onMount(() => {
 >
 	<div bind:this={mapCanvas} class="footprint-map__canvas"></div>
 
-	<div class:is-expanded={filtersExpanded} class="footprint-map__filters">
+	<div
+		class:is-expanded={filtersExpanded}
+		class="footprint-map__filters"
+		data-sliding-pill-group
+	>
 		<button
 			class="footprint-map__filter-toggle"
+			data-sliding-pill-ignore
 			type="button"
 			onclick={() => (filtersExpanded = !filtersExpanded)}
 			aria-label={filtersExpanded ? "收起地图筛选" : "展开地图筛选"}
