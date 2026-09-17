@@ -4,7 +4,7 @@
   data-active-mascot="feibi"
   role="status"
   aria-live="polite"
-  aria-label="菲比啾比、Duro 与咕咕嘎嘎正在加载 JingYue 博客"
+  aria-label="菲比啾比、Duro、咕咕嘎嘎与 DeepSeek 大肥鱼正在加载 JingYue 博客"
 >
   <div class="blog-entry-loader__backdrop" aria-hidden="true"></div>
   <div class="blog-entry-loader__scribbles" aria-hidden="true">
@@ -59,6 +59,16 @@
         <strong>咕咕嘎嘎</strong>
         <small>把最后一颗星送达</small>
       </article>
+
+      <article class="blog-entry-loader__mascot blog-entry-loader__mascot--deepseek" data-loader-mascot="deepseek">
+        <div class="blog-entry-loader__card">
+          <span class="blog-entry-loader__arrival">04</span>
+          <div class="blog-entry-loader__sprite blog-entry-loader__sprite--deepseek" aria-hidden="true"></div>
+          <span class="blog-entry-loader__shadow" aria-hidden="true"></span>
+        </div>
+        <strong>DeepSeek</strong>
+        <small>衔着深蓝的答案游来</small>
+      </article>
     </section>
 
     <section class="blog-entry-loader__progress">
@@ -73,7 +83,7 @@
 
   <footer class="blog-entry-loader__footer" aria-hidden="true">
     <span>JINGYUE'S BLOG</span>
-    <span>FEIBI · DURO · GUGUGAGA</span>
+    <span>FEIBI · DURO · GUGUGAGA · DEEPSEEK</span>
   </footer>
 </div>
 
@@ -99,6 +109,7 @@
       "/pio/models/pets/feibi/loader-feibi-unified.webp",
       "/pio/models/pets/doro/loader-duro-cute-v2.webp",
       "/pio/models/pets/gugugaga/loader-gugugaga-unified.webp",
+      "/pio/models/pets/deepseek/loader-deepseek-whale.webp",
     ];
     let value = 0;
     let target = 8;
@@ -123,7 +134,13 @@
       if (scene) scene.setAttribute("aria-valuenow", String(displayed));
       loader.style.setProperty("--loader-progress", `${normalized}%`);
       loader.style.setProperty("--loader-progress-number", String(normalized));
-      loader.dataset.activeMascot = normalized < 34 ? "feibi" : normalized < 67 ? "doro" : "gugu";
+      loader.dataset.activeMascot = normalized < 25
+        ? "feibi"
+        : normalized < 50
+          ? "doro"
+          : normalized < 75
+            ? "gugu"
+            : "deepseek";
     };
     const paintProgress = () => {
       if (finished) return;
@@ -177,14 +194,17 @@
     failsafe = setTimeout(() => finish(true), 10000);
 
     const castReady = Promise.all(mascotAssets.map(decode)).then(async () => {
-      target = Math.max(target, 30);
+      target = Math.max(target, 24);
       updateStage("月光先到了", "菲比啾比沿着雨声，为你推开故事的门");
-      await delay(reducedMotion ? 0 : 460);
-      target = Math.max(target, 57);
+      await delay(reducedMotion ? 0 : 380);
+      target = Math.max(target, 48);
       updateStage("花信落进纸箱", "Duro 探出头，把一小簇温柔放在窗边");
-      await delay(reducedMotion ? 0 : 480);
-      target = Math.max(target, 79);
+      await delay(reducedMotion ? 0 : 400);
+      target = Math.max(target, 72);
       updateStage("星光已经到齐", "咕咕嘎嘎拍拍翅膀，替今夜点亮最后一盏灯");
+      await delay(reducedMotion ? 0 : 420);
+      target = Math.max(target, 86);
+      updateStage("深海回声浮上来", "DeepSeek 大肥鱼摆摆尾巴，把答案送进今夜的潮汐");
     });
     const domReady = document.readyState === "loading"
       ? new Promise((resolve) => document.addEventListener("DOMContentLoaded", resolve, { once: true }))
@@ -218,6 +238,7 @@
     --loader-yellow: #f3d984;
     --loader-yellow-soft: #fff3c8;
     --loader-lilac: #f2ecff;
+    --loader-blue-soft: #e4f3ff;
     position: fixed;
     inset: 0;
     z-index: 2147482000;
@@ -346,7 +367,7 @@
   .blog-entry-loader__stage {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: end;
     gap: clamp(.65rem, 2vw, 1.5rem);
     min-height: clamp(15rem, 35vh, 21rem);
@@ -391,6 +412,7 @@
   .blog-entry-loader__mascot--feibi { --loader-card: var(--loader-pink-soft); --loader-arrival-tilt: -4deg; animation-delay: 80ms; }
   .blog-entry-loader__mascot--doro { --loader-card: var(--loader-lilac); --loader-arrival-tilt: 2deg; animation-delay: 390ms; }
   .blog-entry-loader__mascot--gugu { --loader-card: var(--loader-yellow-soft); --loader-arrival-tilt: 4deg; animation-delay: 700ms; }
+  .blog-entry-loader__mascot--deepseek { --loader-card: var(--loader-blue-soft); --loader-arrival-tilt: -2deg; animation-delay: 1010ms; }
   .blog-entry-loader__card {
     position: relative;
     display: grid;
@@ -407,6 +429,7 @@
     transition: opacity 320ms ease, transform 480ms cubic-bezier(.2, .8, .2, 1), box-shadow 480ms ease;
   }
   .blog-entry-loader__mascot--doro .blog-entry-loader__card { background: var(--loader-lilac); }
+  .blog-entry-loader__mascot--deepseek .blog-entry-loader__card { background: var(--loader-blue-soft); }
   .blog-entry-loader__card::before,
   .blog-entry-loader__card::after {
     position: absolute;
@@ -445,7 +468,8 @@
   }
   .blog-entry-loader__sprite--feibi,
   .blog-entry-loader__sprite--doro,
-  .blog-entry-loader__sprite--gugu {
+  .blog-entry-loader__sprite--gugu,
+  .blog-entry-loader__sprite--deepseek {
     width: clamp(8rem, 13vw, 11.8rem);
     aspect-ratio: 1;
   }
@@ -460,6 +484,10 @@
   .blog-entry-loader__sprite--gugu {
     background-image: url('/pio/models/pets/gugugaga/loader-gugugaga-unified.webp');
     animation: blog-loader-gugu-greeting 2.35s cubic-bezier(.45, 0, .2, 1) infinite;
+  }
+  .blog-entry-loader__sprite--deepseek {
+    background-image: url('/pio/models/pets/deepseek/loader-deepseek-whale.webp');
+    animation: blog-loader-deepseek-swim 2.7s cubic-bezier(.45, 0, .2, 1) infinite;
   }
   .blog-entry-loader__shadow {
     position: absolute;
@@ -489,13 +517,15 @@
   }
   .blog-entry-loader[data-active-mascot="feibi"] .blog-entry-loader__mascot--feibi .blog-entry-loader__card,
   .blog-entry-loader[data-active-mascot="doro"] .blog-entry-loader__mascot--doro .blog-entry-loader__card,
-  .blog-entry-loader[data-active-mascot="gugu"] .blog-entry-loader__mascot--gugu .blog-entry-loader__card {
+  .blog-entry-loader[data-active-mascot="gugu"] .blog-entry-loader__mascot--gugu .blog-entry-loader__card,
+  .blog-entry-loader[data-active-mascot="deepseek"] .blog-entry-loader__mascot--deepseek .blog-entry-loader__card {
     box-shadow: .42rem .5rem 0 var(--loader-ink), 0 1.25rem 2.5rem rgb(216 92 134 / 16%);
     transform: translateY(-.5rem) rotate(0deg);
   }
   .blog-entry-loader[data-active-mascot="feibi"] .blog-entry-loader__mascot:not(.blog-entry-loader__mascot--feibi) .blog-entry-loader__card,
   .blog-entry-loader[data-active-mascot="doro"] .blog-entry-loader__mascot:not(.blog-entry-loader__mascot--doro) .blog-entry-loader__card,
-  .blog-entry-loader[data-active-mascot="gugu"] .blog-entry-loader__mascot:not(.blog-entry-loader__mascot--gugu) .blog-entry-loader__card { transform: scale(.98); }
+  .blog-entry-loader[data-active-mascot="gugu"] .blog-entry-loader__mascot:not(.blog-entry-loader__mascot--gugu) .blog-entry-loader__card,
+  .blog-entry-loader[data-active-mascot="deepseek"] .blog-entry-loader__mascot:not(.blog-entry-loader__mascot--deepseek) .blog-entry-loader__card { transform: scale(.98); }
   .blog-entry-loader__progress {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -571,6 +601,7 @@
   .blog-entry-loader.is-complete .blog-entry-loader__mascot { animation: blog-loader-cast-ready 560ms cubic-bezier(.16, 1, .3, 1) both; }
   .blog-entry-loader.is-complete .blog-entry-loader__mascot--doro { animation-delay: 70ms; }
   .blog-entry-loader.is-complete .blog-entry-loader__mascot--gugu { animation-delay: 140ms; }
+  .blog-entry-loader.is-complete .blog-entry-loader__mascot--deepseek { animation-delay: 210ms; }
   .blog-entry-loader.is-complete .blog-entry-loader__heading h1 em { animation: blog-loader-ready-word 520ms cubic-bezier(.16, 1, .3, 1) both; }
   @keyframes blog-loader-cast-in {
     0% { opacity: 0; transform: translateY(2.7rem) rotate(var(--loader-arrival-tilt, -4deg)) scale(.9); }
@@ -591,6 +622,11 @@
     0%, 100% { transform: translateY(.1rem) rotate(-1.4deg); }
     38% { transform: translateY(-.55rem) rotate(1.8deg); }
     62% { transform: translateY(-.3rem) rotate(-.7deg); }
+  }
+  @keyframes blog-loader-deepseek-swim {
+    0%, 100% { transform: translate3d(-.1rem, .12rem, 0) rotate(-1.8deg); }
+    42% { transform: translate3d(.24rem, -.48rem, 0) rotate(1.4deg); }
+    70% { transform: translate3d(.08rem, -.24rem, 0) rotate(-.55deg); }
   }
   @keyframes blog-loader-shadow { 0%, 100% { opacity: .5; transform: scaleX(.74); } 50% { opacity: .28; transform: scaleX(.9); } }
   @keyframes blog-loader-petal {
@@ -620,7 +656,8 @@
     .blog-entry-loader__arrival { top: .42rem; left: .42rem; width: 1.5rem; border-width: 1.5px; font-size: .48rem; }
     .blog-entry-loader__sprite--feibi,
     .blog-entry-loader__sprite--doro,
-    .blog-entry-loader__sprite--gugu { width: min(6.2rem, 24vw); }
+    .blog-entry-loader__sprite--gugu,
+    .blog-entry-loader__sprite--deepseek { width: min(5.5rem, 21vw); }
     .blog-entry-loader__mascot > strong { margin-top: .62rem; font-size: .72rem; }
     .blog-entry-loader__mascot > small { display: none; }
     .blog-entry-loader__progress { width: 100%; padding: .7rem .8rem; }
