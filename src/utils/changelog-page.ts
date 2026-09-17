@@ -112,45 +112,14 @@ function initChangelogPage() {
 			y,
 		};
 	};
-	const drawRowArrows = (cards: HTMLElement[], columns: number) => {
-		wires.querySelectorAll("[data-row-arrow]").forEach((node) => {
-			node.remove();
-		});
-		const boardBox = board.getBoundingClientRect();
+	const layout = () => {
+		layoutFrame = 0;
+		const cards = visibleCards();
+		if (!cards.length || !page.isConnected) return;
 		wires.setAttribute(
 			"viewBox",
 			`0 0 ${Math.max(board.clientWidth, board.scrollWidth)} ${Math.max(board.clientHeight, board.scrollHeight)}`,
 		);
-		const rows = Math.ceil(cards.length / columns);
-		for (let row = 0; row < rows - 1; row += 1) {
-			const fromCard = cards[row * columns + columns - 1];
-			const toCard = cards[(row + 1) * columns];
-			if (!fromCard || !toCard) continue;
-			const from = fromCard.getBoundingClientRect();
-			const to = toCard.getBoundingClientRect();
-			const fromY = from.top - boardBox.top + from.height / 2;
-			const toY = to.top - boardBox.top + to.height / 2;
-			const fromX =
-				row % 2 === 0 ? from.right - boardBox.left : from.left - boardBox.left;
-			const toX =
-				row % 2 === 0 ? to.right - boardBox.left : to.left - boardBox.left;
-			const outside =
-				row % 2 === 0 ? Math.max(fromX, toX) + 15 : Math.min(fromX, toX) - 15;
-			const path = makePath(
-				`M ${fromX} ${fromY} H ${outside} V ${toY} H ${toX}`,
-				"changelog-wire changelog-wire--row",
-			);
-			path.dataset.rowArrow = "true";
-			wires.appendChild(path);
-		}
-	};
-	const layout = () => {
-		layoutFrame = 0;
-		const cards = visibleCards();
-		wires.querySelectorAll("[data-row-arrow]").forEach((node) => {
-			node.remove();
-		});
-		if (!cards.length || !page.isConnected) return;
 		const columns = Math.max(
 			1,
 			getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length,
@@ -162,7 +131,6 @@ function initChangelogPage() {
 			card.style.order = String(row * columns + visualColumn);
 		});
 		clearHover();
-		drawRowArrows(cards, columns);
 	};
 	const scheduleLayout = () => {
 		if (layoutFrame) cancelAnimationFrame(layoutFrame);
@@ -194,12 +162,34 @@ function initChangelogPage() {
 			hoverFrame = 0;
 		});
 	};
+	const getHoverLinks = (card: HTMLElement): ClientChangelogLink[] => {
+		const sourceIndex = Number(card.dataset.index);
+		const sourceType = card.dataset.logType;
+		const sourceLabel = card.dataset.logTypeLabel ?? "相关更新";
+		if (!Number.isFinite(sourceIndex) || !sourceType) return readLinks(card);
+
+		const sameType = visibleCards()
+			.filter(
+				(candidate) =>
+					candidate !== card && candidate.dataset.logType === sourceType,
+			)
+			.map((candidate) => Number(candidate.dataset.index))
+			.filter(Number.isFinite)
+			.sort(
+				(first, second) =>
+					Math.abs(first - sourceIndex) - Math.abs(second - sourceIndex),
+			)
+			.slice(0, 3)
+			.map((targetIndex) => ({ t: targetIndex, p: [sourceLabel] }));
+
+		return sameType.length ? sameType : readLinks(card);
+	};
 	const showRelations = (card: HTMLElement) => {
 		clearHover();
 		activeCard = card;
 		board.classList.add("is-hovering");
 		card.classList.add("is-active");
-		const links = readLinks(card);
+		const links = getHoverLinks(card);
 		if (!links.length) return;
 		const boardBox = board.getBoundingClientRect();
 		const sourceRect = card.getBoundingClientRect();
@@ -219,7 +209,7 @@ function initChangelogPage() {
 			const dx = targetCenter.x - sourceCenter.x;
 			const dy = targetCenter.y - sourceCenter.y;
 			const length = Math.max(1, Math.hypot(dx, dy));
-			const curve = Math.min(48, length * 0.1);
+			const curve = Math.min(72, Math.max(18, length * 0.12));
 			const control = {
 				x: (sourceCenter.x + targetCenter.x) / 2 - (dy / length) * curve,
 				y: (sourceCenter.y + targetCenter.y) / 2 + (dx / length) * curve,

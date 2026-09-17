@@ -90,8 +90,8 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		<div class="changelog-board" data-changelog>
 			<svg class="changelog-wires" data-changelog-wires aria-hidden="true">
 				<defs>
-					<marker id="changelog-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-						<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+					<marker id="changelog-arrow" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
+						<path d="M0 0L10 5L0 10L2.4 5Z" fill="#129d97" />
 					</marker>
 				</defs>
 			</svg>
@@ -238,7 +238,7 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		font-size: 0.64rem;
 	}
 
-	/* 关系图层：卡片保持方形网格，SVG 只负责连接关系，不参与布局。 */
+	/* 关系图层：卡片保持方形网格，SVG 只负责悬浮关系箭头。 */
 	.changelog-board {
 		position: relative;
 		isolation: isolate;
@@ -595,26 +595,24 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 
 	:global(.changelog-wire) {
 		fill: none;
-		stroke-width: 1.5px;
-	}
-
-	:global(.changelog-wire--row) {
-		stroke: #00a29b;
-		opacity: 0.34;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		vector-effect: non-scaling-stroke;
 	}
 
 	:global(.changelog-wire--hover) {
-		stroke: #00a29b;
-		stroke-width: 1.75px;
-		stroke-dasharray: 6 5;
-		stroke-dashoffset: 11px;
+		stroke: #129d97;
+		stroke-width: 2px;
+		stroke-dasharray: 7 6;
+		stroke-dashoffset: 26px;
 		opacity: 0;
-		transition: opacity 240ms ease-out, stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1);
+		filter: drop-shadow(0 1px 1px rgb(18 157 151 / 12%));
+		transition: opacity 180ms ease-out, stroke-dashoffset 380ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	:global(.changelog-wire--hover.is-drawn) {
 		stroke-dashoffset: 0;
-		opacity: 0.84;
+		opacity: 0.96;
 	}
 
 	:global(.changelog-wire-label) {
