@@ -1,0 +1,22 @@
+---
+import ScheduleDashboard from "@/components/pages/personal/ScheduleDashboard.astro";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+---
+
+<MainGridLayout
+	title="日历"
+	bannerTitle="我的"
+	description="日程、生日与纪念日"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<RecordPageShell
+		title="日历"
+		description="用日历管理日程、生日与纪念日，重要时刻一目了然。"
+		icon="material-symbols:calendar-month-outline-rounded"
+	>
+		<ScheduleDashboard />
+	</RecordPageShell>
+</MainGridLayout>

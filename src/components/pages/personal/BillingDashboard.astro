@@ -1,0 +1,939 @@
+---
+import monthlyCover from "@/assets/images/HomeReference/gallery-1.webp";
+import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
+import { personalBillsConfig } from "@/config/personalHubConfig";
+
+const entries = personalBillsConfig.entries;
+const entryPayload = JSON.stringify(entries);
+const months = [...new Set(entries.map((entry) => entry.date.slice(0, 7)))]
+	.sort()
+	.reverse();
+const selectedMonth = months[0] ?? "2026-09";
+const annualIncome = entries
+	.filter((entry) => entry.type === "income")
+	.reduce((sum, entry) => sum + entry.amount, 0);
+const annualExpense = entries
+	.filter((entry) => entry.type === "expense")
+	.reduce((sum, entry) => sum + entry.amount, 0);
+const monthEntries = entries.filter((entry) =>
+	entry.date.startsWith(selectedMonth),
+);
+const monthIncome = monthEntries
+	.filter((entry) => entry.type === "income")
+	.reduce((sum, entry) => sum + entry.amount, 0);
+const monthExpense = monthEntries
+	.filter((entry) => entry.type === "expense")
+	.reduce((sum, entry) => sum + entry.amount, 0);
+const money = (value: number) => value.toFixed(2);
+---
+
+<section class="billing-dashboard" data-billing-dashboard data-entries={entryPayload} data-month={selectedMonth}>
+	<div class="billing-hero-grid">
+		<article class="billing-hero" style={`--bill-cover: url("${annualCover.src}")`}>
+			<p>年度结余</p>
+			<strong data-annual-balance>{money(annualIncome - annualExpense)}</strong>
+			<span>本年收入 {money(annualIncome)} · 本年支出 {money(annualExpense)}</span>
+		</article>
+		<article class="billing-hero billing-hero--month" style={`--bill-cover: url("${monthlyCover.src}")`}>
+			<p>本月收支情况</p>
+			<strong data-month-balance>{money(monthIncome - monthExpense)}</strong>
+			<span>收入 <b data-month-income>{money(monthIncome)}</b> · 支出 <b data-month-expense>{money(monthExpense)}</b></span>
+		</article>
+	</div>
+
+	<section class="billing-card billing-ledger" aria-labelledby="billing-ledger-title">
+		<header class="billing-card__header">
+			<div>
+				<h2 id="billing-ledger-title">本月流水</h2>
+				<span>演示数据 · 可在配置中替换</span>
+			</div>
+			<label class="billing-month-select">
+				<span class="sr-only">筛选月份</span>
+				<select data-bill-month aria-label="筛选月份">
+					{months.map((month) => {
+						const [year, monthNumber] = month.split("-");
+						return <option value={month} selected={month === selectedMonth}>{year}年{Number(monthNumber)}月</option>;
+					})}
+				</select>
+			</label>
+		</header>
+		<div class="billing-transactions" data-bill-transactions aria-live="polite"></div>
+		<nav class="billing-pagination" aria-label="账单分页">
+			<button type="button" data-bill-page-prev aria-label="上一页">‹</button>
+			<span data-bill-page>1 / 1</span>
+			<button type="button" data-bill-page-next aria-label="下一页">›</button>
+		</nav>
+	</section>
+
+	<section class="billing-card billing-calendar-card" aria-labelledby="billing-calendar-title">
+		<header class="billing-card__header">
+			<div>
+				<h2 id="billing-calendar-title">账单日历</h2>
+				<span>农历 · 每日收支</span>
+			</div>
+		</header>
+		<div class="billing-weekdays" aria-hidden="true">
+			<span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+		</div>
+		<div class="billing-calendar" data-bill-calendar></div>
+	</section>
+
+	<div class="billing-insight-grid">
+		<section class="billing-card billing-chart-card" aria-labelledby="billing-daily-title">
+			<header class="billing-card__header">
+				<div><h2 id="billing-daily-title">本月每日收支</h2><span data-daily-summary></span></div>
+			</header>
+			<div class="billing-chart" data-daily-chart role="img" aria-label="本月每日收入与支出折线图"></div>
+		</section>
+
+		<section class="billing-card billing-chart-card" aria-labelledby="billing-year-title">
+			<header class="billing-card__header">
+				<div><h2 id="billing-year-title">本年流水情况</h2><span data-year-summary></span></div>
+			</header>
+			<div class="billing-chart" data-year-chart role="img" aria-label="本年每月收入与支出折线图"></div>
+		</section>
+	</div>
+
+	<div class="billing-insight-grid billing-insight-grid--rankings">
+		<section class="billing-card billing-ranking" aria-labelledby="billing-income-title">
+			<header class="billing-card__header">
+				<div><h2 id="billing-income-title">本月分类收入</h2><span data-income-summary></span></div>
+			</header>
+			<ol data-income-categories></ol>
+		</section>
+
+		<section class="billing-card billing-ranking" aria-labelledby="billing-expense-title">
+			<header class="billing-card__header">
+				<div><h2 id="billing-expense-title">本月各分类支出排行</h2><span data-expense-summary></span></div>
+			</header>
+			<ol data-expense-categories></ol>
+		</section>
+	</div>
+</section>
+
+<style is:global>
+	.billing-dashboard {
+		--bill-ink: #111113;
+		--bill-muted: #77777e;
+		--bill-line: rgb(17 17 19 / 12%);
+		--bill-paper: rgb(255 255 255 / 95%);
+		--bill-income: #ef8268;
+		--bill-expense: #4abcb4;
+		display: grid;
+		gap: 0.85rem;
+		color: var(--bill-ink);
+	}
+
+	html.dark .billing-dashboard {
+		--bill-ink: #f5f5f5;
+		--bill-muted: #aaaab2;
+		--bill-line: rgb(255 255 255 / 14%);
+		--bill-paper: rgb(12 12 13 / 94%);
+	}
+
+	.billing-hero-grid,
+	.billing-insight-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.85rem;
+	}
+
+	.billing-hero {
+		position: relative;
+		display: flex;
+		overflow: hidden;
+		min-height: 8.8rem;
+		justify-content: flex-end;
+		flex-direction: column;
+		border: 1px solid var(--bill-line);
+		border-radius: 0.85rem;
+		background-image: linear-gradient(90deg, rgb(10 14 20 / 78%), rgb(10 14 20 / 18%)), var(--bill-cover);
+		background-position: center 64%;
+		background-size: cover;
+		padding: 1rem;
+		color: #fff;
+		box-shadow: 0 0.55rem 1.4rem rgb(17 17 19 / 8%);
+	}
+
+	.billing-hero--month {
+		background-position: center 42%;
+	}
+
+	.billing-hero::after {
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
+		content: "";
+		pointer-events: none;
+	}
+
+	.billing-hero p,
+	.billing-hero strong,
+	.billing-hero span {
+		position: relative;
+		z-index: 1;
+		margin: 0;
+		text-shadow: 0 1px 0.4rem rgb(0 0 0 / 45%);
+	}
+
+	.billing-hero p {
+		font-size: 0.72rem;
+		font-weight: 700;
+	}
+
+	.billing-hero strong {
+		margin-top: 0.15rem;
+		font-size: clamp(1.65rem, 4vw, 2.4rem);
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
+	}
+
+	.billing-hero span {
+		margin-top: 0.45rem;
+		font-size: 0.62rem;
+		opacity: 0.82;
+	}
+
+	.billing-hero b {
+		font-weight: inherit;
+	}
+
+	.billing-card {
+		overflow: hidden;
+		border: 1px solid var(--bill-line);
+		border-radius: 0.85rem;
+		background: var(--bill-paper);
+		box-shadow: 0 0.55rem 1.4rem rgb(17 17 19 / 6%);
+	}
+
+	html.dark .billing-card {
+		box-shadow: 0 0.55rem 1.4rem rgb(0 0 0 / 24%);
+	}
+
+	.billing-card__header {
+		display: flex;
+		min-height: 3.1rem;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		border-bottom: 1px solid var(--bill-line);
+		padding: 0.7rem 0.85rem;
+	}
+
+	.billing-card__header h2,
+	.billing-card__header span {
+		margin: 0;
+	}
+
+	.billing-card__header h2 {
+		font-size: 0.84rem;
+		font-weight: 760;
+	}
+
+	.billing-card__header span {
+		display: block;
+		margin-top: 0.12rem;
+		color: var(--bill-muted);
+		font-size: 0.58rem;
+	}
+
+	.billing-month-select select {
+		min-height: 2rem;
+		border: 1px solid var(--bill-line);
+		border-radius: 0.5rem;
+		background: var(--bill-paper);
+		padding: 0.25rem 1.8rem 0.25rem 0.65rem;
+		color: var(--bill-ink);
+		font: inherit;
+		font-size: 0.68rem;
+		cursor: pointer;
+	}
+
+	.billing-month-select select:focus-visible {
+		outline: 2px solid var(--bill-ink);
+		outline-offset: 2px;
+	}
+
+	.billing-transactions {
+		min-height: 16.5rem;
+		padding: 0.35rem 0.85rem;
+	}
+
+	.billing-day-group + .billing-day-group {
+		margin-top: 0.35rem;
+	}
+
+	.billing-day-summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		border-bottom: 1px solid var(--bill-line);
+		padding: 0.55rem 0;
+		font-size: 0.7rem;
+		font-weight: 750;
+	}
+
+	.billing-day-summary span:last-child {
+		color: var(--bill-muted);
+		font-size: 0.58rem;
+		font-weight: 500;
+	}
+
+	.billing-transaction {
+		display: grid;
+		grid-template-columns: 1.65rem minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.55rem;
+		border-bottom: 1px solid var(--bill-line);
+		padding: 0.45rem 0;
+	}
+
+	.billing-transaction:last-child {
+		border-bottom: 0;
+	}
+
+	.billing-transaction__marker {
+		display: grid;
+		width: 1.55rem;
+		height: 1.55rem;
+		place-items: center;
+		border-radius: 0.42rem;
+		background: rgb(255 239 196 / 66%);
+		color: #725b18;
+		font-size: 0.56rem;
+		font-weight: 800;
+	}
+
+	html.dark .billing-transaction__marker {
+		background: rgb(105 79 12 / 42%);
+		color: #ffe39a;
+	}
+
+	.billing-transaction strong,
+	.billing-transaction small {
+		display: block;
+	}
+
+	.billing-transaction strong {
+		font-size: 0.7rem;
+	}
+
+	.billing-transaction small {
+		margin-top: 0.08rem;
+		color: var(--bill-muted);
+		font-size: 0.55rem;
+	}
+
+	.billing-transaction__amount {
+		color: var(--bill-expense);
+		font-size: 0.74rem;
+		font-weight: 760;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.billing-transaction__amount.is-income {
+		color: var(--bill-income);
+	}
+
+	.billing-empty {
+		display: grid;
+		min-height: 14rem;
+		place-items: center;
+		margin: 0;
+		color: var(--bill-muted);
+		font-size: 0.76rem;
+	}
+
+	.billing-pagination {
+		display: flex;
+		min-height: 2.6rem;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		border-top: 1px solid var(--bill-line);
+	}
+
+	.billing-pagination button {
+		display: grid;
+		width: 1.65rem;
+		height: 1.65rem;
+		place-items: center;
+		border: 1px solid var(--bill-line);
+		border-radius: 50%;
+		background: transparent;
+		color: var(--bill-ink);
+		font: inherit;
+		cursor: pointer;
+		transition: background-color 180ms ease, color 180ms ease;
+	}
+
+	.billing-pagination button:not(:disabled):hover,
+	.billing-pagination button:not(:disabled):focus-visible {
+		background: var(--bill-ink);
+		color: var(--bill-paper);
+		outline: none;
+	}
+
+	.billing-pagination button:disabled {
+		opacity: 0.25;
+		cursor: not-allowed;
+	}
+
+	.billing-pagination span {
+		color: var(--bill-muted);
+		font-size: 0.62rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.billing-weekdays,
+	.billing-calendar {
+		display: grid;
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+	}
+
+	.billing-weekdays {
+		padding: 0.75rem 0.75rem 0.25rem;
+		color: var(--bill-muted);
+		font-size: 0.58rem;
+		text-align: center;
+	}
+
+	.billing-calendar {
+		gap: 0.28rem;
+		padding: 0.25rem 0.75rem 0.75rem;
+	}
+
+	.billing-calendar__day {
+		min-height: 4.25rem;
+		border: 1px solid transparent;
+		border-radius: 0.5rem;
+		background: rgb(17 17 19 / 3.5%);
+		padding: 0.4rem;
+		color: var(--bill-ink);
+	}
+
+	html.dark .billing-calendar__day {
+		background: rgb(255 255 255 / 5%);
+	}
+
+	.billing-calendar__day.is-outside {
+		opacity: 0.34;
+	}
+
+	.billing-calendar__day.is-today {
+		border-color: #76cfa2;
+		background: rgb(118 207 162 / 8%);
+	}
+
+	.billing-calendar__number,
+	.billing-calendar__lunar,
+	.billing-calendar__amount {
+		display: block;
+	}
+
+	.billing-calendar__number {
+		font-size: 0.72rem;
+		font-weight: 750;
+	}
+
+	.billing-calendar__lunar {
+		margin-top: 0.08rem;
+		color: var(--bill-muted);
+		font-size: 0.5rem;
+	}
+
+	.billing-calendar__amount {
+		margin-top: 0.35rem;
+		color: var(--bill-expense);
+		font-size: 0.55rem;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.billing-calendar__amount.is-income {
+		color: var(--bill-income);
+	}
+
+	.billing-chart {
+		min-height: 12rem;
+		padding: 0.7rem 0.7rem 0.35rem;
+	}
+
+	.billing-chart svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		overflow: visible;
+	}
+
+	.billing-chart__grid {
+		stroke: var(--bill-line);
+		stroke-width: 1;
+	}
+
+	.billing-chart__income,
+	.billing-chart__expense {
+		fill: none;
+		stroke-width: 2.5;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.billing-chart__income { stroke: var(--bill-income); }
+	.billing-chart__expense { stroke: var(--bill-expense); }
+
+	.billing-chart__dot-income { fill: var(--bill-income); }
+	.billing-chart__dot-expense { fill: var(--bill-expense); }
+
+	.billing-chart-labels {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-top: 0.15rem;
+		color: var(--bill-muted);
+		font-size: 0.5rem;
+	}
+
+	.billing-chart-legend {
+		display: flex;
+		justify-content: center;
+		gap: 1rem;
+		margin-top: 0.25rem;
+		color: var(--bill-muted);
+		font-size: 0.56rem;
+	}
+
+	.billing-chart-legend i {
+		display: inline-block;
+		width: 0.45rem;
+		height: 0.45rem;
+		margin-right: 0.25rem;
+		border-radius: 50%;
+		background: var(--bill-income);
+	}
+
+	.billing-chart-legend span:last-child i {
+		background: var(--bill-expense);
+	}
+
+	.billing-ranking ol {
+		margin: 0;
+		padding: 0.65rem 0.8rem 0.85rem;
+		list-style: none;
+	}
+
+	.billing-ranking li {
+		display: grid;
+		grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.55rem;
+		border-bottom: 1px solid var(--bill-line);
+		padding: 0.58rem 0;
+	}
+
+	.billing-ranking li:last-child {
+		border-bottom: 0;
+	}
+
+	.billing-ranking__rank {
+		display: grid;
+		width: 1.45rem;
+		height: 1.45rem;
+		place-items: center;
+		border-radius: 0.4rem;
+		background: rgb(17 17 19 / 5%);
+		color: var(--bill-muted);
+		font-size: 0.58rem;
+		font-weight: 800;
+	}
+
+	html.dark .billing-ranking__rank {
+		background: rgb(255 255 255 / 7%);
+	}
+
+	.billing-ranking strong,
+	.billing-ranking small {
+		display: block;
+	}
+
+	.billing-ranking strong {
+		font-size: 0.7rem;
+	}
+
+	.billing-ranking small {
+		margin-top: 0.1rem;
+		color: var(--bill-muted);
+		font-size: 0.53rem;
+	}
+
+	.billing-ranking__value {
+		color: var(--bill-expense);
+		font-size: 0.68rem;
+		font-weight: 750;
+		font-variant-numeric: tabular-nums;
+	}
+
+	[data-income-categories] .billing-ranking__value {
+		color: var(--bill-income);
+	}
+
+	@media (max-width: 700px) {
+		.billing-hero-grid,
+		.billing-insight-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.billing-hero {
+			min-height: 7.8rem;
+		}
+
+		.billing-calendar {
+			gap: 0.18rem;
+			padding-inline: 0.45rem;
+		}
+
+		.billing-weekdays {
+			padding-inline: 0.45rem;
+		}
+
+		.billing-calendar__day {
+			min-height: 3.8rem;
+			padding: 0.28rem;
+		}
+
+		.billing-calendar__amount {
+			font-size: 0.48rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.billing-dashboard * {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
+
+<script>
+	type BillEntry = {
+		date: string;
+		time: string;
+		category: string;
+		title: string;
+		type: "income" | "expense";
+		amount: number;
+	};
+
+	const billPad = (value: number) => String(value).padStart(2, "0");
+	const billMoney = (value: number) => value.toFixed(2);
+	const billWeekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+	const svgNamespace = "http://www.w3.org/2000/svg";
+
+	function billLunarDay(date: Date) {
+		try {
+			return new Intl.DateTimeFormat("zh-CN-u-ca-chinese", { day: "numeric" }).format(date);
+		} catch {
+			return "";
+		}
+	}
+
+	function billDate(value: string) {
+		const [year, month, day] = value.split("-").map(Number);
+		return new Date(year, month - 1, day);
+	}
+
+	function sumBill(entries: BillEntry[], type: BillEntry["type"]) {
+		return entries.filter((entry) => entry.type === type).reduce((sum, entry) => sum + entry.amount, 0);
+	}
+
+	function createBillChart(container: HTMLElement, income: number[], expense: number[], labels: string[]) {
+		container.replaceChildren();
+		const width = 620;
+		const height = 180;
+		const paddingX = 14;
+		const paddingY = 16;
+		const maximum = Math.max(1, ...income, ...expense);
+		const count = Math.max(2, income.length);
+		const point = (value: number, index: number) => {
+			const x = paddingX + (index / (count - 1)) * (width - paddingX * 2);
+			const y = height - paddingY - (value / maximum) * (height - paddingY * 2);
+			return [x, y] as const;
+		};
+
+		const svg = document.createElementNS(svgNamespace, "svg");
+		svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+		svg.setAttribute("aria-hidden", "true");
+		for (let index = 0; index < 4; index += 1) {
+			const line = document.createElementNS(svgNamespace, "line");
+			const y = paddingY + (index / 3) * (height - paddingY * 2);
+			line.setAttribute("x1", String(paddingX));
+			line.setAttribute("x2", String(width - paddingX));
+			line.setAttribute("y1", String(y));
+			line.setAttribute("y2", String(y));
+			line.setAttribute("class", "billing-chart__grid");
+			svg.append(line);
+		}
+
+		const addSeries = (values: number[], className: string, dotClass: string) => {
+			const polyline = document.createElementNS(svgNamespace, "polyline");
+			polyline.setAttribute("points", values.map((value, index) => point(value, index).join(",")).join(" "));
+			polyline.setAttribute("class", className);
+			svg.append(polyline);
+			values.forEach((value, index) => {
+				if (value <= 0) return;
+				const [x, y] = point(value, index);
+				const circle = document.createElementNS(svgNamespace, "circle");
+				circle.setAttribute("cx", String(x));
+				circle.setAttribute("cy", String(y));
+				circle.setAttribute("r", "3.4");
+				circle.setAttribute("class", dotClass);
+				svg.append(circle);
+			});
+		};
+
+		addSeries(income, "billing-chart__income", "billing-chart__dot-income");
+		addSeries(expense, "billing-chart__expense", "billing-chart__dot-expense");
+		container.append(svg);
+
+		const labelRow = document.createElement("div");
+		labelRow.className = "billing-chart-labels";
+		for (const label of labels) {
+			const item = document.createElement("span");
+			item.textContent = label;
+			labelRow.append(item);
+		}
+		const legend = document.createElement("div");
+		legend.className = "billing-chart-legend";
+		for (const label of ["收入", "支出"]) {
+			const item = document.createElement("span");
+			const dot = document.createElement("i");
+			item.append(dot, label);
+			legend.append(item);
+		}
+		container.append(labelRow, legend);
+	}
+
+	function initBillingDashboard() {
+		for (const root of document.querySelectorAll<HTMLElement>("[data-billing-dashboard]")) {
+			if (root.dataset.bound === "true") continue;
+			root.dataset.bound = "true";
+
+			const entries = JSON.parse(root.dataset.entries || "[]") as BillEntry[];
+			const monthSelect = root.querySelector<HTMLSelectElement>("[data-bill-month]");
+			const transactions = root.querySelector<HTMLElement>("[data-bill-transactions]");
+			const previousPage = root.querySelector<HTMLButtonElement>("[data-bill-page-prev]");
+			const nextPage = root.querySelector<HTMLButtonElement>("[data-bill-page-next]");
+			const pageLabel = root.querySelector<HTMLElement>("[data-bill-page]");
+			const calendar = root.querySelector<HTMLElement>("[data-bill-calendar]");
+			const dailyChart = root.querySelector<HTMLElement>("[data-daily-chart]");
+			const yearChart = root.querySelector<HTMLElement>("[data-year-chart]");
+			const dailySummary = root.querySelector<HTMLElement>("[data-daily-summary]");
+			const yearSummary = root.querySelector<HTMLElement>("[data-year-summary]");
+			const incomeList = root.querySelector<HTMLOListElement>("[data-income-categories]");
+			const expenseList = root.querySelector<HTMLOListElement>("[data-expense-categories]");
+			const incomeSummary = root.querySelector<HTMLElement>("[data-income-summary]");
+			const expenseSummary = root.querySelector<HTMLElement>("[data-expense-summary]");
+			const monthBalance = root.querySelector<HTMLElement>("[data-month-balance]");
+			const monthIncome = root.querySelector<HTMLElement>("[data-month-income]");
+			const monthExpense = root.querySelector<HTMLElement>("[data-month-expense]");
+
+			if (!monthSelect || !transactions || !previousPage || !nextPage || !pageLabel || !calendar || !dailyChart || !yearChart || !dailySummary || !yearSummary || !incomeList || !expenseList || !incomeSummary || !expenseSummary || !monthBalance || !monthIncome || !monthExpense) continue;
+
+			let page = 0;
+			const groupsPerPage = 2;
+
+			const selectedEntries = () => entries.filter((entry) => entry.date.startsWith(monthSelect.value));
+
+			const renderTransactions = () => {
+				const monthEntries = selectedEntries();
+				const dates = [...new Set(monthEntries.map((entry) => entry.date))].sort().reverse();
+				const totalPages = Math.max(1, Math.ceil(dates.length / groupsPerPage));
+				page = Math.min(page, totalPages - 1);
+				transactions.replaceChildren();
+
+				if (dates.length === 0) {
+					const empty = document.createElement("p");
+					empty.className = "billing-empty";
+					empty.textContent = "这个月还没有记录";
+					transactions.append(empty);
+				}
+
+				for (const dateValue of dates.slice(page * groupsPerPage, page * groupsPerPage + groupsPerPage)) {
+					const dayEntries = monthEntries.filter((entry) => entry.date === dateValue);
+					const section = document.createElement("section");
+					section.className = "billing-day-group";
+					const summary = document.createElement("div");
+					summary.className = "billing-day-summary";
+					const date = billDate(dateValue);
+					const dateText = document.createElement("span");
+					dateText.textContent = `${date.getMonth() + 1}月${date.getDate()}日(${billWeekdays[date.getDay()].slice(1)})`;
+					const totals = document.createElement("span");
+					totals.textContent = `支 ¥${billMoney(sumBill(dayEntries, "expense"))}  收 ¥${billMoney(sumBill(dayEntries, "income"))}`;
+					summary.append(dateText, totals);
+					section.append(summary);
+
+					for (const entry of dayEntries) {
+						const item = document.createElement("article");
+						item.className = "billing-transaction";
+						const marker = document.createElement("span");
+						marker.className = "billing-transaction__marker";
+						marker.textContent = entry.category.slice(0, 1);
+						const copy = document.createElement("div");
+						const heading = document.createElement("strong");
+						heading.textContent = `${entry.category} · ${entry.title}`;
+						const time = document.createElement("small");
+						time.textContent = entry.time;
+						copy.append(heading, time);
+						const amount = document.createElement("span");
+						amount.className = "billing-transaction__amount";
+						amount.classList.toggle("is-income", entry.type === "income");
+						amount.textContent = `${entry.type === "income" ? "+" : "-"}${billMoney(entry.amount)}`;
+						item.append(marker, copy, amount);
+						section.append(item);
+					}
+					transactions.append(section);
+				}
+
+				pageLabel.textContent = `${page + 1} / ${totalPages}`;
+				previousPage.disabled = page === 0;
+				nextPage.disabled = page >= totalPages - 1;
+			};
+
+			const renderCalendar = () => {
+				const [year, month] = monthSelect.value.split("-").map(Number);
+				const first = new Date(year, month - 1, 1);
+				const start = new Date(year, month - 1, 1 - first.getDay());
+				const today = new Date();
+				const monthEntries = selectedEntries();
+				calendar.replaceChildren();
+
+				for (let index = 0; index < 42; index += 1) {
+					const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+					const key = `${date.getFullYear()}-${billPad(date.getMonth() + 1)}-${billPad(date.getDate())}`;
+					const dayEntries = monthEntries.filter((entry) => entry.date === key);
+					const income = sumBill(dayEntries, "income");
+					const expense = sumBill(dayEntries, "expense");
+					const cell = document.createElement("div");
+					cell.className = "billing-calendar__day";
+					cell.classList.toggle("is-outside", date.getMonth() !== month - 1);
+					cell.classList.toggle("is-today", date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
+					const number = document.createElement("span");
+					number.className = "billing-calendar__number";
+					number.textContent = String(date.getDate());
+					const lunar = document.createElement("span");
+					lunar.className = "billing-calendar__lunar";
+					lunar.textContent = billLunarDay(date);
+					cell.append(number, lunar);
+					if (income > 0 || expense > 0) {
+						const amount = document.createElement("span");
+						amount.className = "billing-calendar__amount";
+						amount.classList.toggle("is-income", income > expense);
+						amount.textContent = income > expense ? `+${billMoney(income - expense)}` : `-${billMoney(expense - income)}`;
+						cell.append(amount);
+					}
+					calendar.append(cell);
+				}
+			};
+
+			const renderRanking = (list: HTMLOListElement, type: BillEntry["type"]) => {
+				const grouped = new Map<string, { amount: number; count: number }>();
+				for (const entry of selectedEntries().filter((item) => item.type === type)) {
+					const current = grouped.get(entry.category) || { amount: 0, count: 0 };
+					current.amount += entry.amount;
+					current.count += 1;
+					grouped.set(entry.category, current);
+				}
+				const ranking = [...grouped.entries()].sort((left, right) => right[1].amount - left[1].amount);
+				list.replaceChildren();
+				if (ranking.length === 0) {
+					const empty = document.createElement("li");
+					empty.textContent = "暂无记录";
+					list.append(empty);
+					return;
+				}
+				ranking.forEach(([category, stats], index) => {
+					const item = document.createElement("li");
+					const rank = document.createElement("span");
+					rank.className = "billing-ranking__rank";
+					rank.textContent = String(index + 1);
+					const copy = document.createElement("div");
+					const heading = document.createElement("strong");
+					heading.textContent = category;
+					const detail = document.createElement("small");
+					detail.textContent = `${type === "income" ? "收入" : "记账"}笔数 ${stats.count}`;
+					copy.append(heading, detail);
+					const value = document.createElement("span");
+					value.className = "billing-ranking__value";
+					value.textContent = billMoney(stats.amount);
+					item.append(rank, copy, value);
+					list.append(item);
+				});
+			};
+
+			const renderCharts = () => {
+				const [year, month] = monthSelect.value.split("-").map(Number);
+				const days = new Date(year, month, 0).getDate();
+				const dailyIncome = Array.from({ length: days }, () => 0);
+				const dailyExpense = Array.from({ length: days }, () => 0);
+				for (const entry of selectedEntries()) {
+					const day = Number(entry.date.slice(8, 10)) - 1;
+					(entry.type === "income" ? dailyIncome : dailyExpense)[day] += entry.amount;
+				}
+				const dailyLabelIndexes = [0, 6, 12, 18, 24, days - 1];
+				createBillChart(dailyChart, dailyIncome, dailyExpense, dailyLabelIndexes.map((index) => `${billPad(index + 1)}日`));
+				dailySummary.textContent = `收入 ${billMoney(sumBill(selectedEntries(), "income"))} · 支出 ${billMoney(sumBill(selectedEntries(), "expense"))}`;
+
+				const yearEntries = entries.filter((entry) => entry.date.startsWith(String(year)));
+				const yearlyIncome = Array.from({ length: 12 }, () => 0);
+				const yearlyExpense = Array.from({ length: 12 }, () => 0);
+				for (const entry of yearEntries) {
+					const entryMonth = Number(entry.date.slice(5, 7)) - 1;
+					(entry.type === "income" ? yearlyIncome : yearlyExpense)[entryMonth] += entry.amount;
+				}
+				createBillChart(yearChart, yearlyIncome, yearlyExpense, ["01月", "03月", "05月", "07月", "09月", "12月"]);
+				yearSummary.textContent = `${year}年 · 收入 ${billMoney(sumBill(yearEntries, "income"))} · 支出 ${billMoney(sumBill(yearEntries, "expense"))}`;
+			};
+
+			const renderSummary = () => {
+				const monthEntries = selectedEntries();
+				const income = sumBill(monthEntries, "income");
+				const expense = sumBill(monthEntries, "expense");
+				monthBalance.textContent = billMoney(income - expense);
+				monthIncome.textContent = billMoney(income);
+				monthExpense.textContent = billMoney(expense);
+				incomeSummary.textContent = `收入笔数 ${monthEntries.filter((entry) => entry.type === "income").length} · 总收入 ${billMoney(income)}`;
+				expenseSummary.textContent = `记账笔数 ${monthEntries.filter((entry) => entry.type === "expense").length} · 总支出 ${billMoney(expense)}`;
+			};
+
+			const renderAll = () => {
+				renderSummary();
+				renderTransactions();
+				renderCalendar();
+				renderCharts();
+				renderRanking(incomeList, "income");
+				renderRanking(expenseList, "expense");
+			};
+
+			monthSelect.addEventListener("change", () => {
+				page = 0;
+				renderAll();
+			});
+			previousPage.addEventListener("click", () => {
+				if (page <= 0) return;
+				page -= 1;
+				renderTransactions();
+			});
+			nextPage.addEventListener("click", () => {
+				page += 1;
+				renderTransactions();
+			});
+
+			renderAll();
+		}
+	}
+
+	initBillingDashboard();
+	document.addEventListener("astro:page-load", initBillingDashboard);
+	document.addEventListener("swup:contentReplaced", initBillingDashboard);
+</script>

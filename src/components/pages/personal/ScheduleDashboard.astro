@@ -1,0 +1,667 @@
+---
+import { Icon } from "astro-icon/components";
+import { personalScheduleConfig } from "@/config/personalHubConfig";
+
+const eventPayload = JSON.stringify(personalScheduleConfig.events);
+---
+
+<section
+	class="schedule-dashboard"
+	data-schedule-dashboard
+	data-events={eventPayload}
+>
+	<div class="schedule-toolbar">
+		<button type="button" class="schedule-arrow" data-calendar-prev aria-label="上一周">
+			<Icon is:inline name="material-symbols:chevron-left-rounded" />
+		</button>
+		<button type="button" class="schedule-period" data-calendar-today aria-label="回到今日">
+			<strong data-calendar-title>本周</strong>
+			<span data-calendar-range></span>
+		</button>
+		<button type="button" class="schedule-arrow" data-calendar-next aria-label="下一周">
+			<Icon is:inline name="material-symbols:chevron-right-rounded" />
+		</button>
+		<button type="button" class="schedule-view-switch" data-calendar-view aria-pressed="false">
+			<Icon is:inline name="material-symbols:grid-view-outline-rounded" />
+			<span>月视图</span>
+		</button>
+	</div>
+
+	<div class="schedule-calendar" data-calendar-mode="week">
+		<div class="schedule-weekdays" aria-hidden="true">
+			<span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+		</div>
+		<div class="schedule-days" data-calendar-grid aria-label="日历"></div>
+	</div>
+
+	<div class="schedule-panels">
+		<section class="schedule-panel schedule-panel--agenda" aria-labelledby="schedule-agenda-title">
+			<header>
+				<span class="schedule-panel__icon schedule-panel__icon--dark">
+					<Icon is:inline name="material-symbols:event-note-outline-rounded" />
+				</span>
+				<h2 id="schedule-agenda-title">今日日程</h2>
+				<output data-agenda-count>0</output>
+			</header>
+			<p class="schedule-panel__date" data-agenda-date></p>
+			<div class="schedule-agenda" data-agenda-list aria-live="polite"></div>
+		</section>
+
+		<section class="schedule-panel schedule-panel--anniversary" aria-labelledby="schedule-anniversary-title">
+			<header>
+				<span class="schedule-panel__icon schedule-panel__icon--rose">
+					<Icon is:inline name="material-symbols:cake-outline-rounded" />
+				</span>
+				<h2 id="schedule-anniversary-title">生日 · 纪念日 · 节假日</h2>
+				<output>{personalScheduleConfig.anniversaries.length}</output>
+			</header>
+			<ul class="schedule-anniversaries">
+				{personalScheduleConfig.anniversaries.map((item) => (
+					<li>
+						<strong>{item.title}</strong>
+						<span>{item.kind} / <time datetime={item.date}>{item.date}</time></span>
+					</li>
+				))}
+			</ul>
+		</section>
+	</div>
+</section>
+
+<style is:global>
+	.schedule-dashboard {
+		--schedule-ink: #111113;
+		--schedule-muted: #77777e;
+		--schedule-line: rgb(17 17 19 / 72%);
+		--schedule-soft-line: rgb(17 17 19 / 12%);
+		--schedule-paper: rgb(255 255 255 / 94%);
+		color: var(--schedule-ink);
+	}
+
+	html.dark .schedule-dashboard {
+		--schedule-ink: #f5f5f5;
+		--schedule-muted: #aaaab2;
+		--schedule-line: rgb(255 255 255 / 64%);
+		--schedule-soft-line: rgb(255 255 255 / 14%);
+		--schedule-paper: rgb(12 12 13 / 94%);
+	}
+
+	.schedule-toolbar {
+		position: relative;
+		display: grid;
+		grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	.schedule-arrow,
+	.schedule-period,
+	.schedule-view-switch,
+	.schedule-day {
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.schedule-arrow {
+		display: grid;
+		width: 2.25rem;
+		height: 2.25rem;
+		place-items: center;
+		border: 1.5px solid var(--schedule-line);
+		border-radius: 0.55rem;
+		background: var(--schedule-paper);
+		color: var(--schedule-ink);
+		transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+	}
+
+	.schedule-arrow:hover,
+	.schedule-arrow:focus-visible {
+		background: var(--schedule-ink);
+		color: var(--schedule-paper);
+		outline: none;
+		transform: translateY(-1px);
+	}
+
+	.schedule-arrow svg {
+		width: 1.35rem;
+		height: 1.35rem;
+	}
+
+	.schedule-period {
+		display: flex;
+		min-width: 0;
+		align-items: center;
+		flex-direction: column;
+		border: 0;
+		background: transparent;
+		color: var(--schedule-ink);
+	}
+
+	.schedule-period strong {
+		font-size: 1rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.schedule-period span {
+		margin-top: 0.18rem;
+		color: var(--schedule-muted);
+		font-size: 0.72rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.schedule-view-switch {
+		position: absolute;
+		top: -3.75rem;
+		right: 0;
+		display: inline-flex;
+		min-height: 2.4rem;
+		align-items: center;
+		gap: 0.4rem;
+		border: 1.5px solid var(--schedule-line);
+		border-radius: 999px;
+		background: var(--schedule-paper);
+		padding: 0.45rem 0.85rem;
+		color: var(--schedule-ink);
+		font-size: 0.78rem;
+		font-weight: 700;
+		transition: background-color 180ms ease, color 180ms ease;
+	}
+
+	.schedule-view-switch:hover,
+	.schedule-view-switch:focus-visible {
+		background: var(--schedule-ink);
+		color: var(--schedule-paper);
+		outline: none;
+	}
+
+	.schedule-view-switch svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.schedule-calendar {
+		overflow: hidden;
+		border: 1.5px solid var(--schedule-line);
+		border-radius: 1rem;
+		background: var(--schedule-paper);
+	}
+
+	.schedule-weekdays,
+	.schedule-days {
+		display: grid;
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+	}
+
+	.schedule-weekdays {
+		padding: 1.15rem 0.7rem 0.3rem;
+		color: var(--schedule-muted);
+		font-size: 0.68rem;
+		text-align: center;
+	}
+
+	.schedule-days {
+		padding: 0 0.7rem 0.7rem;
+	}
+
+	.schedule-day {
+		position: relative;
+		min-width: 0;
+		min-height: 7.5rem;
+		border: 0;
+		border-right: 1px solid var(--schedule-soft-line);
+		background: transparent;
+		padding: 0.65rem 0.55rem;
+		color: var(--schedule-ink);
+		text-align: left;
+		transition: background-color 180ms ease, box-shadow 180ms ease;
+	}
+
+	.schedule-day:nth-child(7n) {
+		border-right: 0;
+	}
+
+	.schedule-calendar[data-calendar-mode="month"] .schedule-day {
+		min-height: 5.8rem;
+		border-bottom: 1px solid var(--schedule-soft-line);
+	}
+
+	.schedule-calendar[data-calendar-mode="month"] .schedule-day:nth-last-child(-n + 7) {
+		border-bottom: 0;
+	}
+
+	.schedule-day:hover,
+	.schedule-day:focus-visible {
+		background: rgb(17 17 19 / 5%);
+		outline: none;
+	}
+
+	html.dark .schedule-day:hover,
+	html.dark .schedule-day:focus-visible {
+		background: rgb(255 255 255 / 7%);
+	}
+
+	.schedule-day.is-selected {
+		z-index: 1;
+		box-shadow: inset 0 0 0 1.5px var(--schedule-ink);
+	}
+
+	.schedule-day.is-outside {
+		opacity: 0.34;
+	}
+
+	.schedule-day__number {
+		font-size: 0.86rem;
+		font-weight: 750;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.schedule-day__lunar {
+		float: right;
+		color: var(--schedule-muted);
+		font-size: 0.62rem;
+	}
+
+	.schedule-day__event {
+		display: block;
+		overflow: hidden;
+		margin-top: 0.55rem;
+		border: 1px solid rgb(224 175 39 / 36%);
+		border-radius: 0.3rem;
+		background: rgb(255 244 174 / 68%);
+		padding: 0.18rem 0.35rem;
+		color: #6b5611;
+		font-size: 0.58rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	html.dark .schedule-day__event {
+		border-color: rgb(255 221 102 / 25%);
+		background: rgb(116 86 13 / 38%);
+		color: #ffe8a3;
+	}
+
+	.schedule-panels {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 0.9rem;
+		margin-top: 0.9rem;
+	}
+
+	.schedule-panel {
+		overflow: hidden;
+		min-height: 17rem;
+		border: 1.5px solid var(--schedule-line);
+		border-radius: 1rem;
+		background: var(--schedule-paper);
+	}
+
+	.schedule-panel > header {
+		display: flex;
+		min-height: 3rem;
+		align-items: center;
+		gap: 0.55rem;
+		border-bottom: 1px solid var(--schedule-soft-line);
+		padding: 0.55rem 0.75rem;
+	}
+
+	.schedule-panel h2 {
+		margin: 0;
+		font-size: 0.86rem;
+		font-weight: 750;
+	}
+
+	.schedule-panel output {
+		display: grid;
+		width: 1.45rem;
+		height: 1.45rem;
+		place-items: center;
+		margin-left: auto;
+		border: 1px solid var(--schedule-soft-line);
+		border-radius: 50%;
+		font-size: 0.68rem;
+		font-weight: 750;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.schedule-panel__icon {
+		display: grid;
+		width: 1.65rem;
+		height: 1.65rem;
+		place-items: center;
+		border-radius: 0.4rem;
+	}
+
+	.schedule-panel__icon svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.schedule-panel__icon--dark {
+		background: var(--schedule-ink);
+		color: var(--schedule-paper);
+	}
+
+	.schedule-panel__icon--rose {
+		background: rgb(255 235 238);
+		color: #e55267;
+	}
+
+	html.dark .schedule-panel__icon--rose {
+		background: rgb(106 35 48 / 45%);
+		color: #ff9bad;
+	}
+
+	.schedule-panel__date {
+		margin: 0;
+		padding: 0.8rem 0.85rem 0;
+		color: var(--schedule-muted);
+		font-size: 0.72rem;
+		font-weight: 650;
+	}
+
+	.schedule-agenda {
+		display: grid;
+		gap: 0.55rem;
+		padding: 0.85rem;
+	}
+
+	.schedule-agenda__empty {
+		display: grid;
+		min-height: 9rem;
+		place-items: center;
+		margin: 0;
+		color: var(--schedule-muted);
+		font-size: 0.8rem;
+	}
+
+	.schedule-agenda__item {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.65rem;
+		border-bottom: 1px solid var(--schedule-soft-line);
+		padding: 0.55rem 0 0.75rem;
+	}
+
+	.schedule-agenda__item time {
+		color: #e55267;
+		font-size: 0.7rem;
+		font-weight: 750;
+	}
+
+	.schedule-agenda__item strong,
+	.schedule-agenda__item p {
+		display: block;
+		margin: 0;
+	}
+
+	.schedule-agenda__item strong {
+		font-size: 0.78rem;
+	}
+
+	.schedule-agenda__item p {
+		margin-top: 0.2rem;
+		color: var(--schedule-muted);
+		font-size: 0.68rem;
+		line-height: 1.5;
+	}
+
+	.schedule-anniversaries {
+		margin: 0;
+		padding: 0.75rem;
+		list-style: none;
+	}
+
+	.schedule-anniversaries li {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		border-bottom: 1px solid var(--schedule-soft-line);
+		padding: 0.58rem 0.15rem;
+	}
+
+	.schedule-anniversaries li:last-child {
+		border-bottom: 0;
+	}
+
+	.schedule-anniversaries strong {
+		min-width: 0;
+		font-size: 0.76rem;
+	}
+
+	.schedule-anniversaries span {
+		margin-left: auto;
+		color: var(--schedule-muted);
+		font-size: 0.67rem;
+		white-space: nowrap;
+	}
+
+	.schedule-anniversaries time {
+		color: #e6a917;
+		font-weight: 750;
+	}
+
+	@media (max-width: 700px) {
+		.schedule-view-switch {
+			position: static;
+			grid-column: 1 / -1;
+			justify-self: end;
+			margin-top: 0.15rem;
+		}
+
+		.schedule-day {
+			min-height: 5.25rem;
+			padding: 0.45rem 0.25rem;
+		}
+
+		.schedule-calendar[data-calendar-mode="month"] .schedule-day {
+			min-height: 4.2rem;
+		}
+
+		.schedule-day__event {
+			padding-inline: 0.2rem;
+			font-size: 0.5rem;
+		}
+
+		.schedule-panels {
+			grid-template-columns: 1fr;
+		}
+
+		.schedule-panel {
+			min-height: auto;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.schedule-dashboard * {
+			scroll-behavior: auto !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
+
+<script>
+	type ScheduleEvent = {
+		date: string;
+		time: string;
+		title: string;
+		detail: string;
+	};
+
+	const pad = (value: number) => String(value).padStart(2, "0");
+	const dateKey = (date: Date) => `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+	const cloneDate = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+	const sameDay = (left: Date, right: Date) =>
+		left.getFullYear() === right.getFullYear() &&
+		left.getMonth() === right.getMonth() &&
+		left.getDate() === right.getDate();
+	const weekdayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+	function getLunarDay(date: Date) {
+		try {
+			return new Intl.DateTimeFormat("zh-CN-u-ca-chinese", { day: "numeric" }).format(date);
+		} catch {
+			return "";
+		}
+	}
+
+	function initScheduleDashboard() {
+		for (const root of document.querySelectorAll<HTMLElement>("[data-schedule-dashboard]")) {
+			if (root.dataset.bound === "true") continue;
+			root.dataset.bound = "true";
+
+			const events = JSON.parse(root.dataset.events || "[]") as ScheduleEvent[];
+			const calendar = root.querySelector<HTMLElement>(".schedule-calendar");
+			const grid = root.querySelector<HTMLElement>("[data-calendar-grid]");
+			const title = root.querySelector<HTMLElement>("[data-calendar-title]");
+			const range = root.querySelector<HTMLElement>("[data-calendar-range]");
+			const previous = root.querySelector<HTMLButtonElement>("[data-calendar-prev]");
+			const next = root.querySelector<HTMLButtonElement>("[data-calendar-next]");
+			const todayButton = root.querySelector<HTMLButtonElement>("[data-calendar-today]");
+			const viewButton = root.querySelector<HTMLButtonElement>("[data-calendar-view]");
+			const viewLabel = viewButton?.querySelector("span");
+			const agendaCount = root.querySelector<HTMLOutputElement>("[data-agenda-count]");
+			const agendaDate = root.querySelector<HTMLElement>("[data-agenda-date]");
+			const agendaList = root.querySelector<HTMLElement>("[data-agenda-list]");
+
+			if (!calendar || !grid || !title || !range || !previous || !next || !todayButton || !viewButton || !viewLabel || !agendaCount || !agendaDate || !agendaList) continue;
+
+			let mode: "week" | "month" = "week";
+			let cursor = cloneDate(new Date());
+			let selected = cloneDate(new Date());
+
+			const startOfWeek = (date: Date) => {
+				const result = cloneDate(date);
+				result.setDate(result.getDate() - result.getDay());
+				return result;
+			};
+
+			const eventsFor = (date: Date) => events.filter((event) => event.date === dateKey(date));
+
+			const renderAgenda = () => {
+				const selectedEvents = eventsFor(selected);
+				agendaCount.value = String(selectedEvents.length);
+				agendaDate.textContent = `${selected.getFullYear()}-${pad(selected.getMonth() + 1)}-${pad(selected.getDate())} · ${weekdayNames[selected.getDay()]}`;
+				agendaList.replaceChildren();
+
+				if (selectedEvents.length === 0) {
+					const empty = document.createElement("p");
+					empty.className = "schedule-agenda__empty";
+					empty.textContent = "当日无日程";
+					agendaList.append(empty);
+					return;
+				}
+
+				for (const event of selectedEvents) {
+					const item = document.createElement("article");
+					item.className = "schedule-agenda__item";
+					const time = document.createElement("time");
+					time.textContent = event.time;
+					const copy = document.createElement("div");
+					const heading = document.createElement("strong");
+					heading.textContent = event.title;
+					const detail = document.createElement("p");
+					detail.textContent = event.detail;
+					copy.append(heading, detail);
+					item.append(time, copy);
+					agendaList.append(item);
+				}
+			};
+
+			const buildDays = () => {
+				if (mode === "week") {
+					const start = startOfWeek(cursor);
+					return Array.from({ length: 7 }, (_, index) => {
+						const day = cloneDate(start);
+						day.setDate(start.getDate() + index);
+						return day;
+					});
+				}
+
+				const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+				const gridStart = startOfWeek(monthStart);
+				return Array.from({ length: 42 }, (_, index) => {
+					const day = cloneDate(gridStart);
+					day.setDate(gridStart.getDate() + index);
+					return day;
+				});
+			};
+
+			const render = () => {
+				calendar.dataset.calendarMode = mode;
+				viewButton.setAttribute("aria-pressed", String(mode === "month"));
+				viewLabel.textContent = mode === "week" ? "月视图" : "周视图";
+				previous.setAttribute("aria-label", mode === "week" ? "上一周" : "上个月");
+				next.setAttribute("aria-label", mode === "week" ? "下一周" : "下个月");
+
+				const days = buildDays();
+				const first = days[0];
+				const last = days[days.length - 1];
+				title.textContent = `${cursor.getFullYear()}年 ${cursor.getMonth() + 1}月`;
+				range.textContent = mode === "week"
+					? `${pad(first.getMonth() + 1)}月${pad(first.getDate())}日 - ${pad(last.getMonth() + 1)}月${pad(last.getDate())}日`
+					: "点击日期查看当天安排";
+
+				grid.replaceChildren();
+				for (const day of days) {
+					const button = document.createElement("button");
+					button.type = "button";
+					button.className = "schedule-day";
+					button.classList.toggle("is-selected", sameDay(day, selected));
+					button.classList.toggle("is-outside", mode === "month" && day.getMonth() !== cursor.getMonth());
+					button.setAttribute("aria-label", `${day.getFullYear()}年${day.getMonth() + 1}月${day.getDate()}日`);
+
+					const number = document.createElement("span");
+					number.className = "schedule-day__number";
+					number.textContent = String(day.getDate());
+					const lunar = document.createElement("span");
+					lunar.className = "schedule-day__lunar";
+					lunar.textContent = getLunarDay(day);
+					button.append(number, lunar);
+
+					const dayEvents = eventsFor(day);
+					if (dayEvents[0]) {
+						const chip = document.createElement("span");
+						chip.className = "schedule-day__event";
+						chip.textContent = dayEvents[0].title;
+						button.append(chip);
+					}
+
+					button.addEventListener("click", () => {
+						selected = cloneDate(day);
+						cursor = cloneDate(day);
+						render();
+						renderAgenda();
+					});
+					grid.append(button);
+				}
+			};
+
+			previous.addEventListener("click", () => {
+				mode === "week" ? cursor.setDate(cursor.getDate() - 7) : cursor.setMonth(cursor.getMonth() - 1);
+				render();
+			});
+			next.addEventListener("click", () => {
+				mode === "week" ? cursor.setDate(cursor.getDate() + 7) : cursor.setMonth(cursor.getMonth() + 1);
+				render();
+			});
+			todayButton.addEventListener("click", () => {
+				cursor = cloneDate(new Date());
+				selected = cloneDate(new Date());
+				render();
+				renderAgenda();
+			});
+			viewButton.addEventListener("click", () => {
+				mode = mode === "week" ? "month" : "week";
+				render();
+			});
+
+			render();
+			renderAgenda();
+		}
+	}
+
+	initScheduleDashboard();
+	document.addEventListener("astro:page-load", initScheduleDashboard);
+	document.addEventListener("swup:contentReplaced", initScheduleDashboard);
+</script>

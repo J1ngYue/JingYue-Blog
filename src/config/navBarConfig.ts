@@ -68,11 +68,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 					icon: "material-symbols:movie-outline-rounded",
 				},
 				{
-					name: "音乐",
-					url: "/music/",
-					icon: "material-symbols:music-note",
-				},
-				{
 					name: "更新日志",
 					url: "/changelog/",
 					icon: "material-symbols:history",
@@ -82,10 +77,32 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 					url: "/life/places/",
 					icon: "material-symbols:location-on-outline-rounded",
 				},
+			],
+		},
+		{
+			name: "我的",
+			url: "/schedules/",
+			icon: "material-symbols:person",
+			children: [
+				{
+					name: "日历",
+					url: "/schedules/",
+					icon: "material-symbols:calendar-month-outline-rounded",
+				},
+				{
+					name: "账单",
+					url: "/bills/",
+					icon: "material-symbols:account-balance-wallet-outline",
+				},
 				{
 					name: "应用展示",
 					url: "/apps/",
 					icon: "material-symbols:grid-view-outline-rounded",
+				},
+				{
+					name: "音乐",
+					url: "/music/",
+					icon: "material-symbols:music-note",
 				},
 			],
 		},

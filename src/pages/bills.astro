@@ -1,0 +1,23 @@
+---
+import BillingDashboard from "@/components/pages/personal/BillingDashboard.astro";
+import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+---
+
+<MainGridLayout
+	title="账单"
+	bannerTitle="我的"
+	description="收支记录与月度回望"
+	articleHub
+	contentOnly
+	plainContent
+>
+	<RecordPageShell
+		title="账单"
+		description="收支记录与月度回望。"
+		icon="material-symbols:account-balance-wallet-outline"
+		showHeader={false}
+	>
+		<BillingDashboard />
+	</RecordPageShell>
+</MainGridLayout>
