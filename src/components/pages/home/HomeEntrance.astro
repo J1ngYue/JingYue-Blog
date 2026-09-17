@@ -224,10 +224,9 @@ const tileSlots = Array.from({ length: 120 });
 		inset: 0;
 		z-index: 0;
 		overflow: hidden;
-		background-color: #05070a;
-		background-image: var(--home-entrance-wallpaper, none);
-		background-position: center;
-		background-size: cover;
+		background:
+			radial-gradient(circle at 68% 18%, rgb(39 72 108 / 0.22), transparent 34%),
+			linear-gradient(150deg, #05070a 0%, #0b111a 52%, #05070a 100%);
 		pointer-events: none;
 		will-change: opacity;
 		contain: paint;
@@ -363,16 +362,16 @@ const tileSlots = Array.from({ length: 120 });
 
 	@keyframes home-entrance-finish {
 		0%,
-		70% {
+		82% {
 			opacity: 1;
 			visibility: visible;
 		}
-		80% {
-			opacity: 0.82;
+		90% {
+			opacity: 0.72;
 			visibility: visible;
 		}
-		92% {
-			opacity: 0.28;
+		96% {
+			opacity: 0.24;
 			visibility: visible;
 		}
 		100% {

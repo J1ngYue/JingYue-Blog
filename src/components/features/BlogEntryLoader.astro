@@ -66,8 +66,8 @@
           <div class="blog-entry-loader__sprite blog-entry-loader__sprite--deepseek" aria-hidden="true"></div>
           <span class="blog-entry-loader__shadow" aria-hidden="true"></span>
         </div>
-        <strong>DeepSeek</strong>
-        <small>衔着深蓝的答案游来</small>
+        <strong>DeepSeek 大肥鱼</strong>
+        <small>抱着白饭从深海来</small>
       </article>
     </section>
 
@@ -109,7 +109,7 @@
       "/pio/models/pets/feibi/loader-feibi-unified.webp",
       "/pio/models/pets/doro/loader-duro-cute-v2.webp",
       "/pio/models/pets/gugugaga/loader-gugugaga-unified.webp",
-      "/pio/models/pets/deepseek/loader-deepseek-whale.webp",
+      "/pio/models/pets/deepseek/loader-deepseek-whale-girl.webp",
     ];
     let value = 0;
     let target = 8;
@@ -204,7 +204,7 @@
       updateStage("星光已经到齐", "咕咕嘎嘎拍拍翅膀，替今夜点亮最后一盏灯");
       await delay(reducedMotion ? 0 : 420);
       target = Math.max(target, 86);
-      updateStage("深海回声浮上来", "DeepSeek 大肥鱼摆摆尾巴，把答案送进今夜的潮汐");
+      updateStage("深海寄来一碗月光", "DeepSeek 大肥鱼抱着白饭，把答案轻轻送上岸");
     });
     const domReady = document.readyState === "loading"
       ? new Promise((resolve) => document.addEventListener("DOMContentLoaded", resolve, { once: true }))
@@ -486,8 +486,10 @@
     animation: blog-loader-gugu-greeting 2.35s cubic-bezier(.45, 0, .2, 1) infinite;
   }
   .blog-entry-loader__sprite--deepseek {
-    background-image: url('/pio/models/pets/deepseek/loader-deepseek-whale.webp');
-    animation: blog-loader-deepseek-swim 2.7s cubic-bezier(.45, 0, .2, 1) infinite;
+    width: clamp(7.5rem, 11vw, 9.8rem);
+    aspect-ratio: 5 / 6;
+    background-image: url('/pio/models/pets/deepseek/loader-deepseek-whale-girl.webp');
+    animation: blog-loader-deepseek-arrive 2.7s cubic-bezier(.45, 0, .2, 1) infinite;
   }
   .blog-entry-loader__shadow {
     position: absolute;
@@ -623,10 +625,10 @@
     38% { transform: translateY(-.55rem) rotate(1.8deg); }
     62% { transform: translateY(-.3rem) rotate(-.7deg); }
   }
-  @keyframes blog-loader-deepseek-swim {
-    0%, 100% { transform: translate3d(-.1rem, .12rem, 0) rotate(-1.8deg); }
-    42% { transform: translate3d(.24rem, -.48rem, 0) rotate(1.4deg); }
-    70% { transform: translate3d(.08rem, -.24rem, 0) rotate(-.55deg); }
+  @keyframes blog-loader-deepseek-arrive {
+    0%, 100% { transform: translate3d(-.08rem, .12rem, 0) rotate(-1.2deg); }
+    42% { transform: translate3d(.12rem, -.46rem, 0) rotate(.9deg); }
+    70% { transform: translate3d(.04rem, -.22rem, 0) rotate(-.4deg); }
   }
   @keyframes blog-loader-shadow { 0%, 100% { opacity: .5; transform: scaleX(.74); } 50% { opacity: .28; transform: scaleX(.9); } }
   @keyframes blog-loader-petal {
