@@ -4,7 +4,7 @@
   data-active-mascot="feibi"
   role="status"
   aria-live="polite"
-  aria-label="菲比啾比、Duro、咕咕嘎嘎与 DeepSeek 大肥鱼正在加载 JingYue 博客"
+  aria-label="菲比啾比、Duro、咕咕嘎嘎与 DeepSeek 鲸鱼娘正在加载 JingYue 博客"
 >
   <div class="blog-entry-loader__backdrop" aria-hidden="true"></div>
   <div class="blog-entry-loader__scribbles" aria-hidden="true">
@@ -66,8 +66,8 @@
           <div class="blog-entry-loader__sprite blog-entry-loader__sprite--deepseek" aria-hidden="true"></div>
           <span class="blog-entry-loader__shadow" aria-hidden="true"></span>
         </div>
-        <strong>DeepSeek 大肥鱼</strong>
-        <small>抱着白饭从深海来</small>
+        <strong>DeepSeek 鲸鱼娘</strong>
+        <small>正和你的灵感碰面</small>
       </article>
     </section>
 
@@ -204,7 +204,7 @@
       updateStage("星光已经到齐", "咕咕嘎嘎拍拍翅膀，替今夜点亮最后一盏灯");
       await delay(reducedMotion ? 0 : 420);
       target = Math.max(target, 86);
-      updateStage("深海寄来一碗月光", "DeepSeek 大肥鱼抱着白饭，把答案轻轻送上岸");
+      updateStage("深海回声浮上来", "DeepSeek 鲸鱼娘沿着微光，来和今夜的灵感碰面");
     });
     const domReady = document.readyState === "loading"
       ? new Promise((resolve) => document.addEventListener("DOMContentLoaded", resolve, { once: true }))
@@ -486,8 +486,8 @@
     animation: blog-loader-gugu-greeting 2.35s cubic-bezier(.45, 0, .2, 1) infinite;
   }
   .blog-entry-loader__sprite--deepseek {
-    width: clamp(7.5rem, 11vw, 9.8rem);
-    aspect-ratio: 5 / 6;
+    width: clamp(9rem, 13.8vw, 12.6rem);
+    aspect-ratio: 1;
     background-image: url('/pio/models/pets/deepseek/loader-deepseek-whale-girl.webp');
     animation: blog-loader-deepseek-arrive 2.7s cubic-bezier(.45, 0, .2, 1) infinite;
   }

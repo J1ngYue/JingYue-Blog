@@ -359,20 +359,24 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 	.changelog-card__summary {
 		position: relative;
 		z-index: 1;
-		display: -webkit-box;
-		overflow: hidden;
-		-webkit-box-orient: vertical;
+		overflow-wrap: anywhere;
 	}
 
 	.changelog-card__title {
-		-webkit-line-clamp: 4;
+		display: block;
+		flex: 0 0 auto;
+		overflow: visible;
 		font-size: 0.9rem;
 		font-weight: 650;
 		line-height: 1.45;
 	}
 
 	.changelog-card__summary {
-		margin-top: auto;
+		display: -webkit-box;
+		min-height: 0;
+		flex: 1 1 auto;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 3;
 		color: var(--record-muted, var(--content-meta));
 		font-size: 0.77rem;
@@ -383,6 +387,7 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 	.changelog-card__version {
 		position: relative;
 		z-index: 1;
+		flex: 0 0 auto;
 		align-self: flex-start;
 		border-radius: 999px;
 		background: color-mix(in srgb, #00a29b 11%, transparent);
@@ -658,7 +663,7 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		.changelog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
 		.changelog-card__inner { padding: 0.7rem; }
 		.changelog-card__num { font-size: 3.2rem; }
-		.changelog-card__title { -webkit-line-clamp: 5; font-size: 0.82rem; }
+		.changelog-card__title { font-size: 0.82rem; }
 		.changelog-card__summary { -webkit-line-clamp: 3; }
 		.changelog-board.is-hovering .changelog-card:not(.is-active):not(.is-linked) { opacity: 1; }
 		:global(.changelog-wire--hover),
