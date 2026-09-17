@@ -160,16 +160,28 @@ const tileSlots = Array.from({ length: 120 });
 			const left = column * tileSize;
 			const top = row * tileSize;
 			const wave = (column + row * 2) % 6;
-			const offsetX = (((index * 37) % 9) - 4) * tileSize * 0.62;
-			const offsetY = (((index * 53) % 11) - 5) * tileSize * 0.52;
+			const offsetX = Math.round(
+				(((index * 37) % 9) - 4) * tileSize * 0.62,
+			);
+			const offsetY = Math.round(
+				(((index * 53) % 11) - 5) * tileSize * 0.52,
+			);
 
 			tile.style.setProperty("--tile-left", `${left}px`);
 			tile.style.setProperty("--tile-top", `${top}px`);
 			tile.style.setProperty("--tile-size", `${tileSize}px`);
 			tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
 			tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
-			tile.style.setProperty("--tile-rotation", `${((index * 29) % 15) - 7}deg`);
-			tile.style.setProperty("--tile-delay", `${0.04 + wave * 0.13}s`);
+			tile.style.setProperty("--tile-delay", `${0.03 + wave * 0.11}s`);
+			tile.addEventListener(
+				"animationend",
+				(event) => {
+					if (event.animationName === "home-entrance-tile") {
+						tile.dataset.tileSettled = "true";
+					}
+				},
+				{ once: true },
+			);
 		});
 		await entryLoaderPromise;
 		if (!root.isConnected) return;
@@ -179,6 +191,7 @@ const tileSlots = Array.from({ length: 120 });
 				return;
 			}
 			root.removeEventListener("animationend", handleAnimationEnd);
+			for (const tile of tiles) tile.dataset.tileSettled = "true";
 			finish();
 		};
 		root.addEventListener("animationend", handleAnimationEnd);
@@ -296,7 +309,6 @@ const tileSlots = Array.from({ length: 120 });
 		border: 0;
 		box-shadow: none;
 		opacity: 0;
-		will-change: transform, opacity;
 	}
 
 	.home-entrance[data-home-entrance-playing="true"] .home-entrance__tile {
@@ -305,6 +317,12 @@ const tileSlots = Array.from({ length: 120 });
 
 	.home-entrance__tile[hidden] {
 		display: none;
+	}
+
+	.home-entrance__tile[data-tile-settled="true"] {
+		animation: none !important;
+		opacity: 1;
+		transform: none;
 	}
 
 	.home-entrance__tile-image {
@@ -316,26 +334,21 @@ const tileSlots = Array.from({ length: 120 });
 		height: var(--home-entrance-height);
 		background-image: var(--home-entrance-wallpaper, none);
 		background-position: center;
+		background-repeat: no-repeat;
 		background-size: cover;
-		backface-visibility: hidden;
 	}
 
 	@keyframes home-entrance-tile {
 		0% {
 			opacity: 0;
-			box-shadow: 0 0.65rem 1.6rem rgb(0 0 0 / 0.22);
-			transform: translate3d(var(--tile-offset-x), var(--tile-offset-y), 0) rotate(var(--tile-rotation)) scale(0.72);
+			transform: translate(var(--tile-offset-x), var(--tile-offset-y));
 		}
 		12% {
-			opacity: 0.96;
-		}
-		70% {
-			box-shadow: 0 0.28rem 0.65rem rgb(0 0 0 / 0.08);
+			opacity: 1;
 		}
 		100% {
 			opacity: 1;
-			box-shadow: none;
-			transform: translate3d(0, 0, 0) rotate(0) scale(1);
+			transform: translate(0, 0);
 		}
 	}
 
@@ -362,16 +375,16 @@ const tileSlots = Array.from({ length: 120 });
 
 	@keyframes home-entrance-finish {
 		0%,
-		82% {
+		88% {
 			opacity: 1;
 			visibility: visible;
 		}
-		90% {
-			opacity: 0.72;
+		94% {
+			opacity: 0.62;
 			visibility: visible;
 		}
-		96% {
-			opacity: 0.24;
+		98% {
+			opacity: 0.18;
 			visibility: visible;
 		}
 		100% {
