@@ -1151,6 +1151,17 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         outline-offset: 0.16rem;
     }
 
+    /* 浅色内容页贴近页面底色，保留轻微轮廓但避免灰色胶囊分层过重。 */
+    :root:not(.dark) #navbar[data-is-home="false"] .navbar-brand,
+    :root:not(.dark) #navbar[data-is-home="false"] .navbar-main-menu,
+    :root:not(.dark) #navbar[data-is-home="false"] .navbar-actions,
+    :root:not(.dark) #navbar[data-is-home="false"] .navbar-actions:has(#search-switch:hover),
+    :root:not(.dark) #navbar[data-is-home="false"] .navbar-actions:has(#search-switch:focus-visible) {
+        border-color: rgb(24 24 27 / 8%) !important;
+        background: #f3f3f3 !important;
+        box-shadow: 0 0.42rem 1.05rem rgb(24 24 27 / 9%) !important;
+    }
+
     #navbar .navbar-main-menu .navbar-menu-item {
         height: 2.25rem;
         border: 0;
