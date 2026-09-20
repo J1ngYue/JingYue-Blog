@@ -56,6 +56,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			name: "记录",
 			url: "/books/",
 			icon: "material-symbols:home-work-outline-rounded",
+			hideDropdownArrow: true,
 			children: [
 				{
 					name: "书架",
@@ -83,6 +84,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			name: "我的",
 			url: "/schedules/",
 			icon: "material-symbols:person",
+			hideDropdownArrow: true,
 			children: [
 				{
 					name: "日历",
