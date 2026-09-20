@@ -140,16 +140,24 @@ function initChangelogPage() {
 		d: string,
 		midpoint: { x: number; y: number },
 		labelText: string,
+		sequence: number,
 	) => {
 		const path = makePath(d, "changelog-wire changelog-wire--hover");
 		path.dataset.hoverWire = "true";
+		path.style.setProperty("--wire-delay", `${sequence * 70}ms`);
 		wires.appendChild(path);
+		const flow = makePath(d, "changelog-wire changelog-wire--flow", false);
+		flow.dataset.hoverWire = "true";
+		flow.setAttribute("pathLength", "1");
+		flow.style.setProperty("--wire-delay", `${sequence * 70}ms`);
+		wires.appendChild(flow);
 		const label = document.createElement("span");
 		label.className = "changelog-wire-label";
 		label.dataset.hoverWire = "true";
 		label.textContent = labelText;
 		label.style.left = `${midpoint.x}px`;
 		label.style.top = `${midpoint.y}px`;
+		label.style.setProperty("--wire-delay", `${sequence * 70}ms`);
 		board.appendChild(label);
 		if (reducedMotion) {
 			path.classList.add("is-drawn");
@@ -158,6 +166,7 @@ function initChangelogPage() {
 		}
 		hoverFrame = requestAnimationFrame(() => {
 			path.classList.add("is-drawn");
+			flow.classList.add("is-drawn");
 			label.classList.add("is-in");
 			hoverFrame = 0;
 		});
@@ -197,9 +206,9 @@ function initChangelogPage() {
 			x: sourceRect.left - boardBox.left + sourceRect.width / 2,
 			y: sourceRect.top - boardBox.top + sourceRect.height / 2,
 		};
-		for (const link of links) {
+		links.forEach((link, linkIndex) => {
 			const target = getCard(link.t);
-			if (!target || target.hidden) continue;
+			if (!target || target.hidden) return;
 			target.classList.add("is-linked");
 			const targetRect = target.getBoundingClientRect();
 			const targetCenter = {
@@ -216,15 +225,17 @@ function initChangelogPage() {
 			};
 			const start = edgePoint(sourceRect, targetRect, boardBox);
 			const end = edgePoint(targetRect, sourceRect, boardBox);
+			const normal = { x: -dy / length, y: dx / length };
 			drawHoverWire(
 				`M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
 				{
-					x: sourceCenter.x * 0.25 + control.x * 0.5 + targetCenter.x * 0.25,
-					y: sourceCenter.y * 0.25 + control.y * 0.5 + targetCenter.y * 0.25,
+					x: start.x * 0.25 + control.x * 0.5 + end.x * 0.25 + normal.x * 36,
+					y: start.y * 0.25 + control.y * 0.5 + end.y * 0.25 + normal.y * 36,
 				},
 				link.p.join("、"),
+				linkIndex,
 			);
-		}
+		});
 	};
 
 	const fillDialog = (index: number) => {

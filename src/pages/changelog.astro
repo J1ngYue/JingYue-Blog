@@ -90,8 +90,8 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		<div class="changelog-board" data-changelog>
 			<svg class="changelog-wires" data-changelog-wires aria-hidden="true">
 				<defs>
-					<marker id="changelog-arrow" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
-						<path d="M0 0L10 5L0 10L2.4 5Z" fill="#129d97" />
+					<marker id="changelog-arrow" viewBox="-1 -1 12 12" refX="9.2" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
+						<path d="M0 0L10 5L0 10L2.5 5Z" fill="#129d97" stroke="#dffaf7" stroke-width="2" stroke-linejoin="round" paint-order="stroke fill" />
 					</marker>
 				</defs>
 			</svg>
@@ -609,15 +609,27 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		stroke: #129d97;
 		stroke-width: 2px;
 		stroke-dasharray: 7 6;
-		stroke-dashoffset: 26px;
 		opacity: 0;
 		filter: drop-shadow(0 1px 1px rgb(18 157 151 / 12%));
-		transition: opacity 180ms ease-out, stroke-dashoffset 380ms cubic-bezier(0.22, 1, 0.36, 1);
+		transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1) var(--wire-delay, 0ms);
 	}
 
 	:global(.changelog-wire--hover.is-drawn) {
-		stroke-dashoffset: 0;
 		opacity: 0.96;
+		animation: changelog-wire-drift 1.35s cubic-bezier(0.45, 0, 0.55, 1) calc(var(--wire-delay, 0ms) + 220ms) infinite;
+	}
+
+	:global(.changelog-wire--flow) {
+		stroke: #67d9d4;
+		stroke-width: 3.5px;
+		stroke-dasharray: 0.13 0.87;
+		stroke-dashoffset: 1;
+		opacity: 0;
+		filter: drop-shadow(0 0 3px rgb(18 157 151 / 55%));
+	}
+
+	:global(.changelog-wire--flow.is-drawn) {
+		animation: changelog-wire-flow 1.2s cubic-bezier(0.45, 0, 0.55, 1) var(--wire-delay, 0ms) infinite;
 	}
 
 	:global(.changelog-wire-label) {
@@ -625,7 +637,7 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		z-index: 3;
 		max-width: 12rem;
 		overflow: hidden;
-		transform: translate(-50%, -50%);
+		transform: translate(-50%, calc(-50% + 5px)) scale(0.96);
 		visibility: hidden;
 		border: 1px solid color-mix(in srgb, #00a29b 38%, transparent);
 		border-radius: 999px;
@@ -640,12 +652,28 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		opacity: 0;
 		pointer-events: none;
 		box-shadow: 0 0.25rem 0.8rem rgb(0 0 0 / 8%);
-		transition: opacity 220ms ease-out 70ms, visibility 220ms ease-out 70ms;
+		transition:
+			opacity 220ms ease-out calc(var(--wire-delay, 0ms) + 170ms),
+			visibility 220ms ease-out calc(var(--wire-delay, 0ms) + 170ms),
+			transform 280ms cubic-bezier(0.22, 1, 0.36, 1) calc(var(--wire-delay, 0ms) + 170ms);
 	}
 
 	:global(.changelog-wire-label.is-in) {
 		visibility: visible;
+		transform: translate(-50%, -50%) scale(1);
 		opacity: 1;
+	}
+
+	@keyframes changelog-wire-drift {
+		from { stroke-dashoffset: 26px; }
+		to { stroke-dashoffset: 0; }
+	}
+
+	@keyframes changelog-wire-flow {
+		0% { stroke-dashoffset: 1; opacity: 0; }
+		14% { opacity: 0.95; }
+		78% { opacity: 0.8; }
+		100% { stroke-dashoffset: -0.13; opacity: 0; }
 	}
 
 	@media (max-width: 1024px) {
@@ -667,6 +695,7 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		.changelog-card__summary { -webkit-line-clamp: 3; }
 		.changelog-board.is-hovering .changelog-card:not(.is-active):not(.is-linked) { opacity: 1; }
 		:global(.changelog-wire--hover),
+		:global(.changelog-wire--flow),
 		:global(.changelog-wire-label) { display: none; }
 		.changelog-dialog { width: calc(100vw - 1rem); max-height: 88vh; }
 		.changelog-dialog__body { max-height: 88vh; padding: 1.15rem; }
@@ -677,6 +706,7 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		.changelog-card__inner,
 		.changelog-dialog,
 		:global(.changelog-wire--hover),
+		:global(.changelog-wire--flow),
 		:global(.changelog-wire-label) {
 			transition: none;
 			animation: none;
