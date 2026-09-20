@@ -308,10 +308,9 @@ const tileSlots = Array.from({ length: 120 });
 		overflow: hidden;
 		border: 0;
 		box-shadow: none;
-		opacity: 0;
 	}
 
-	.home-entrance[data-home-entrance-playing="true"] .home-entrance__tile {
+	.home-entrance[data-home-entrance-playing="true"] .home-entrance__tile-image {
 		animation: home-entrance-tile var(--home-puzzle-duration) var(--tile-delay) cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
@@ -319,7 +318,7 @@ const tileSlots = Array.from({ length: 120 });
 		display: none;
 	}
 
-	.home-entrance__tile[data-tile-settled="true"] {
+	.home-entrance__tile[data-tile-settled="true"] .home-entrance__tile-image {
 		animation: none !important;
 		opacity: 1;
 		transform: none;
@@ -327,15 +326,23 @@ const tileSlots = Array.from({ length: 120 });
 
 	.home-entrance__tile-image {
 		position: absolute;
+		inset: 0;
+		display: block;
+		overflow: hidden;
+		opacity: 0;
+	}
+
+	.home-entrance__tile-image::before {
+		position: absolute;
 		top: calc(-1 * var(--tile-top));
 		left: calc(-1 * var(--tile-left));
-		display: block;
 		width: var(--home-entrance-width);
 		height: var(--home-entrance-height);
 		background-image: var(--home-entrance-wallpaper, none);
 		background-position: center;
 		background-repeat: no-repeat;
 		background-size: cover;
+		content: "";
 	}
 
 	@keyframes home-entrance-tile {
