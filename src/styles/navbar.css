@@ -994,7 +994,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 
     html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .dropdown-content {
-        border-color: rgb(24 24 27 / 28%) !important;
+        border-color: #000 !important;
         border-radius: 0.75rem;
         background: #fff !important;
         box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 16%) !important;
@@ -1257,7 +1257,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     #navbar .dropdown-content {
         min-width: 12rem;
         padding: 0.5rem;
-        border: 1px solid rgb(24 24 27 / 28%) !important;
+        border: 1px solid #000 !important;
         border-radius: 0.75rem;
         background: #fff !important;
         box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 16%) !important;
@@ -1711,7 +1711,7 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
     }
 
     html:not(.dark) body #navbar#navbar .dropdown-content {
-        border-color: rgb(24 24 27 / 28%) !important;
+        border-color: #000 !important;
         background: #fff !important;
         box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 16%) !important;
         color: #18181b !important;

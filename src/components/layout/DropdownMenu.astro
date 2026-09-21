@@ -102,28 +102,7 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 	.dropdown-container {
 		@apply relative;
 		--dropdown-panel-background: #fff;
-		--dropdown-panel-border: rgba(24, 24, 27, 0.28);
-	}
-
-	.dropdown-container::after {
-		content: "";
-		position: absolute;
-		top: calc(100% + 0.25rem);
-		left: 50%;
-		z-index: 51;
-		width: 0.75rem;
-		height: 0.75rem;
-		background: var(--dropdown-panel-background);
-		border-top: 1px solid var(--dropdown-panel-border);
-		border-left: 1px solid var(--dropdown-panel-border);
-		opacity: 0;
-		visibility: hidden;
-		pointer-events: none;
-		transform: translate(-50%, -0.5rem) rotate(45deg);
-		transition:
-			opacity 200ms ease-out,
-			transform 200ms ease-out,
-			visibility 200ms ease-out;
+		--dropdown-panel-border: #000;
 	}
 
 	:global(:root.dark) .dropdown-container {
@@ -138,13 +117,6 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 	.dropdown-container:hover .dropdown-menu,
 	.dropdown-container.is-open .dropdown-menu {
 		@apply opacity-100 visible pointer-events-auto translate-y-0;
-	}
-
-	.dropdown-container:hover::after,
-	.dropdown-container.is-open::after {
-		opacity: 1;
-		visibility: visible;
-		transform: translate(-50%, 0) rotate(45deg);
 	}
 
 	.dropdown-container:hover .dropdown-arrow,
@@ -172,11 +144,6 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 		}
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.dropdown-container::after {
-			transition: none;
-		}
-	}
 </style>
 
 <script>
