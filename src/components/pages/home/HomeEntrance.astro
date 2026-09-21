@@ -258,26 +258,6 @@ const tileSlots = Array.from({ length: 120 });
 		animation: home-entrance-finish var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
 	}
 
-	.home-entrance::before {
-		position: absolute;
-		inset: -3%;
-		z-index: 5;
-		background: var(
-			--home-rain-atmosphere,
-			radial-gradient(ellipse at 50% 86%, rgb(171 204 224 / 0.1), transparent 48%),
-			linear-gradient(180deg, rgb(8 22 37 / 0.05), rgb(4 14 26 / 0.16))
-		);
-		content: "";
-		opacity: 0;
-		transform: scale(1.035);
-		pointer-events: none;
-		will-change: opacity, transform;
-	}
-
-	:global(html[data-rain-enabled="true"].home-entrance-playing) .home-entrance::before {
-		animation: home-entrance-atmosphere var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
-	}
-
 	.home-entrance::after {
 		position: absolute;
 		inset: 0;
@@ -365,27 +345,6 @@ const tileSlots = Array.from({ length: 120 });
 		100% {
 			opacity: 1;
 			transform: translate(0, 0);
-		}
-	}
-
-	@keyframes home-entrance-atmosphere {
-		0%,
-		34% {
-			opacity: 0;
-			transform: scale(1.025);
-		}
-		48% {
-			opacity: 0.2;
-		}
-		64% {
-			opacity: 0.56;
-		}
-		82% {
-			opacity: 0.9;
-		}
-		100% {
-			opacity: 1;
-			transform: scale(1);
 		}
 	}
 
