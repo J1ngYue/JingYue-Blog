@@ -140,39 +140,47 @@ const tileSlots = Array.from({ length: 120 });
 		const tiles = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-home-entrance-tile]"),
 		);
-		const { width: entranceWidth, height: entranceHeight } =
-			root.getBoundingClientRect();
-		root.style.setProperty("--home-entrance-width", `${entranceWidth}px`);
-		root.style.setProperty("--home-entrance-height", `${entranceHeight}px`);
-		const columns =
-			entranceWidth <= 640 ? 5 : entranceWidth < entranceHeight ? 6 : 10;
-		const tileSize = Math.ceil(entranceWidth / columns);
-		const rows = Math.ceil(entranceHeight / tileSize);
-		const activeCount = columns * rows;
+		const layoutTiles = () => {
+			const { width: entranceWidth, height: entranceHeight } =
+				root.getBoundingClientRect();
+			root.style.setProperty("--home-entrance-width", `${entranceWidth}px`);
+			root.style.setProperty("--home-entrance-height", `${entranceHeight}px`);
+			const columns =
+				entranceWidth <= 640 ? 5 : entranceWidth < entranceHeight ? 6 : 10;
+			const tileSize = Math.ceil(entranceWidth / columns);
+			const rows = Math.ceil(entranceHeight / tileSize);
+			const activeCount = columns * rows;
 
-		tiles.forEach((tile, index) => {
-			const active = index < activeCount;
-			tile.hidden = !active;
-			if (!active) return;
+			tiles.forEach((tile, index) => {
+				const active = index < activeCount;
+				tile.hidden = !active;
+				if (!active) return;
 
-			const column = index % columns;
-			const row = Math.floor(index / columns);
-			const left = column * tileSize;
-			const top = row * tileSize;
-			const wave = (column + row * 2) % 6;
-			const offsetX = Math.round(
-				(((index * 37) % 9) - 4) * tileSize * 0.62,
-			);
-			const offsetY = Math.round(
-				(((index * 53) % 11) - 5) * tileSize * 0.52,
-			);
+				const column = index % columns;
+				const row = Math.floor(index / columns);
+				const left = column * tileSize;
+				const top = row * tileSize;
+				const wave = (column + row * 2) % 6;
+				const offsetX = Math.round(
+					(((index * 37) % 9) - 4) * tileSize * 0.62,
+				);
+				const offsetY = Math.round(
+					(((index * 53) % 11) - 5) * tileSize * 0.52,
+				);
 
-			tile.style.setProperty("--tile-left", `${left}px`);
-			tile.style.setProperty("--tile-top", `${top}px`);
-			tile.style.setProperty("--tile-size", `${tileSize}px`);
-			tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
-			tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
-			tile.style.setProperty("--tile-delay", `${0.03 + wave * 0.11}s`);
+				tile.style.setProperty("--tile-left", `${left}px`);
+				tile.style.setProperty("--tile-top", `${top}px`);
+				tile.style.setProperty("--tile-size", `${tileSize}px`);
+				tile.style.setProperty("--tile-offset-x", `${offsetX}px`);
+				tile.style.setProperty("--tile-offset-y", `${offsetY}px`);
+				tile.style.setProperty("--tile-delay", `${0.03 + wave * 0.11}s`);
+			});
+		};
+		layoutTiles();
+		const geometryObserver = new ResizeObserver(layoutTiles);
+		geometryObserver.observe(root);
+
+		tiles.forEach((tile) => {
 			tile.addEventListener(
 				"animationend",
 				(event) => {
@@ -191,6 +199,7 @@ const tileSlots = Array.from({ length: 120 });
 				return;
 			}
 			root.removeEventListener("animationend", handleAnimationEnd);
+			geometryObserver.disconnect();
 			for (const tile of tiles) tile.dataset.tileSettled = "true";
 			finish();
 		};
@@ -334,14 +343,14 @@ const tileSlots = Array.from({ length: 120 });
 
 	.home-entrance__tile-image::before {
 		position: absolute;
-		top: calc(-1 * var(--tile-top));
-		left: calc(-1 * var(--tile-left));
-		width: var(--home-entrance-width);
-		height: var(--home-entrance-height);
+		top: calc(var(--home-wallpaper-offset-y, 0px) - var(--tile-top));
+		left: calc(var(--home-wallpaper-offset-x, 0px) - var(--tile-left));
+		width: var(--home-wallpaper-render-width, var(--home-entrance-width));
+		height: var(--home-wallpaper-render-height, var(--home-entrance-height));
 		background-image: var(--home-entrance-wallpaper, none);
-		background-position: center;
+		background-position: 0 0;
 		background-repeat: no-repeat;
-		background-size: cover;
+		background-size: 100% 100%;
 		content: "";
 	}
 

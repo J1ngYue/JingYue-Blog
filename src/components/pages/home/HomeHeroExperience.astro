@@ -777,10 +777,10 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-dialogue-launch > :global(svg) { margin-left: auto; font-size: 1.15rem; }
 
 	.home-hero-dialogue {
-		--dialogue-surface: rgb(0 0 0 / 0.24);
+		--dialogue-surface: transparent;
 		--dialogue-text: #fff;
 		--dialogue-muted: rgb(255 255 255 / 0.66);
-		--dialogue-border: rgb(255 255 255 / 0.26);
+		--dialogue-border: transparent;
 		--dialogue-inset: clamp(2.25rem, 15vw, 19rem);
 		position: absolute;
 		inset-inline: 0;
@@ -793,10 +793,10 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		color: var(--dialogue-text);
 		box-sizing: border-box;
 		border: 0;
-		border-top: 2px solid var(--dialogue-border);
+		border-top: 0;
 		border-radius: 0;
-		background-color: var(--dialogue-surface);
-		backdrop-filter: blur(12px) saturate(1.08);
+		background: transparent;
+		backdrop-filter: none;
 		overflow: visible;
 		pointer-events: auto;
 		opacity: 0;
@@ -808,14 +808,7 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 			visibility 260ms ease-out;
 	}
 	.home-hero-dialogue::before {
-		position: absolute;
-		inset-inline: 0;
-		top: -1px;
-		z-index: 4;
-		height: 2px;
-		content: "";
-		background: var(--dialogue-border);
-		pointer-events: none;
+		display: none;
 	}
 
 	.home-hero-dialogue.is-open {
@@ -884,6 +877,12 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		font-size: clamp(1.1rem, 3svh, 1.55rem);
 		font-weight: 750;
 		line-height: 1.2;
+		text-shadow: 0 2px 12px rgb(0 0 0 / 0.88);
+	}
+
+	.home-hero-dialogue__text,
+	.home-hero-dialogue__footer {
+		text-shadow: 0 2px 14px rgb(0 0 0 / 0.92);
 	}
 
 	.home-hero-dialogue__controls {
@@ -1061,10 +1060,10 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 
 	:global(html.dark) .home-dialogue-launch,
 	:global(html.dark) .home-hero-dialogue {
-		--dialogue-surface: rgb(0 0 0 / 0.24);
+		--dialogue-surface: transparent;
 		--dialogue-text: #fff;
 		--dialogue-muted: rgb(255 255 255 / 0.66);
-		--dialogue-border: rgb(255 255 255 / 0.26);
+		--dialogue-border: transparent;
 	}
 
 	@media (max-width: 900px) {

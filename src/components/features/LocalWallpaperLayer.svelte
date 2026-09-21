@@ -25,7 +25,39 @@ let hasMedia = $state(false);
 let mediaReady = $state(false);
 let wallpaperEnabled = $state(true);
 let videoElement: HTMLVideoElement | null = null;
+let imageElement: HTMLImageElement | null = null;
 let posterUrl = $state("");
+
+function syncHomeImageGeometry() {
+	if (
+		surface !== "home" ||
+		!host ||
+		!imageElement ||
+		!imageElement.naturalWidth ||
+		!imageElement.naturalHeight
+	) {
+		return;
+	}
+
+	const { width: containerWidth, height: containerHeight } =
+		host.getBoundingClientRect();
+	if (!containerWidth || !containerHeight) return;
+
+	const scale = Math.max(
+		containerWidth / imageElement.naturalWidth,
+		containerHeight / imageElement.naturalHeight,
+	);
+	const renderWidth = imageElement.naturalWidth * scale;
+	const renderHeight = imageElement.naturalHeight * scale;
+	const offsetX = (containerWidth - renderWidth) / 2;
+	const offsetY = (containerHeight - renderHeight) / 2;
+	const rootStyle = document.documentElement.style;
+
+	rootStyle.setProperty("--home-wallpaper-render-width", `${renderWidth}px`);
+	rootStyle.setProperty("--home-wallpaper-render-height", `${renderHeight}px`);
+	rootStyle.setProperty("--home-wallpaper-offset-x", `${offsetX}px`);
+	rootStyle.setProperty("--home-wallpaper-offset-y", `${offsetY}px`);
+}
 
 function finishBootstrapHandoff() {
 	if (surface !== "home" || typeof document === "undefined") return;
@@ -82,6 +114,7 @@ async function handleImageLoad(event: Event) {
 		// onload 已确认资源可用；部分浏览器会拒绝重复 decode。
 	}
 	if (sourceUrl !== expectedSource) return;
+	syncHomeImageGeometry();
 	requestAnimationFrame(() => markMediaReady());
 }
 
@@ -128,6 +161,13 @@ onMount(() => {
 	let activeObjectUrl = "";
 	let loadVersion = 0;
 	const mobileMedia = window.matchMedia("(max-width: 640px)");
+	const geometryObserver =
+		surface === "home" && "ResizeObserver" in window
+			? new ResizeObserver(() => syncHomeImageGeometry())
+			: null;
+	geometryObserver?.observe(host);
+	const handleResize = () => syncHomeImageGeometry();
+	window.addEventListener("resize", handleResize, { passive: true });
 
 	const syncWallpaperMode = (mode?: string | null) => {
 		wallpaperEnabled =
@@ -268,6 +308,8 @@ onMount(() => {
 		);
 		document.removeEventListener("astro:page-load", handlePageWallpaperChange);
 		mobileMedia.removeEventListener("change", handleViewportChange);
+		geometryObserver?.disconnect();
+		window.removeEventListener("resize", handleResize);
 		container?.classList.remove("has-local-wallpaper");
 		if (surface === "home") {
 			document.body.classList.remove("has-home-local-wallpaper");
@@ -291,6 +333,7 @@ onMount(() => {
 >
 	{#if mediaType === "image" && sourceUrl}
 		<img
+			bind:this={imageElement}
 			src={sourceUrl}
 			alt=""
 			loading="eager"
@@ -390,6 +433,18 @@ onMount(() => {
 		filter: blur(var(--home-background-blur, var(--home-local-wallpaper-blur)));
 		transform: translate3d(0, 0, 0);
 		backface-visibility: hidden;
+	}
+
+	.local-wallpaper-home img {
+		position: absolute;
+		top: var(--home-wallpaper-offset-y, 0);
+		left: var(--home-wallpaper-offset-x, 0);
+		min-width: 0;
+		min-height: 0;
+		width: var(--home-wallpaper-render-width, 100%);
+		height: var(--home-wallpaper-render-height, 100%);
+		object-fit: fill;
+		object-position: 0 0;
 	}
 
 	:global(#wallpaper-wrapper.has-local-wallpaper #banner-images-container),
