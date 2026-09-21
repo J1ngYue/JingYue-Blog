@@ -8,7 +8,7 @@ type ChangelogPageWindow = Window & {
 
 const changelogPageWindow = window as ChangelogPageWindow;
 
-function initChangelogPage() {
+function initChangelogPage(): void {
 	changelogPageWindow.__jingyueChangelogPageCleanup?.();
 
 	const page = document.querySelector<HTMLElement>("[data-changelog-page]");
@@ -42,9 +42,9 @@ function initChangelogPage() {
 	let activeCard: HTMLElement | null = null;
 	let restoreFocus: HTMLElement | null = null;
 	let layoutFrame = 0;
-	let hoverFrame = 0;
 	let closing = false;
 	let closeAnimation: Animation | null = null;
+	const wireAnimations = new Set<() => void>();
 
 	const allCards = () =>
 		Array.from(grid.querySelectorAll<HTMLElement>("[data-changelog-card]"));
@@ -71,8 +71,8 @@ function initChangelogPage() {
 		return path;
 	};
 	const clearHover = () => {
-		if (hoverFrame) cancelAnimationFrame(hoverFrame);
-		hoverFrame = 0;
+		for (const cancel of wireAnimations) cancel();
+		wireAnimations.clear();
 		board.querySelectorAll("[data-hover-wire]").forEach((node) => {
 			node.remove();
 		});
@@ -84,42 +84,58 @@ function initChangelogPage() {
 		board.classList.remove("is-hovering");
 		activeCard = null;
 	};
-	const edgePoint = (
-		rect: DOMRect,
-		targetRect: DOMRect,
-		containerRect: DOMRect,
+	const cardCenter = (
+		card: HTMLElement,
+		boardBox = board.getBoundingClientRect(),
 	) => {
-		const center = {
-			x: rect.left - containerRect.left + rect.width / 2,
-			y: rect.top - containerRect.top + rect.height / 2,
-		};
-		const target = {
-			x: targetRect.left - containerRect.left + targetRect.width / 2,
-			y: targetRect.top - containerRect.top + targetRect.height / 2,
-		};
-		const dx = target.x - center.x;
-		const dy = target.y - center.y;
-		if (Math.abs(dx) * rect.height >= Math.abs(dy) * rect.width) {
-			const x = center.x + (dx < 0 ? -rect.width / 2 : rect.width / 2);
-			return {
-				x,
-				y: center.y + (dx === 0 ? 0 : (dy * (x - center.x)) / dx),
-			};
-		}
-		const y = center.y + (dy < 0 ? -rect.height / 2 : rect.height / 2);
+		const rect = card.getBoundingClientRect();
 		return {
-			x: center.x + (dy === 0 ? 0 : (dx * (y - center.y)) / dy),
-			y,
+			x: rect.left - boardBox.left + rect.width / 2,
+			y: rect.top - boardBox.top + rect.height / 2,
 		};
+	};
+	const sizeWires = () => {
+		wires.setAttribute(
+			"viewBox",
+			`0 0 ${Math.max(board.clientWidth, board.scrollWidth)} ${Math.max(board.clientHeight, board.scrollHeight)}`,
+		);
+	};
+	const drawRowArrows = (cards: HTMLElement[], columns: number) => {
+		sizeWires();
+		wires.querySelectorAll("[data-row-wire]").forEach((node) => {
+			node.remove();
+		});
+		const rows = Math.ceil(cards.length / columns);
+		const boardBox = board.getBoundingClientRect();
+		for (let row = 0; row < rows - 1; row += 1) {
+			const fromCard = cards[row * columns + columns - 1];
+			const toCard = cards[(row + 1) * columns];
+			if (!fromCard || !toCard) continue;
+			const fromRect = fromCard.getBoundingClientRect();
+			const toRect = toCard.getBoundingClientRect();
+			const fromY = fromRect.top - boardBox.top + fromRect.height / 2;
+			const toY = toRect.top - boardBox.top + toRect.height / 2;
+			let pathData: string;
+			if (row % 2 === 0) {
+				const fromX = fromRect.right - boardBox.left;
+				const toX = toRect.right - boardBox.left;
+				const outsideX = Math.max(fromX, toX) + 16;
+				pathData = `M ${toX} ${toY} H ${outsideX} V ${fromY} H ${fromX}`;
+			} else {
+				const fromX = fromRect.left - boardBox.left;
+				const toX = toRect.left - boardBox.left;
+				const outsideX = Math.min(fromX, toX) - 16;
+				pathData = `M ${toX} ${toY} H ${outsideX} V ${fromY} H ${fromX}`;
+			}
+			const path = makePath(pathData, "changelog-wire changelog-wire--row");
+			path.dataset.rowWire = "true";
+			wires.appendChild(path);
+		}
 	};
 	const layout = () => {
 		layoutFrame = 0;
 		const cards = visibleCards();
 		if (!cards.length || !page.isConnected) return;
-		wires.setAttribute(
-			"viewBox",
-			`0 0 ${Math.max(board.clientWidth, board.scrollWidth)} ${Math.max(board.clientHeight, board.scrollHeight)}`,
-		);
 		const columns = Math.max(
 			1,
 			getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length,
@@ -130,6 +146,7 @@ function initChangelogPage() {
 			const visualColumn = row % 2 === 0 ? column : columns - 1 - column;
 			card.style.order = String(row * columns + visualColumn);
 		});
+		drawRowArrows(cards, columns);
 		clearHover();
 	};
 	const scheduleLayout = () => {
@@ -140,36 +157,86 @@ function initChangelogPage() {
 		d: string,
 		midpoint: { x: number; y: number },
 		labelText: string,
-		sequence: number,
 	) => {
-		const path = makePath(d, "changelog-wire changelog-wire--hover");
+		const path = makePath(d, "changelog-wire changelog-wire--hover", false);
 		path.dataset.hoverWire = "true";
-		path.style.setProperty("--wire-delay", `${sequence * 70}ms`);
 		wires.appendChild(path);
-		const flow = makePath(d, "changelog-wire changelog-wire--flow", false);
-		flow.dataset.hoverWire = "true";
-		flow.setAttribute("pathLength", "1");
-		flow.style.setProperty("--wire-delay", `${sequence * 70}ms`);
-		wires.appendChild(flow);
 		const label = document.createElement("span");
 		label.className = "changelog-wire-label";
 		label.dataset.hoverWire = "true";
 		label.textContent = labelText;
 		label.style.left = `${midpoint.x}px`;
 		label.style.top = `${midpoint.y}px`;
-		label.style.setProperty("--wire-delay", `${sequence * 70}ms`);
 		board.appendChild(label);
 		if (reducedMotion) {
 			path.classList.add("is-drawn");
+			path.setAttribute("marker-end", "url(#changelog-arrow)");
 			label.classList.add("is-in");
 			return;
 		}
-		hoverFrame = requestAnimationFrame(() => {
+
+		const length = path.getTotalLength();
+		const duration = Math.min(750, Math.max(350, (length / 700) * 1000));
+		const dash = 7;
+		const gap = 6;
+		const revealDash = (drawn: number) => {
+			const segments: number[] = [];
+			let used = 0;
+			let isDash = true;
+			while (used < drawn) {
+				const segment = Math.min(isDash ? dash : gap, drawn - used);
+				segments.push(segment);
+				used += segment;
+				isDash = !isDash;
+			}
+			if (!segments.length) segments.push(0);
+			if (segments.length % 2 === 0) segments.push(0);
+			segments.push(length + dash + gap);
+			path.style.strokeDasharray = segments.join(" ");
+		};
+
+		const arrow = document.createElementNS(
+			"http://www.w3.org/2000/svg",
+			"polygon",
+		);
+		arrow.setAttribute("points", "-9,-5 0,0 -9,5 -6,0");
+		arrow.setAttribute("class", "changelog-wire-arrow");
+		arrow.dataset.hoverWire = "true";
+		wires.appendChild(arrow);
+
+		const easeOutCubic = (value: number) => 1 - (1 - value) ** 3;
+		const startedAt = performance.now();
+		let frame = 0;
+		const cancel = () => {
+			cancelAnimationFrame(frame);
+			arrow.remove();
+		};
+		wireAnimations.add(cancel);
+		const tick = (now: number) => {
+			const progress = Math.min(1, (now - startedAt) / duration);
+			const drawn = length * easeOutCubic(progress);
+			revealDash(drawn);
+			const tip = path.getPointAtLength(drawn);
+			const behind = path.getPointAtLength(Math.max(0, drawn - 1));
+			const ahead = path.getPointAtLength(Math.min(length, drawn + 1));
+			const angle =
+				(Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180) / Math.PI;
+			arrow.setAttribute(
+				"transform",
+				`translate(${tip.x} ${tip.y}) rotate(${angle})`,
+			);
+			if (progress < 1) {
+				frame = requestAnimationFrame(tick);
+				return;
+			}
+			wireAnimations.delete(cancel);
+			path.style.strokeDasharray = "";
 			path.classList.add("is-drawn");
-			flow.classList.add("is-drawn");
+			path.setAttribute("marker-end", "url(#changelog-arrow)");
+			arrow.remove();
 			label.classList.add("is-in");
-			hoverFrame = 0;
-		});
+		};
+		frame = requestAnimationFrame(tick);
 	};
 	const getHoverLinks = (card: HTMLElement): ClientChangelogLink[] => {
 		const sourceIndex = Number(card.dataset.index);
@@ -200,21 +267,15 @@ function initChangelogPage() {
 		card.classList.add("is-active");
 		const links = getHoverLinks(card);
 		if (!links.length) return;
+		sizeWires();
 		const boardBox = board.getBoundingClientRect();
-		const sourceRect = card.getBoundingClientRect();
-		const sourceCenter = {
-			x: sourceRect.left - boardBox.left + sourceRect.width / 2,
-			y: sourceRect.top - boardBox.top + sourceRect.height / 2,
-		};
-		links.forEach((link, linkIndex) => {
+		const sourceIndex = Number(card.dataset.index);
+		const sourceCenter = cardCenter(card, boardBox);
+		links.forEach((link) => {
 			const target = getCard(link.t);
 			if (!target || target.hidden) return;
 			target.classList.add("is-linked");
-			const targetRect = target.getBoundingClientRect();
-			const targetCenter = {
-				x: targetRect.left - boardBox.left + targetRect.width / 2,
-				y: targetRect.top - boardBox.top + targetRect.height / 2,
-			};
+			const targetCenter = cardCenter(target, boardBox);
 			const dx = targetCenter.x - sourceCenter.x;
 			const dy = targetCenter.y - sourceCenter.y;
 			const length = Math.max(1, Math.hypot(dx, dy));
@@ -223,17 +284,16 @@ function initChangelogPage() {
 				x: (sourceCenter.x + targetCenter.x) / 2 - (dy / length) * curve,
 				y: (sourceCenter.y + targetCenter.y) / 2 + (dx / length) * curve,
 			};
-			const start = edgePoint(sourceRect, targetRect, boardBox);
-			const end = edgePoint(targetRect, sourceRect, boardBox);
-			const normal = { x: -dy / length, y: dx / length };
+			const targetIsNewer = link.t < sourceIndex;
+			const start = targetIsNewer ? sourceCenter : targetCenter;
+			const end = targetIsNewer ? targetCenter : sourceCenter;
 			drawHoverWire(
 				`M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
 				{
-					x: start.x * 0.25 + control.x * 0.5 + end.x * 0.25 + normal.x * 36,
-					y: start.y * 0.25 + control.y * 0.5 + end.y * 0.25 + normal.y * 36,
+					x: start.x * 0.25 + control.x * 0.5 + end.x * 0.25,
+					y: start.y * 0.25 + control.y * 0.5 + end.y * 0.25,
 				},
 				link.p.join("、"),
-				linkIndex,
 			);
 		});
 	};
@@ -441,14 +501,13 @@ function initChangelogPage() {
 		controller.abort();
 		resizeObserver.disconnect();
 		if (layoutFrame) cancelAnimationFrame(layoutFrame);
-		if (hoverFrame) cancelAnimationFrame(hoverFrame);
 		clearHover();
 		if (dialog.open) dialog.close();
 	};
 	scheduleLayout();
 }
 
-function bindChangelogSwup() {
+function bindChangelogSwup(): void {
 	if (changelogPageWindow.__jingyueChangelogSwupBound || !window.swup?.hooks) {
 		return;
 	}

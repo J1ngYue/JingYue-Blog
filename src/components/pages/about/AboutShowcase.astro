@@ -1,0 +1,576 @@
+---
+import { Icon } from "astro-icon/components";
+import profileAvatar from "@/assets/images/avatar.avif";
+import { profileConfig, siteConfig } from "@/config";
+
+interface TechItem {
+	name: string;
+	description: string;
+	icon: string;
+	url: string;
+}
+
+interface TechGroup {
+	label: string;
+	icon: string;
+	items: TechItem[];
+}
+
+const techGroups: TechGroup[] = [
+	{
+		label: "核心框架",
+		icon: "material-symbols:code-blocks-outline",
+		items: [
+			{
+				name: "Astro 7",
+				description: "内容驱动的站点骨架",
+				icon: "simple-icons:astro",
+				url: "https://astro.build",
+			},
+			{
+				name: "Svelte 5",
+				description: "交互组件与状态界面",
+				icon: "simple-icons:svelte",
+				url: "https://svelte.dev",
+			},
+			{
+				name: "TypeScript",
+				description: "全站类型安全",
+				icon: "simple-icons:typescript",
+				url: "https://www.typescriptlang.org",
+			},
+			{
+				name: "Tailwind CSS",
+				description: "基础样式与响应式布局",
+				icon: "simple-icons:tailwindcss",
+				url: "https://tailwindcss.com",
+			},
+		],
+	},
+	{
+		label: "体验与动效",
+		icon: "material-symbols:auto-awesome-outline-rounded",
+		items: [
+			{
+				name: "Swup",
+				description: "站内无刷新页面过渡",
+				icon: "material-symbols:transition-fade-rounded",
+				url: "https://swup.js.org",
+			},
+			{
+				name: "GSAP",
+				description: "首页与复杂动效编排",
+				icon: "simple-icons:gsap",
+				url: "https://gsap.com",
+			},
+			{
+				name: "Three.js",
+				description: "3D 场景与可视化",
+				icon: "simple-icons:threedotjs",
+				url: "https://threejs.org",
+			},
+			{
+				name: "D3.js",
+				description: "文章知识图谱",
+				icon: "simple-icons:d3",
+				url: "https://d3js.org",
+			},
+		],
+	},
+	{
+		label: "内容与阅读",
+		icon: "material-symbols:menu-book-outline-rounded",
+		items: [
+			{
+				name: "MDX",
+				description: "组件化内容写作",
+				icon: "simple-icons:mdx",
+				url: "https://mdxjs.com",
+			},
+			{
+				name: "Expressive Code",
+				description: "代码块排版与高亮",
+				icon: "material-symbols:data-object-rounded",
+				url: "https://expressive-code.com",
+			},
+			{
+				name: "KaTeX",
+				description: "数学公式渲染",
+				icon: "material-symbols:functions-rounded",
+				url: "https://katex.org",
+			},
+			{
+				name: "Pagefind",
+				description: "静态全文搜索",
+				icon: "material-symbols:search-rounded",
+				url: "https://pagefind.app",
+			},
+		],
+	},
+	{
+		label: "部署与工程",
+		icon: "material-symbols:rocket-launch-outline-rounded",
+		items: [
+			{
+				name: "Cloudflare",
+				description: "部署、域名与内容分发",
+				icon: "simple-icons:cloudflare",
+				url: "https://www.cloudflare.com",
+			},
+			{
+				name: "GitHub Actions",
+				description: "自动检查与持续构建",
+				icon: "simple-icons:githubactions",
+				url: "https://github.com/features/actions",
+			},
+			{
+				name: "pnpm",
+				description: "依赖与脚本管理",
+				icon: "simple-icons:pnpm",
+				url: "https://pnpm.io",
+			},
+			{
+				name: "Biome",
+				description: "代码检查与格式化",
+				icon: "simple-icons:biome",
+				url: "https://biomejs.dev",
+			},
+		],
+	},
+];
+
+const milestones = [
+	{
+		date: "2025.01",
+		title: "写下第一篇记录",
+		description: "从一块安静的网络角落开始，慢慢收集代码、生活与灵感。",
+		tag: "起点",
+	},
+	{
+		date: "2026.07",
+		title: "重整内容与记录系统",
+		description: "文章、动态、相册、图谱与记录页面逐渐长成了各自的模样。",
+	},
+	{
+		date: "2026.08",
+		title: "让首页拥有自己的叙事",
+		description: "拼图、雨夜、横向影像与几位小伙伴一起组成了现在的入场。",
+	},
+	{
+		date: "2026.09",
+		title: "继续打磨每一次抵达",
+		description: "迁移域名与部署链路，也继续修整导航、动效和每一个细节。",
+	},
+];
+
+const socialNotes: Record<string, string> = {
+	qq: "偶尔聊天，也交换生活碎片",
+	github: "代码、项目与持续发生的想法",
+	email: "认真一点的来信可以寄到这里",
+	rss: "安静订阅，不错过新的文字",
+};
+
+const showLocalAdminControls = import.meta.env.DEV;
+---
+
+<article class="about-showcase" data-about-page>
+	<header class="about-showcase__heading">
+		<p>ABOUT</p>
+		<h1>关于</h1>
+		<blockquote>“我是谁，大概只能由我写下的那些东西慢慢回答。”</blockquote>
+	</header>
+
+	<div class="about-showcase__story">
+		<section aria-labelledby="about-me-title">
+			<h2 id="about-me-title">关于我 <span>/ About Me</span></h2>
+			<p>
+				你好，我是
+				<span class="about-profile" tabindex="0" aria-describedby="about-profile-card">
+					<span class="about-profile__trigger">{profileConfig.name}</span>
+					<span id="about-profile-card" class="about-profile__card" role="tooltip">
+						<span class="about-profile__avatar" aria-hidden="true">
+							<img src={profileAvatar.src} alt="" width="96" height="96" loading="lazy" data-site-avatar />
+						</span>
+						<span class="about-profile__content">
+							<strong>{profileConfig.name}</strong>
+							<small>博客作者 · 长期折腾者</small>
+							<span>{profileConfig.bio} 喜欢把路过的风景与尚未完成的想法留在这里。</span>
+						</span>
+					</span>
+				</span>。
+			</p>
+			<p>这里不是一份标准答案，更像是一间缓慢生长的小屋：有代码留下的刻痕，也有雨夜、音乐和生活偶然闪过的光。</p>
+			<p>我会在这里记录解决问题的过程，也会保存那些无法被“效率”衡量、却值得被认真记住的瞬间。</p>
+		</section>
+
+		<section aria-labelledby="about-stack-title">
+			<h3 id="about-stack-title">Q1：这个站点用到了哪些技术栈？</h3>
+			<p>
+				这个小站从开源主题出发，又在一次次修改里长出了自己的性格。骨架是 <code>Astro</code>，交互由 <code>Svelte</code> 与原生脚本共同完成，页面过渡交给 <code>Swup</code>，其余细节则被拆进每一次提交里。
+			</p>
+
+			<div class="about-tech" aria-label="站点技术栈">
+				{techGroups.map((group, index) => (
+					<div class="about-tech__group" data-about-accordion={index === 0 ? "open" : "closed"}>
+						<button type="button" class="about-tech__head" aria-expanded={index === 0 ? "true" : "false"}>
+							<span class="about-tech__group-icon" aria-hidden="true"><Icon is:inline name={group.icon} /></span>
+							<strong>{group.label}</strong>
+							<small>{group.items.length} 项</small>
+							<Icon is:inline class="about-tech__chevron" name="material-symbols:keyboard-arrow-down-rounded" />
+						</button>
+						<div class="about-tech__body">
+							<div class="about-tech__body-inner">
+								<div class="about-tech__grid">
+									{group.items.map((item, itemIndex) => (
+										<a href={item.url} target="_blank" rel="noopener noreferrer" style={`--item-index:${itemIndex}`}>
+											<span aria-hidden="true"><Icon is:inline name={item.icon} /></span>
+											<strong>{item.name}</strong>
+											<small>{item.description}</small>
+										</a>
+									))}
+								</div>
+							</div>
+						</div>
+					</div>
+				))}
+			</div>
+
+			<p>每一层界面背后，都有一些被推翻又重来的夜晚。这个小站也不是一天建成的——下面是它一路留下的几个坐标。</p>
+			<ol class="about-timeline" aria-label="站点成长时间线">
+				{milestones.map((milestone, index) => (
+					<li style={`--timeline-index:${index}`}>
+						<time>{milestone.date}</time>
+						<span class="about-timeline__rail" aria-hidden="true"><i></i></span>
+						<div>
+							<header>
+								<strong>{milestone.title}</strong>
+								{milestone.tag && <small>{milestone.tag}</small>}
+							</header>
+							<p>{milestone.description}</p>
+						</div>
+					</li>
+				))}
+			</ol>
+		</section>
+
+		<section aria-labelledby="about-social-title">
+			<h3 id="about-social-title">Q2：在哪里可以找到我？</h3>
+			<p>如果你也喜欢折腾技术，或者只是想交换一段近况，可以从下面这些入口找到我。</p>
+			<div class="about-social" aria-label="个人链接">
+				{profileConfig.links.map((link) => (
+					<a href={link.url} target={link.url.startsWith("http") ? "_blank" : undefined} rel={link.url.startsWith("http") ? "noopener noreferrer" : undefined}>
+						<span class="about-social__icon" aria-hidden="true"><Icon is:inline name={link.icon} /></span>
+						<span>
+							<small>{link.name}</small>
+							<strong>{link.name === "qq" ? "来聊聊天" : link.name}</strong>
+							<em>{socialNotes[link.name.toLowerCase()] ?? "从这里继续认识我"}</em>
+						</span>
+						<Icon is:inline class="about-social__arrow" name="material-symbols:arrow-outward-rounded" />
+					</a>
+				))}
+			</div>
+		</section>
+
+		<section aria-labelledby="about-open-title">
+			<h3 id="about-open-title">Q3：这个博客开源吗？</h3>
+			<div class="about-chat">
+				<span aria-hidden="true">
+					<img src={profileAvatar.src} alt="" width="96" height="96" loading="lazy" data-site-avatar />
+				</span>
+				<div><small>{profileConfig.name}</small><p>当然。代码一直放在 GitHub，也欢迎把喜欢的点子带回自己的小站。</p></div>
+			</div>
+			<div class="about-projects">
+				<a href="https://github.com/J1ngYue/JingYue-Blog" target="_blank" rel="noopener noreferrer">
+					<Icon is:inline name="fa7-brands:github" />
+					<span><small>J1ngYue</small><strong>JingYue-Blog</strong><em>现在这间小屋的源代码</em></span>
+					<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+				</a>
+				<a href="/3d-home/">
+					<Icon is:inline name="material-symbols:view-in-ar-outline-rounded" />
+					<span><small>JingYue</small><strong>3D HOME</strong><em>从另一扇门进入我的空间</em></span>
+					<Icon is:inline name="material-symbols:arrow-forward-rounded" />
+				</a>
+			</div>
+			{showLocalAdminControls && (
+				<div class="about-settings" data-profile-appearance-settings>
+					<input id="site-avatar-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" data-avatar-input aria-describedby="site-appearance-status" />
+					<label for="site-avatar-file"><Icon is:inline name="material-symbols:add-photo-alternate-rounded" /><span>更换头像</span></label>
+					<button type="button" data-avatar-reset hidden><Icon is:inline name="material-symbols:restart-alt-rounded" /><span>恢复头像</span></button>
+					<input id="site-profile-cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" data-cover-input aria-describedby="site-appearance-status" />
+					<label for="site-profile-cover-file"><Icon is:inline name="material-symbols:panorama-rounded" /><span>更换封面</span></label>
+					<button type="button" data-cover-reset hidden><Icon is:inline name="material-symbols:restart-alt-rounded" /><span>恢复封面</span></button>
+					<small id="site-appearance-status" data-appearance-status aria-live="polite">头像与资料卡封面会同步到全站</small>
+				</div>
+			)}
+		</section>
+
+		<footer class="about-showcase__closing">感谢你的来访。愿你在这里遇见一束微光，也愿下一次抵达时，这里又多了一点新的故事。<span>{siteConfig.subtitle}</span></footer>
+	</div>
+</article>
+
+<script>
+	import { getSiteAvatar, removeSiteAvatar, saveSiteAvatar } from "@/utils/site-avatar";
+	import { getSiteProfileCover, removeSiteProfileCover, saveSiteProfileCover } from "@/utils/site-profile-cover";
+
+	interface AboutPageWindow extends Window {
+		__jingyueAboutPageBound?: boolean;
+		__jingyueAboutPageCleanup?: () => void;
+	}
+
+	const aboutPageWindow = window as AboutPageWindow;
+
+	function validateImage(file: File) {
+		return new Promise<void>((resolve, reject) => {
+			const objectUrl = URL.createObjectURL(file);
+			const image = new Image();
+			image.onload = () => { URL.revokeObjectURL(objectUrl); resolve(); };
+			image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("无法读取这张图片，请换一张试试。")); };
+			image.src = objectUrl;
+		});
+	}
+
+	function setStatus(status: HTMLElement, message: string, state: "idle" | "success" | "error" = "idle") {
+		status.textContent = message;
+		status.dataset.state = state;
+	}
+
+	async function initAboutPage() {
+		aboutPageWindow.__jingyueAboutPageCleanup?.();
+		const page = document.querySelector<HTMLElement>("[data-about-page]");
+		if (!page) return;
+		const controller = new AbortController();
+		const { signal } = controller;
+		aboutPageWindow.__jingyueAboutPageCleanup = () => controller.abort();
+
+		page.addEventListener("click", (event) => {
+			if (!(event.target instanceof Element)) return;
+			const head = event.target.closest<HTMLButtonElement>(".about-tech__head");
+			const group = head?.closest<HTMLElement>("[data-about-accordion]");
+			if (!head || !group) return;
+			const isOpen = group.dataset.aboutAccordion === "open";
+			group.dataset.aboutAccordion = isOpen ? "closed" : "open";
+			head.setAttribute("aria-expanded", String(!isOpen));
+		}, { signal });
+
+		const root = page.querySelector<HTMLElement>("[data-profile-appearance-settings]");
+		if (!root) return;
+		const avatarInput = root.querySelector<HTMLInputElement>("[data-avatar-input]");
+		const avatarReset = root.querySelector<HTMLButtonElement>("[data-avatar-reset]");
+		const coverInput = root.querySelector<HTMLInputElement>("[data-cover-input]");
+		const coverReset = root.querySelector<HTMLButtonElement>("[data-cover-reset]");
+		const status = root.querySelector<HTMLElement>("[data-appearance-status]");
+		if (!avatarInput || !avatarReset || !coverInput || !coverReset || !status) return;
+
+		const [avatarRecord, coverRecord] = await Promise.allSettled([getSiteAvatar(), getSiteProfileCover()]);
+		avatarReset.hidden = avatarRecord.status !== "fulfilled" || !avatarRecord.value;
+		coverReset.hidden = coverRecord.status !== "fulfilled" || !coverRecord.value;
+
+		avatarInput.addEventListener("change", async () => {
+			const file = avatarInput.files?.[0];
+			if (!file) return;
+			avatarInput.disabled = true;
+			setStatus(status, "正在同步头像…");
+			try {
+				await validateImage(file);
+				await saveSiteAvatar(file);
+				avatarReset.hidden = false;
+				setStatus(status, "头像已同步到全站", "success");
+			} catch (error) {
+				setStatus(status, error instanceof Error ? error.message : "头像更换失败，请重试。", "error");
+			} finally {
+				avatarInput.value = "";
+				avatarInput.disabled = false;
+			}
+		}, { signal });
+
+		avatarReset.addEventListener("click", async () => {
+			setStatus(status, "正在恢复默认头像…");
+			try {
+				await removeSiteAvatar();
+				avatarReset.hidden = true;
+				setStatus(status, "已恢复默认头像", "success");
+			} catch { setStatus(status, "恢复失败，请稍后重试。", "error"); }
+		}, { signal });
+
+		coverInput.addEventListener("change", async () => {
+			const file = coverInput.files?.[0];
+			if (!file) return;
+			coverInput.disabled = true;
+			setStatus(status, "正在同步资料卡封面…");
+			try {
+				await validateImage(file);
+				await saveSiteProfileCover(file);
+				coverReset.hidden = false;
+				setStatus(status, "资料卡封面已同步到全站", "success");
+			} catch (error) {
+				setStatus(status, error instanceof Error ? error.message : "封面更换失败，请重试。", "error");
+			} finally {
+				coverInput.value = "";
+				coverInput.disabled = false;
+			}
+		}, { signal });
+
+		coverReset.addEventListener("click", async () => {
+			setStatus(status, "正在恢复默认资料卡封面…");
+			try {
+				await removeSiteProfileCover();
+				coverReset.hidden = true;
+				setStatus(status, "已恢复默认资料卡封面", "success");
+			} catch { setStatus(status, "恢复失败，请稍后重试。", "error"); }
+		}, { signal });
+	}
+
+	if (!aboutPageWindow.__jingyueAboutPageBound) {
+		aboutPageWindow.__jingyueAboutPageBound = true;
+		document.addEventListener("astro:page-load", initAboutPage);
+		document.addEventListener("astro:after-swap", initAboutPage);
+		document.addEventListener("swup:contentReplaced", initAboutPage);
+		window.addEventListener("pageshow", initAboutPage);
+	}
+	void initAboutPage();
+</script>
+
+<style>
+	.about-showcase {
+		--about-accent: #129d97;
+		--about-ink: #121417;
+		--about-muted: color-mix(in srgb, var(--about-ink) 58%, transparent);
+		--about-surface: color-mix(in srgb, var(--card-bg, #fff) 96%, transparent);
+		--about-soft: color-mix(in srgb, var(--about-ink) 4%, var(--card-bg, #fff));
+		width: min(100%, 76rem);
+		margin-inline: auto;
+		border: 1px solid color-mix(in srgb, var(--about-ink) 10%, transparent);
+		border-radius: 1.25rem;
+		background: var(--about-surface);
+		padding: clamp(1.5rem, 4vw, 3.5rem);
+		color: var(--about-ink);
+		box-shadow: 0 1.2rem 3rem rgb(15 23 42 / 6%);
+	}
+
+	:global(html.dark) .about-showcase {
+		--about-ink: #f4f4f2;
+		--about-surface: color-mix(in srgb, var(--card-bg, #171717) 96%, transparent);
+		box-shadow: 0 1.2rem 3rem rgb(0 0 0 / 20%);
+	}
+
+	.about-showcase__heading { margin-bottom: clamp(2.8rem, 7vw, 5.6rem); }
+	.about-showcase__heading > p { margin: 0 0 0.75rem; color: var(--about-muted); font-size: 0.72rem; font-weight: 780; letter-spacing: 0.24em; }
+	.about-showcase__heading h1 { margin: 0; font-size: clamp(3rem, 8vw, 5.5rem); font-weight: 850; letter-spacing: -0.07em; line-height: 0.92; }
+	.about-showcase__heading blockquote { margin: 0.9rem 0 0; color: var(--about-muted); font-size: clamp(0.82rem, 1.5vw, 1rem); font-style: normal; }
+	.about-showcase__story { width: min(100%, 64rem); }
+	.about-showcase__story section + section { margin-top: clamp(3rem, 7vw, 5rem); }
+	.about-showcase__story h2 { margin: 0 0 1.5rem; font-size: clamp(1.6rem, 3.3vw, 2.35rem); letter-spacing: -0.035em; }
+	.about-showcase__story h2 span { color: var(--about-muted); font-weight: 560; }
+	.about-showcase__story h3 { margin: 0 0 1rem; font-size: clamp(1.15rem, 2.4vw, 1.5rem); letter-spacing: -0.02em; }
+	.about-showcase__story > section > p { max-width: 56rem; margin: 0.9rem 0; font-size: clamp(0.92rem, 1.35vw, 1rem); line-height: 1.9; }
+	.about-showcase code { border-radius: 0.35rem; background: color-mix(in srgb, var(--about-ink) 8%, transparent); padding: 0.12rem 0.34rem; color: var(--about-ink); font-size: 0.88em; }
+
+	.about-profile { position: relative; display: inline-flex; outline: none; vertical-align: baseline; }
+	.about-profile__trigger { border-bottom: 1px dashed currentColor; color: var(--about-accent); font-weight: 760; cursor: help; }
+	.about-profile:focus-visible .about-profile__trigger { border-radius: 0.25rem; outline: 2px solid var(--about-accent); outline-offset: 0.2rem; }
+	.about-profile__card { position: absolute; top: calc(100% + 0.7rem); left: 0; z-index: 20; display: grid; width: min(20rem, calc(100vw - 3rem)); grid-template-columns: 3.2rem minmax(0, 1fr); gap: 0.8rem; visibility: hidden; border: 2px solid var(--about-ink); border-radius: 0.85rem; background: var(--card-bg, #fff); padding: 0.8rem; color: var(--about-ink); font-size: 0.8rem; line-height: 1.5; opacity: 0; pointer-events: none; transform: translateY(0.35rem) scale(0.98); transition: opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1), visibility 180ms ease; }
+	.about-profile__card::before { position: absolute; top: -0.45rem; left: 1rem; width: 0.75rem; height: 0.75rem; border-top: 2px solid var(--about-ink); border-left: 2px solid var(--about-ink); background: var(--card-bg, #fff); content: ""; transform: rotate(45deg); }
+	.about-profile:hover .about-profile__card, .about-profile:focus-within .about-profile__card { visibility: visible; opacity: 1; pointer-events: auto; transform: none; }
+	.about-profile__avatar { width: 3.2rem; height: 3.2rem; overflow: hidden; border: 1px solid var(--about-ink); border-radius: 50%; }
+	.about-profile__avatar :global(img) { width: 100%; height: 100%; object-fit: cover; }
+	.about-profile__content { display: flex; min-width: 0; flex-direction: column; }
+	.about-profile__content strong { color: var(--about-accent); font-size: 0.9rem; }
+	.about-profile__content small { color: var(--about-muted); }
+	.about-profile__content > span { margin-top: 0.2rem; }
+
+	.about-tech { display: grid; gap: 0.75rem; margin: 1.4rem 0 1.8rem; }
+	.about-tech__group { overflow: hidden; border-radius: 0.9rem; background: var(--about-soft); }
+	.about-tech__head { display: flex; width: 100%; min-height: 4rem; align-items: center; gap: 0.7rem; border: 0; background: transparent; padding: 0.8rem 1rem; color: var(--about-ink); font: inherit; text-align: left; cursor: pointer; transition: background-color 180ms ease; }
+	.about-tech__head:hover { background: color-mix(in srgb, var(--about-ink) 5%, transparent); }
+	.about-tech__head:focus-visible { outline: 2px solid var(--about-accent); outline-offset: -2px; }
+	.about-tech__group-icon { display: grid; width: 2.25rem; height: 2.25rem; flex: 0 0 2.25rem; place-items: center; border-radius: 0.65rem; background: color-mix(in srgb, var(--about-accent) 13%, transparent); color: var(--about-accent); transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1); }
+	.about-tech__head:hover .about-tech__group-icon { transform: scale(1.08) rotate(-3deg); }
+	.about-tech__head strong { flex: 1; font-size: 0.92rem; }
+	.about-tech__head small { border-radius: 999px; background: color-mix(in srgb, var(--about-accent) 12%, transparent); padding: 0.2rem 0.6rem; color: var(--about-accent); font-weight: 720; }
+	.about-tech__chevron { width: 1.3rem; height: 1.3rem; color: var(--about-muted); transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+	.about-tech__group[data-about-accordion="open"] .about-tech__chevron { transform: rotate(180deg); }
+	.about-tech__body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+	.about-tech__group[data-about-accordion="open"] .about-tech__body { grid-template-rows: 1fr; }
+	.about-tech__body-inner { min-height: 0; overflow: hidden; }
+	.about-tech__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; padding: 0.2rem 1rem 1rem; }
+	.about-tech__grid a { display: grid; min-height: 5.3rem; grid-template-columns: 2rem minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 0.75rem; align-content: center; border-radius: 0.65rem; background: color-mix(in srgb, var(--card-bg, #fff) 72%, transparent); padding: 0.85rem 1rem; color: var(--about-ink); text-decoration: none; transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+	.about-tech__grid a:hover, .about-tech__grid a:focus-visible { background: var(--card-bg, #fff); box-shadow: 0 0.6rem 1.25rem rgb(15 23 42 / 8%); outline: none; transform: translateY(-2px); }
+	.about-tech__grid a > span { display: grid; grid-row: 1 / 3; width: 2rem; height: 2rem; place-items: center; color: var(--about-accent); transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1); }
+	.about-tech__grid a:hover > span { transform: scale(1.12); }
+	.about-tech__grid a strong { font-size: 0.85rem; }
+	.about-tech__grid a small { color: var(--about-muted); font-size: 0.72rem; line-height: 1.45; }
+	.about-tech__group[data-about-accordion="open"] .about-tech__grid a { animation: about-tech-in 380ms ease both; animation-delay: calc(80ms + var(--item-index) * 45ms); }
+
+	.about-timeline { display: grid; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+	.about-timeline li { --node-gap: 1rem; position: relative; display: grid; grid-template-columns: 4.8rem 1.8rem minmax(0, 1fr); gap: 0 0.7rem; padding-bottom: var(--node-gap); opacity: 0; animation: about-timeline-in 480ms ease both; animation-delay: calc(var(--timeline-index) * 100ms); }
+	.about-timeline li:last-child { --node-gap: 0px; }
+	.about-timeline time { padding-top: 0.25rem; color: var(--about-accent); font-family: var(--font-jetbrains-mono), monospace; font-size: 0.78rem; font-weight: 760; text-align: right; }
+	.about-timeline__rail { position: absolute; top: 0; bottom: calc(-1 * var(--node-gap)); left: 5.5rem; width: 1.8rem; }
+	.about-timeline__rail::before { position: absolute; inset: 0 auto 0 50%; width: 2px; border-radius: 999px; background: color-mix(in srgb, var(--about-accent) 25%, transparent); content: ""; transform: translateX(-50%) scaleY(0); transform-origin: top; animation: about-line-grow 580ms ease both; animation-delay: calc(var(--timeline-index) * 100ms + 80ms); }
+	.about-timeline__rail i { position: absolute; top: 1.05rem; left: 50%; width: 0.72rem; height: 0.72rem; border-radius: 50%; background: var(--about-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--about-accent) 14%, transparent); transform: translateX(-50%); transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1); }
+	.about-timeline li > div { border-radius: 0.85rem; background: var(--about-soft); padding: 0.85rem 1.05rem; transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+	.about-timeline li:hover > div { background: color-mix(in srgb, var(--about-ink) 7%, var(--card-bg, #fff)); box-shadow: 0 0.55rem 1.2rem rgb(15 23 42 / 8%); transform: translateX(0.25rem); }
+	.about-timeline li:hover .about-timeline__rail i { transform: translateX(-50%) scale(1.2); }
+	.about-timeline header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+	.about-timeline header strong { font-size: 0.9rem; }
+	.about-timeline header small { border-radius: 999px; background: color-mix(in srgb, var(--about-accent) 13%, transparent); padding: 0.1rem 0.48rem; color: var(--about-accent); font-weight: 720; }
+	.about-timeline li p { margin: 0.25rem 0 0; color: var(--about-muted); font-size: 0.78rem; line-height: 1.6; }
+
+	.about-social { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; margin-top: 1.35rem; }
+	.about-social > a { display: grid; min-height: 6rem; grid-template-columns: 3.2rem minmax(0, 1fr) 1.25rem; gap: 0.75rem; align-items: center; border-radius: 0.9rem; background: var(--about-soft); padding: 1rem; color: var(--about-ink); text-decoration: none; transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+	.about-social > a:hover, .about-social > a:focus-visible { background: color-mix(in srgb, var(--about-ink) 7%, var(--card-bg, #fff)); box-shadow: 0 0.55rem 1.2rem rgb(15 23 42 / 8%); outline: none; transform: translateY(-2px); }
+	.about-social__icon { display: grid; width: 3.2rem; height: 3.2rem; place-items: center; color: var(--about-ink); }
+	.about-social__icon :global(svg) { width: 2rem; height: 2rem; }
+	.about-social > a > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; }
+	.about-social small { color: var(--about-muted); font-size: 0.68rem; text-transform: uppercase; }
+	.about-social strong { overflow: hidden; font-size: 0.92rem; text-overflow: ellipsis; white-space: nowrap; }
+	.about-social em { margin-top: 0.1rem; overflow: hidden; color: var(--about-muted); font-size: 0.7rem; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+	.about-social__arrow { color: var(--about-muted); transition: color 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1); }
+	.about-social > a:hover .about-social__arrow { color: var(--about-accent); transform: translate(0.15rem, -0.15rem); }
+
+	.about-chat { display: flex; max-width: 38rem; align-items: flex-end; gap: 0.65rem; margin: 1.35rem 0 1.1rem; }
+	.about-chat > span { flex: 0 0 2.8rem; width: 2.8rem; height: 2.8rem; overflow: hidden; border: 2px solid var(--about-ink); border-radius: 50%; }
+	.about-chat > span :global(img) { width: 100%; height: 100%; object-fit: cover; }
+	.about-chat > div { position: relative; border: 2px solid var(--about-ink); border-radius: 0.9rem 0.9rem 0.9rem 0.25rem; background: var(--card-bg, #fff); padding: 0.65rem 0.85rem; }
+	.about-chat small { color: var(--about-accent); font-size: 0.68rem; font-weight: 760; }
+	.about-chat p { margin: 0.15rem 0 0; font-size: 0.82rem; line-height: 1.65; }
+	.about-projects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
+	.about-projects > a { display: grid; min-height: 6.4rem; grid-template-columns: 2.5rem minmax(0, 1fr) 1.2rem; gap: 0.75rem; align-items: center; border: 1px solid color-mix(in srgb, var(--about-ink) 15%, transparent); border-radius: 0.9rem; background: var(--about-soft); padding: 1rem; color: var(--about-ink); text-decoration: none; transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+	.about-projects > a:hover, .about-projects > a:focus-visible { border-color: var(--about-accent); box-shadow: 0 0.65rem 1.35rem rgb(15 23 42 / 9%); outline: none; transform: translateY(-2px); }
+	.about-projects > a > :global(svg:first-child) { width: 2rem; height: 2rem; }
+	.about-projects > a > span { display: flex; min-width: 0; flex-direction: column; }
+	.about-projects small, .about-projects em { color: var(--about-muted); font-size: 0.7rem; font-style: normal; }
+	.about-projects strong { font-size: 0.9rem; }
+	.about-showcase__closing { margin-top: clamp(3rem, 7vw, 5rem); border-top: 1px solid color-mix(in srgb, var(--about-ink) 12%, transparent); padding-top: 1.5rem; color: var(--about-muted); font-size: 0.8rem; line-height: 1.75; }
+	.about-showcase__closing span { display: block; margin-top: 0.25rem; color: var(--about-ink); font-weight: 650; }
+
+	.about-settings { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1rem; }
+	.about-settings input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+	.about-settings label, .about-settings button { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid color-mix(in srgb, var(--about-ink) 22%, transparent); border-radius: 999px; background: var(--card-bg, #fff); padding: 0.45rem 0.7rem; color: var(--about-ink); font: inherit; font-size: 0.68rem; cursor: pointer; }
+	.about-settings > small { flex-basis: 100%; color: var(--about-muted); }
+	.about-settings > small[data-state="success"] { color: var(--about-accent); }
+	.about-settings > small[data-state="error"] { color: #d94b68; }
+
+	@keyframes about-tech-in { from { opacity: 0; transform: translateY(0.45rem); } to { opacity: 1; transform: none; } }
+	@keyframes about-timeline-in { from { opacity: 0; transform: translateY(0.65rem); } to { opacity: 1; transform: none; } }
+	@keyframes about-line-grow { to { transform: translateX(-50%) scaleY(1); } }
+
+	@media (max-width: 700px) {
+		.about-showcase { border-radius: 1rem; padding: 1.25rem; }
+		.about-showcase__heading { margin-bottom: 3rem; }
+		.about-tech__grid, .about-social, .about-projects { grid-template-columns: 1fr; }
+		.about-timeline li { grid-template-columns: 1.25rem minmax(0, 1fr); grid-template-areas: "rail date" "rail card"; gap: 0.35rem 0.6rem; }
+		.about-timeline time { grid-area: date; padding-top: 0; text-align: left; }
+		.about-timeline__rail { grid-area: rail; left: 0; width: 1.25rem; }
+		.about-timeline li > div { grid-area: card; }
+		.about-timeline__rail i { top: 0.35rem; }
+		.about-timeline li:hover > div { transform: none; }
+		.about-chat { align-items: flex-start; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.about-showcase *, .about-showcase *::before, .about-showcase *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+		.about-timeline li { opacity: 1; }
+		.about-timeline__rail::before { transform: translateX(-50%) scaleY(1); }
+	}
+</style>
