@@ -919,7 +919,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 
     html body.home-landing-active #top-row #navbar[data-is-home="true"][data-home-section-tone] .navbar-main-menu .navbar-menu-item {
-        height: 2.25rem;
+        height: 2.1rem;
         border: 0 !important;
         border-radius: 999px;
         background: transparent !important;
@@ -1163,7 +1163,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     }
 
     #navbar .navbar-main-menu .navbar-menu-item {
-        height: 2.25rem;
+        height: 2.1rem;
         border: 0;
         border-radius: 999px;
         padding-inline: 0.72rem;
