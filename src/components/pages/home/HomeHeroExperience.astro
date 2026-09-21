@@ -777,10 +777,10 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 	.home-dialogue-launch > :global(svg) { margin-left: auto; font-size: 1.15rem; }
 
 	.home-hero-dialogue {
-		--dialogue-surface: transparent;
+		--dialogue-surface: rgb(5 8 13 / 0.62);
 		--dialogue-text: #fff;
 		--dialogue-muted: rgb(255 255 255 / 0.66);
-		--dialogue-border: transparent;
+		--dialogue-border: rgb(255 255 255 / 0.72);
 		--dialogue-inset: clamp(2.25rem, 15vw, 19rem);
 		position: absolute;
 		inset-inline: 0;
@@ -793,9 +793,13 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 		color: var(--dialogue-text);
 		box-sizing: border-box;
 		border: 0;
-		border-top: 0;
+		border-top: 1px solid var(--dialogue-border);
 		border-radius: 0;
-		background: transparent;
+		background:
+			linear-gradient(180deg, rgb(10 14 21 / 0.48), var(--dialogue-surface)),
+			linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+			linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px);
+		background-size: auto, clamp(2.75rem, 4vw, 4rem) clamp(2.75rem, 4vw, 4rem), clamp(2.75rem, 4vw, 4rem) clamp(2.75rem, 4vw, 4rem);
 		backdrop-filter: none;
 		overflow: visible;
 		pointer-events: auto;
@@ -808,7 +812,20 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 			visibility 260ms ease-out;
 	}
 	.home-hero-dialogue::before {
-		display: none;
+		position: absolute;
+		inset-inline: 0;
+		top: -1px;
+		z-index: 4;
+		height: 1px;
+		content: "";
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgb(255 255 255 / 0.92) 15%,
+			rgb(255 255 255 / 0.92) 85%,
+			transparent
+		);
+		pointer-events: none;
 	}
 
 	.home-hero-dialogue.is-open {
@@ -1060,10 +1077,10 @@ const workHoursPayload = JSON.stringify(homeHeroExperience.workHours);
 
 	:global(html.dark) .home-dialogue-launch,
 	:global(html.dark) .home-hero-dialogue {
-		--dialogue-surface: transparent;
+		--dialogue-surface: rgb(3 5 9 / 0.66);
 		--dialogue-text: #fff;
 		--dialogue-muted: rgb(255 255 255 / 0.66);
-		--dialogue-border: transparent;
+		--dialogue-border: rgb(255 255 255 / 0.72);
 	}
 
 	@media (max-width: 900px) {
