@@ -3,6 +3,11 @@ export type AnnouncementConfig = {
 	title?: string; // 公告栏标题
 	content: string; // 公告栏内容
 	secondaryContent?: string; // 快捷公告面板的补充内容
+	tickerItems?: Array<{
+		tag: string;
+		content: string;
+		sort?: number;
+	}>; // 首页滚动字幕
 	icon?: string; // 公告栏图标
 	type?: "info" | "warning" | "success" | "error"; // 公告类型
 	closable?: boolean; // 是否可关闭
