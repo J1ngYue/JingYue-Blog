@@ -24,6 +24,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			name: "文章",
 			url: "/posts/",
 			icon: "material-symbols:article-outline-rounded",
+			hideDropdownArrow: true,
 			children: [
 				{
 					name: "文章列表",
@@ -40,6 +41,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			name: "动态",
 			url: "/dynamic/",
 			icon: "material-symbols:local-cafe-outline-rounded",
+			hideDropdownArrow: true,
 			children: [
 				LinkPresets.Moments,
 				LinkPresets.Gallery,
