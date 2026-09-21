@@ -443,30 +443,6 @@ const config = rainConfig;
 <style is:global>
 	:root {
 		--home-entrance-duration: 3.2s;
-		--home-rain-atmosphere:
-			radial-gradient(ellipse at 50% 86%, rgb(171 204 224 / 0.1), transparent 48%),
-			linear-gradient(180deg, rgb(8 22 37 / 0.05), rgb(4 14 26 / 0.16));
-	}
-
-	.home-hero-frame::after {
-		position: absolute;
-		inset: -3%;
-		z-index: 0;
-		background: var(--home-rain-atmosphere);
-		content: "";
-		opacity: 0;
-		transform: scale(1.035);
-		pointer-events: none;
-		will-change: opacity, transform;
-	}
-
-	html[data-rain-enabled="true"].home-entrance-playing .home-hero-frame::after {
-		animation: home-hero-atmosphere var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
-	}
-
-	html[data-rain-enabled="true"]:not(.home-entrance-active) .home-hero-frame::after {
-		opacity: 1;
-		transform: scale(1);
 	}
 
 	.home-hero-rain {
@@ -493,30 +469,8 @@ const config = rainConfig;
 		animation: home-rain-discovery var(--home-entrance-duration) cubic-bezier(0.45, 0, 0.2, 1) both;
 	}
 
-	html.blog-entry-loading .home-hero-frame::after,
 	html.blog-entry-loading .home-hero-rain {
 		animation-play-state: paused !important;
-	}
-
-	@keyframes home-hero-atmosphere {
-		0%,
-		34% {
-			opacity: 0;
-			transform: scale(1.025);
-		}
-		48% {
-			opacity: 0.2;
-		}
-		64% {
-			opacity: 0.56;
-		}
-		82% {
-			opacity: 0.9;
-		}
-		100% {
-			opacity: 1;
-			transform: scale(1);
-		}
 	}
 
 	@keyframes home-rain-discovery {
@@ -539,8 +493,7 @@ const config = rainConfig;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.home-hero-rain,
-		.home-hero-frame::after {
+		.home-hero-rain {
 			display: none;
 		}
 	}
