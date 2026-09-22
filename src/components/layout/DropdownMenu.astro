@@ -111,14 +111,15 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 	}
 
 	.dropdown-menu {
-		@apply absolute top-full left-0 pt-2 opacity-0 invisible pointer-events-none transition-all duration-200 ease-out transform translate-y-[-8px] z-50;
+		@apply absolute top-full left-0 opacity-0 invisible pointer-events-none transition-all duration-200 ease-out transform translate-y-[-8px] z-50;
+		padding-top: 1rem !important;
 	}
 
 	.dropdown-menu::before,
 	.dropdown-menu::after {
 		position: absolute;
 		left: 2.5rem;
-		z-index: 1;
+		z-index: 2;
 		width: 0;
 		height: 0;
 		border-right: 0.6rem solid transparent;
@@ -129,12 +130,12 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 	}
 
 	.dropdown-menu::before {
-		top: 0;
+		top: 0.3rem;
 		border-bottom: 0.7rem solid var(--dropdown-panel-border);
 	}
 
 	.dropdown-menu::after {
-		top: 0.1rem;
+		top: 0.4rem;
 		border-right-width: 0.5rem;
 		border-bottom: 0.58rem solid var(--dropdown-panel-background);
 		border-left-width: 0.5rem;
