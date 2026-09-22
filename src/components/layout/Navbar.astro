@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import DropdownItem from "@/components/common/DropdownItem.astro";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import DisplaySettings from "@/components/controls/DisplaySettingsIntegrated.svelte";
 import NavbarUtilityPanel from "@/components/controls/NavbarUtilityPanel.astro";
@@ -90,6 +91,10 @@ const activeLinkIndex = links.findIndex(
 				(child) => !child.external && matchesNavPath(child.url),
 			)),
 );
+
+const dropdownPages = links
+	.map((link, index) => ({ index, children: link.children ?? [] }))
+	.filter((page) => page.children.length > 0);
 
 const navbarProfileLinks = profileConfig.links.map((item) => ({
 	...item,
@@ -283,9 +288,38 @@ const navbarProfileAvatarParticles = [
                     data-navbar-hover-indicator
                     aria-hidden="true"
                 ></span>
-                {links.map((l, index) => {
-                    return <DropdownMenu link={l} isActive={index === activeLinkIndex} />;
-                })}
+                {links.map((l, index) => (
+					<DropdownMenu link={l} index={index} isActive={index === activeLinkIndex} />
+				))}
+				{dropdownPages.length > 0 && (
+					<div class="navbar-dropdown-panel" data-navbar-dropdown-panel>
+						<span class="navbar-dropdown-arrow" aria-hidden="true"></span>
+						<div class="navbar-dropdown-box">
+							{dropdownPages.map((page) => (
+								<div
+									id={`navbar-dropdown-page-${page.index}`}
+									class="navbar-dropdown-page"
+									data-dropdown-page={page.index}
+								>
+									{page.children.map((child, childIndex) => (
+										<DropdownItem
+											href={child.external ? child.url : url(child.url)}
+											target={child.external ? "_blank" : undefined}
+											isLast={childIndex === page.children.length - 1}
+											class="dropdown-item"
+										>
+											{child.icon && <Icon is:inline name={child.icon} class="text-[1.25rem] mr-3 navbar-icon" />}
+											<span>{child.name}</span>
+											{child.external && (
+												<Icon is:inline name="fa7-solid:arrow-up-right-from-square" class="text-[0.75rem] text-black/25 dark:text-white/25 ml-auto" />
+											)}
+										</DropdownItem>
+									))}
+								</div>
+							))}
+						</div>
+					</div>
+				)}
             </div>
             <div class="navbar-actions flex col-start-3 justify-self-end">
 				<NavbarUtilityPanel />
@@ -310,11 +344,41 @@ const navbarProfileAvatarParticles = [
 </div>
 
 <script>
+import { initNavbarDropdownPanel } from "@/utils/navbar-dropdown-controller";
+
 type NavbarProfileWindow = Window & {
 	__fireflyNavbarProfileCardCleanup?: () => void;
 	__fireflyNavbarProfileInitBound?: boolean;
 	__fireflyNavbarProfileInitFrame?: number;
 };
+
+type NavbarDropdownWindow = Window & {
+	__fireflyNavbarDropdownCleanup?: () => void;
+	__fireflyNavbarDropdownInitFrame?: number;
+	__fireflyNavbarDropdownLifecycleBound?: boolean;
+};
+
+function queueNavbarDropdownInit() {
+	const dropdownWindow = window as NavbarDropdownWindow;
+	if (dropdownWindow.__fireflyNavbarDropdownInitFrame) {
+		window.cancelAnimationFrame(dropdownWindow.__fireflyNavbarDropdownInitFrame);
+	}
+	dropdownWindow.__fireflyNavbarDropdownInitFrame = window.requestAnimationFrame(() => {
+		dropdownWindow.__fireflyNavbarDropdownInitFrame = 0;
+		dropdownWindow.__fireflyNavbarDropdownCleanup?.();
+		dropdownWindow.__fireflyNavbarDropdownCleanup = initNavbarDropdownPanel();
+	});
+}
+
+const navbarDropdownWindow = window as NavbarDropdownWindow;
+if (!navbarDropdownWindow.__fireflyNavbarDropdownLifecycleBound) {
+	navbarDropdownWindow.__fireflyNavbarDropdownLifecycleBound = true;
+	document.addEventListener("astro:page-load", queueNavbarDropdownInit);
+	document.addEventListener("swup:contentReplaced", queueNavbarDropdownInit);
+	document.addEventListener("swup:content:replaced", queueNavbarDropdownInit);
+	window.addEventListener("popstate", queueNavbarDropdownInit);
+}
+queueNavbarDropdownInit();
 
 type NavbarHoverWindow = Window & {
     __fireflyNavbarHoverCleanup?: () => void;

@@ -1,29 +1,29 @@
 ---
 import { Icon } from "astro-icon/components";
-import DropdownItem from "@/components/common/DropdownItem.astro";
-import DropdownPanel from "@/components/common/DropdownPanel.astro";
 import type { NavBarLink } from "@/types/config";
 import { url } from "@/utils/url-utils";
 
 interface Props {
 	link: NavBarLink;
+	index: number;
 	class?: string;
 	isActive?: boolean;
 }
 
-const { link, class: className, isActive = false } = Astro.props;
+const { link, index, class: className, isActive = false } = Astro.props;
 
-// 检查 link 是否存在
 if (!link) {
 	return null;
 }
 
-const processedLink = link;
-
-const hasChildren = processedLink.children && processedLink.children.length > 0;
+const hasChildren = Boolean(link.children?.length);
 ---
 
-<div class:list={["dropdown-container", { "is-active": isActive }, className]} data-dropdown>
+<div
+	class:list={["dropdown-container", { "is-active": isActive }, className]}
+	data-dropdown
+	data-dropdown-index={index}
+>
 	{hasChildren ? (
 		<button
 			type="button"
@@ -31,327 +31,50 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 			aria-current={isActive ? "page" : undefined}
 			aria-expanded="false"
 			aria-haspopup="true"
+			aria-controls={`navbar-dropdown-page-${index}`}
 			data-dropdown-trigger
 		>
 			<span class="navbar-menu-item__layer navbar-menu-item__layer--base">
 				<span class="navbar-menu-item__content">
-					{processedLink.icon && <Icon is:inline name={processedLink.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
-					{processedLink.name}
+					{link.icon && <Icon is:inline name={link.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
+					{link.name}
 				</span>
-				{!processedLink.hideDropdownArrow && (
+				{!link.hideDropdownArrow && (
 					<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" class="text-[1.2rem] transition-transform duration-200 dropdown-arrow ml-1" />
 				)}
 			</span>
 			<span class="navbar-menu-item__layer navbar-menu-item__layer--inverse" aria-hidden="true">
 				<span class="navbar-menu-item__content">
-					{processedLink.icon && <Icon is:inline name={processedLink.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
-					{processedLink.name}
+					{link.icon && <Icon is:inline name={link.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
+					{link.name}
 				</span>
-				{!processedLink.hideDropdownArrow && (
+				{!link.hideDropdownArrow && (
 					<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" class="text-[1.2rem] transition-transform duration-200 dropdown-arrow ml-1" />
 				)}
 			</span>
 		</button>
-		<div class="dropdown-menu" data-dropdown-menu>
-			<DropdownPanel class="dropdown-content">
-				{processedLink.children?.map((child, index) => (
-					<DropdownItem
-						href={child.external ? child.url : url(child.url)}
-						target={child.external ? "_blank" : undefined}
-						isLast={index === (processedLink.children?.length || 0) - 1}
-						class="dropdown-item"
-					>
-						{child.icon && <Icon is:inline name={child.icon} class="text-[1.25rem] mr-3 navbar-icon" />}
-						<span>{child.name}</span>
-						{child.external && (
-							<Icon is:inline name="fa7-solid:arrow-up-right-from-square" class="text-[0.75rem] text-black/25 dark:text-white/25 ml-auto" />
-						)}
-					</DropdownItem>
-				))}
-			</DropdownPanel>
-		</div>
 	) : (
 		<a
-			aria-label={processedLink.name}
+			aria-label={link.name}
 			aria-current={isActive ? "page" : undefined}
-			href={processedLink.external ? processedLink.url : url(processedLink.url)}
-			target={processedLink.external ? "_blank" : null}
+			href={link.external ? link.url : url(link.url)}
+			target={link.external ? "_blank" : undefined}
 			class:list={["navbar-menu-item", { "is-active": isActive }]}
 		>
 			<span class="navbar-menu-item__layer navbar-menu-item__layer--base">
 				<span class="navbar-menu-item__content">
-					{processedLink.icon && <Icon is:inline name={processedLink.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
-					{processedLink.name}
-					{processedLink.external && <Icon is:inline name="fa7-solid:arrow-up-right-from-square" class="text-[0.875rem] transition -translate-y-px ml-1 text-black/20 dark:text-white/20" />}
+					{link.icon && <Icon is:inline name={link.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
+					{link.name}
+					{link.external && <Icon is:inline name="fa7-solid:arrow-up-right-from-square" class="text-[0.875rem] transition -translate-y-px ml-1 text-black/20 dark:text-white/20" />}
 				</span>
 			</span>
 			<span class="navbar-menu-item__layer navbar-menu-item__layer--inverse" aria-hidden="true">
 				<span class="navbar-menu-item__content">
-					{processedLink.icon && <Icon is:inline name={processedLink.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
-					{processedLink.name}
-					{processedLink.external && <Icon is:inline name="fa7-solid:arrow-up-right-from-square" class="text-[0.875rem] transition -translate-y-px ml-1" />}
+					{link.icon && <Icon is:inline name={link.icon} class="text-[1.1rem] mr-1.5 navbar-icon" />}
+					{link.name}
+					{link.external && <Icon is:inline name="fa7-solid:arrow-up-right-from-square" class="text-[0.875rem] transition -translate-y-px ml-1" />}
 				</span>
 			</span>
 		</a>
 	)}
 </div>
-
-<style>
-	@reference "../../styles/main.css";
-
-	.dropdown-container {
-		@apply relative;
-		--dropdown-panel-background: #fff;
-		--dropdown-panel-border: #000;
-	}
-
-	:global(:root.dark) .dropdown-container {
-		--dropdown-panel-background: #0a0a0a;
-		--dropdown-panel-border: rgba(255, 255, 255, 0.28);
-	}
-
-	.dropdown-menu {
-		@apply absolute top-full left-0 opacity-0 invisible pointer-events-none transform translate-y-[-4px] z-50;
-		padding-top: 1rem !important;
-		transition: none;
-	}
-
-	.dropdown-menu::before,
-	.dropdown-menu::after {
-		position: absolute;
-		left: 2.5rem;
-		z-index: 2;
-		width: 0;
-		height: 0;
-		border-right: 0.65rem solid transparent;
-		border-left: 0.65rem solid transparent;
-		content: "";
-		transform: translateX(-50%);
-		pointer-events: none;
-	}
-
-	.dropdown-menu::before {
-		top: 0.3rem;
-		border-bottom: 0.8rem solid var(--dropdown-panel-border);
-	}
-
-	.dropdown-menu::after {
-		top: 0.45rem;
-		border-right-width: 0.5rem;
-		border-bottom: 0.55rem solid var(--dropdown-panel-background);
-		border-left-width: 0.5rem;
-	}
-
-	.dropdown-container:hover .dropdown-menu,
-	.dropdown-container.is-open .dropdown-menu {
-		@apply opacity-100 visible pointer-events-auto translate-y-0;
-		transition:
-			opacity 90ms ease-out,
-			transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	.dropdown-container:hover .dropdown-arrow,
-	.dropdown-container.is-open .dropdown-arrow {
-		@apply rotate-180;
-	}
-
-	.dropdown-menu :global(.dropdown-content) {
-		@apply min-w-[12rem];
-		background: var(--dropdown-panel-background) !important;
-		border: 2px solid var(--dropdown-panel-border) !important;
-		border-radius: 1rem;
-		box-shadow: 0 1rem 2.5rem rgba(15, 23, 42, 0.16) !important;
-	}
-
-	:global(.navbar-icon),
-	:global(.dropdown-arrow) {
-		color: var(--ui-icon-color);
-	}
-
-	/* 移动端隐藏下拉菜单 */
-	@media (max-width: 768px) {
-		.dropdown-container {
-			@apply hidden;
-		}
-	}
-
-</style>
-
-<script>
-	// 键盘导航支持
-	document.addEventListener('DOMContentLoaded', function() {
-		const dropdowns = document.querySelectorAll('[data-dropdown]');
-		
-		dropdowns.forEach(dropdown => {
-			const trigger = dropdown.querySelector('[data-dropdown-trigger]') as HTMLElement | null;
-			const menu = dropdown.querySelector('[data-dropdown-menu]');
-			const items = dropdown.querySelectorAll('.dropdown-item') as NodeListOf<HTMLElement>;
-			
-			if (!trigger || !menu) return;
-
-			// 鼠标移到新的父级时，清掉键盘/点击遗留的打开状态，避免多个菜单同时展开。
-			dropdown.addEventListener('pointerenter', function() {
-				dropdowns.forEach(otherDropdown => {
-					if (otherDropdown === dropdown) return;
-					const otherTrigger = otherDropdown.querySelector('[data-dropdown-trigger]');
-					const otherMenu = otherDropdown.querySelector('[data-dropdown-menu]');
-					if (otherTrigger && otherMenu) {
-						closeDropdown(otherDropdown, otherTrigger, otherMenu);
-					}
-				});
-			});
-			
-			// 键盘事件处理
-			trigger.addEventListener('keydown', function(e: KeyboardEvent) {
-				if (e.key === 'Enter' || e.key === ' ') {
-					e.preventDefault();
-					toggleDropdown(dropdown, trigger, menu);
-				} else if (e.key === 'ArrowDown') {
-					e.preventDefault();
-					openDropdown(dropdown, trigger, menu);
-					if (items.length > 0) {
-						items[0].focus();
-					}
-				} else if (e.key === 'Escape') {
-					closeDropdown(dropdown, trigger, menu);
-				}
-			});
-			
-			// 菜单项键盘导航
-			items.forEach((item, index) => {
-				item.addEventListener('keydown', function(e: KeyboardEvent) {
-					if (e.key === 'ArrowDown') {
-						e.preventDefault();
-						const nextIndex = (index + 1) % items.length;
-						items[nextIndex].focus();
-					} else if (e.key === 'ArrowUp') {
-						e.preventDefault();
-						const prevIndex = (index - 1 + items.length) % items.length;
-						items[prevIndex].focus();
-					} else if (e.key === 'Escape') {
-						closeDropdown(dropdown, trigger, menu);
-						trigger.focus();
-					}
-				});
-			});
-		});
-		
-		// 点击外部关闭下拉菜单
-		document.addEventListener('click', function(e) {
-			dropdowns.forEach(dropdown => {
-				if (!dropdown.contains(e.target as Node)) {
-					const trigger = dropdown.querySelector('[data-dropdown-trigger]');
-					const menu = dropdown.querySelector('[data-dropdown-menu]');
-					if (trigger && menu) {
-						closeDropdown(dropdown, trigger, menu);
-					}
-				}
-			});
-		});
-	});
-	
-	function toggleDropdown(_dropdown: Element, trigger: Element, menu: Element) {
-		const isOpen = trigger.getAttribute('aria-expanded') === 'true';
-		if (isOpen) {
-			closeDropdown(_dropdown, trigger, menu);
-		} else {
-			openDropdown(_dropdown, trigger, menu);
-		}
-	}
-	
-	function openDropdown(dropdown: Element, trigger: Element, menu: Element) {
-		document.querySelectorAll('[data-dropdown]').forEach(otherDropdown => {
-			if (otherDropdown === dropdown) return;
-			const otherTrigger = otherDropdown.querySelector('[data-dropdown-trigger]');
-			const otherMenu = otherDropdown.querySelector('[data-dropdown-menu]');
-			if (otherTrigger && otherMenu) {
-				closeDropdown(otherDropdown, otherTrigger, otherMenu);
-			}
-		});
-		dropdown.classList.add('is-open');
-		trigger.setAttribute('aria-expanded', 'true');
-		menu.classList.remove('opacity-0', 'invisible', 'pointer-events-none', 'translate-y-[-8px]');
-		menu.classList.add('opacity-100', 'visible', 'pointer-events-auto', 'translate-y-0');
-	}
-
-	function closeDropdown(dropdown: Element, trigger: Element, menu: Element) {
-		dropdown.classList.remove('is-open');
-		trigger.setAttribute('aria-expanded', 'false');
-		menu.classList.add('opacity-0', 'invisible', 'pointer-events-none', 'translate-y-[-8px]');
-		menu.classList.remove('opacity-100', 'visible', 'pointer-events-auto', 'translate-y-0');
-	}
-
-	function syncNavbarActiveState(pathname = window.location.pathname) {
-		const normalizePath = (pathname: string) => pathname.replace(/\/+$/, '') || '/';
-		const currentPath = normalizePath(pathname);
-		const matchesPath = (pathname: string) => {
-			const targetPath = normalizePath(pathname);
-			return targetPath === '/'
-				? currentPath === '/'
-				: currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
-		};
-
-		const dropdowns = Array.from(
-			document.querySelectorAll('#navbar .navbar-main-menu > [data-dropdown]'),
-		);
-		const activeDropdown = dropdowns.find((dropdown) => {
-			const links = dropdown.querySelectorAll<HTMLAnchorElement>('.navbar-menu-item[href], .dropdown-item[href]');
-			return Array.from(links).some((link) => {
-				const target = new URL(link.href, window.location.href);
-				return target.origin === window.location.origin && matchesPath(target.pathname);
-			});
-		});
-
-		dropdowns.forEach((dropdown) => {
-			const trigger = dropdown.querySelector<HTMLElement>(':scope > .navbar-menu-item');
-
-			dropdown.classList.remove('is-active');
-			trigger?.classList.remove('is-active');
-			trigger?.removeAttribute('aria-current');
-		});
-
-		if (!activeDropdown) return;
-
-		const activeTrigger = activeDropdown.querySelector<HTMLElement>(':scope > .navbar-menu-item');
-		activeDropdown.classList.add('is-active');
-		activeTrigger?.classList.add('is-active');
-		activeTrigger?.setAttribute('aria-current', 'page');
-	}
-
-	document.addEventListener('DOMContentLoaded', () => syncNavbarActiveState());
-	document.addEventListener('astro:page-load', () => syncNavbarActiveState());
-	document.addEventListener('swup:contentReplaced', () => syncNavbarActiveState());
-	window.addEventListener('popstate', () => syncNavbarActiveState());
-
-	document.addEventListener('click', (event) => {
-		if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-			return;
-		}
-
-		const target = event.target;
-		const anchor = target instanceof Element ? target.closest<HTMLAnchorElement>('a[href]') : null;
-		if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
-
-		const destination = new URL(anchor.href, window.location.href);
-		if (destination.origin !== window.location.origin) return;
-		syncNavbarActiveState(destination.pathname);
-	});
-
-	let navbarSwupBound = false;
-	const bindNavbarSwup = () => {
-		if (navbarSwupBound || !window.swup?.hooks) return;
-		navbarSwupBound = true;
-		window.swup.hooks.on('visit:start', (visit: { to: { url: string } }) => {
-			const destination = new URL(visit.to.url, window.location.href);
-			syncNavbarActiveState(destination.pathname);
-		});
-		window.swup.hooks.on('content:replace', () => syncNavbarActiveState());
-		window.swup.hooks.on('page:view', () => syncNavbarActiveState());
-	};
-
-	bindNavbarSwup();
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', bindNavbarSwup, { once: true });
-	}
-	document.addEventListener('swup:enable', bindNavbarSwup);
-</script>
