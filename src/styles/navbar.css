@@ -1257,7 +1257,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     #navbar .dropdown-content {
         min-width: 12rem;
         padding: 0.5rem;
-        border: 1px solid #000 !important;
+        border: 2px solid #000 !important;
         border-radius: 0.75rem;
         background: #fff !important;
         box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 16%) !important;
