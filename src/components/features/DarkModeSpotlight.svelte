@@ -920,13 +920,7 @@ onMount(() => {
 
 	.dark-mode-spotlight__vignette {
 		z-index: 1;
-		background: radial-gradient(
-			ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
-			rgb(0 0 0 / 6%) 0%,
-			rgb(0 0 0 / 48%) 42%,
-			rgb(0 0 0 / 88%) 80%,
-			rgb(0 0 0 / 94%) 100%
-		);
+		background: transparent;
 		mix-blend-mode: normal;
 		opacity: 1;
 	}
@@ -940,15 +934,6 @@ onMount(() => {
 			opacity: 0.78;
 		}
 
-		.dark-mode-spotlight__vignette {
-			background: radial-gradient(
-				ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
-				rgb(0 0 0 / 5%) 0%,
-				rgb(0 0 0 / 38%) 42%,
-				rgb(0 0 0 / 75%) 80%,
-				rgb(0 0 0 / 82%) 100%
-			);
-		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
