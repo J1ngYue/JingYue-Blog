@@ -10,7 +10,6 @@ import endingMidgroundImage from "@/assets/images/HomeReference/utl-back1.webp";
 import endingBackgroundVideo from "@/assets/images/HomeReference/utl-back2.webm";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import LocalWallpaperLayer from "@/components/features/LocalWallpaperLayer.svelte";
-import { announcementConfig } from "@/config/announcementConfig";
 import { musicPlayerConfig } from "@/config/musicConfig";
 import { homeWallpaper, pageWallpaperAssets } from "@/config/pageWallpapers";
 import { githubUsername, profileConfig } from "@/config/profileConfig";
@@ -361,26 +360,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		data-home-section-tone="light"
 	>
 		<HomeProfileMatrix embedded />
-
-		<details class="home-profile-announcement">
-			<summary>
-				<Icon is:inline name="material-symbols:favorite-rounded" />
-				<span>今日公告</span>
-			</summary>
-			<div class="home-profile-announcement-panel">
-				<strong>{announcementConfig.title}</strong>
-				<p>{announcementConfig.content}</p>
-				{announcementConfig.link?.enable !== false && announcementConfig.link && (
-					<a
-						href={announcementConfig.link.url}
-						target={announcementConfig.link.external ? "_blank" : undefined}
-						rel={announcementConfig.link.external ? "noopener noreferrer" : undefined}
-					>
-						{announcementConfig.link.text}
-					</a>
-				)}
-			</div>
-		</details>
 	</section>
 
 	<HomeEditorialPanels panels={editorialPanels} />
@@ -3838,85 +3817,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		height: 1.1rem;
 	}
 
-	.home-profile-announcement {
-		position: absolute;
-		right: clamp(1.5rem, 4vw, 4rem);
-		top: clamp(6.25rem, 14vh, 8.5rem);
-		z-index: 4;
-	}
-
-	.home-profile-announcement summary {
-		display: flex;
-		align-items: center;
-		gap: 0.45rem;
-		border: 1px solid rgba(126, 136, 149, 0.14);
-		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.66);
-		box-shadow: 0 0.55rem 1.6rem rgba(75, 88, 102, 0.13);
-		padding: 0.65rem 0.9rem;
-		color: #536277;
-		font-size: 0.78rem;
-		font-weight: 800;
-		list-style: none;
-		cursor: pointer;
-		backdrop-filter: blur(0.75rem);
-		transition: border-color 180ms ease, background-color 180ms ease;
-	}
-
-	.home-profile-announcement summary::-webkit-details-marker {
-		display: none;
-	}
-
-	.home-profile-announcement summary:hover,
-	.home-profile-announcement summary:focus-visible {
-		border-color: color-mix(in oklch, var(--primary) 38%, transparent);
-		background: rgba(255, 255, 255, 0.84);
-		outline: none;
-	}
-
-	.home-profile-announcement summary :global(svg) {
-		width: 1rem;
-		height: 1rem;
-		color: #e784a8;
-	}
-
-	.home-profile-announcement-panel {
-		position: absolute;
-		right: 0;
-		top: calc(100% + 0.65rem);
-		width: min(19rem, calc(100vw - 2rem));
-		border: 1px solid rgba(126, 136, 149, 0.16);
-		border-radius: 1rem;
-		background: rgba(255, 255, 255, 0.84);
-		box-shadow: 0 1rem 2.5rem rgba(59, 72, 86, 0.16);
-		padding: 1rem;
-		color: #344258;
-		backdrop-filter: blur(1rem);
-	}
-
-	.home-profile-announcement-panel strong,
-	.home-profile-announcement-panel p {
-		display: block;
-		margin: 0;
-	}
-
-	.home-profile-announcement-panel p {
-		margin-top: 0.45rem;
-		font-size: 0.78rem;
-		line-height: 1.6;
-	}
-
-	.home-profile-announcement-panel a {
-		display: inline-flex;
-		margin-top: 0.75rem;
-		border-radius: 999px;
-		background: color-mix(in oklch, var(--primary) 14%, white);
-		padding: 0.38rem 0.7rem;
-		color: color-mix(in oklch, var(--primary) 72%, #344258);
-		font-size: 0.7rem;
-		font-weight: 800;
-	}
-
 	.home-profile-content {
 		position: absolute;
 		left: 50%;
@@ -5464,16 +5364,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			width: 1.95rem;
 			height: 1.95rem;
 			border-radius: 0.58rem;
-		}
-
-		.home-profile-announcement {
-			top: 5rem;
-			right: 1rem;
-		}
-
-		.home-profile-announcement summary {
-			padding: 0.5rem 0.7rem;
-			font-size: 0.68rem;
 		}
 
 		.home-profile-content {

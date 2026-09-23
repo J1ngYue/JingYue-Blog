@@ -96,11 +96,22 @@ const contactRegions = [
 			index
 		],
 	}));
+const visitPills = [
+	{ label: "RUNNING", value: `${runningDays} 天`, tone: "light" },
+	{ label: "DYNAMIC", value: dynamics.length, tone: "dark" },
+	{ label: "SOURCE", value: "JingYue", tone: "outline" },
+];
+const articlePills = [
+	{ label: "POSTS", value: posts.length, tone: "light" },
+	{ label: "CATEGORIES", value: categories.length, tone: "solid" },
+	{ label: "TAGS", value: tags.length, tone: "solid" },
+	{ label: "WORDS", value: compactNumber.format(totalWords), tone: "light" },
+];
 ---
 
 <section
 	id={embedded ? undefined : "home-capabilities"}
-	class:list={["home-capabilities", !embedded && "home-scroll-scene"]}
+	class:list={["home-capabilities", "home-data-layer", !embedded && "home-scroll-scene"]}
 	aria-labelledby="home-capabilities-title"
 	data-home-map-guide
 	data-guide-opening="pending"
@@ -108,67 +119,91 @@ const contactRegions = [
 	data-home-page={embedded ? undefined : ""}
 	data-home-section-tone={embedded ? undefined : "light"}
 >
-	<div class="home-capabilities__inner">
-		<header class="home-capabilities__heading">
-			<p>CONTEXT</p>
-			<strong>站点数据</strong>
-			<h2 id="home-capabilities-title">地图指南</h2>
+	<div class="home-capabilities__inner home-data-layer__inner">
+		<header class="home-capabilities__heading home-data-layer__heading">
+			<p class="home-data-layer__kicker">CONTEXT</p>
+			<strong class="home-data-layer__title-main">站点数据</strong>
+			<h2 class="home-data-layer__title-matrix" id="home-capabilities-title">地图指南</h2>
 		</header>
 
-		<div class="home-capabilities__top-grid">
-			<article class="guide-card guide-card--motion guide-card--metric guide-card--visits" data-guide-metric="visits">
-				<Image src={homeData1} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 50vw, 28vw" />
-				<div class="guide-card__shade"></div>
-				<div class="guide-card__copy">
-					<p>VISITS</p>
-					<h3>站点访问</h3>
-					<span>运行 {runningDays} 天 · {dynamics.length} 条动态</span>
-				</div>
-				<div class="guide-card__hover" aria-hidden="true">
-					<div class="guide-card__hover-header"><span>01</span><small>LIVE SYSTEM</small></div>
-					<strong>访问轨迹<span>·</span></strong>
-					<div class="guide-card__hover-pills"><span>运行 {runningDays} 天</span><span>{dynamics.length} 条动态</span></div>
-				</div>
-			</article>
-
-			<a class="guide-card guide-card--motion guide-card--metric guide-card--archive" data-guide-metric="archive" href="/archive/">
-				<Image src={homeData2} alt="" loading="lazy" widths={[720, 1080]} sizes="(max-width: 1023px) 50vw, 56vw" />
-				<div class="guide-card__shade"></div>
-				<div class="guide-card__copy">
-					<p>ARCHIVE</p>
-					<h3>文章档案</h3>
-					<span>{posts.length} 篇文章 · {compactNumber.format(totalWords)} 字</span>
-				</div>
-				<Icon is:inline name="material-symbols:arrow-outward-rounded" />
-				<div class="guide-card__hover" aria-hidden="true">
-					<div class="guide-card__hover-header"><span>02</span><small>CONTENT INDEX</small></div>
-					<strong>文章档案<span>·</span></strong>
-					<div class="guide-card__hover-pills"><span>{posts.length} 篇文章</span><span>{compactNumber.format(totalWords)} 字</span></div>
-				</div>
-			</a>
+		<div class="home-capabilities__top-grid home-data-layer__top-grid">
+			{[
+				{
+					className: "guide-card--visits data-card--square",
+					kind: "visits",
+					image: homeData1,
+					eyebrow: "VISITS",
+					title: "站点访问",
+					detail: `运行 ${runningDays} 天 · ${dynamics.length} 条动态`,
+					hoverTitle: "访问轨迹",
+					hoverCode: "01",
+					pills: visitPills,
+				},
+				{
+					className: "guide-card--archive data-card--wide",
+					kind: "articles",
+					image: homeData2,
+					eyebrow: "ARCHIVE",
+					title: "文章档案",
+					detail: `${posts.length} 篇文章 · ${compactNumber.format(totalWords)} 字`,
+					hoverTitle: "内容索引",
+					hoverCode: "02",
+					pills: articlePills,
+				},
+			].map((card) => (
+				<article class={`data-card data-card--metric ${card.className}`} data-card-interactive data-stat-kind={card.kind}>
+					<div class="data-card__frame"></div>
+					<div class="data-card__visual" aria-hidden="true">
+						<Image class="data-card__visual-img" src={card.image} alt="" loading="lazy" widths={[480, 720, 1080]} sizes="(max-width: 1023px) 100vw, 60vw" />
+					</div>
+					<div class="data-card__content">
+						<p class="data-card__eyebrow">{card.eyebrow}</p>
+						<h3 class="data-card__title">{card.title}</h3>
+						<p class="data-card__detail">{card.detail}</p>
+					</div>
+					<div class="data-card__hover" aria-hidden="true">
+						<div class="data-card__hover-orb"></div>
+						<div class="data-card__hover-header">
+							<span class="data-card__hover-code">{card.hoverCode}</span>
+							<span class="data-card__hover-system">SYSTEM</span>
+						</div>
+						<h3 class="data-card__hover-title">{card.hoverTitle}<span>.</span></h3>
+					</div>
+					<div class="data-card__hover-pills" aria-hidden="true">
+						{card.pills.map((pill) => (
+							<span class={`data-card__hover-pill data-card__hover-pill--${pill.tone}`}>
+								<span>{pill.label}</span><strong>{pill.value}</strong>
+							</span>
+						))}
+					</div>
+				</article>
+			))}
 		</div>
 
-		<div class="home-capabilities__content-grid">
-			<section class="guide-card guide-card--motion guide-card--pinned" aria-labelledby="guide-pinned-title" data-map-rotator data-map-delay="5000" data-guide-axis="vertical">
-				<h3 id="guide-pinned-title">置顶文章</h3>
-				<div class="guide-rotator">
+		<div class="home-capabilities__content-grid home-guide-grid">
+			<section class="guide-card guide-card--article guide-card--pinned" aria-labelledby="guide-pinned-title" data-map-rotator data-map-delay="5000" data-guide-axis="vertical">
+				<div class="guide-card__article-heading"><h3 id="guide-pinned-title">置顶文章</h3></div>
+				<div class="guide-rotator__slides">
 					{pinnedViews.length > 0 ? pinnedViews.map((post, index) => (
-						<article class:list={["guide-rotator__slide", index === 0 && "is-active"]} data-map-slide hidden={index !== 0} aria-hidden={index === 0 ? "false" : "true"}>
+						<article class="guide-rotator__slide" data-map-slide data-guide-url={getPostUrlBySlug(post.id)} hidden={index !== 0} aria-hidden={index === 0 ? undefined : "true"}>
 							{post.cover && (
-								<a class="guide-rotator__cover" href={getPostUrlBySlug(post.id)} tabindex={index === 0 ? undefined : -1}>
+								<div class="guide-rotator__cover" aria-hidden="true">
 									<CoverImage src={post.cover} basePath={post.basePath} alt="" preview loading="lazy" />
-								</a>
+								</div>
 							)}
 							<div class="guide-rotator__body">
-								<span>{post.data.category || "未分类"} / {formatDate(new Date(post.data.published))}</span>
-								<a href={getPostUrlBySlug(post.id)} tabindex={index === 0 ? undefined : -1}>{post.data.title}</a>
-								<p>{post.data.description || "查看这篇文章的完整内容。"}</p>
+								<span class="guide-rotator__meta">{post.data.category || "未分类"} / {formatDate(new Date(post.data.published))}</span>
+								<div class="guide-rotator__title-row">
+									<a class="guide-rotator__article-link" href={getPostUrlBySlug(post.id)}><strong>{post.data.title}</strong></a>
+									<button class="guide-card__article-action" type="button" data-guide-next aria-label="切换下一篇置顶文章" title="切换下一篇置顶文章"><Icon is:inline name="material-symbols:arrow-forward-rounded" /></button>
+								</div>
+								<span class="guide-rotator__desc">{post.data.description || "查看这篇文章的完整内容。"}</span>
 							</div>
 						</article>
 					)) : <p class="guide-card__empty">暂时还没有置顶文章。</p>}
 				</div>
 				{pinnedViews.length > 1 && (
-					<div class="guide-dots" aria-label="切换置顶文章">
+					<div class="guide-rotator__dots" aria-label="切换置顶文章">
 						{pinnedViews.map((post, index) => (
 							<button type="button" data-map-dot aria-label={`查看 ${post.data.title}`} aria-current={index === 0 ? "true" : undefined}></button>
 						))}
@@ -176,27 +211,30 @@ const contactRegions = [
 				)}
 			</section>
 
-			<section class="guide-card guide-card--motion guide-card--latest" aria-labelledby="guide-latest-title" data-map-rotator data-map-delay="5000" data-guide-axis="horizontal">
-				<Image class="guide-latest__fallback" src={homeData2} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 50vw, 28vw" />
-				<h3 id="guide-latest-title">最新更新</h3>
-				<div class="guide-rotator guide-rotator--latest">
+			<section class="guide-card guide-card--article guide-card--latest" aria-labelledby="guide-latest-title" data-map-rotator data-map-delay="5000" data-guide-axis="horizontal">
+				{latestViews.some((post) => post.cover) && (
+					<div class="guide-card__bg" aria-hidden="true">
+						{latestViews.map((post, index) => (
+							<div class:list={["guide-card__bg-item", index === 0 && "is-active"]} data-guide-bg-item>
+								{post.cover && <CoverImage class="guide-card__bg-img" src={post.cover} basePath={post.basePath} alt="" preview loading="lazy" />}
+							</div>
+						))}
+					</div>
+				)}
+				<div class="guide-card__article-heading"><h3 id="guide-latest-title">最新更新</h3></div>
+				<div class="guide-rotator__slides">
 					{latestViews.length > 0 ? latestViews.map((post, index) => (
-						<article class:list={["guide-rotator__slide", index === 0 && "is-active"]} data-map-slide hidden={index !== 0} aria-hidden={index === 0 ? "false" : "true"}>
-							{post.cover && (
-								<div class="guide-latest__cover" aria-hidden="true">
-									<CoverImage src={post.cover} basePath={post.basePath} alt="" preview loading="lazy" />
-								</div>
-							)}
-							<div class="guide-latest__shade"></div>
-							<div class="guide-latest__body">
-								<span>{post.data.category || "未分类"} / {formatDate(new Date(post.data.published))}</span>
-								<a href={getPostUrlBySlug(post.id)} tabindex={index === 0 ? undefined : -1}>{post.data.title}</a>
+						<article class="guide-rotator__slide" data-map-slide data-guide-url={getPostUrlBySlug(post.id)} hidden={index !== 0} aria-hidden={index === 0 ? undefined : "true"}>
+							<span class="guide-rotator__meta">{post.data.category || "未分类"} / {formatDate(new Date(post.data.published))}</span>
+							<div class="guide-rotator__title-row">
+								<a class="guide-rotator__article-link" href={getPostUrlBySlug(post.id)}><strong>{post.data.title}</strong></a>
+								<a class="guide-card__article-action" href={getPostUrlBySlug(post.id)} aria-label={`打开文章：${post.data.title}`} title="打开文章"><Icon is:inline name="material-symbols:arrow-forward-rounded" /></a>
 							</div>
 						</article>
 					)) : <p class="guide-card__empty">暂时还没有文章。</p>}
 				</div>
 				{latestViews.length > 1 && (
-					<div class="guide-dots guide-dots--latest" aria-label="切换最新文章">
+					<div class="guide-rotator__dots" aria-label="切换最新文章">
 						{latestViews.map((post, index) => (
 							<button type="button" data-map-dot aria-label={`查看 ${post.data.title}`} aria-current={index === 0 ? "true" : undefined}></button>
 						))}
@@ -204,7 +242,7 @@ const contactRegions = [
 				)}
 			</section>
 
-			<section class="guide-card guide-card--motion guide-card--index guide-card--categories" aria-labelledby="guide-categories-title">
+			<section class="guide-card guide-card--index guide-card--categories" aria-labelledby="guide-categories-title">
 				<p class="guide-card__eyebrow">CATEGORIES</p>
 				<h3 id="guide-categories-title">分类索引</h3>
 				<div class="guide-link-list">
@@ -213,7 +251,7 @@ const contactRegions = [
 				</div>
 			</section>
 
-			<section class="guide-card guide-card--motion guide-card--index guide-card--tags" aria-labelledby="guide-tags-title" data-tag-fan>
+			<section class="guide-card guide-card--index guide-card--tags" aria-labelledby="guide-tags-title" data-tag-fan>
 				<p class="guide-card__eyebrow">TAGS</p>
 				<h3 id="guide-tags-title">标签索引</h3>
 				<div class="guide-tag-list">
@@ -222,12 +260,14 @@ const contactRegions = [
 				</div>
 			</section>
 
-			<section class="guide-card guide-card--motion guide-card--contact" aria-labelledby="guide-contact-title" data-guide-contact tabindex="0">
-				<Image src={homeData3} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 50vw, 28vw" />
-				<div class="guide-card__shade"></div>
-				<div class="guide-card__copy">
-					<p class="guide-card__eyebrow">SUBSCRIBE</p>
-					<h3 id="guide-contact-title">订阅与联系</h3>
+			<section class="guide-card guide-card--contact" aria-labelledby="guide-contact-title" data-guide-contact tabindex="0">
+				<div class="guide-card__visual" aria-hidden="true">
+					<Image src={homeData3} alt="" loading="lazy" widths={[480, 720]} sizes="(max-width: 1023px) 100vw, 30vw" />
+				</div>
+				<p class="guide-card__eyebrow">SUBSCRIBE</p>
+				<h3 id="guide-contact-title">订阅与联系</h3>
+				<div class="guide-contact__static-icons" aria-hidden="true">
+					{profileConfig.links.slice(0, 3).map((link) => <Icon is:inline name={link.icon} />)}
 				</div>
 				<template data-guide-contact-template>
 					<div class="guide-contact__overlay" role="group" aria-label="订阅与联系">
@@ -251,6 +291,7 @@ const contactRegions = [
 
 <script>
 	import { gsap } from "gsap";
+	import { navigateToPage } from "@/utils/navigation-utils";
 
 	let cleanupHomeMapGuide = () => {};
 	type GuideOpeningTargets = {
@@ -330,6 +371,48 @@ const contactRegions = [
 		});
 	}
 
+	function initMetricCards(guide: HTMLElement, signal: AbortSignal) {
+		if (
+			!window.matchMedia("(hover: hover) and (pointer: fine)").matches ||
+			window.matchMedia("(prefers-reduced-motion: reduce)").matches
+		) return;
+
+		guide.querySelectorAll<HTMLElement>("[data-card-interactive]").forEach((card) => {
+			const hover = card.querySelector<HTMLElement>(".data-card__hover");
+			const orb = card.querySelector<HTMLElement>(".data-card__hover-orb");
+			const header = card.querySelector<HTMLElement>(".data-card__hover-header");
+			const title = card.querySelector<HTMLElement>(".data-card__hover-title");
+			const pills = Array.from(card.querySelectorAll<HTMLElement>(".data-card__hover-pill"));
+			if (!hover || !orb || !header || !title || pills.length === 0) return;
+
+			const timeline = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+			timeline
+				.set(hover, { autoAlpha: 1 })
+				.fromTo(
+					orb,
+					{ xPercent: -50, yPercent: -50, scale: 0.18 },
+					{ xPercent: -50, yPercent: -50, scale: 1, duration: 0.58, ease: "expo.out" },
+					0,
+				)
+				.fromTo(
+					[header, title],
+					{ autoAlpha: 0, y: 18 },
+					{ autoAlpha: 1, y: 0, duration: 0.28, stagger: 0.05 },
+					0.38,
+				)
+				.fromTo(
+					pills,
+					{ autoAlpha: 0, y: -44, scale: 0.82 },
+					{ autoAlpha: 1, y: 0, scale: 1, duration: 0.44, stagger: 0.08, ease: "back.out(1.7)" },
+					0.5,
+				);
+
+			card.addEventListener("pointerenter", () => timeline.play(), { signal });
+			card.addEventListener("pointerleave", () => timeline.reverse(), { signal });
+			signal.addEventListener("abort", () => timeline.kill(), { once: true });
+		});
+	}
+
 	function initTagFan(guide: HTMLElement, signal: AbortSignal) {
 		const card = guide.querySelector<HTMLElement>("[data-tag-fan]");
 		const links = Array.from(card?.querySelectorAll<HTMLElement>(".guide-tag-list a") || []);
@@ -390,6 +473,8 @@ const contactRegions = [
 		guide.querySelectorAll<HTMLElement>("[data-map-rotator]").forEach((rotator) => {
 			const slides = Array.from(rotator.querySelectorAll<HTMLElement>("[data-map-slide]"));
 			const dots = Array.from(rotator.querySelectorAll<HTMLButtonElement>("[data-map-dot]"));
+			const backgrounds = Array.from(rotator.querySelectorAll<HTMLElement>("[data-guide-bg-item]"));
+			const nextButtons = Array.from(rotator.querySelectorAll<HTMLButtonElement>("[data-guide-next]"));
 			if (slides.length === 0) return;
 
 			let activeIndex = 0;
@@ -411,6 +496,9 @@ const contactRegions = [
 				dots.forEach((dot, index) => {
 					if (index === activeIndex) dot.setAttribute("aria-current", "true");
 					else dot.removeAttribute("aria-current");
+				});
+				backgrounds.forEach((background, index) => {
+					background.classList.toggle("is-active", index === activeIndex);
 				});
 			};
 
@@ -478,6 +566,19 @@ const contactRegions = [
 			dots.forEach((dot, index) => dot.addEventListener("click", () => {
 				setActive(index);
 				start();
+			}, { signal }));
+			nextButtons.forEach((button) => button.addEventListener("click", () => {
+				setActive(activeIndex + 1);
+				start();
+			}, { signal }));
+			slides.forEach((slide) => slide.addEventListener("click", (event) => {
+				if (
+					event.button !== 0 || event.metaKey || event.ctrlKey ||
+					event.shiftKey || event.altKey ||
+					(event.target as Element).closest("a, button")
+				) return;
+				const targetUrl = slide.dataset.guideUrl;
+				if (targetUrl) navigateToPage(targetUrl);
 			}, { signal }));
 			rotator.addEventListener("pointerenter", stop, { signal });
 			rotator.addEventListener("pointerleave", start, { signal });
@@ -820,6 +921,7 @@ const contactRegions = [
 			}
 
 			initTagFan(guide, controller.signal);
+			initMetricCards(guide, controller.signal);
 			initGuideRotators(guide, reducedMotion, controller.signal, timers);
 			initContactOverlay(guide, controller.signal, timers);
 		});
