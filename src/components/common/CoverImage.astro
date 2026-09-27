@@ -24,6 +24,7 @@ interface Props {
 	layout?: ResponsiveImageLayout;
 	formats?: ImageFormat[];
 	loading?: "lazy" | "eager";
+	fetchpriority?: "high" | "low" | "auto";
 	apiUrls?: string[];
 }
 
@@ -37,6 +38,7 @@ const {
 	layout = "constrained",
 	formats = getImageFormats(),
 	loading = "lazy",
+	fetchpriority = "auto",
 	apiUrls = [],
 } = Astro.props;
 
@@ -96,8 +98,7 @@ if (fallbackPath && !isLocal && !isFallbackPublic) {
 }
 
 // 图片样式
-const imageClass =
-	"w-full h-full object-cover opacity-0 transition-opacity duration-500 ease-out";
+const imageClass = "w-full h-full object-cover";
 const imageStyle = `object-position: ${position};`;
 
 // LQIP 渐变占位
@@ -198,6 +199,7 @@ const remoteReferrerPolicy =
 			class={imageClass}
 			style={imageStyle}
 			loading={loading}
+			fetchpriority={fetchpriority}
 			formats={formats}
 			fallbackFormat={fallbackFormat}
 			quality={quality}
@@ -215,6 +217,7 @@ const remoteReferrerPolicy =
 			class={imageClass}
 			style={imageStyle}
 			loading={loading}
+			fetchpriority={fetchpriority}
 			decoding="async"
 			data-cover-img
 			data-remote="true"
@@ -350,4 +353,5 @@ const remoteReferrerPolicy =
 
 	initCoverImages();
 	document.addEventListener('astro:page-load', initCoverImages);
+	document.addEventListener('swup:contentReplaced', initCoverImages);
 </script>

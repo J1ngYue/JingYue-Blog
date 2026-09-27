@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.64",
+		date: "2026-09-27",
+		time: "19:08",
+		type: "fix",
+		title: "文章滚动与阅读加载修复",
+		summary: "修复文章页无法下滑，并让首图更快显示；书架两侧栏改为一个按钮同步收展。",
+		changes: [
+			"将 3D 首页的滚动锁定限制在该页面，避免影响文章阅读。",
+			"文章封面优先加载，图片解码后直接呈现，不再等待入场脚本。",
+			"书架记录页保留一个侧栏按钮，同时收起或展开左右信息栏。",
+		],
+	},
+	{
 		version: "v6.14.63",
 		date: "2026-09-27",
 		time: "16:40",

@@ -254,6 +254,8 @@ const currentCategoryCount = publicPosts.filter(
               basePath={getFileDirFromPath(entry.filePath || '')}
               class="mb-8 rounded-xl banner-container onload-animation"
               preview={false}
+              loading="eager"
+              fetchpriority="high"
               apiUrls={apiUrls}
             />
           </div>

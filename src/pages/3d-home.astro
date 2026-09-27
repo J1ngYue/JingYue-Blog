@@ -86,17 +86,17 @@ const bio = profileConfig.bio || siteConfig.subtitle;
 </html>
 
 <style>
-  :root {
+  html:has(.three-home) {
     color-scheme: dark;
     font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     background: #071329;
   }
 
-  * { box-sizing: border-box; }
-  html, body { margin: 0; width: 100%; min-height: 100%; overflow: hidden; background: #071329; }
-  body { color: #f4f7ff; }
-  button, a { font: inherit; }
-  button { color: inherit; }
+  .three-home, .three-home * { box-sizing: border-box; }
+  html:has(.three-home), body:has(.three-home) { margin: 0; width: 100%; min-height: 100%; overflow: hidden; background: #071329; }
+  body:has(.three-home) { color: #f4f7ff; }
+  .three-home button, .three-home a { font: inherit; }
+  .three-home button { color: inherit; }
 
   .three-home { --accent: #72f5df; --accent-2: #ff9bcf; --ink: #0a1427; position: relative; width: 100vw; height: 100svh; min-height: 620px; overflow: hidden; isolation: isolate; background: #071329; }
   .three-home__stage, .three-home__stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }

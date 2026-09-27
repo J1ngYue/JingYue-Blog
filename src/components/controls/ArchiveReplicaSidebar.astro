@@ -56,7 +56,7 @@ function formatPostDate(date: Date): string {
 {
 		side === "left" ? (
 		<aside class="archive-side archive-side--left" aria-label="归档页左侧信息" data-archive-sidebar-shell data-sidebar-side="left">
-			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="收束左侧栏" title="收束侧栏">
+			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="同时收起两侧栏" title="同时收起两侧栏">
 				<Icon is:inline name="material-symbols:keyboard-double-arrow-left-rounded" />
 			</button>
 			<div class="archive-side__content" data-archive-sidebar-content>
@@ -147,9 +147,7 @@ function formatPostDate(date: Date): string {
 		</aside>
 	) : (
 		<aside class="archive-side archive-side--right" aria-label="归档页右侧信息" data-archive-sidebar-shell data-sidebar-side="right">
-			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="收束右侧栏" title="收束侧栏">
-				<Icon is:inline name="material-symbols:keyboard-double-arrow-right-rounded" />
-			</button>
+			<span class="archive-side__toggle-spacer" aria-hidden="true"></span>
 			<div class="archive-side__content" data-archive-sidebar-content>
 			<section class="archive-side-card archive-milestone">
 				<p>这片小天地已经记录了</p>
@@ -413,32 +411,29 @@ function formatPostDate(date: Date): string {
 	}
 
 	function initArchiveSidebarCollapse() {
-		document.querySelectorAll<HTMLElement>("[data-archive-sidebar-shell]").forEach((shell) => {
-			if (shell.dataset.sidebarBound === "true") return;
-			shell.dataset.sidebarBound = "true";
-			const side = shell.dataset.sidebarSide;
-			if (!side) return;
-			const toggle = shell.querySelector<HTMLButtonElement>("[data-archive-sidebar-toggle]");
-			const storageKey = `firefly-archive-sidebar-${side}-collapsed`;
-			const setCollapsed = (collapsed: boolean) => {
+		const toggle = document.querySelector<HTMLButtonElement>("[data-archive-sidebar-toggle]");
+		if (!toggle || toggle.dataset.sidebarBound === "true") return;
+		toggle.dataset.sidebarBound = "true";
+		const shells = document.querySelectorAll<HTMLElement>("[data-archive-sidebar-shell]");
+		const storageKey = "firefly-archive-sidebars-collapsed";
+		const setCollapsed = (collapsed: boolean) => {
+			shells.forEach((shell) => {
 				shell.dataset.collapsed = String(collapsed);
 				const content = shell.querySelector<HTMLElement>("[data-archive-sidebar-content]");
 				content?.toggleAttribute("inert", collapsed);
 				content?.setAttribute("aria-hidden", String(collapsed));
-				toggle?.setAttribute("aria-expanded", String(!collapsed));
-				if (toggle) {
-					toggle.title = collapsed ? "展开侧栏" : "收束侧栏";
-					toggle.setAttribute("aria-label", collapsed ? "展开侧栏" : "收束侧栏");
-				}
-			};
-			let stored = false;
-			try { stored = window.localStorage.getItem(storageKey) === "true"; } catch {}
-			setCollapsed(stored);
-			toggle?.addEventListener("click", () => {
-				const collapsed = shell.dataset.collapsed !== "true";
-				setCollapsed(collapsed);
-				try { window.localStorage.setItem(storageKey, String(collapsed)); } catch {}
 			});
+			toggle.setAttribute("aria-expanded", String(!collapsed));
+			toggle.title = collapsed ? "同时展开两侧栏" : "同时收起两侧栏";
+			toggle.setAttribute("aria-label", toggle.title);
+		};
+		let stored = false;
+		try { stored = window.localStorage.getItem(storageKey) === "true"; } catch {}
+		setCollapsed(stored);
+		toggle.addEventListener("click", () => {
+			const collapsed = shells[0]?.dataset.collapsed !== "true";
+			setCollapsed(collapsed);
+			try { window.localStorage.setItem(storageKey, String(collapsed)); } catch {}
 		});
 	}
 
@@ -489,6 +484,12 @@ function formatPostDate(date: Date): string {
 	.archive-side--left .archive-side__collapse-toggle {
 		margin-right: auto;
 		margin-left: 0;
+	}
+
+	.archive-side__toggle-spacer {
+		display: block;
+		height: 1.85rem;
+		margin-bottom: 0.15rem;
 	}
 
 	.archive-side__collapse-toggle:hover,
