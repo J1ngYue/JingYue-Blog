@@ -168,7 +168,7 @@ const navbarProfileAvatarParticles = [
     ]} style={navbarSurfaceStyle}>
         <div class="mx-auto h-full w-full max-w-(--page-width) grid grid-cols-[auto_minmax(0,1fr)_auto] items-center">
             <div class="navbar-brand-shell">
-                <a href={url('/')} class="navbar-brand btn-plain scale-animation rounded-lg h-13 px-3 md:px-5 font-bold active:scale-95" data-navbar-brand aria-label="返回首页" aria-controls="navbar-profile-card" aria-expanded="false">
+                <button type="button" class="navbar-brand btn-plain scale-animation rounded-lg h-13 px-3 md:px-5 font-bold active:scale-95" data-navbar-brand aria-label="查看个人资料" aria-controls="navbar-profile-card" aria-expanded="false">
                     <div class:list={[
                         "navbar-brand__layer navbar-brand__default flex flex-row items-center text-md",
                         siteConfig.navbar.followTheme ? "text-(--primary)" : "dark:text-white text-black"
@@ -199,7 +199,7 @@ const navbarProfileAvatarParticles = [
                             siteAvatar
                         />
                     </div>
-                </a>
+                </button>
 
                 <aside id="navbar-profile-card" class="navbar-profile-card" aria-label={`${profileConfig.name} 个人资料`} aria-hidden="true">
                     <div class="navbar-profile-card__identity">
@@ -612,7 +612,7 @@ function initNavbarProfileCard() {
 
     const navbar = document.getElementById("navbar");
     const shell = navbar?.querySelector<HTMLElement>(".navbar-brand-shell");
-    const brand = shell?.querySelector<HTMLAnchorElement>("[data-navbar-brand]");
+    const brand = shell?.querySelector<HTMLButtonElement>("[data-navbar-brand]");
     const card = shell?.querySelector<HTMLElement>(".navbar-profile-card");
     const terminal = shell?.querySelector<HTMLElement>("[data-navbar-profile-terminal]");
     const avatarWrap = shell?.querySelector<HTMLElement>("[data-navbar-profile-avatar-wrap]");
@@ -632,8 +632,10 @@ function initNavbarProfileCard() {
     let avatarResponseIndex = 0;
     let flowerResponseIndex = 0;
 
+    const profileAvailable = () =>
+        navbar.dataset.isHome !== "true" || navbar.dataset.homeBrand === "avatar";
     const cardIsOpen = () =>
-        navbar.dataset.homeBrand === "avatar" &&
+        profileAvailable() &&
         shell.dataset.profileDismissed !== "true" &&
         (shell.dataset.profileOpen === "true" ||
             shell.matches(":hover") ||
@@ -731,7 +733,7 @@ function initNavbarProfileCard() {
     const handleBrandClick = (event: MouseEvent) => {
         const target = event.target;
         if (!(target instanceof Element) || target.closest("[data-navbar-brand]") !== brand) return;
-        if (navbar.dataset.homeBrand !== "avatar") return;
+        if (!profileAvailable()) return;
         event.preventDefault();
 
         if (shell.dataset.profileOpen === "true") {
@@ -1018,7 +1020,7 @@ if (document.readyState === 'loading') {
 
 			const handleClick = (event) => {
 				if (event.defaultPrevented) return;
-				if (navbar.dataset.homeBrand !== "avatar") return;
+				if (navbar.dataset.isHome === "true" && navbar.dataset.homeBrand !== "avatar") return;
 				event.preventDefault();
 				if (shell.dataset.profileOpen === "true") {
 					delete shell.dataset.profileOpen;
@@ -1037,7 +1039,7 @@ if (document.readyState === 'loading') {
 			syncAccessibility(
 				brand,
 				card,
-				shell.dataset.profileOpen === "true" && navbar.dataset.homeBrand === "avatar",
+				shell.dataset.profileOpen === "true" && (navbar.dataset.isHome !== "true" || navbar.dataset.homeBrand === "avatar"),
 			);
 			state[cleanupKey] = () => brand.removeEventListener("click", handleClick);
 		};

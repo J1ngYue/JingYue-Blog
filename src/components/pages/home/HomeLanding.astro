@@ -5680,7 +5680,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			color 240ms ease;
 	}
 
-	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-brand-shell > a),
+	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-brand-shell > .navbar-brand),
 	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-main-menu:nth-child(2)),
 	:global(body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > div:nth-child(3)) {
 		border-color: color-mix(
@@ -5710,7 +5710,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		color: #fff !important;
 	}
 
-	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] > div > div > .navbar-brand-shell > a),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] > div > div > .navbar-brand-shell > .navbar-brand),
 	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] > div > div > .navbar-main-menu:nth-child(2)),
 	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="light"] > div > div > div:nth-child(3)) {
 		border-color: color-mix(
@@ -5740,7 +5740,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		color: #111820 !important;
 	}
 
-	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-brand-shell > a),
+	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-brand-shell > .navbar-brand),
 	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > .navbar-main-menu:nth-child(2)),
 	:global(html:not(.dark) body.home-landing-active:not(.music-immersive-open) #navbar[data-home-section-tone="dark"] > div > div > div:nth-child(3)) {
 		border-color: rgb(18 24 30 / 9%) !important;
@@ -6148,7 +6148,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 	/* The active home scene advertises a light tone for its artwork. In dark
 	   mode the navigation surface must still follow the global black/white
 	   contract. */
-	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-brand-shell > a),
+	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-brand-shell > .navbar-brand),
 	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-main-menu),
 	:global(html.dark body.home-landing-active #navbar[data-home-section-tone] > div > div > .navbar-actions) {
 		border-color: rgb(255 255 255 / 18%) !important;

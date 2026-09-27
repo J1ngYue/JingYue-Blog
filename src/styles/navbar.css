@@ -311,7 +311,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
     box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 34%);
 }
 
-#navbar[data-home-brand="avatar"] .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card {
+#navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card {
     visibility: visible;
     opacity: 1;
     pointer-events: auto;
@@ -707,8 +707,8 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 }
 
 @media (min-width: 1024px) and (hover: hover) {
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card,
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card {
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card,
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card {
         visibility: visible;
         opacity: 1;
         pointer-events: auto;
@@ -719,13 +719,13 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
             visibility 0ms step-start;
     }
 
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card__bio,
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card__bio {
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card__bio,
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card__bio {
         animation: navbar-profile-content-in 220ms ease both;
     }
 
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card__links,
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card__links {
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell[data-profile-open="true"] .navbar-profile-card__links,
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell:not([data-profile-dismissed="true"]):is(:hover, :focus-within) .navbar-profile-card__links {
         animation: navbar-profile-content-in 220ms ease both;
     }
 }
@@ -744,7 +744,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 
     #navbar .navbar-brand__layer,
     #navbar .navbar-profile-card,
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell:is(:hover, :focus-within) .navbar-profile-card,
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell:is(:hover, :focus-within) .navbar-profile-card,
     #navbar .navbar-profile-card .navbar-profile-card__links a {
         transition: none;
     }
@@ -755,8 +755,8 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 
     #navbar .navbar-profile-card__bio,
     #navbar .navbar-profile-card__links,
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell:is(:hover, :focus-within) .navbar-profile-card__bio,
-    #navbar[data-home-brand="avatar"] .navbar-brand-shell:is(:hover, :focus-within) .navbar-profile-card__links {
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell:is(:hover, :focus-within) .navbar-profile-card__bio,
+    #navbar:is([data-is-home="false"], [data-home-brand="avatar"]) .navbar-brand-shell:is(:hover, :focus-within) .navbar-profile-card__links {
         opacity: 1;
         transform: none;
         animation: none;

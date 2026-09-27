@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.63",
+		date: "2026-09-27",
+		time: "16:40",
+		type: "optimize",
+		title: "全站头像资料面板",
+		summary: "其他页面的导航头像也可打开首页同款个人资料面板，不再重复承担返回首页功能。",
+		changes: [
+			"悬浮头像显示资料、文章活动与倒计时，点击或键盘操作也能切换面板。",
+			"首页按钮继续负责返回首页，首页头像原有入场时机保持不变。",
+		],
+	},
+	{
 		version: "v6.14.62",
 		date: "2026-09-27",
 		time: "16:05",
