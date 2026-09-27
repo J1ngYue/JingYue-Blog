@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.68",
+		date: "2026-09-28",
+		time: "00:45",
+		type: "optimize",
+		title: "私密页侧栏按钮按需显示",
+		summary: "日历与账单页的双侧栏按钮仅在桌面端靠近左侧或键盘聚焦时显示。",
+		changes: [
+			"收起状态下保留左侧悬浮感应区，按钮移入显示、移出隐藏。",
+			"不改变两侧栏同步收展；触屏和减少动态效果设置仍可操作。",
+		],
+	},
+	{
 		version: "v6.14.67",
 		date: "2026-09-28",
 		time: "00:22",
