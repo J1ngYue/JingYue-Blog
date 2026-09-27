@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.66",
+		date: "2026-09-27",
+		time: "23:10",
+		type: "optimize",
+		title: "恢复日历与账单原版界面",
+		summary: "保留原来的日历、账单卡片和图表，将私密管理与统计收进轻量弹窗。",
+		changes: [
+			"恢复周/月日历、账单封面卡、流水、折线图和分类排行的原有布局。",
+			"登录后才从私密服务读取数据，新增管理入口不改变主页面结构。",
+		],
+	},
+	{
 		version: "v6.14.65",
 		date: "2026-09-27",
 		time: "21:46",

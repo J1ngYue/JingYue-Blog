@@ -1,5 +1,6 @@
 ---
-import PrivateHub from "@/components/pages/personal/PrivateHub.svelte";
+import BillingDashboard from "@/components/pages/personal/BillingDashboard.astro";
+import PrivateAccess from "@/components/pages/personal/PrivateAccess.svelte";
 import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 ---
@@ -19,6 +20,9 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 		icon="material-symbols:account-balance-wallet-outline"
 		showHeader={false}
 	>
-		<PrivateHub client:load mode="bills" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
+		<PrivateAccess client:load mode="bills" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
+		<div data-private-content hidden>
+			<BillingDashboard />
+		</div>
 	</RecordPageShell>
 </MainGridLayout>

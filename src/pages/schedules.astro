@@ -1,5 +1,6 @@
 ---
-import PrivateHub from "@/components/pages/personal/PrivateHub.svelte";
+import PrivateAccess from "@/components/pages/personal/PrivateAccess.svelte";
+import ScheduleDashboard from "@/components/pages/personal/ScheduleDashboard.astro";
 import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 ---
@@ -18,6 +19,9 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 		description="用日历管理日程、生日与纪念日，重要时刻一目了然。"
 		icon="material-symbols:calendar-month-outline-rounded"
 	>
-		<PrivateHub client:load mode="events" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
+		<PrivateAccess client:load mode="events" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
+		<div data-private-content hidden>
+			<ScheduleDashboard />
+		</div>
 	</RecordPageShell>
 </MainGridLayout>
