@@ -180,6 +180,7 @@ onMount(async () => {
 
 async function logIn(event: SubmitEvent) {
 	event.preventDefault();
+	if (!apiBase) return;
 	error = "";
 	busy = true;
 	try {
@@ -287,14 +288,13 @@ async function remove(id: string) {
 <section class="private-access">
 	{#if loading}
 		<p class="status">正在检查私密空间…</p>
-	{:else if !apiBase}
-		<div class="lock-card"><h2>私密空间尚未启用</h2><p>后端和数据库配置完成后才会开放，日历与账单数据不会写进公开页面。</p></div>
 	{:else if !authenticated}
 		<form class="lock-card" onsubmit={logIn}>
 			<h2>仅自己可见</h2>
 			<p>输入管理密码，解锁{mode === "events" ? "日历" : "账单"}。</p>
 			<label>管理密码<input type="password" autocomplete="current-password" bind:value={password} required /></label>
-			<button class="primary" type="submit" disabled={busy}>解锁空间</button>
+			<button class="primary" type="submit" disabled={busy || !apiBase}>解锁空间</button>
+			{#if !apiBase}<p class="setup-note" role="status">私密服务尚未连接，完成 Worker 和数据库配置后才能解锁。密码不会保存在此页面；请使用新设置的管理密码。</p>{/if}
 		</form>
 	{:else}
 		<div class="access-actions">

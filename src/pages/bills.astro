@@ -19,6 +19,7 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 		description="收支记录与月度回望。"
 		icon="material-symbols:account-balance-wallet-outline"
 		showHeader={false}
+		defaultSidebarsCollapsed
 	>
 		<PrivateAccess client:load mode="bills" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
 		<div data-private-content hidden>

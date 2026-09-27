@@ -44,7 +44,7 @@ wrangler deploy --config private-worker/wrangler.jsonc
 PUBLIC_PRIVATE_API_URL=https://private.j1ngyue.cn
 ```
 
-这个变量只是 API 地址，可以出现在前端；密码、DeepSeek 密钥和账单内容均不可写成 `PUBLIC_` 变量。重新构建并发布博客后，日历/账单页面才会显示登录框。若网站并非 `https://blog.j1ngyue.cn`，还需更改 `ALLOWED_ORIGIN`。配置完成前，静态页面会提示“私密空间尚未启用”，不会回退到公开演示数据。
+这个变量只是 API 地址，可以出现在前端；密码、DeepSeek 密钥和账单内容均不可写成 `PUBLIC_` 变量。日历/账单页面始终显示密码输入框，但配置完成前“解锁空间”按钮不可用。重新构建并发布博客后才可登录。若网站并非 `https://blog.j1ngyue.cn`，还需更改 `ALLOWED_ORIGIN`。配置完成前不会回退到公开演示数据。
 
 ## 4. 安全与维护
 

@@ -18,9 +18,10 @@ import { getPostUrlBySlug } from "@/utils/url-utils";
 interface Props {
 	side: "left" | "right";
 	posts: PostForList[];
+	defaultCollapsed?: boolean;
 }
 
-const { side, posts } = Astro.props;
+const { side, posts, defaultCollapsed = false } = Astro.props;
 const recentPosts = posts.slice(0, 5);
 const bilibiliHot =
 	side === "right" ? (await getBilibiliHot()).slice(0, 5) : [];
@@ -55,11 +56,11 @@ function formatPostDate(date: Date): string {
 
 {
 		side === "left" ? (
-		<aside class="archive-side archive-side--left" aria-label="归档页左侧信息" data-archive-sidebar-shell data-sidebar-side="left">
-			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle aria-expanded="true" aria-label="同时收起两侧栏" title="同时收起两侧栏">
+		<aside class="archive-side archive-side--left" aria-label="归档页左侧信息" data-archive-sidebar-shell data-sidebar-side="left" data-collapsed={String(defaultCollapsed)}>
+			<button type="button" class="archive-side__collapse-toggle" data-archive-sidebar-toggle data-default-collapsed={String(defaultCollapsed)} aria-expanded={!defaultCollapsed} aria-label={defaultCollapsed ? "同时展开两侧栏" : "同时收起两侧栏"} title={defaultCollapsed ? "同时展开两侧栏" : "同时收起两侧栏"}>
 				<Icon is:inline name="material-symbols:keyboard-double-arrow-left-rounded" />
 			</button>
-			<div class="archive-side__content" data-archive-sidebar-content>
+			<div class="archive-side__content" data-archive-sidebar-content inert={defaultCollapsed} aria-hidden={defaultCollapsed}>
 			<section class="archive-profile-card">
 				<div class="archive-profile-card__cover" data-site-profile-cover>
 					<ImageWrapper
@@ -146,9 +147,9 @@ function formatPostDate(date: Date): string {
 			</div>
 		</aside>
 	) : (
-		<aside class="archive-side archive-side--right" aria-label="归档页右侧信息" data-archive-sidebar-shell data-sidebar-side="right">
+		<aside class="archive-side archive-side--right" aria-label="归档页右侧信息" data-archive-sidebar-shell data-sidebar-side="right" data-collapsed={String(defaultCollapsed)}>
 			<span class="archive-side__toggle-spacer" aria-hidden="true"></span>
-			<div class="archive-side__content" data-archive-sidebar-content>
+			<div class="archive-side__content" data-archive-sidebar-content inert={defaultCollapsed} aria-hidden={defaultCollapsed}>
 			<section class="archive-side-card archive-milestone">
 				<p>这片小天地已经记录了</p>
 				<div class="archive-milestone__names">
@@ -415,7 +416,8 @@ function formatPostDate(date: Date): string {
 		if (!toggle || toggle.dataset.sidebarBound === "true") return;
 		toggle.dataset.sidebarBound = "true";
 		const shells = document.querySelectorAll<HTMLElement>("[data-archive-sidebar-shell]");
-		const storageKey = "firefly-archive-sidebars-collapsed";
+		const defaultCollapsed = toggle.dataset.defaultCollapsed === "true";
+		const storageKey = defaultCollapsed ? "firefly-private-sidebars-collapsed" : "firefly-archive-sidebars-collapsed";
 		const setCollapsed = (collapsed: boolean) => {
 			shells.forEach((shell) => {
 				shell.dataset.collapsed = String(collapsed);
@@ -427,8 +429,11 @@ function formatPostDate(date: Date): string {
 			toggle.title = collapsed ? "同时展开两侧栏" : "同时收起两侧栏";
 			toggle.setAttribute("aria-label", toggle.title);
 		};
-		let stored = false;
-		try { stored = window.localStorage.getItem(storageKey) === "true"; } catch {}
+		let stored = defaultCollapsed;
+		try {
+			const saved = window.localStorage.getItem(storageKey);
+			if (saved !== null) stored = saved === "true";
+		} catch {}
 		setCollapsed(stored);
 		toggle.addEventListener("click", () => {
 			const collapsed = shells[0]?.dataset.collapsed !== "true";

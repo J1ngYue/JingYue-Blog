@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.67",
+		date: "2026-09-28",
+		time: "00:22",
+		type: "optimize",
+		title: "私密页面默认收起侧栏并展示密码入口",
+		summary:
+			"日历与账单页默认同时收起左右侧栏；未连接后端时仍展示密码框，并明确提示暂不可解锁。",
+		changes: [
+			"只调整私密页面的侧栏默认状态，保留一键展开与其他页面的偏好。",
+			"始终展示管理密码输入框，后端未就绪时禁用解锁并说明原因。",
+		],
+	},
+	{
 		version: "v6.14.66",
 		date: "2026-09-27",
 		time: "23:10",

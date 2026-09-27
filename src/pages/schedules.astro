@@ -18,6 +18,7 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 		title="日历"
 		description="用日历管理日程、生日与纪念日，重要时刻一目了然。"
 		icon="material-symbols:calendar-month-outline-rounded"
+		defaultSidebarsCollapsed
 	>
 		<PrivateAccess client:load mode="events" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
 		<div data-private-content hidden>

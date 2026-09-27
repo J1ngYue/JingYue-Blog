@@ -10,6 +10,7 @@ interface Props {
 	updatedAt?: string;
 	showSidebars?: boolean;
 	showHeader?: boolean;
+	defaultSidebarsCollapsed?: boolean;
 }
 
 const {
@@ -19,12 +20,13 @@ const {
 	updatedAt,
 	showSidebars = true,
 	showHeader = true,
+	defaultSidebarsCollapsed = false,
 } = Astro.props;
 const posts = showSidebars ? await getSortedPostsList() : [];
 ---
 
 <div class:list={["record-replica-page onload-animation", !showSidebars && "is-single-column"]}>
-	{showSidebars && <ArchiveReplicaSidebar side="left" posts={posts} />}
+	{showSidebars && <ArchiveReplicaSidebar side="left" posts={posts} defaultCollapsed={defaultSidebarsCollapsed} />}
 
 	<article class="record-page" aria-labelledby="record-page-title">
 		{showHeader && (
@@ -48,7 +50,7 @@ const posts = showSidebars ? await getSortedPostsList() : [];
 		</div>
 	</article>
 
-	{showSidebars && <ArchiveReplicaSidebar side="right" posts={posts} />}
+	{showSidebars && <ArchiveReplicaSidebar side="right" posts={posts} defaultCollapsed={defaultSidebarsCollapsed} />}
 </div>
 
 <style>
