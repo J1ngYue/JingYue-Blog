@@ -1,5 +1,5 @@
 ---
-import ScheduleDashboard from "@/components/pages/personal/ScheduleDashboard.astro";
+import PrivateHub from "@/components/pages/personal/PrivateHub.svelte";
 import RecordPageShell from "@/components/pages/record/RecordPageShell.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 ---
@@ -12,11 +12,12 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 	contentOnly
 	plainContent
 >
+	<Fragment slot="head"><meta name="robots" content="noindex,nofollow" /></Fragment>
 	<RecordPageShell
 		title="日历"
 		description="用日历管理日程、生日与纪念日，重要时刻一目了然。"
 		icon="material-symbols:calendar-month-outline-rounded"
 	>
-		<ScheduleDashboard />
+		<PrivateHub client:load mode="events" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
 	</RecordPageShell>
 </MainGridLayout>

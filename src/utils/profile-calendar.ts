@@ -59,7 +59,7 @@ export function getProfileCountdowns(
 	}
 	const nextHoliday = occurrences.find(
 		(event) => event.date >= today.getTime(),
-	)!;
+	) ?? { name: "元旦", date: Date.UTC(year + 1, 0, 1) };
 	const previousHoliday = occurrences
 		.filter(
 			(event) =>
