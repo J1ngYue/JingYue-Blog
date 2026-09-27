@@ -12,7 +12,7 @@ export const siteConfig: SiteConfig = {
 	subtitle: "记录代码、生活与闪光的片刻",
 
 	// 站点 URL
-	site_url: "https://firefly.cuteleaf.cn",
+	site_url: "https://jing-yue-blog.vercel.app",
 
 	// 站点描述
 	description:
