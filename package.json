@@ -1,7 +1,7 @@
 {
 	"name": "JingYue",
 	"type": "module",
-	"version": "6.14.61",
+	"version": "6.14.62",
 	"scripts": {
 		"predev": "node scripts/sync-records.mjs",
 		"dev": "astro dev",

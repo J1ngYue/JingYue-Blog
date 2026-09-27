@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.62",
+		date: "2026-09-27",
+		time: "16:05",
+		type: "optimize",
+		title: "导航子目录背景与主导航统一",
+		summary: "浅色主题下，子目录及尖角改用与主导航相同的灰色背景。",
+		changes: [
+			"内容页和首页分别沿用各自主导航的灰色背景，黑色边框与深色主题保持不变。",
+			"微调子项悬停底色，确保灰色面板上仍有清晰反馈。",
+		],
+	},
+	{
 		version: "v6.14.61",
 		date: "2026-09-27",
 		time: "15:31",

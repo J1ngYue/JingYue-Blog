@@ -1287,7 +1287,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         min-width: 12rem;
         border: 3px solid #0a0a0a;
         border-radius: 0.85rem;
-        background: #fff;
+        background: #e7e7e7;
         box-shadow: 0 1rem 2.5rem rgb(24 24 27 / 18%);
         color: #18181b;
         transition:
@@ -1304,10 +1304,15 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         height: 0.75rem;
         border-top: 3px solid #0a0a0a;
         border-left: 3px solid #0a0a0a;
-        background: #fff;
+        background: #e7e7e7;
         transform: rotate(45deg);
         transition: left 250ms cubic-bezier(0.22, 1, 0.36, 1);
         pointer-events: none;
+    }
+
+    :root:not(.dark) #navbar[data-is-home="false"] .navbar-dropdown-box,
+    :root:not(.dark) #navbar[data-is-home="false"] .navbar-dropdown-arrow {
+        background: #f3f3f3;
     }
 
     #navbar .navbar-dropdown-page {
@@ -1348,7 +1353,7 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     #navbar .dropdown-item:focus,
     #navbar .dropdown-item:focus-visible,
     #navbar .dropdown-item:active {
-        background: #e7e7e7 !important;
+        background: #d9d9d9 !important;
         color: #18181b !important;
         transform: none;
     }
