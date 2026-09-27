@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.61",
+		date: "2026-09-27",
+		time: "15:31",
+		type: "feature",
+		title: "网站导航分类折叠与公共资源扩充",
+		summary: "补充公共实用网址，并将导航分类改为可展开、可收起的分组。",
+		changes: [
+			"新增测速、图片处理、AI、前端组件、学习与开放 API 等公共网站。",
+			"分类标题加入说明、数量和展开箭头，保留搜索、筛选与网格/列表视图。",
+			"修正浅色背景下分类筛选按钮的可读性，并适配移动端。",
+		],
+	},
+	{
 		version: "v6.14.60",
 		date: "2026-08-30",
 		time: "03:16",

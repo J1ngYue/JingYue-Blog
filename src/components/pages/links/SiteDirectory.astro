@@ -20,9 +20,21 @@ const categoryMeta = {
 		icon: "material-symbols:inventory-2-outline-rounded",
 		description: "主题、素材与开发资源",
 	},
-	工具网站: {
+	工具箱: {
 		icon: "material-symbols:construction-rounded",
-		description: "提升效率的实用工具",
+		description: "网络测速、图片处理与日常实用工具",
+	},
+	"AI 聊天": {
+		icon: "material-symbols:chat-bubble-outline-rounded",
+		description: "写作、编程与日常问答助手",
+	},
+	"AI 工具": {
+		icon: "material-symbols:auto-awesome-rounded",
+		description: "模型排行、提示词与开发平台",
+	},
+	前端组件库: {
+		icon: "material-symbols:widgets-outline-rounded",
+		description: "设计协作、图标和动效组件",
 	},
 	学习网站: {
 		icon: "material-symbols:school-outline-rounded",
@@ -32,9 +44,9 @@ const categoryMeta = {
 		icon: "material-symbols:description-outline-rounded",
 		description: "常用框架官方参考",
 	},
-	"AI 工具": {
-		icon: "material-symbols:auto-awesome-rounded",
-		description: "创作、研究与协作助手",
+	"开放 API": {
+		icon: "material-symbols:api-rounded",
+		description: "地图、数据与翻译接口",
 	},
 } as const;
 
@@ -128,7 +140,7 @@ const getHostname = (href: string, external?: boolean) => {
 		</div>
 	</section>
 
-	<nav class="site-directory__filters" aria-label="网站分类" data-sliding-pill-group>
+	<nav class="site-directory__filters" aria-label="网站分类">
 		<button type="button" class="is-active" data-directory-filter="">
 			<span>全部</span><small>{linkDirectoryItems.length}</small>
 		</button>
@@ -151,23 +163,35 @@ const getHostname = (href: string, external?: boolean) => {
 		{linkDirectoryCategories.map((category, categoryIndex) => {
 			const items = linkDirectoryItems.filter((item) => item.category === category);
 			const meta = categoryMeta[category];
+			const headingId = `directory-group-heading-${categoryIndex}`;
+			const bodyId = `directory-group-body-${categoryIndex}`;
 			return (
 				<section
 					class="site-directory__group"
 					data-directory-group={category}
-					style={`--directory-group-index: ${categoryIndex}`}
+					data-open={categoryIndex === 0 ? "true" : "false"}
+					aria-labelledby={headingId}
 				>
 					<header>
-						<span class="site-directory__group-icon">
-							<Icon is:inline name={meta.icon} />
-						</span>
-						<div>
-							<h2>{category}</h2>
-							<p>{meta.description}</p>
-						</div>
-						<small>{items.length} 个链接</small>
+						<button
+							type="button"
+							class="site-directory__group-toggle"
+							data-directory-toggle
+							aria-expanded={categoryIndex === 0}
+							aria-controls={bodyId}
+							aria-labelledby={headingId}
+						>
+							<span class="site-directory__group-copy">
+								<span class="site-directory__group-title" id={headingId}>{category}</span>
+								<span class="site-directory__group-description">{meta.description}</span>
+							</span>
+							<small>{items.length} 个链接</small>
+							<Icon is:inline name="material-symbols:keyboard-arrow-down-rounded" />
+						</button>
 					</header>
 
+					<div class="site-directory__group-body" id={bodyId} role="region" aria-labelledby={headingId} inert={categoryIndex !== 0}>
+					<div class="site-directory__group-body-inner">
 					<div class="site-directory__grid">
 						{items.map((item) => {
 							const hostname = getHostname(item.href, item.external);
@@ -211,6 +235,8 @@ const getHostname = (href: string, external?: boolean) => {
 							);
 						})}
 					</div>
+					</div>
+					</div>
 				</section>
 			);
 		})}
@@ -229,6 +255,9 @@ const getHostname = (href: string, external?: boolean) => {
 		const groups = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-directory-group]"),
 		);
+		const toggles = Array.from(
+			root.querySelectorAll<HTMLButtonElement>("[data-directory-toggle]"),
+		);
 		const cards = Array.from(
 			root.querySelectorAll<HTMLElement>("[data-directory-card]"),
 		);
@@ -239,6 +268,12 @@ const getHostname = (href: string, external?: boolean) => {
 		const result = root.querySelector<HTMLElement>("[data-directory-result]");
 		const viewButton = root.querySelector<HTMLButtonElement>("[data-directory-view]");
 		let activeCategory = "";
+		const setGroupOpen = (group: HTMLElement, open: boolean) => {
+			group.dataset.open = String(open);
+			group.querySelector<HTMLButtonElement>("[data-directory-toggle]")?.setAttribute("aria-expanded", String(open));
+			const body = group.querySelector<HTMLElement>(".site-directory__group-body");
+			if (body) body.inert = !open;
+		};
 
 		const applyDirectoryState = (updateUrl = true) => {
 			const query = searchInput?.value.trim().toLocaleLowerCase() || "";
@@ -255,6 +290,7 @@ const getHostname = (href: string, external?: boolean) => {
 				group.hidden = !Array.from(
 					group.querySelectorAll<HTMLElement>("[data-directory-card]"),
 				).some((card) => !card.hidden);
+				if (!group.hidden && (query || activeCategory)) setGroupOpen(group, true);
 			});
 
 			filterButtons.forEach((button) => {
@@ -294,6 +330,12 @@ const getHostname = (href: string, external?: boolean) => {
 			button.addEventListener("click", () => {
 				activeCategory = button.dataset.directoryFilter || "";
 				applyDirectoryState();
+			});
+		});
+		toggles.forEach((button) => {
+			button.addEventListener("click", () => {
+				const group = button.closest<HTMLElement>("[data-directory-group]");
+				if (group) setGroupOpen(group, group.dataset.open !== "true");
 			});
 		});
 		searchInput?.addEventListener("input", () => applyDirectoryState());
@@ -602,7 +644,7 @@ const getHostname = (href: string, external?: boolean) => {
 
 	.site-directory__groups {
 		display: grid;
-		gap: 2.5rem;
+		gap: 0;
 	}
 
 	.site-directory__group[hidden],
@@ -612,57 +654,100 @@ const getHostname = (href: string, external?: boolean) => {
 		display: none;
 	}
 
-	.site-directory__group > header {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 0.9rem;
-		padding-bottom: 0.75rem;
+	.site-directory__group {
 		border-bottom: 1px solid var(--directory-line);
 	}
 
-	.site-directory__group-icon {
-		display: grid;
-		width: 2.45rem;
-		height: 2.45rem;
-		place-items: center;
-		border-radius: 0.45rem;
-		background: var(--ui-icon-soft-bg);
-		color: var(--ui-icon-color);
-	}
-
-	.site-directory__group-icon svg {
-		width: 1.25rem;
-		height: 1.25rem;
-	}
-
-	.site-directory__group h2,
-	.site-directory__group p {
-		margin: 0;
-	}
-
-	.site-directory__group h2 {
+	.site-directory__group-toggle {
+		display: flex;
+		width: 100%;
+		align-items: center;
+		gap: 1rem;
+		padding: 1.35rem 0.4rem 1.35rem 1.1rem;
+		border: 0;
+		background: transparent;
 		color: var(--directory-text);
-		font-size: 1rem;
-		letter-spacing: 0;
+		cursor: pointer;
+		font: inherit;
+		text-align: left;
 	}
 
-	.site-directory__group header p {
-		margin-top: 0.12rem;
+	.site-directory__group-copy {
+		position: relative;
+		display: flex;
+		min-width: 0;
+		flex: 1;
+		flex-direction: column;
+		gap: 0.15rem;
+	}
+
+	.site-directory__group-copy::before {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: -1.1rem;
+		width: 0.34rem;
+		border-radius: 999px;
+		background: #00a29b;
+		content: "";
+		transition: transform 180ms ease;
+	}
+
+	.site-directory__group-toggle:hover .site-directory__group-copy::before,
+	.site-directory__group-toggle:focus-visible .site-directory__group-copy::before {
+		transform: scaleY(1.08);
+	}
+
+	.site-directory__group-title {
+		font-size: clamp(1.2rem, 2vw, 1.55rem);
+		font-weight: 750;
+		line-height: 1.25;
+	}
+
+	.site-directory__group-description {
+		color: var(--directory-muted);
+		font-size: 0.82rem;
+		line-height: 1.5;
+	}
+
+	.site-directory__group-toggle > small {
 		color: var(--directory-subtle);
 		font-size: 0.72rem;
+		white-space: nowrap;
 	}
 
-	.site-directory__group header > small {
-		color: var(--directory-subtle);
-		font-size: 0.7rem;
+	.site-directory__group-toggle > svg {
+		width: 1.5rem;
+		height: 1.5rem;
+		flex: 0 0 auto;
+		color: var(--directory-muted);
+		transition: transform 250ms ease;
+	}
+
+	.site-directory__group[data-open="true"] .site-directory__group-toggle > svg {
+		transform: rotate(180deg);
+	}
+
+	.site-directory__group-body {
+		display: grid;
+		grid-template-rows: 0fr;
+		transition: grid-template-rows 350ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.site-directory__group[data-open="true"] .site-directory__group-body {
+		grid-template-rows: 1fr;
+	}
+
+	.site-directory__group-body-inner {
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.site-directory__grid {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: 0.75rem;
+		padding: 0.25rem 0 1.5rem;
 	}
 
 	.site-directory[data-view="list"] .site-directory__grid {
@@ -844,7 +929,8 @@ const getHostname = (href: string, external?: boolean) => {
 	.site-directory__filters button:focus-visible,
 	.site-directory__view:focus-visible,
 	.site-directory__search button:focus-visible,
-	.site-directory__empty button:focus-visible {
+	.site-directory__empty button:focus-visible,
+	.site-directory__group-toggle:focus-visible {
 		outline: 0.14rem solid color-mix(in srgb, var(--primary) 65%, white);
 		outline-offset: 0.12rem;
 	}
@@ -935,7 +1021,11 @@ const getHostname = (href: string, external?: boolean) => {
 			margin-left: 0;
 		}
 
-		.site-directory__group header p {
+		.site-directory__group-toggle {
+			gap: 0.5rem;
+		}
+
+		.site-directory__group-toggle > small {
 			display: none;
 		}
 	}
