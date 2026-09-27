@@ -7,7 +7,7 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "node --test",
+		"build": "node --test && node -e \"const fs=require('node:fs');fs.mkdirSync('dist',{recursive:true});fs.writeFileSync('dist/index.html','JingYue OAuth Service')\"",
 		"test": "node --test"
 	}
 }
