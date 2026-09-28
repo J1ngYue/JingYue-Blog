@@ -153,9 +153,10 @@ async function classify(
 		},
 		body: JSON.stringify({
 			model: "deepseek-flash",
+			thinking: { type: "disabled" },
 			response_format: { type: "json_object" },
 			temperature: 0,
-			max_tokens: 80,
+			max_tokens: 128,
 			messages: [
 				{
 					role: "system",
@@ -165,7 +166,10 @@ async function classify(
 			],
 		}),
 	});
-	if (!response.ok) throw new Error("AI_UNAVAILABLE");
+	if (!response.ok) {
+		console.error("DeepSeek classification request failed", response.status);
+		throw new Error("AI_UNAVAILABLE");
+	}
 	const result = (await response.json()) as {
 		choices?: { message?: { content?: string } }[];
 	};

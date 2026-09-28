@@ -21,6 +21,15 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.76",
+		date: "2026-09-28",
+		time: "23:22",
+		type: "fix",
+		title: "修复私密记录的 AI 自动分类",
+		summary: "让 DeepSeek 用简短的非思考模式返回分类结果。",
+		changes: ["避免短分类结果被思考内容耗尽输出额度，保留手动分类选项。"],
+	},
+	{
 		version: "v6.14.75",
 		date: "2026-09-28",
 		time: "22:21",
