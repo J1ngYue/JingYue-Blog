@@ -4,31 +4,33 @@
 
 ## 1. 创建 D1 与 Worker
 
+`jingyue-private-hub` Worker、D1 数据库和 `private.j1ngyue.cn` 自定义域名已创建。以下命令仅供重新部署或恢复时使用；不要重复创建同名数据库。
+
 在 Cloudflare 登录后，在仓库根目录运行 Wrangler（本机可用 `node node_modules/wrangler/bin/wrangler.js` 代替命令名）：
 
 ```text
 wrangler d1 create jingyue-private-hub
 ```
 
-把返回的真实 `database_id` 填入 `private-worker/wrangler.jsonc`，替换全零占位符。然后执行：
+初次创建时把返回的真实 `database_id` 填入 `private-worker/wrangler.jsonc`。当前仓库已填好 ID，迁移也已应用；新建数据库时才需执行：
 
 ```text
 wrangler d1 migrations apply jingyue-private-hub --remote --config private-worker/wrangler.jsonc
 ```
 
-在 Cloudflare Dashboard 为这个 Worker 添加三个 Secret：
+在 Cloudflare Dashboard 为这个 Worker 添加 Secret：
 
 - `ADMIN_PASSWORD`：重新设置的强密码，切勿复用聊天中出现过的密码。
 - `DEEPSEEK_API_KEY`：撤销旧密钥后重新生成的密钥。仅 Worker 可读取。
 - `REMINDER_TO`：你的 QQ 收件邮箱。它是收件地址，不是 QQ SMTP 发信凭据。
 
-在 Cloudflare Dashboard 创建同名 Worker 并设置 Secret 后，部署代码：
+设置好管理密码后部署代码：
 
 ```text
 wrangler deploy --config private-worker/wrangler.jsonc
 ```
 
-将自定义域名 `private.j1ngyue.cn` 指向该 Worker。`ALLOWED_ORIGIN` 目前只允许 `https://blog.j1ngyue.cn`；如果博客主域名改变，要同步修改并重新部署。不要给 Worker 添加公开数据接口或宽松 CORS。
+自定义域名 `private.j1ngyue.cn` 已绑定该 Worker。`ALLOWED_ORIGIN` 目前只允许 `https://blog.j1ngyue.cn`；如果博客主域名改变，要同步修改并重新部署。不要给 Worker 添加公开数据接口或宽松 CORS。
 
 ## 2. 邮件发送
 
@@ -38,7 +40,7 @@ wrangler deploy --config private-worker/wrangler.jsonc
 
 ## 3. 博客构建
 
-在博客的构建环境设置公开变量：
+博客默认连接 `https://private.j1ngyue.cn`。仅在需要覆盖该地址时，才在构建环境设置公开变量：
 
 ```text
 PUBLIC_PRIVATE_API_URL=https://private.j1ngyue.cn

@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.74",
+		date: "2026-09-28",
+		time: "22:16",
+		type: "fix",
+		title: "接通私密日历与账单的登录服务",
+		summary: "部署独立 Worker 与 D1，并让日历和账单默认连接私密接口。",
+		changes: [
+			"为私密服务绑定独立子域名和数据库，管理密码只保存在 Worker Secret。",
+			"页面无需额外构建变量即可连接服务，保留原有日历与账单界面。",
+		],
+	},
+	{
 		version: "v6.14.73",
 		date: "2026-09-28",
 		time: "21:23",

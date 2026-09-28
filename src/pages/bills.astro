@@ -21,7 +21,7 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 		showHeader={false}
 		defaultSidebarsCollapsed
 	>
-		<PrivateAccess client:load mode="bills" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL ?? ""} />
+		<PrivateAccess client:load mode="bills" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL || "https://private.j1ngyue.cn"} />
 		<div data-private-content hidden>
 			<BillingDashboard />
 		</div>

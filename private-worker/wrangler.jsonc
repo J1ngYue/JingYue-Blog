@@ -3,6 +3,7 @@
   "name": "jingyue-private-hub",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-09",
+  "routes": [{ "pattern": "private.j1ngyue.cn", "custom_domain": true }],
   "vars": {
     "ALLOWED_ORIGIN": "https://blog.j1ngyue.cn",
     "REMINDER_FROM": "reminder@j1ngyue.cn"
@@ -11,13 +12,13 @@
     {
       "binding": "DB",
       "database_name": "jingyue-private-hub",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "79abdea0-f674-4c6b-a9e5-6d2dcf00c94c",
       "migrations_dir": "migrations"
     }
   ],
   "send_email": [{ "name": "EMAIL" }],
   "triggers": { "crons": ["0 12 * * *"] },
   "secrets": {
-    "required": ["ADMIN_PASSWORD", "DEEPSEEK_API_KEY", "REMINDER_TO"]
+    "required": ["ADMIN_PASSWORD"]
   }
 }
