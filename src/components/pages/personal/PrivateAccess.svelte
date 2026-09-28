@@ -1,3 +1,7 @@
+<script module lang="ts">
+let unlockedInCurrentDocument = false;
+</script>
+
 <script lang="ts">
 import { onMount } from "svelte";
 
@@ -113,6 +117,7 @@ async function request(path: string, init?: RequestInit) {
 	});
 	const data = await response.json();
 	if (response.status === 401 && path !== "/auth/login") {
+		unlockedInCurrentDocument = false;
 		authenticated = false;
 		events = [];
 		bills = [];
@@ -167,10 +172,17 @@ onMount(async () => {
 		loading = false;
 		return;
 	}
+	if (!unlockedInCurrentDocument) {
+		await logOut();
+		loading = false;
+		return;
+	}
 	try {
 		authenticated = (await request("/auth/me")).authenticated;
+		if (!authenticated) unlockedInCurrentDocument = false;
 		if (authenticated) await refresh();
 	} catch {
+		unlockedInCurrentDocument = false;
 		authenticated = false;
 		showDashboard([]);
 		error = "私密服务暂时无法连接";
@@ -191,7 +203,9 @@ async function logIn(event: SubmitEvent) {
 		password = "";
 		authenticated = true;
 		await refresh();
+		unlockedInCurrentDocument = true;
 	} catch (cause) {
+		unlockedInCurrentDocument = false;
 		authenticated = false;
 		showDashboard([]);
 		error = cause instanceof Error ? cause.message : "登录失败";
@@ -201,6 +215,7 @@ async function logIn(event: SubmitEvent) {
 
 async function logOut() {
 	dialog?.close();
+	unlockedInCurrentDocument = false;
 	authenticated = false;
 	events = [];
 	bills = [];
@@ -300,7 +315,6 @@ async function remove(id: string) {
 		<div class="access-actions">
 			<span>私密模式已解锁</span>
 			<button type="button" class="primary" onclick={() => { resetForm(); dialog.showModal(); }}>{mode === "events" ? "管理日历" : "记一笔 / 统计"}</button>
-			<button type="button" class="secondary" onclick={logOut}>锁定</button>
 		</div>
 		<dialog bind:this={dialog} class="manage-dialog" onclose={resetForm}>
 			<div class="dialog-heading"><h2>{mode === "events" ? "管理日历" : "账单管理"}</h2><button type="button" class="close" aria-label="关闭" onclick={() => dialog.close()}>×</button></div>

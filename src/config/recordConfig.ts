@@ -21,6 +21,15 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.77",
+		date: "2026-09-28",
+		time: "23:36",
+		type: "fix",
+		title: "私密日历与账单在刷新后自动锁定",
+		summary: "新开或刷新页面需重新输入管理密码，站内切换保持本次解锁。",
+		changes: ["刷新时撤销旧会话，并移除手动锁定按钮。"],
+	},
+	{
 		version: "v6.14.76",
 		date: "2026-09-28",
 		time: "23:22",
