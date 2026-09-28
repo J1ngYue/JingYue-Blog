@@ -95,6 +95,8 @@ let messageList = $state<HTMLDivElement | null>(null);
 let announcementDialog = $state<HTMLDialogElement | null>(null);
 let deleteDialog = $state<HTMLDialogElement | null>(null);
 let selectedAnnouncement = $state<GuestbookAnnouncementItem | null>(null);
+let announcementBarVisible = $state(true);
+let sidebarOpen = $state(false);
 let showScrollToBottom = $state(false);
 let editingMessageId = $state<string | null>(null);
 let editDraft = $state("");
@@ -1245,6 +1247,7 @@ onMount(() => {
 	isOffline = localMode ? false : !navigator.onLine;
 	void loadOAuthProviderAvailability();
 	void initializeGuestbook();
+	if (announcements[0]) void openAnnouncement(announcements[0]);
 	startPolling();
 	document.addEventListener("visibilitychange", handleVisibilityChange);
 	window.addEventListener("online", handleOnline);
@@ -1308,12 +1311,43 @@ onMount(() => {
 				</div>
 			</div>
 		</div>
+		<button
+			class="guestbook-chat__sidebar-toggle"
+			type="button"
+			onclick={() => (sidebarOpen = !sidebarOpen)}
+			aria-expanded={sidebarOpen}
+			aria-controls="guestbook-chat-sidebar"
+			aria-label="聊天成员"
+			title="聊天成员"
+		>
+			<Users size={18} aria-hidden="true" />
+			<span>{chatMembers.length}</span>
+		</button>
 
 	</header>
 
 	<div class="guestbook-chat__workspace">
 
-		<div class="guestbook-chat__conversation">
+		<div class:has-announcement-bar={announcementBarVisible} class="guestbook-chat__conversation">
+			{#if announcementBarVisible}
+				<aside class="guestbook-chat__announcement-bar" aria-label="群公告">
+					<Bell size={16} aria-hidden="true" />
+					<div class="guestbook-chat__announcement-bar-items">
+						{#each announcements as announcement}
+							<button type="button" onclick={() => void openAnnouncement(announcement)}>
+								{announcement.title}
+							</button>
+						{/each}
+					</div>
+					<button
+						class="guestbook-chat__announcement-bar-close"
+						type="button"
+						onclick={() => (announcementBarVisible = false)}
+						aria-label="关闭群公告"
+						title="关闭群公告"
+					><X size={16} aria-hidden="true" /></button>
+				</aside>
+			{/if}
 			{#if initialLoading}
 				<div
 					class="guestbook-chat__loading"
@@ -1462,27 +1496,28 @@ onMount(() => {
 			</div>
 		</div>
 
-		<aside class="guestbook-chat__sidebar" aria-label="留言板信息">
-			<section class="guestbook-chat__side-section guestbook-chat__side-announcements">
-				<div class="guestbook-chat__side-heading">
-					<Bell size={17} aria-hidden="true" />
-					<h3>群公告</h3>
-				</div>
-				<div class="guestbook-chat__side-announcement-list">
-					{#each announcements as announcement}
-						<button type="button" onclick={() => void openAnnouncement(announcement)}>
-							<strong>{announcement.title}</strong>
-							<span>{announcement.summary}</span>
-						</button>
-					{/each}
-				</div>
-			</section>
-
+		{#if sidebarOpen}
+			<button
+				class="guestbook-chat__sidebar-overlay"
+				type="button"
+				onclick={() => (sidebarOpen = false)}
+				aria-label="关闭聊天成员"
+			></button>
+		{/if}
+		<aside
+			id="guestbook-chat-sidebar"
+			class:is-open={sidebarOpen}
+			class="guestbook-chat__sidebar"
+			aria-label="聊天成员"
+		>
 			<section class="guestbook-chat__side-section guestbook-chat__side-members">
 				<div class="guestbook-chat__side-heading">
 					<Users size={18} aria-hidden="true" />
 					<h3>聊天成员</h3>
 					<span>{chatMembers.length}</span>
+					<button type="button" onclick={() => (sidebarOpen = false)} aria-label="关闭聊天成员">
+						<X size={18} aria-hidden="true" />
+					</button>
 				</div>
 				<ul class="guestbook-chat__member-list">
 					{#each chatMembers as member (member.id)}

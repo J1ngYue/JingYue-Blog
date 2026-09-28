@@ -1,5 +1,6 @@
 <script lang="ts">
 import {
+	ArrowUp,
 	ImagePlus,
 	LoaderCircle,
 	LogIn,
@@ -665,8 +666,14 @@ async function handleImageSelection(event: Event) {
 					onclick={() => void submitMessage()}
 					disabled={inputDisabled || isSending || isUploadingImage}
 					aria-busy={isSending}
+					aria-label={isSending ? "发送中" : "发送消息"}
+					title={isSending ? "发送中" : "发送消息"}
 				>
-					{isSending ? "发送中" : "发送"}
+					{#if isSending}
+						<LoaderCircle class="is-spinning" size={20} aria-hidden="true" />
+					{:else}
+						<ArrowUp size={20} aria-hidden="true" />
+					{/if}
 				</button>
 			</div>
 		</div>

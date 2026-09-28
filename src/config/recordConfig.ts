@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.75",
+		date: "2026-09-28",
+		time: "22:21",
+		type: "optimize",
+		title: "重做留言板聊天界面与规则入口",
+		summary: "留言板改为黑白聊天气泡，并把评论规则放到易于查看的位置。",
+		changes: [
+			"浅色模式采用黑色消息气泡、灰色输入区和绿色发送按钮。",
+			"回复引用改为独立的关联行，聊天成员改为按需展开。",
+			"进入留言板展示评论及留言规则，公告栏可随时重新查看。",
+		],
+	},
+	{
 		version: "v6.14.74",
 		date: "2026-09-28",
 		time: "22:16",
