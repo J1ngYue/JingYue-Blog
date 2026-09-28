@@ -13,10 +13,10 @@ const readPublicWalineEnv = (key: PublicWalineEnvKey): string => {
 
 const walineServerURL =
 	readPublicWalineEnv("PUBLIC_WALINE_SERVER_URL") ||
-	(import.meta.env.PROD ? "https://jingyue-waline.vercel.app" : "");
+	(import.meta.env?.PROD ? "https://jingyue-waline.vercel.app" : "");
 const walineOAuthServiceURL =
 	readPublicWalineEnv("PUBLIC_WALINE_OAUTH_SERVICE_URL") ||
-	(import.meta.env.PROD ? "https://jingyue-oauth.vercel.app/api" : "");
+	(import.meta.env?.PROD ? "https://jingyue-oauth.vercel.app/api" : "");
 
 export const commentConfig: CommentConfig = {
 	// 评论系统类型: none, twikoo, waline, giscus, disqus, artalk，默认为none，即不启用评论系统

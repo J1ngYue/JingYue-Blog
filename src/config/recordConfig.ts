@@ -36,7 +36,10 @@ const manualChangelogEntries: ChangelogEntry[] = [
 		type: "fix",
 		title: "让自己的留言显示在右侧",
 		summary: "已登录用户的留言与站主留言使用聊天界面的右侧排版。",
-		changes: ["发送中的消息立即靠右，管理员标记仍只由 Waline 身份决定。"],
+		changes: [
+			"发送中的消息立即靠右，管理员标记仍只由 Waline 身份决定。",
+			"修复 Node 构建脚本读取留言服务配置时报错。",
+		],
 	},
 	{
 		version: "v6.14.78",
