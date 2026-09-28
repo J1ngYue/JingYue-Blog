@@ -794,7 +794,7 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	margin-bottom: var(--space-5);
 }
 
-.guestbook-message.is-admin {
+.guestbook-message.is-outgoing {
 	align-items: flex-end;
 }
 
@@ -805,7 +805,7 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	width: 100%;
 }
 
-.guestbook-message.is-admin .guestbook-message__main {
+.guestbook-message.is-outgoing .guestbook-message__main {
 	flex-direction: row-reverse;
 }
 
@@ -842,7 +842,7 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	max-width: min(78%, 45rem);
 }
 
-.guestbook-message.is-admin .guestbook-message__column {
+.guestbook-message.is-outgoing .guestbook-message__column {
 	align-items: flex-end;
 }
 
@@ -862,20 +862,20 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	font-size: 0.76rem;
 }
 
-.guestbook-message.is-admin .guestbook-message__heading,
-.guestbook-message.is-admin .guestbook-message__meta {
+.guestbook-message.is-outgoing .guestbook-message__heading,
+.guestbook-message.is-outgoing .guestbook-message__meta {
 	justify-content: flex-end;
 }
 
-.guestbook-message.is-admin .guestbook-message__time {
+.guestbook-message.is-outgoing .guestbook-message__time {
 	order: 1;
 }
 
-.guestbook-message.is-admin .guestbook-message__badge {
+.guestbook-message.is-outgoing .guestbook-message__badge {
 	order: 2;
 }
 
-.guestbook-message.is-admin .guestbook-message__author {
+.guestbook-message.is-outgoing .guestbook-message__author {
 	order: 3;
 }
 
@@ -925,7 +925,7 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	max-width: 100%;
 }
 
-.guestbook-message.is-admin .guestbook-message__bubble-row {
+.guestbook-message.is-outgoing .guestbook-message__bubble-row {
 	flex-direction: row-reverse;
 	align-items: flex-end;
 }
@@ -941,7 +941,7 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	line-height: 1.65;
 }
 
-.guestbook-message.is-admin .guestbook-message__bubble {
+.guestbook-message.is-outgoing .guestbook-message__bubble {
 	border-radius: var(--radius-medium);
 	background: var(--guestbook-bubble);
 	color: var(--guestbook-bubble-text);
@@ -1003,19 +1003,19 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	text-align: left;
 }
 
-.guestbook-message.is-admin .guestbook-message__quote {
+.guestbook-message.is-outgoing .guestbook-message__quote {
 	grid-template-columns: minmax(0, 1fr) 1.75rem;
 	margin-right: calc(var(--guestbook-avatar-size) / 2);
 	margin-left: 0;
 	text-align: right;
 }
 
-.guestbook-message.is-admin .guestbook-message__quote-avatar {
+.guestbook-message.is-outgoing .guestbook-message__quote-avatar {
 	grid-column: 2;
 }
 
 
-.guestbook-message.is-admin .guestbook-message__quote-copy {
+.guestbook-message.is-outgoing .guestbook-message__quote-copy {
 	grid-column: 1;
 	grid-row: 1;
 }
@@ -1039,8 +1039,8 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	border-left: 1px solid var(--guestbook-line);
 }
 
-.guestbook-message.is-admin .guestbook-message__quote::before,
-.guestbook-message.is-admin .guestbook-message__quote::after {
+.guestbook-message.is-outgoing .guestbook-message__quote::before,
+.guestbook-message.is-outgoing .guestbook-message__quote::after {
 	right: 0;
 	left: auto;
 }

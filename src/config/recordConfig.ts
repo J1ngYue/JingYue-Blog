@@ -21,6 +21,15 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.79",
+		date: "2026-09-29",
+		time: "00:25",
+		type: "fix",
+		title: "让自己的留言显示在右侧",
+		summary: "已登录用户的留言与站主留言使用聊天界面的右侧排版。",
+		changes: ["发送中的消息立即靠右，管理员标记仍只由 Waline 身份决定。"],
+	},
+	{
 		version: "v6.14.78",
 		date: "2026-09-28",
 		time: "23:40",

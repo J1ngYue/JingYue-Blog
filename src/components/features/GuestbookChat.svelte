@@ -911,6 +911,7 @@ async function sendMessage(
 	const tempId = `local-${Date.now()}`;
 	const optimistic: GuestbookMessage = {
 		id: tempId,
+		userId: authUser?.objectId,
 		nick: authUser?.display_name || profile.nick || "访客",
 		avatar: authUser?.avatar || "",
 		link: authUser?.url || profile.link.trim() || undefined,
@@ -1419,6 +1420,7 @@ onMount(() => {
 
 						<GuestbookChatMessage
 							{message}
+							isMine={Boolean(authUser && message.userId === authUser.objectId)}
 							referencedMessage={message.replyToId
 								? messages.find((candidate) => candidate.id === message.replyToId)
 								: undefined}
