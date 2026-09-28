@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.69",
+		date: "2026-09-28",
+		time: "14:12",
+		type: "optimize",
+		title: "文章目录适配动漫风格与手机阅读",
+		summary: "目录复用鲸鱼娘插画并融入站点配色；手机端改为默认收起的小面板。",
+		changes: [
+			"目录使用淡色角色背景和站点现有描边、圆角，保持章节文字清晰。",
+			"手机端新增目录开关与关闭按钮，缩小面板，选择章节后自动收起。",
+		],
+	},
+	{
 		version: "v6.14.68",
 		date: "2026-09-28",
 		time: "00:45",

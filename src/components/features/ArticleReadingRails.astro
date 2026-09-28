@@ -95,8 +95,19 @@ const formatDate = (date: Date) =>
 		data-article-reading-toc-edge
 		aria-hidden="true"
 	></div>
+	<button
+		type="button"
+		class="article-reading-toc__mobile-trigger"
+		data-article-toc-mobile-trigger
+		aria-label="打开文章目录"
+		aria-expanded="false"
+		aria-controls="article-reading-toc-panel"
+	>
+		<Icon is:inline name="material-symbols:format-list-bulleted-rounded" />
+	</button>
 	<aside
 		class="article-reading-toc"
+		id="article-reading-toc-panel"
 		data-article-reading-toc
 		aria-label="文章目录"
 	>
@@ -104,6 +115,9 @@ const formatDate = (date: Date) =>
 			<span aria-hidden="true"></span>
 			<Icon is:inline name="material-symbols:format-list-bulleted-rounded" />
 			<h2>目录</h2>
+			<button type="button" class="article-reading-toc__close" data-article-toc-close aria-label="收起文章目录">
+				<Icon is:inline name="material-symbols:close-rounded" />
+			</button>
 		</header>
 
 		<div class="article-reading-toc__scroll custom-scrollbar">
@@ -198,6 +212,7 @@ const formatDate = (date: Date) =>
 	type ReadingRailsWindow = Window & {
 		__articleReadingRailsBound?: boolean;
 		__articleReadingTocManager?: TOCManager;
+		__articleReadingMobileCleanup?: () => void;
 	};
 
 	const readingWindow = window as ReadingRailsWindow;
@@ -211,15 +226,21 @@ const formatDate = (date: Date) =>
 		const tocEdge = root.querySelector<HTMLElement>(
 			"[data-article-reading-toc-edge]",
 		);
+		const mobileTrigger = root.querySelector<HTMLButtonElement>("[data-article-toc-mobile-trigger]");
+		const tocClose = root.querySelector<HTMLButtonElement>("[data-article-toc-close]");
 		const library = root.querySelector<HTMLElement>("[data-article-reading-library]");
 		const libraryTrigger = root.querySelector<HTMLButtonElement>("[data-article-library-trigger]");
+		const mobileMedia = window.matchMedia("(max-width: 760px)");
+		const hoverMedia = window.matchMedia("(hover: hover) and (pointer: fine)");
 
 		const applyTocState = (collapsed: boolean) => {
 			toc?.classList.toggle("is-collapsed", collapsed);
+			if (toc) toc.inert = mobileMedia.matches && collapsed;
+			mobileTrigger?.setAttribute("aria-expanded", String(!collapsed));
+			mobileTrigger?.setAttribute("aria-label", collapsed ? "打开文章目录" : "收起文章目录");
 			document.documentElement.dataset.articleTocCollapsed = String(collapsed);
 		};
 
-		const hoverMedia = window.matchMedia("(hover: hover) and (pointer: fine)");
 		let collapseTimer: number | undefined;
 		const setTocExpanded = (expanded: boolean) => {
 			if (!toc || toc.classList.contains("is-collapsed") === !expanded) return;
@@ -238,23 +259,51 @@ const formatDate = (date: Date) =>
 			}, 220);
 		};
 
-		applyTocState(hoverMedia.matches);
+		applyTocState(mobileMedia.matches || hoverMedia.matches);
+		readingWindow.__articleReadingMobileCleanup?.();
+		const syncTocForViewport = () => applyTocState(mobileMedia.matches || hoverMedia.matches);
+		mobileMedia.addEventListener("change", syncTocForViewport);
+		readingWindow.__articleReadingMobileCleanup = () => mobileMedia.removeEventListener("change", syncTocForViewport);
+		mobileTrigger?.addEventListener("click", () => setTocExpanded(toc?.classList.contains("is-collapsed") ?? false));
+		tocClose?.addEventListener("click", () => {
+			setTocExpanded(false);
+			mobileTrigger?.focus();
+		});
+		toc?.querySelectorAll<HTMLAnchorElement>(".toc-item").forEach((item) => {
+			item.addEventListener("click", () => {
+				if (mobileMedia.matches) setTocExpanded(false);
+			});
+		});
+		root.addEventListener("keydown", (event) => {
+			if (event.key === "Escape" && mobileMedia.matches && !toc?.classList.contains("is-collapsed")) {
+				setTocExpanded(false);
+				mobileTrigger?.focus();
+			}
+		});
 		if (hoverMedia.matches) {
 			tocEdge?.addEventListener("pointerenter", () => {
+				if (mobileMedia.matches) return;
 				cancelTocCollapse();
 				setTocExpanded(true);
 			});
-			tocEdge?.addEventListener("pointerleave", scheduleTocCollapse);
+			tocEdge?.addEventListener("pointerleave", () => {
+				if (!mobileMedia.matches) scheduleTocCollapse();
+			});
 			toc?.addEventListener("pointerenter", () => {
+				if (mobileMedia.matches) return;
 				cancelTocCollapse();
 				setTocExpanded(true);
 			});
-			toc?.addEventListener("pointerleave", scheduleTocCollapse);
+			toc?.addEventListener("pointerleave", () => {
+				if (!mobileMedia.matches) scheduleTocCollapse();
+			});
 			toc?.addEventListener("focusin", () => {
+				if (mobileMedia.matches) return;
 				cancelTocCollapse();
 				setTocExpanded(true);
 			});
 			toc?.addEventListener("focusout", () => {
+				if (mobileMedia.matches) return;
 				window.setTimeout(() => {
 					if (!toc.contains(document.activeElement)) scheduleTocCollapse();
 				}, 0);
@@ -297,6 +346,8 @@ const formatDate = (date: Date) =>
 		document.addEventListener("swup:contentReplaced", () => {
 			if (!document.querySelector("[data-article-reading-rails]")) {
 				delete document.documentElement.dataset.articleTocCollapsed;
+				readingWindow.__articleReadingMobileCleanup?.();
+				readingWindow.__articleReadingMobileCleanup = undefined;
 				readingWindow.__articleReadingTocManager?.cleanup();
 				readingWindow.__articleReadingTocManager = undefined;
 				return;
@@ -328,6 +379,11 @@ const formatDate = (date: Date) =>
 		width: 1.5rem;
 	}
 
+	.article-reading-toc__mobile-trigger,
+	.article-reading-toc__close {
+		display: none;
+	}
+
 	.article-reading-toc {
 		position: fixed;
 		top: 5.35rem;
@@ -337,12 +393,51 @@ const formatDate = (date: Date) =>
 		display: flex;
 		width: 17.5rem;
 		flex-direction: column;
-		border-radius: 0.9rem;
+		overflow: hidden;
+		isolation: isolate;
+		border: 1.5px solid color-mix(in srgb, var(--deep-text) 65%, transparent);
+		border-radius: 1.15rem;
+		background: color-mix(in srgb, var(--card-bg) 93%, #dcefff);
 		transition:
 			transform 380ms cubic-bezier(0.22, 0.8, 0.2, 1),
 			border-color 220ms ease,
 			background-color 220ms ease,
 			box-shadow 220ms ease;
+	}
+
+	.article-reading-toc::before,
+	.article-reading-toc::after {
+		position: absolute;
+		z-index: 0;
+		pointer-events: none;
+		content: "";
+	}
+
+	.article-reading-toc::before {
+		inset: 0;
+		background:
+			radial-gradient(circle at 78% 84%, rgb(118 199 241 / 24%), transparent 48%),
+			radial-gradient(circle at 0 8%, rgb(243 198 224 / 18%), transparent 34%);
+	}
+
+	.article-reading-toc::after {
+		right: 0;
+		bottom: 0;
+		left: 0;
+		height: min(53vh, 27rem);
+		background: url("/pio/models/pets/deepseek/loader-deepseek-whale-girl.webp") center bottom 0.6rem / 98% auto no-repeat;
+		mask-image: linear-gradient(to bottom, transparent, #000 38%);
+		opacity: 0.34;
+	}
+
+	:global(html.dark) .article-reading-toc {
+		border-color: rgb(198 226 247 / 38%);
+		background: color-mix(in srgb, var(--card-bg) 88%, #142c43);
+	}
+
+	:global(html.dark) .article-reading-toc::after {
+		filter: brightness(1.45);
+		opacity: 0.42;
 	}
 
 	.article-reading-toc.is-collapsed {
@@ -353,27 +448,35 @@ const formatDate = (date: Date) =>
 		transform: translateX(calc(-100% - 1.25rem));
 	}
 
+	.article-reading-toc.is-collapsed::before,
+	.article-reading-toc.is-collapsed::after {
+		opacity: 0;
+	}
+
 	.article-reading-toc__header {
+		position: relative;
+		z-index: 1;
 		display: grid;
 		grid-template-columns: 0.22rem 1.2rem minmax(0, 1fr);
 		align-items: center;
 		gap: 0.65rem;
 		min-height: 4rem;
 		padding: 0 1.15rem;
-		border-bottom: 1px solid var(--line-divider);
+		border-bottom: 1px solid color-mix(in srgb, var(--deep-text) 18%, transparent);
+		background: color-mix(in srgb, var(--card-bg) 87%, #dcefff);
 		transition: opacity 220ms ease, transform 320ms cubic-bezier(0.22, 0.8, 0.2, 1);
 	}
 
 	.article-reading-toc__header > span {
 		height: 1.35rem;
 		border-radius: 99rem;
-		background: var(--content-meta);
+		background: var(--primary);
 	}
 
 	.article-reading-toc__header svg {
 		width: 1.15rem;
 		height: 1.15rem;
-		color: var(--content-meta);
+		color: var(--primary);
 	}
 
 	.article-reading-toc__header h2,
@@ -384,7 +487,13 @@ const formatDate = (date: Date) =>
 		font-weight: 800;
 	}
 
+	.article-reading-toc__header h2 {
+		color: var(--deep-text);
+	}
+
 	.article-reading-toc__scroll {
+		position: relative;
+		z-index: 1;
 		min-height: 0;
 		flex: 1;
 		overflow-y: auto;
@@ -406,6 +515,11 @@ const formatDate = (date: Date) =>
 
 	.article-reading-toc .toc-label {
 		font-size: 0.83rem;
+	}
+
+	.article-reading-toc .toc-item:hover,
+	.article-reading-toc .toc-item:focus-visible {
+		background: color-mix(in srgb, var(--card-bg) 82%, #dcefff);
 	}
 
 	.article-reading-toc__empty {
@@ -605,6 +719,8 @@ const formatDate = (date: Date) =>
 	}
 
 	.article-reading-library__trigger:focus-visible,
+	.article-reading-toc__mobile-trigger:focus-visible,
+	.article-reading-toc__close:focus-visible,
 	.article-reading-library__tree summary:focus-visible,
 	.article-reading-library__tree a:focus-visible {
 		outline: 0.14rem solid var(--primary);
@@ -641,12 +757,68 @@ const formatDate = (date: Date) =>
 	}
 
 	@media (max-width: 760px) {
+		.article-reading-toc-edge {
+			display: none;
+		}
+
+		.article-reading-toc__mobile-trigger {
+			position: fixed;
+			top: 5.1rem;
+			left: 0.5rem;
+			z-index: 43;
+			display: grid;
+			width: 2.75rem;
+			height: 2.75rem;
+			place-items: center;
+			border: 1px solid var(--line-divider);
+			border-radius: 0.8rem;
+			background: color-mix(in srgb, var(--card-bg) 96%, transparent);
+			box-shadow: 0 0.5rem 1.5rem rgb(20 29 33 / 10%);
+			color: var(--content-meta);
+			cursor: pointer;
+		}
+
+		.article-reading-toc__mobile-trigger svg {
+			width: 1.35rem;
+			height: 1.35rem;
+		}
+
 		.article-reading-toc {
 			top: 4.8rem;
-			bottom: 0.5rem;
+			bottom: auto;
 			left: 0;
-			width: min(18.5rem, calc(100vw - 4rem));
+			width: min(14.5rem, calc(100vw - 5.5rem));
+			height: min(62dvh, 29rem);
 			border-radius: 0 0.9rem 0.9rem 0;
+		}
+
+		.article-reading-toc__header {
+			padding-right: 3.2rem;
+		}
+
+		.article-reading-toc__close {
+			position: absolute;
+			top: 0.65rem;
+			right: 0.65rem;
+			display: grid;
+			width: 2.5rem;
+			height: 2.5rem;
+			place-items: center;
+			border: 1px solid var(--line-divider);
+			border-radius: 0.65rem;
+			background: var(--card-bg);
+			color: var(--content-meta);
+			cursor: pointer;
+		}
+
+		.article-reading-toc__close svg {
+			width: 1.25rem;
+			height: 1.25rem;
+		}
+
+		.article-reading-toc::after {
+			height: 55%;
+			background-size: auto 100%;
 		}
 
 		.article-reading-toc:not(.is-collapsed) {
