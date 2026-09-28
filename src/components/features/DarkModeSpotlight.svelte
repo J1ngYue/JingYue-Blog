@@ -920,7 +920,13 @@ onMount(() => {
 
 	.dark-mode-spotlight__vignette {
 		z-index: 1;
-		background: transparent;
+		background: radial-gradient(
+			ellipse var(--spotlight-pool-x) var(--spotlight-pool-y) at var(--spotlight-x) var(--spotlight-y),
+			rgb(0 0 0 / 4%) 0%,
+			rgb(0 0 0 / 14%) 42%,
+			rgb(0 0 0 / 38%) 82%,
+			rgb(0 0 0 / 48%) 100%
+		);
 		mix-blend-mode: normal;
 		opacity: 1;
 	}
@@ -933,7 +939,6 @@ onMount(() => {
 		.dark-mode-spotlight__wash {
 			opacity: 0.78;
 		}
-
 	}
 
 	@media (prefers-reduced-motion: reduce) {

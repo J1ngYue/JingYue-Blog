@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.71",
+		date: "2026-09-28",
+		time: "17:45",
+		type: "fix",
+		title: "修复首页明暗模式与页脚对比度",
+		summary: "恢复深色灯效的暗角，并让快捷菜单与页脚在深浅色模式下保持清晰。",
+		changes: [
+			"深色首页恢复柔和黑底暗角，保留人物画面细节。",
+			"快捷菜单和模式按钮跟随深浅色切换，模式文案改为深色或浅色。",
+			"提高页脚文字与链接对比度，并修正灯效遮住页脚的层级。",
+		],
+	},
+	{
 		version: "v6.14.70",
 		date: "2026-09-28",
 		time: "14:57",

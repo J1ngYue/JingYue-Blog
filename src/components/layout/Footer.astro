@@ -30,14 +30,14 @@ if (footerConfig.enable) {
 
 
 <div
-  class="transition border-t border-black/10 dark:border-white/15 my-10 border-dashed mx-32"
+  class="site-footer-divider transition border-t border-black/10 dark:border-white/15 my-10 border-dashed mx-32"
 >
 </div>
 
 <div
   class="transition border-dashed border-[oklch(85%_0.01_var(--hue))] dark:border-white/15 rounded-2xl mb-12 flex flex-col items-center justify-center px-6"
 >
-  <div class="transition text-50 text-sm text-center wrap">
+  <div class="site-footer-copy transition text-90 text-base font-semibold text-center wrap">
     <div class="mb-2">
       {customFooterHtml && <div set:html={customFooterHtml} />}
     </div>
@@ -78,3 +78,23 @@ if (footerConfig.enable) {
     -->
   </div>
 </div>
+
+<style>
+	:global(body.home-landing-active #main-grid > .footer) {
+		position: relative;
+		z-index: 36;
+		background: #0b0e14;
+	}
+
+	:global(body.home-landing-active) .site-footer-copy {
+		color: #fff;
+	}
+
+	:global(body.home-landing-active) .site-footer-divider {
+		border-color: rgb(255 255 255 / 30%);
+	}
+
+	:global(body.home-landing-active) .site-footer-copy a {
+		color: #93dcff;
+	}
+</style>

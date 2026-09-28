@@ -196,10 +196,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			<Icon is:inline name="material-symbols:menu-rounded" />
 			<span>菜单</span>
 		</button>
-		<button type="button" data-home-mobile-theme aria-label="切换深浅色主题">
+		<button type="button" data-home-mobile-theme aria-label="切换深色与浅色模式">
 			<Icon class="home-mobile-theme__light" is:inline name="material-symbols:light-mode-outline-rounded" />
 			<Icon class="home-mobile-theme__dark" is:inline name="material-symbols:dark-mode-outline-rounded" />
-			<span>主题</span>
+			<span class="home-mobile-theme__dark">深色</span>
+			<span class="home-mobile-theme__light">浅色</span>
 		</button>
 		<button type="button" data-home-mobile-back aria-label="返回上一页">
 			<Icon is:inline name="material-symbols:keyboard-return-rounded" />

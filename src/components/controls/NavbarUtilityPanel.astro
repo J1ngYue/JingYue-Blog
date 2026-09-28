@@ -56,7 +56,8 @@ const announcementSecondary =
 				<span class="navbar-utility__theme-icon navbar-utility__theme-icon--light" aria-hidden="true">
 					<Icon is:inline name="material-symbols:wb-sunny-outline-rounded" />
 				</span>
-				<span>主题</span>
+				<span class="navbar-utility__theme-label--dark">深色</span>
+				<span class="navbar-utility__theme-label--light">浅色</span>
 			</button>
 		</div>
 
@@ -400,12 +401,17 @@ const announcementSecondary =
 	.navbar-utility__theme-icon--light {
 		display: none;
 	}
-
-	:global(html.dark) .navbar-utility__theme-icon--dark {
+	.navbar-utility__theme-label--light {
 		display: none;
 	}
 
-	:global(html.dark) .navbar-utility__theme-icon--light {
+	:global(html.dark) .navbar-utility__theme-icon--dark,
+	:global(html.dark) .navbar-utility__theme-label--dark {
+		display: none;
+	}
+
+	:global(html.dark) .navbar-utility__theme-icon--light,
+	:global(html.dark) .navbar-utility__theme-label--light {
 		display: grid;
 	}
 
@@ -519,11 +525,69 @@ const announcementSecondary =
 		white-space: nowrap;
 	}
 
-	/* 首页深色覆盖曾将导航栏内所有图标强制改白；面板始终保持参考图的浅色纸面。 */
-	:global(html body #top-row #navbar .navbar-actions .navbar-utility__panel),
-	:global(html body #top-row #navbar .navbar-actions .navbar-utility__panel button),
-	:global(html body #top-row #navbar .navbar-actions .navbar-utility__panel svg) {
+	/* Keep action icons legible against the panel, independent of the home hero. */
+	:global(html:not(.dark) body #top-row #navbar .navbar-actions .navbar-utility__panel),
+	:global(html:not(.dark) body #top-row #navbar .navbar-actions .navbar-utility__panel button),
+	:global(html:not(.dark) body #top-row #navbar .navbar-actions .navbar-utility__panel svg) {
 		color: #18181b !important;
+	}
+
+	:global(html.dark) .navbar-utility__trigger {
+		color: #fff;
+	}
+
+	:global(html.dark) .navbar-utility__trigger:is(:hover, :focus-visible),
+	:global(html.dark) .navbar-utility[data-open="true"] .navbar-utility__trigger {
+		background: #27272a;
+		color: #fff;
+	}
+
+	:global(html.dark) .navbar-utility__panel {
+		border-color: rgb(255 255 255 / 20%);
+		background: linear-gradient(145deg, rgb(18 18 20 / 98%), rgb(28 28 31 / 96%));
+		box-shadow: 0 1.15rem 3rem rgb(0 0 0 / 42%), inset 0 1px rgb(255 255 255 / 9%);
+		color: #f4f4f5;
+	}
+
+	:global(html.dark) .navbar-utility__pointer {
+		border-color: rgb(255 255 255 / 20%);
+		background: rgb(18 18 20 / 98%);
+	}
+
+	:global(html.dark) .navbar-utility__action,
+	:global(html.dark body #top-row #navbar .navbar-actions .navbar-utility__panel button),
+	:global(html.dark body #top-row #navbar .navbar-actions .navbar-utility__panel svg) {
+		color: #f4f4f5 !important;
+	}
+
+	:global(html.dark) .navbar-utility__action:is(:hover, :focus-visible),
+	:global(html.dark) .navbar-utility[data-announcement-open="true"] [data-navbar-utility-announcement] {
+		background: #303035;
+	}
+
+	:global(html.dark) .navbar-utility__announcement {
+		border-color: rgb(255 255 255 / 14%);
+		background: rgb(39 39 42 / 80%);
+	}
+
+	:global(html.dark) .navbar-utility__announcement p {
+		color: #d4d4d8;
+	}
+
+	:global(html.dark) .navbar-utility__search-field {
+		border-color: rgb(255 255 255 / 16%);
+		background: #27272a;
+		color: #f4f4f5;
+	}
+
+	:global(html.dark) .navbar-utility__search-field:is(:hover, :focus-visible) {
+		background: #303035;
+	}
+
+	:global(html.dark) .navbar-utility__search-field kbd {
+		border-color: rgb(255 255 255 / 18%);
+		background: #18181b;
+		color: #d4d4d8;
 	}
 
 	@media (max-width: 1023px) {
