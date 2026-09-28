@@ -586,13 +586,13 @@ async function handleImageSelection(event: Event) {
 						<span
 							class="guestbook-composer__identity-label guestbook-composer__identity-label--desktop"
 						>
-							{authUser.type === "administrator" ? "管理员" : "已登录"} · {authName}
+							{authUser.type === "administrator" ? "群主" : "已登录"} · {authName}
 						</span>
 						<span
 							class="guestbook-composer__identity-label guestbook-composer__identity-label--mobile"
 						>
 							{authUser.type === "administrator"
-								? "管理员"
+								? "群主"
 								: formatMobileIdentityName(authName)}
 						</span>
 						<span class="guestbook-composer__identity-tooltip" role="tooltip">
@@ -843,28 +843,6 @@ async function handleImageSelection(event: Event) {
 			</button>
 		</div>
 		<div class="privacy-body guestbook-login-modal__providers">
-			<button
-				class="guestbook-login-provider guestbook-login-provider--qq"
-				type="button"
-				onclick={() => void selectLoginProvider("qq")}
-				disabled={loggingIn || oauthProvidersLoading}
-				aria-disabled={!providerAvailable("qq")}
-				title={providerAvailable("qq") ? "使用 QQ 登录" : "QQ OAuth 尚未配置"}
-			>
-				<span><Icon icon="simple-icons:tencentqq" size="xl" /></span>
-				<strong>QQ</strong>
-			</button>
-			<button
-				class="guestbook-login-provider guestbook-login-provider--wechat"
-				type="button"
-				onclick={() => void selectLoginProvider("wechat")}
-				disabled={loggingIn || oauthProvidersLoading}
-				aria-disabled={!providerAvailable("wechat")}
-				title={providerAvailable("wechat") ? "使用微信登录" : "微信 OAuth 尚未配置"}
-			>
-				<span><Icon icon="simple-icons:wechat" size="xl" /></span>
-				<strong>微信</strong>
-			</button>
 			<button
 				class="guestbook-login-provider guestbook-login-provider--google"
 				type="button"

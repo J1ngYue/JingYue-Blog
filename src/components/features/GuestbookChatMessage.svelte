@@ -118,7 +118,7 @@ async function copyMessage() {
 				{/if}
 			</span>
 			{#if message.isAdmin}
-				<span class="guestbook-message__badge guestbook-message__badge--admin">站长</span>
+				<span class="guestbook-message__badge guestbook-message__badge--admin">群主</span>
 			{/if}
 			{#if message.label}
 				<span class="guestbook-message__badge">{message.label}</span>

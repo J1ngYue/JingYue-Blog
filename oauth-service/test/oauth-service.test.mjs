@@ -346,3 +346,31 @@ test("GitHub login maps the numeric account ID and profile to Waline", async () 
 		},
 	);
 });
+
+test("GitHub login resolves a private verified primary email", async () => {
+	const login = await startProviderLogin("github");
+	globalThis.fetch = async (input) => {
+		const url = String(input);
+		if (url === "https://github.com/login/oauth/access_token") {
+			return Response.json({ access_token: "private-access-token" });
+		}
+		if (url === "https://api.github.com/user") {
+			return Response.json({ id: 12345, login: "octocat", email: null });
+		}
+		if (url === "https://api.github.com/user/emails") {
+			return Response.json([
+				{ email: "other@example.com", primary: false, verified: true },
+				{ email: "octocat@example.com", primary: true, verified: true },
+			]);
+		}
+		throw new Error(`Unexpected request: ${url}`);
+	};
+	assert.deepEqual(
+		await completeProviderLogin({ provider: "github", ...login }),
+		{
+			id: "12345",
+			name: "octocat",
+			email: "octocat@example.com",
+		},
+	);
+});

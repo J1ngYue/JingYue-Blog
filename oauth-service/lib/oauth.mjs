@@ -451,10 +451,23 @@ async function getGithubProfile(code) {
 	if (user.id === undefined || user.id === null) {
 		throw new Error("GitHub did not return a stable user ID");
 	}
+	let email = user.email;
+	if (!email) {
+		const emails = await fetchJSON("https://api.github.com/user/emails", {
+			headers: {
+				Accept: "application/vnd.github+json",
+				Authorization: `Bearer ${accessToken}`,
+				"User-Agent": "JingYue-Waline-OAuth",
+			},
+		});
+		email = Array.isArray(emails)
+			? emails.find((item) => item.primary && item.verified)?.email
+			: undefined;
+	}
 	return {
 		id: String(user.id),
 		name: String(user.name || user.login || "GitHub 用户"),
-		email: user.email || undefined,
+		email: email || undefined,
 		url: user.html_url,
 		avatar: user.avatar_url,
 	};

@@ -1502,7 +1502,7 @@ onMount(() => {
 								{member.nick}
 							</span>
 							{#if member.isAdmin}
-								<span class="guestbook-chat__member-badge">站长</span>
+								<span class="guestbook-chat__member-badge">群主</span>
 							{/if}
 						</li>
 					{/each}

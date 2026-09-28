@@ -1494,14 +1494,6 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	line-height: 1.5;
 }
 
-.guestbook-login-provider--qq > span {
-	color: #12b7f5;
-}
-
-.guestbook-login-provider--wechat > span {
-	color: #07c160;
-}
-
 .guestbook-login-provider--google > span {
 	background: #fff;
 }

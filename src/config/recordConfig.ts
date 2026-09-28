@@ -21,6 +21,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.72",
+		date: "2026-09-28",
+		time: "19:04",
+		type: "fix",
+		title: "精简留言板登录入口与群主标识",
+		summary:
+			"暂时隐藏微信和 QQ 登录，统一显示群主身份并补齐 GitHub 私密邮箱读取。",
+		changes: [
+			"留言板登录弹窗只展示 Google 和 GitHub。",
+			"Waline 管理员在成员列表、留言和输入区统一标注为群主。",
+			"GitHub 主资料未公开邮箱时读取已验证的主邮箱。",
+		],
+	},
+	{
 		version: "v6.14.71",
 		date: "2026-09-28",
 		time: "17:45",
