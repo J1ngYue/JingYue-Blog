@@ -239,12 +239,12 @@ export const generatedChangelogEntries: Array<{
 	related: string[];
 }> = [
 	{
-		version: "git-4877b062",
+		version: "git-687a09f2",
 		date: "2026-09-28",
 		time: "19:13",
 		type: "fix",
 		title: "prepare guestbook social login and owner role",
-		summary: "提交 4877b062：prepare guestbook social login and owner role",
+		summary: "提交 687a09f2：prepare guestbook social login and owner role",
 		changes: ["由 Git 提交自动记录，详细改动请查看对应提交。"],
 		related: ["git-ff5e8e52"],
 	},

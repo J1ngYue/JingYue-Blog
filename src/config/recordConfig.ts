@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.73",
+		date: "2026-09-28",
+		time: "21:23",
+		type: "optimize",
+		title: "加快重复切页时的静态资源加载",
+		summary: "为带版本指纹的 Astro 静态资源设置长期浏览器缓存，保留页面更新与切换动画。",
+		changes: [
+			"仅缓存 /_astro/ 下的版本化资源，不调整 HTML、原图或 DNS。",
+			"继续等待新页面样式就绪，避免切换时闪白。",
+		],
+	},
+	{
 		version: "v6.14.72",
 		date: "2026-09-28",
 		time: "19:04",
