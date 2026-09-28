@@ -21,6 +21,17 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.78",
+		date: "2026-09-28",
+		time: "23:40",
+		type: "fix",
+		title: "恢复留言板的第三方登录",
+		summary: "生产构建缺少公开环境变量时仍连接已部署的 Waline 与 OAuth 服务。",
+		changes: [
+			"保留现有登录弹窗 UI，避免手动部署让 Google 与 GitHub 登录变灰。",
+		],
+	},
+	{
 		version: "v6.14.77",
 		date: "2026-09-28",
 		time: "23:36",
