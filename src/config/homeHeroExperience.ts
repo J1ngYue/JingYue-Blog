@@ -5,10 +5,25 @@ export interface HomeHeroDialogueLine {
 
 export interface HomeHeroDialogueTopic {
 	title: string;
-	lines: HomeHeroDialogueLine[];
+	lines: readonly HomeHeroDialogueLine[];
 }
 
-export const homeHeroExperience = {
+export interface HomeHeroExperience {
+	workHours: { start: number; end: number; weekdays: readonly number[] };
+	dialogue: {
+		enabled: boolean;
+		hostName: string;
+		visitorName: string;
+		menuTitle: string;
+		typingSpeed: number;
+		autoDelay: number;
+		intro: readonly HomeHeroDialogueLine[];
+		topics: readonly HomeHeroDialogueTopic[];
+	};
+	hud: { mode: string; shutter: string; exposure: string; panel: string };
+}
+
+export const homeHeroExperience: HomeHeroExperience = {
 	workHours: {
 		start: 9,
 		end: 18,
@@ -28,7 +43,7 @@ export const homeHeroExperience = {
 				speaker: "host",
 				text: "你可以继续向下探索，也可以先挑一个话题和我聊聊。",
 			},
-		] satisfies HomeHeroDialogueLine[],
+		],
 		topics: [
 			{
 				title: "关于我",
@@ -70,7 +85,7 @@ export const homeHeroExperience = {
 					{ speaker: "host", text: "如果只想慢慢逛，点一下“向下探索”就好。" },
 				],
 			},
-		] satisfies HomeHeroDialogueTopic[],
+		],
 	},
 	hud: {
 		mode: "MNL",

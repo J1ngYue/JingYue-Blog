@@ -9,7 +9,11 @@ const toArray = (src: string | string[] | undefined): string[] => {
 
 // 背景图片处理工具函数
 // 返回所有配置的图片（用于构建时渲染所有图片）
-export const getBackgroundImages = () => {
+export const getBackgroundImages = (): {
+	desktop: string[];
+	mobile: string[];
+	isMultiple: boolean;
+} => {
 	const bgSrc = backgroundWallpaper.src;
 
 	if (
@@ -74,7 +78,7 @@ export const isHomePage = (pathname: string): boolean => {
 };
 
 // 获取横幅偏移量
-export const getBannerOffset = (position = "center") => {
+export const getBannerOffset = (position = "center"): string => {
 	const bannerOffsetByPosition = {
 		top: "100vh",
 		center: "50vh",

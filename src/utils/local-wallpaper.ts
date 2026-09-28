@@ -262,13 +262,13 @@ export async function activateLocalWallpaperHistory(
 	return activeRecord;
 }
 
-export async function removeLocalWallpaperHistory(id: string) {
+export async function removeLocalWallpaperHistory(id: string): Promise<void> {
 	if (!id.startsWith(HISTORY_PREFIX)) throw new Error("无效的历史媒体记录。");
 	await runStoreRequest<undefined>("readwrite", (store) => store.delete(id));
 	notify("media");
 }
 
-export async function removeLocalWallpaper() {
+export async function removeLocalWallpaper(): Promise<void> {
 	await runStoreRequest<undefined>("readwrite", (store) =>
 		store.delete(ACTIVE_ID),
 	);
@@ -276,7 +276,7 @@ export async function removeLocalWallpaper() {
 	notify("media");
 }
 
-export function getLocalWallpaperOpacity() {
+export function getLocalWallpaperOpacity(): number {
 	if (typeof localStorage === "undefined")
 		return getDefaultLocalWallpaperOpacity();
 	const stored = localStorage.getItem(OPACITY_KEY);
@@ -287,18 +287,18 @@ export function getLocalWallpaperOpacity() {
 		: getDefaultLocalWallpaperOpacity();
 }
 
-export function getDefaultLocalWallpaperOpacity() {
+export function getDefaultLocalWallpaperOpacity(): number {
 	return DEFAULT_OPACITY;
 }
 
-export function setLocalWallpaperOpacity(value: number) {
+export function setLocalWallpaperOpacity(value: number): void {
 	const safeValue = clamp(value, 0, 1);
 	localStorage.setItem(OPACITY_KEY, String(safeValue));
 	applyOpacityVariable(safeValue);
 	notify("appearance");
 }
 
-export function getLocalWallpaperBlur() {
+export function getLocalWallpaperBlur(): number {
 	if (typeof localStorage === "undefined")
 		return getDefaultLocalWallpaperBlur();
 	const stored = localStorage.getItem(BLUR_KEY);
@@ -309,11 +309,11 @@ export function getLocalWallpaperBlur() {
 		: getDefaultLocalWallpaperBlur();
 }
 
-export function getDefaultLocalWallpaperBlur() {
+export function getDefaultLocalWallpaperBlur(): number {
 	return DEFAULT_BLUR;
 }
 
-export function setLocalWallpaperBlur(value: number) {
+export function setLocalWallpaperBlur(value: number): void {
 	const safeValue = clamp(value, 0, 20);
 	localStorage.setItem(BLUR_KEY, String(safeValue));
 	applyBlurVariables(safeValue);

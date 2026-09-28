@@ -4,7 +4,7 @@ import {
 	getGithubActivityCalendar,
 } from "@/utils/home-activity";
 
-export async function GET() {
+export async function GET(): Promise<Response> {
 	const [blog, github] = await Promise.all([
 		getBlogActivityCalendar(),
 		getGithubActivityCalendar(githubUsername),

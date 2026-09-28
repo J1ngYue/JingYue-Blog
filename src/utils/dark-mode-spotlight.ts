@@ -69,7 +69,7 @@ export function getDarkModeSpotlightSettings(): DarkModeSpotlightSettings {
 
 export function setDarkModeSpotlightSettings(
 	patch: Partial<DarkModeSpotlightSettings>,
-) {
+): DarkModeSpotlightSettings {
 	const settings = normalizeSettings({
 		...getDarkModeSpotlightSettings(),
 		...patch,
@@ -90,7 +90,7 @@ export function setDarkModeSpotlightSettings(
 	return settings;
 }
 
-export function resetDarkModeSpotlightSettings() {
+export function resetDarkModeSpotlightSettings(): DarkModeSpotlightSettings {
 	if (canUseLocalStorage()) {
 		localStorage.removeItem(DARK_MODE_SPOTLIGHT_STORAGE_KEY);
 	}

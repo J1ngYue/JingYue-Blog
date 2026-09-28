@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.70",
+		date: "2026-09-28",
+		time: "14:57",
+		type: "fix",
+		title: "修复独立 TypeScript 检查",
+		summary:
+			"为导出 API 与内容集合补全显式类型，保留严格声明检查并恢复类型检查通过。",
+		changes: [
+			"补全页面端点、配置和工具函数的返回类型及默认参数类型。",
+			"明确内容集合的 Zod 输出类型，保持文章、动态和笔记字段的类型约束。",
+		],
+	},
+	{
 		version: "v6.14.69",
 		date: "2026-09-28",
 		time: "14:12",

@@ -45,6 +45,8 @@ export const notebookDefinitions: NotebookDefinition[] = [
 	},
 ];
 
-export function getNotebookDefinition(slug: string) {
+export function getNotebookDefinition(
+	slug: string,
+): NotebookDefinition | undefined {
 	return notebookDefinitions.find((notebook) => notebook.slug === slug);
 }
