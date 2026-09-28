@@ -21,6 +21,15 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.80",
+		date: "2026-09-29",
+		time: "00:43",
+		type: "optimize",
+		title: "放大账单流水文字并收敛 AI 分类",
+		summary: "流水信息在桌面和手机上更易读，AI 账单分类固定使用现有大类。",
+		changes: ["无法匹配现有大类的用途统一归入“其他”，不自动新增类别。"],
+	},
+	{
 		version: "v6.14.79",
 		date: "2026-09-29",
 		time: "00:25",
