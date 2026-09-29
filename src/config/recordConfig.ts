@@ -21,6 +21,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.85",
+		date: "2026-09-29",
+		time: "18:21",
+		type: "fix",
+		title: "按登录身份排列留言并避免入场动画重播",
+		summary:
+			"游客看到站主留言在右侧；登录后仅自己的留言在右侧，切换登录状态不再闪回加载画面。",
+		changes: [
+			"站主身份仍由 Waline 返回的管理员类型判断，不按昵称伪造。",
+			"邮箱登录、退出时后台同步消息，不重新展示首次加载骨架屏。",
+			"博客和首页入场动画在同一浏览器首次播放后记住状态，OAuth 返回时不重播。",
+		],
+	},
+	{
 		version: "v6.14.84",
 		date: "2026-09-29",
 		time: "18:01",

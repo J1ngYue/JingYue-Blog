@@ -1197,7 +1197,7 @@ async function handleWalineLogin(
 			throw new Error(result.errmsg || "邮箱或密码错误，请重试");
 		}
 		await restoreWalineRedirectLogin(token);
-		await loadInitial();
+		queueLatestSync();
 		return true;
 	} catch (error) {
 		composerError =
@@ -1309,7 +1309,7 @@ async function initializeGuestbook() {
 
 function handleLogout() {
 	clearAuthentication();
-	void loadInitial();
+	queueLatestSync();
 }
 
 function handleProfileChange(nextProfile: GuestbookProfile) {
@@ -1509,6 +1509,7 @@ onMount(() => {
 						<GuestbookChatMessage
 							{message}
 							isMine={Boolean(authUser && message.userId === authUser.objectId)}
+							isLoggedIn={Boolean(authUser)}
 							referencedMessage={message.replyToId
 								? messages.find((candidate) => candidate.id === message.replyToId)
 								: undefined}

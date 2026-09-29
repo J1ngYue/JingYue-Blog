@@ -15,6 +15,7 @@ const tileSlots = Array.from({ length: 120 });
 <script>
 	const ACTIVE_CLASS = "home-entrance-active";
 	const PLAYING_CLASS = "home-entrance-playing";
+	const SEEN_KEY = "jingyue:home-entrance-seen";
 	const COMPLETE_EVENT = "firefly:home-entrance-complete";
 	const STAGE_EVENT = "firefly:home-entrance-stage";
 	const REVEAL_STAGES = [
@@ -60,6 +61,15 @@ const tileSlots = Array.from({ length: 120 });
 				requestAnimationFrame(() => requestAnimationFrame(removeEntrance));
 			}
 		};
+
+		try {
+			if (localStorage.getItem(SEEN_KEY) === "1") {
+				finish();
+				root.remove();
+				return;
+			}
+			localStorage.setItem(SEEN_KEY, "1");
+		} catch {}
 
 		html.classList.add(ACTIVE_CLASS);
 		window.scrollTo(0, 0);

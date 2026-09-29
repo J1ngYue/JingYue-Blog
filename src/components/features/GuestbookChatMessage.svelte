@@ -19,6 +19,7 @@ import { renderGuestbookMessage } from "@/utils/guestbook-chat-markup";
 interface Props {
 	message: GuestbookChatMessage;
 	isMine: boolean;
+	isLoggedIn: boolean;
 	referencedMessage?: GuestbookChatMessage;
 	timeLabel: string;
 	canEdit: boolean;
@@ -42,6 +43,7 @@ interface Props {
 let {
 	message,
 	isMine,
+	isLoggedIn,
 	referencedMessage,
 	timeLabel,
 	canEdit,
@@ -84,7 +86,7 @@ async function copyMessage() {
 
 <article
 	id={`guestbook-message-${message.id}`}
-	class:is-outgoing={message.isAdmin || isMine}
+	class:is-outgoing={isMine || (!isLoggedIn && message.isAdmin)}
 	class:is-failed={message.localState === "failed"}
 	class:is-sending={message.localState === "sending"}
 	class="guestbook-message"

@@ -1,3 +1,11 @@
+<script is:inline>
+  try {
+    if (localStorage.getItem("jingyue:entry-loader-seen") === "1") {
+      document.documentElement.classList.add("blog-entry-visited");
+    }
+  } catch {}
+</script>
+
 <div
   class="blog-entry-loader is-visible"
   data-blog-entry-loader
@@ -92,12 +100,13 @@
     const loader = document.querySelector("[data-blog-entry-loader]");
     if (!loader || loader.dataset.loaderReady === "true") return;
     loader.dataset.loaderReady = "true";
-    if (window.__blogEntryStarted) {
+    if (window.__blogEntryStarted || document.documentElement.classList.contains("blog-entry-visited")) {
       loader.classList.add("is-hidden");
       loader.setAttribute("aria-hidden", "true");
       return;
     }
     window.__blogEntryStarted = true;
+    try { localStorage.setItem("jingyue:entry-loader-seen", "1"); } catch {}
 
     const progress = loader.querySelector("[data-loader-progress]");
     const scene = loader.querySelector("[data-loader-scene]");
@@ -184,6 +193,7 @@
       loader.classList.remove("is-visible", "is-complete", "is-leaving");
       loader.setAttribute("aria-hidden", "true");
       html.classList.remove("blog-entry-loader-active");
+      html.classList.add("blog-entry-visited");
       window.dispatchEvent(new CustomEvent("firefly:blog-entry-complete"));
     };
 
@@ -227,6 +237,7 @@
 </script>
 
 <style is:global>
+  html.blog-entry-visited .blog-entry-loader { display: none; }
   .blog-entry-loader {
     --loader-progress: 0%;
     --loader-progress-number: 0;
