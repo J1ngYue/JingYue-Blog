@@ -1,4 +1,9 @@
 ---
+interface Props {
+	idPrefix?: string;
+}
+
+const { idPrefix = "jingyue-wordmark" } = Astro.props;
 const glyphs = [
 	{
 		char: "J",
@@ -34,12 +39,12 @@ const glyphs = [
 <span class="jingyue-wordmark" data-home-wordmark aria-hidden="true">
 	<svg viewBox="54.35 42 568.1 205" focusable="false">
 		<defs>
-			<linearGradient id="jingyue-wordmark-stroke" x1="8%" y1="15%" x2="94%" y2="82%">
+			<linearGradient id={`${idPrefix}-stroke`} x1="8%" y1="15%" x2="94%" y2="82%">
 				<stop offset="0%" class="wordmark-stroke-start"></stop>
 				<stop offset="52%" class="wordmark-stroke-middle"></stop>
 				<stop offset="100%" class="wordmark-stroke-end"></stop>
 			</linearGradient>
-			<linearGradient id="jingyue-wordmark-fill" x1="6%" y1="12%" x2="96%" y2="84%">
+			<linearGradient id={`${idPrefix}-fill`} x1="6%" y1="12%" x2="96%" y2="84%">
 				<stop offset="0%" class="wordmark-fill-start"></stop>
 				<stop offset="58%" class="wordmark-fill-middle"></stop>
 				<stop offset="100%" class="wordmark-fill-end"></stop>
@@ -51,8 +56,8 @@ const glyphs = [
 					class="jingyue-wordmark-glyph"
 					data-home-wordmark-glyph
 					d={glyph.d}
-					fill="url(#jingyue-wordmark-fill)"
-					stroke="url(#jingyue-wordmark-stroke)"
+					fill={`url(#${idPrefix}-fill)`}
+					stroke={`url(#${idPrefix}-stroke)`}
 					style={`--wordmark-delay: ${index * 0.18}s`}
 				></path>
 			))}

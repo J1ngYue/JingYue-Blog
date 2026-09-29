@@ -1,6 +1,10 @@
+---
+import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
+---
+
 <script is:inline>
   try {
-    if (localStorage.getItem("jingyue:cyberpunk-entry-seen:v1") === "1") {
+    if (sessionStorage.getItem("jingyue:cyberpunk-entry-seen:v1") === "1") {
       document.documentElement.classList.add("blog-entry-visited");
     }
   } catch {}
@@ -24,30 +28,30 @@
     <header class="blog-entry-loader__header">
       <span class="blog-entry-loader__sigil" aria-hidden="true">✦</span>
       <div>
-        <strong>JingYue</strong>
-        <small>PERSONAL BLOG · EST. 2026</small>
+        <strong class="blog-entry-loader__write" style="--write-delay: 100ms; --write-duration: 530ms">JingYue</strong>
+        <small class="blog-entry-loader__write" style="--write-delay: 470ms; --write-duration: 740ms">PERSONAL BLOG · EST. 2026</small>
       </div>
       <span class="blog-entry-loader__header-line" aria-hidden="true"></span>
     </header>
 
     <main class="blog-entry-loader__message">
-      <span class="blog-entry-loader__eyebrow">WORDS · MEMORY · INSPIRATION</span>
-      <h1>JingYue<span aria-hidden="true">✦</span></h1>
-      <p class="blog-entry-loader__subtitle">循着微光，故事正在醒来</p>
-      <span class="blog-entry-loader__translation">A LITTLE LIGHT FOR EVERY STORY</span>
-      <p class="blog-entry-loader__terminal" aria-hidden="true">&gt; opening a new chapter<span>_</span></p>
+      <span class="blog-entry-loader__eyebrow blog-entry-loader__write" style="--write-delay: 850ms; --write-duration: 750ms">WORDS · MEMORY · INSPIRATION</span>
+      <h1 class="blog-entry-loader__title" aria-label="JingYue"><JingYueWordmark idPrefix="jingyue-entry-wordmark" /></h1>
+      <p class="blog-entry-loader__subtitle blog-entry-loader__write" style="--write-delay: 2700ms; --write-duration: 950ms">循着微光，故事正在醒来</p>
+      <span class="blog-entry-loader__translation blog-entry-loader__write" style="--write-delay: 3450ms; --write-duration: 900ms">A LITTLE LIGHT FOR EVERY STORY</span>
+      <p class="blog-entry-loader__terminal blog-entry-loader__write" aria-hidden="true" style="--write-delay: 4200ms; --write-duration: 760ms">&gt; opening a new chapter<span>_</span></p>
     </main>
 
     <div class="blog-entry-loader__bottom">
       <div class="blog-entry-loader__progress" role="progressbar" aria-label="开场动画播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-entry-progress>
         <span></span>
       </div>
-      <p>在字里行间，遇见一场恰好的雨</p>
+      <p class="blog-entry-loader__write" style="--write-delay: 4850ms; --write-duration: 850ms">在字里行间，遇见一场恰好的雨</p>
       <button class="blog-entry-loader__skip" type="button" data-entry-skip>跳过开场 <span aria-hidden="true">↗</span></button>
     </div>
   </div>
 
-  <span class="blog-entry-loader__corner-brand" aria-hidden="true">JINGYUE / 01</span>
+  <span class="blog-entry-loader__corner-brand blog-entry-loader__write" aria-hidden="true" style="--write-delay: 650ms; --write-duration: 640ms">JINGYUE / 01</span>
 </div>
 
 <script is:inline>
@@ -62,15 +66,29 @@
     }
     window.__blogEntryStarted = true;
     try {
-      localStorage.setItem("jingyue:cyberpunk-entry-seen:v1", "1");
-      localStorage.setItem("jingyue:home-entrance-seen", "1");
+      sessionStorage.setItem("jingyue:cyberpunk-entry-seen:v1", "1");
     } catch {}
 
     const video = loader.querySelector("[data-entry-video]");
     const progress = loader.querySelector("[data-entry-progress]");
     const skip = loader.querySelector("[data-entry-skip]");
+    const wordmark = loader.querySelector("[data-home-wordmark]");
+    const glyphs = loader.querySelectorAll("[data-home-wordmark-glyph]");
     let finished = false;
     let failsafe;
+    const startWriting = () => {
+      if (loader.classList.contains("is-writing")) return;
+      glyphs.forEach((glyph) => {
+        const length = glyph.getTotalLength();
+        glyph.style.setProperty("--wordmark-length", String(length));
+        glyph.style.strokeDasharray = String(length);
+        glyph.style.strokeDashoffset = String(length);
+      });
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        wordmark?.classList.add("is-ready");
+        loader.classList.add("is-writing");
+      }));
+    };
     const finish = () => {
       if (finished) return;
       finished = true;
@@ -99,6 +117,7 @@
     });
     video?.addEventListener("ended", finish, { once: true });
     video?.addEventListener("error", finish, { once: true });
+    video?.addEventListener("playing", startWriting, { once: true });
     failsafe = window.setTimeout(finish, 11000);
     if (video) {
       video.src = video.dataset.src;
@@ -166,19 +185,37 @@
   .blog-entry-loader__header-line { flex: 1; height: 1px; margin-top: .8rem; background: linear-gradient(90deg, #cceaff, transparent); }
   .blog-entry-loader__message { margin-block: auto; padding-block: 2rem; }
   .blog-entry-loader__eyebrow { color: #5ee3db; font-size: clamp(.58rem, .8vw, .72rem); letter-spacing: .28em; }
-  .blog-entry-loader__message h1 {
+  .blog-entry-loader__title {
+    --primary: #69d8ff;
+    position: relative;
+    width: min(100%, 34rem);
     margin: .7rem 0 .2rem;
-    color: #e9f7ff;
-    font-family: var(--font-navbar-title, var(--font-sans)), sans-serif;
-    font-size: clamp(3.6rem, 7.5vw, 8.5rem);
-    font-style: italic;
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -.07em;
-    text-shadow: 0 0 .4rem #8cdcff, 0 0 2.5rem rgb(0 168 255 / 75%);
-    animation: blog-entry-title 1100ms cubic-bezier(.16, 1, .3, 1) both;
   }
-  .blog-entry-loader__message h1 span { display: inline-block; margin-left: .1em; color: #61e0ff; font-size: .32em; vertical-align: top; }
+  .blog-entry-loader__write {
+    position: relative;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  .blog-entry-loader.is-writing .blog-entry-loader__write {
+    animation: blog-entry-write var(--write-duration, 750ms) cubic-bezier(.2, .65, .2, 1) var(--write-delay, 0ms) both;
+  }
+  .blog-entry-loader__write::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2px;
+    background: #a8f3ff;
+    box-shadow: 0 0 .7rem #5bdcff;
+    content: "";
+    opacity: 0;
+  }
+  .blog-entry-loader.is-writing .blog-entry-loader__write::after {
+    animation: blog-entry-pen var(--write-duration, 750ms) cubic-bezier(.2, .65, .2, 1) var(--write-delay, 0ms) both;
+  }
   .blog-entry-loader__subtitle { margin: .6rem 0 .2rem; color: #d7edfb; font-size: clamp(.9rem, 1.35vw, 1.25rem); font-weight: 700; letter-spacing: .22em; }
   .blog-entry-loader__translation { color: #8caec7; font-size: .57rem; letter-spacing: .26em; }
   .blog-entry-loader__terminal { margin: 3rem 0 0; color: #61e2d1; font-size: .7rem; letter-spacing: .06em; }
@@ -226,9 +263,14 @@
   html.blog-entry-loading #wallpaper-wrapper,
   html.blog-entry-loading .local-wallpaper-layer { visibility: hidden !important; }
   html.blog-entry-loader-active { background: #02060e !important; }
-  @keyframes blog-entry-title {
-    from { opacity: 0; filter: blur(12px); transform: translateX(-1.5rem); }
-    to { opacity: 1; filter: blur(0); transform: translateX(0); }
+  @keyframes blog-entry-write {
+    from { opacity: 1; clip-path: inset(0 100% 0 0); }
+    to { opacity: 1; clip-path: inset(0 0 0 0); }
+  }
+  @keyframes blog-entry-pen {
+    0% { left: 0; opacity: 1; }
+    90% { opacity: 1; }
+    100% { left: 100%; opacity: 0; }
   }
   @keyframes blog-entry-cursor { 50% { opacity: 0; } }
   @media (max-width: 640px) {
@@ -237,14 +279,15 @@
     .blog-entry-loader__content { width: 100%; padding: 1.4rem; }
     .blog-entry-loader__header-line { max-width: 28%; }
     .blog-entry-loader__message { margin-top: auto; margin-bottom: 1rem; padding: 0; }
-    .blog-entry-loader__message h1 { font-size: clamp(3.6rem, 16vw, 5.4rem); }
+    .blog-entry-loader__title { width: min(100%, 19rem); }
     .blog-entry-loader__subtitle { font-size: .94rem; letter-spacing: .12em; }
     .blog-entry-loader__terminal { margin-top: 1.5rem; }
     .blog-entry-loader__bottom { padding-bottom: env(safe-area-inset-bottom); }
     .blog-entry-loader__corner-brand { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .blog-entry-loader__message h1,
+    .blog-entry-loader__write { opacity: 1; clip-path: none; animation: none !important; }
+    .blog-entry-loader__write::after { display: none; }
     .blog-entry-loader__terminal span { animation: none; }
   }
 </style>

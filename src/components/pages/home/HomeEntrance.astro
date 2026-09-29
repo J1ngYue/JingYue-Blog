@@ -63,12 +63,12 @@ const tileSlots = Array.from({ length: 120 });
 		};
 
 		try {
-			if (localStorage.getItem(SEEN_KEY) === "1") {
+			if (sessionStorage.getItem(SEEN_KEY) === "1") {
 				finish();
 				root.remove();
 				return;
 			}
-			localStorage.setItem(SEEN_KEY, "1");
+			sessionStorage.setItem(SEEN_KEY, "1");
 		} catch {}
 
 		html.classList.add(ACTIVE_CLASS);

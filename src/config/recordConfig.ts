@@ -21,6 +21,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.87",
+		date: "2026-09-29",
+		time: "20:32",
+		type: "fix",
+		title: "恢复首页拼图并让新标签页重播片头",
+		summary:
+			"每个新标签页可看到赛博朋克片头及首页拼图，片头文字改为与首页呼应的书写效果。",
+		changes: [
+			"入场播放状态仅保留在当前标签页，刷新、站内切换和登录回跳仍不重复播放。",
+			"视频片头结束后继续运行原有拼图，并复用首页 JingYue SVG 描边书写动画。",
+			"片头其余文案按顺序逐行写入，桌面和移动端均适配。",
+		],
+	},
+	{
 		version: "v6.14.86",
 		date: "2026-09-29",
 		time: "19:44",
