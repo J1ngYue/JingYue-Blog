@@ -101,12 +101,9 @@ function initChangelogPage(): void {
 		);
 	};
 	const drawRowArrows = (cards: HTMLElement[], columns: number) => {
-		sizeWires();
-		wires.querySelectorAll("[data-row-wire]").forEach((node) => {
-			node.remove();
-		});
 		const rows = Math.ceil(cards.length / columns);
 		const boardBox = board.getBoundingClientRect();
+		const paths: string[] = [];
 		for (let row = 0; row < rows - 1; row += 1) {
 			const fromCard = cards[row * columns + columns - 1];
 			const toCard = cards[(row + 1) * columns];
@@ -127,10 +124,19 @@ function initChangelogPage(): void {
 				const outsideX = Math.min(fromX, toX) - 16;
 				pathData = `M ${toX} ${toY} H ${outsideX} V ${fromY} H ${fromX}`;
 			}
+			paths.push(pathData);
+		}
+		sizeWires();
+		wires.querySelectorAll("[data-row-wire]").forEach((node) => {
+			node.remove();
+		});
+		const fragment = document.createDocumentFragment();
+		paths.forEach((pathData) => {
 			const path = makePath(pathData, "changelog-wire changelog-wire--row");
 			path.dataset.rowWire = "true";
-			wires.appendChild(path);
-		}
+			fragment.appendChild(path);
+		});
+		wires.appendChild(fragment);
 	};
 	const layout = () => {
 		layoutFrame = 0;
@@ -144,7 +150,8 @@ function initChangelogPage(): void {
 			const row = Math.floor(index / columns);
 			const column = index % columns;
 			const visualColumn = row % 2 === 0 ? column : columns - 1 - column;
-			card.style.order = String(row * columns + visualColumn);
+			const order = String(row * columns + visualColumn);
+			if (card.style.order !== order) card.style.order = order;
 		});
 		drawRowArrows(cards, columns);
 		clearHover();
@@ -493,13 +500,18 @@ function initChangelogPage(): void {
 		{ signal },
 	);
 
-	const resizeObserver = new ResizeObserver(scheduleLayout);
+	let resizeTimer = 0;
+	const resizeObserver = new ResizeObserver(() => {
+		window.clearTimeout(resizeTimer);
+		resizeTimer = window.setTimeout(scheduleLayout, 80);
+	});
 	resizeObserver.observe(grid);
 	window.addEventListener("resize", scheduleLayout, { signal });
 	document.fonts?.ready.then(scheduleLayout);
 	changelogPageWindow.__jingyueChangelogPageCleanup = () => {
 		controller.abort();
 		resizeObserver.disconnect();
+		window.clearTimeout(resizeTimer);
 		if (layoutFrame) cancelAnimationFrame(layoutFrame);
 		clearHover();
 		if (dialog.open) dialog.close();

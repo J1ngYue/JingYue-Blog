@@ -172,6 +172,16 @@ for (const [sourceIndex, entry] of changelogEntries.entries()) {
 		min-width: 0;
 	}
 
+	:global(.record-replica-page:has([data-changelog-page]) .archive-side) {
+		contain: layout;
+	}
+
+	:global(.record-replica-page:has([data-changelog-page])),
+	:global(.record-replica-page:has([data-changelog-page]) .archive-side__content),
+	:global(.record-replica-page:has([data-changelog-page]) .archive-side__collapse-toggle) {
+		transition-duration: 260ms;
+	}
+
 	.changelog-filter {
 		display: flex;
 		min-height: 3.6rem;

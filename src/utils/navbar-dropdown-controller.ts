@@ -76,7 +76,7 @@ export function initNavbarDropdownPanel(): () => void {
 		const itemRect = item.getBoundingClientRect();
 		if (instant) panel.setAttribute("data-instant", "");
 		panel.style.left = `${Math.round(itemRect.left - menuRect.left)}px`;
-		arrow.style.left = `${Math.round(itemRect.width / 2 - 6)}px`;
+		arrow.style.left = `${Math.round(itemRect.width / 2 - arrow.offsetWidth / 2)}px`;
 		box.style.width = `${page.offsetWidth}px`;
 		box.style.height = `${page.offsetHeight}px`;
 		if (instant) {
@@ -251,7 +251,7 @@ export function initNavbarDropdownPanel(): () => void {
 		{ signal },
 	);
 
-	document.addEventListener(
+	window.addEventListener(
 		"click",
 		(event) => {
 			const target = event.target;
@@ -261,6 +261,8 @@ export function initNavbarDropdownPanel(): () => void {
 				const destination = new URL(anchor.href, window.location.href);
 				if (destination.origin === window.location.origin)
 					syncActiveState(destination.pathname);
+				close();
+				return;
 			}
 			if (target.closest(".dropdown-item")) {
 				close();
@@ -268,7 +270,7 @@ export function initNavbarDropdownPanel(): () => void {
 			}
 			if (!menu.contains(target)) close();
 		},
-		{ signal },
+		{ signal, capture: true },
 	);
 
 	window.addEventListener(
