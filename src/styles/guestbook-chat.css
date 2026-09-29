@@ -1584,6 +1584,77 @@ html:has(.guestbook-page) #category-bar-wrapper {
 	gap: var(--space-3);
 }
 
+.guestbook-login-provider--waline {
+	grid-column: 1 / -1;
+}
+
+.guestbook-login-modal__form {
+	display: grid;
+	gap: var(--space-3);
+	max-height: min(78svh, 42rem);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.guestbook-login-modal__form label {
+	display: grid;
+	gap: var(--space-1);
+	font-size: 0.82rem;
+	font-weight: 650;
+}
+
+.guestbook-login-modal__form small {
+	color: var(--guestbook-editor-muted);
+	font-weight: 400;
+}
+
+.guestbook-login-modal__form input {
+	width: 100%;
+	min-height: var(--control-size);
+	padding: 0 var(--space-3);
+	border: 1px solid var(--guestbook-editor-line);
+	border-radius: var(--radius-medium);
+	background: var(--guestbook-editor-bg);
+	color: var(--guestbook-editor-text);
+	font: inherit;
+}
+
+.guestbook-login-modal__form input:focus-visible {
+	border-color: var(--guestbook-focus);
+	outline: 2px solid color-mix(in srgb, var(--guestbook-focus) 24%, transparent);
+}
+
+.guestbook-chat .guestbook-login-modal__back,
+.guestbook-chat .guestbook-login-modal__switch {
+	width: fit-content;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--guestbook-editor-muted);
+	font-size: 0.8rem;
+}
+
+.guestbook-login-modal__back {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.guestbook-chat .guestbook-login-modal__submit {
+	min-height: var(--control-size);
+	border: 0;
+	border-radius: var(--radius-medium);
+	background: var(--guestbook-editor-text);
+	color: var(--guestbook-editor-bg);
+	font-weight: 700;
+}
+
+.guestbook-login-modal__success {
+	margin: 0;
+	color: var(--guestbook-focus);
+	font-size: 0.8rem;
+}
+
 .guestbook-chat .guestbook-login-provider {
 	display: flex;
 	align-items: center;

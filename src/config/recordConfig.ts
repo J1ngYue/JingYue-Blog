@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.83",
+		date: "2026-09-29",
+		time: "17:05",
+		type: "feature",
+		title: "留言板加入 Waline 邮箱登录与注册入口",
+		summary:
+			"保留 Google、GitHub 登录和游客资料，在博客弹窗内增加 Waline 邮箱登录与注册。",
+		changes: [
+			"邮箱和密码直接在留言板弹窗内提交给 Waline，不再打开新窗口或跳页。",
+			"新用户可在同一弹窗注册，成功后切回登录；游客资料仍保留原入口。",
+		],
+	},
+	{
 		version: "v6.14.82",
 		date: "2026-09-29",
 		time: "16:20",

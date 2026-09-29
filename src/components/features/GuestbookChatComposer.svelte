@@ -1,9 +1,11 @@
 <script lang="ts">
 import {
+	ArrowLeft,
 	ArrowUp,
 	ImagePlus,
 	LoaderCircle,
 	LogIn,
+	Mail,
 	Reply,
 	Smile,
 	TriangleAlert,
@@ -45,6 +47,13 @@ interface Props {
 	onDraftChange: (draft: string) => void;
 	onReplyCancel: () => void;
 	onLogin: (provider: GuestbookLoginProvider) => Promise<boolean>;
+	onWalineLogin: (email: string, password: string) => Promise<boolean>;
+	onWalineRegister: (
+		displayName: string,
+		email: string,
+		password: string,
+		url: string,
+	) => Promise<boolean>;
 	onLogout: () => void;
 	onSend: (
 		content: string,
@@ -70,6 +79,8 @@ let {
 	onDraftChange,
 	onReplyCancel,
 	onLogin,
+	onWalineLogin,
+	onWalineRegister,
 	onLogout,
 	onSend,
 	onToolError,
@@ -104,6 +115,15 @@ let loginDialog = $state<HTMLDialogElement | null>(null);
 let profileNickInput = $state<HTMLInputElement | null>(null);
 let showEmojiPicker = $state(false);
 let loginDialogOpen = $state(false);
+let loginView = $state<"providers" | "waline-login" | "waline-register">(
+	"providers",
+);
+let walineEmail = $state("");
+let walinePassword = $state("");
+let registerName = $state("");
+let registerConfirm = $state("");
+let registerURL = $state("");
+let registrationSuccess = $state("");
 let isComposing = $state(false);
 let isLoadingEmojis = $state(false);
 let isUploadingImage = $state(false);
@@ -149,6 +169,7 @@ function closeGuestProfile() {
 
 async function openLoginDialog() {
 	onToolError("");
+	loginView = "providers";
 	if (!loginDialog?.open) loginDialog?.showModal();
 	loginDialogOpen = true;
 	document.body.style.overflow = "hidden";
@@ -161,6 +182,10 @@ async function openLoginDialog() {
 function closeLoginDialog() {
 	if (loginDialog?.open) loginDialog.close();
 	loginDialogOpen = false;
+	loginView = "providers";
+	walinePassword = "";
+	registerConfirm = "";
+	registrationSuccess = "";
 	document.body.style.overflow = "";
 }
 
@@ -179,6 +204,51 @@ async function selectLoginProvider(provider: GuestbookLoginProvider) {
 	}
 	const accepted = await onLogin(provider);
 	if (accepted) closeLoginDialog();
+}
+
+async function showWalineView(view: "waline-login" | "waline-register") {
+	onToolError("");
+	walinePassword = "";
+	registerConfirm = "";
+	loginView = view;
+	await tick();
+	loginDialog
+		?.querySelector<HTMLInputElement>(".guestbook-login-modal__form input")
+		?.focus();
+}
+
+async function submitWalineLogin() {
+	const accepted = await onWalineLogin(walineEmail.trim(), walinePassword);
+	if (accepted) closeLoginDialog();
+}
+
+async function submitWalineRegister() {
+	if (walinePassword !== registerConfirm) {
+		onToolError("两次输入的密码不一致");
+		return;
+	}
+	const url = registerURL.trim();
+	if (url) {
+		try {
+			if (!["http:", "https:"].includes(new URL(url).protocol)) {
+				throw new Error();
+			}
+		} catch {
+			onToolError("个人网站须以 http:// 或 https:// 开头");
+			return;
+		}
+	}
+	const accepted = await onWalineRegister(
+		registerName.trim(),
+		walineEmail.trim(),
+		walinePassword,
+		url,
+	);
+	if (!accepted) return;
+	registerConfirm = "";
+	registrationSuccess =
+		"注册成功，请使用邮箱和密码登录；如需验证邮箱，请按邮件提示完成。";
+	await showWalineView("waline-login");
 }
 
 function validateGuestProfile(nextProfile: GuestbookProfile): string {
@@ -826,6 +896,10 @@ async function handleImageSelection(event: Event) {
 	aria-labelledby="guestbook-login-title"
 	onclose={() => {
 		loginDialogOpen = false;
+		loginView = "providers";
+		walinePassword = "";
+		registerConfirm = "";
+		registrationSuccess = "";
 		document.body.style.overflow = "";
 	}}
 	oncancel={(event) => {
@@ -837,8 +911,10 @@ async function handleImageSelection(event: Event) {
 	<div class="privacy-panel guestbook-login-modal__panel">
 		<div class="privacy-header">
 			<div>
-				<h2 id="guestbook-login-title" class="privacy-title">账号登录</h2>
-				<p>选择登录方式</p>
+				<h2 id="guestbook-login-title" class="privacy-title">
+					{loginView === "waline-register" ? "用户注册" : "账号登录"}
+				</h2>
+				<p>{loginView === "providers" ? "选择登录方式" : "使用 Waline 邮箱账号"}</p>
 			</div>
 			<button
 				class="privacy-close"
@@ -849,6 +925,7 @@ async function handleImageSelection(event: Event) {
 				<X size={20} aria-hidden="true" />
 			</button>
 		</div>
+		{#if loginView === "providers"}
 		<div class="privacy-body guestbook-login-modal__providers">
 			<button
 				class="guestbook-login-provider guestbook-login-provider--google"
@@ -872,18 +949,95 @@ async function handleImageSelection(event: Event) {
 				<span><Icon icon="simple-icons:github" size="xl" /></span>
 				<strong>GitHub</strong>
 			</button>
+			<button
+				class="guestbook-login-provider guestbook-login-provider--waline"
+				type="button"
+				onclick={() => void showWalineView("waline-login")}
+				disabled={loggingIn || !hasWalineLogin}
+				title="使用 Waline 邮箱账号登录或注册"
+			>
+				<span><Mail size={23} aria-hidden="true" /></span>
+				<strong>邮箱登录 / 注册 Waline 账号</strong>
+			</button>
 		</div>
-		{#if oauthProvidersLoading}
+		{:else}
+		<form
+			class="privacy-body guestbook-login-modal__form"
+			onsubmit={(event) => {
+				event.preventDefault();
+				if (loginView === "waline-register") void submitWalineRegister();
+				else void submitWalineLogin();
+			}}
+		>
+			<button
+				class="guestbook-login-modal__back"
+				type="button"
+				onclick={() => {
+				onToolError("");
+				loginView = "providers";
+				walinePassword = "";
+				registerConfirm = "";
+			}}
+			>
+				<ArrowLeft size={16} aria-hidden="true" /> 返回登录方式
+			</button>
+			{#if loginView === "waline-register"}
+				<label>
+					<span>昵称</span>
+					<input bind:value={registerName} autocomplete="nickname" minlength="2" maxlength="30" required />
+				</label>
+			{/if}
+			<label>
+				<span>邮箱</span>
+				<input bind:value={walineEmail} type="email" autocomplete="email" maxlength="100" required />
+			</label>
+			<label>
+				<span>密码</span>
+				<input
+					bind:value={walinePassword}
+					type="password"
+					autocomplete={loginView === "waline-register" ? "new-password" : "current-password"}
+					minlength={loginView === "waline-register" ? 6 : undefined}
+					required
+				/>
+			</label>
+			{#if loginView === "waline-register"}
+				<label>
+					<span>确认密码</span>
+					<input bind:value={registerConfirm} type="password" autocomplete="new-password" required />
+				</label>
+				<label>
+					<span>个人网站 <small>选填</small></span>
+					<input bind:value={registerURL} type="url" autocomplete="url" placeholder="https://" maxlength="200" />
+				</label>
+			{/if}
+			<button class="guestbook-login-modal__submit" type="submit" disabled={loggingIn}>
+				{loggingIn ? "正在处理..." : loginView === "waline-register" ? "注册" : "登录"}
+			</button>
+			<button
+				class="guestbook-login-modal__switch"
+				type="button"
+				disabled={loggingIn}
+				onclick={() => void showWalineView(loginView === "waline-register" ? "waline-login" : "waline-register")}
+			>
+				{loginView === "waline-register" ? "已有账号？返回登录" : "没有账号？用户注册"}
+			</button>
+			{#if registrationSuccess && loginView === "waline-login"}
+				<p class="guestbook-login-modal__success" role="status">{registrationSuccess}</p>
+			{/if}
+		</form>
+		{/if}
+		{#if loginView === "providers" && oauthProvidersLoading}
 			<p class="guestbook-login-modal__setup" aria-live="polite">
 				<LoaderCircle class="is-spinning" size={15} aria-hidden="true" />
 				正在检查登录服务...
 			</p>
-		{:else if loggingIn}
+		{:else if loginView === "providers" && loggingIn}
 			<p class="guestbook-login-modal__setup" aria-live="polite">
 				<LoaderCircle class="is-spinning" size={15} aria-hidden="true" />
 				正在登录...
 			</p>
-		{:else if !hasWalineLogin || !hasOAuthService}
+		{:else if loginView === "providers" && (!hasWalineLogin || !hasOAuthService)}
 			<p class="guestbook-login-modal__setup">
 				站点尚未连接完整账号服务，请配置 Waline 与 OAuth 服务地址。
 			</p>

@@ -1167,6 +1167,93 @@ async function handleLogin(provider: GuestbookLoginProvider): Promise<boolean> {
 	}
 }
 
+async function handleWalineLogin(
+	email: string,
+	password: string,
+): Promise<boolean> {
+	if (loggingIn) return false;
+	if (!serverURL) {
+		composerError = "Waline 服务地址未配置，暂时无法登录";
+		return false;
+	}
+
+	loggingIn = true;
+	composerError = "";
+	try {
+		const response = await fetch(
+			`${serverURL.replace(/\/+$/u, "")}/api/token?lang=${encodeURIComponent(lang)}`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email, password }),
+			},
+		);
+		const result = (await response.json()) as WalineTokenResponse;
+		const token =
+			result.data && typeof result.data === "object"
+				? (result.data as Record<string, unknown>).token
+				: null;
+		if (!response.ok || result.errno !== 0 || typeof token !== "string") {
+			throw new Error(result.errmsg || "邮箱或密码错误，请重试");
+		}
+		await restoreWalineRedirectLogin(token);
+		await loadInitial();
+		return true;
+	} catch (error) {
+		composerError =
+			error instanceof Error && error.message
+				? error.message
+				: "Waline 登录失败，请检查邮箱、密码或网络后重试";
+		return false;
+	} finally {
+		loggingIn = false;
+	}
+}
+
+async function handleWalineRegister(
+	displayName: string,
+	email: string,
+	password: string,
+	url: string,
+): Promise<boolean> {
+	if (loggingIn) return false;
+	if (!serverURL) {
+		composerError = "Waline 服务地址未配置，暂时无法注册";
+		return false;
+	}
+
+	loggingIn = true;
+	composerError = "";
+	try {
+		const response = await fetch(
+			`${serverURL.replace(/\/+$/u, "")}/api/user?lang=${encodeURIComponent(lang)}`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					display_name: displayName,
+					email,
+					password,
+					...(url ? { url } : {}),
+				}),
+			},
+		);
+		const result = (await response.json()) as WalineTokenResponse;
+		if (!response.ok || result.errno !== 0) {
+			throw new Error(result.errmsg || "注册失败，请检查填写内容");
+		}
+		return true;
+	} catch (error) {
+		composerError =
+			error instanceof Error && error.message
+				? error.message
+				: "Waline 注册失败，请稍后重试";
+		return false;
+	} finally {
+		loggingIn = false;
+	}
+}
+
 async function initializeGuestbook() {
 	const callbackURL = new URL(window.location.href);
 	const returnedToken = callbackURL.searchParams.get("token");
@@ -1492,8 +1579,10 @@ onMount(() => {
 					onDraftChange={handleDraftChange}
 					onReplyCancel={() => (replyTarget = null)}
 					onLogin={handleLogin}
+					onWalineLogin={handleWalineLogin}
+					onWalineRegister={handleWalineRegister}
 					onLogout={handleLogout}
-				onSend={(content, attachment) =>
+					onSend={(content, attachment) =>
 					sendMessage(undefined, attachment, content)}
 					onToolError={(message) => (composerError = message)}
 				/>
