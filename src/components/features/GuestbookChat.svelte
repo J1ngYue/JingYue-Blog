@@ -55,6 +55,7 @@ const AUTH_STORAGE_KEY = "guestbook-chat-auth";
 const DRAFT_STORAGE_KEY = "guestbook-chat-draft";
 const LOCAL_MESSAGES_STORAGE_KEY = "guestbook-chat-local-messages";
 const OAUTH_ATTEMPT_STORAGE_KEY = "guestbook-oauth-attempt";
+const OAUTH_CHANNEL_NAME = "guestbook-oauth-result";
 const OAUTH_ATTEMPT_TTL = 10 * 60 * 1000;
 const serverURL = commentConfig.waline?.serverURL ?? "";
 const oauthServiceURL = commentConfig.waline?.oauthServiceURL ?? "";
@@ -107,6 +108,9 @@ let pollTimer: number | undefined;
 let dataController: AbortController | null = null;
 let syncQueued = false;
 let initialMediaCleanup: (() => void) | null = null;
+let oauthChannel: BroadcastChannel | null = null;
+let oauthPopup: Window | null = null;
+let popupFocusTimer: number | undefined;
 
 const hasMore = $derived(currentPage < totalPages);
 const isSending = $derived(
@@ -322,6 +326,7 @@ function removeOAuthCallbackFromURL() {
 		"oauth_error",
 		"oauth_provider",
 		"oauth_state",
+		"oauth_popup",
 	];
 	if (!callbackKeys.some((key) => url.searchParams.has(key))) return;
 	for (const key of callbackKeys) url.searchParams.delete(key);
@@ -1099,7 +1104,10 @@ async function confirmDeleteMessage() {
 	}
 }
 
-function buildOAuthLoginURL(provider: GuestbookLoginProvider): string {
+function buildOAuthLoginURL(
+	provider: GuestbookLoginProvider,
+	popup = false,
+): string {
 	const walineBaseURL = new URL(serverURL);
 	if (
 		walineBaseURL.protocol !== "https:" &&
@@ -1109,12 +1117,10 @@ function buildOAuthLoginURL(provider: GuestbookLoginProvider): string {
 	}
 
 	const state = createOAuthState();
-	const returnURL = new URL(window.location.href);
-	for (const key of ["token", "oauth_error", "oauth_provider", "oauth_state"]) {
-		returnURL.searchParams.delete(key);
-	}
+	const returnURL = new URL(CHANNEL_PATH, window.location.origin);
 	returnURL.searchParams.set("oauth_provider", provider);
 	returnURL.searchParams.set("oauth_state", state);
+	if (popup) returnURL.searchParams.set("oauth_popup", "1");
 	writeStoredValue(sessionStorage, OAUTH_ATTEMPT_STORAGE_KEY, {
 		provider,
 		state,
@@ -1154,16 +1160,79 @@ async function handleLogin(provider: GuestbookLoginProvider): Promise<boolean> {
 	}
 
 	try {
-		const externalLoginURL = buildOAuthLoginURL(provider);
 		loggingIn = true;
 		composerError = "";
-		window.location.assign(externalLoginURL);
+		if (oauthChannel) {
+			const popup = window.open(
+				"",
+				"jingyue-guestbook-login",
+				"popup,width=520,height=720",
+			);
+			if (popup) {
+				oauthPopup = popup;
+				popup.opener = null;
+				popup.location.replace(buildOAuthLoginURL(provider, true));
+				return true;
+			}
+		}
+		window.location.assign(buildOAuthLoginURL(provider));
 		return true;
 	} catch {
+		oauthPopup?.close();
+		oauthPopup = null;
 		composerError = "登录地址配置无效，请检查 OAuth URL";
 		loggingIn = false;
 		return false;
 	}
+}
+
+async function handleOAuthPopupResult(event: MessageEvent<unknown>) {
+	const result = event.data;
+	if (!result || typeof result !== "object") return;
+	const callback = result as Record<string, unknown>;
+	if (callback.kind !== OAUTH_CHANNEL_NAME) return;
+	const attempt = readOAuthAttempt();
+	if (
+		!attempt ||
+		callback.provider !== attempt.provider ||
+		callback.state !== attempt.state
+	)
+		return;
+	removeStoredValue(sessionStorage, OAUTH_ATTEMPT_STORAGE_KEY);
+	if (popupFocusTimer) window.clearTimeout(popupFocusTimer);
+	popupFocusTimer = undefined;
+	oauthPopup?.close();
+	oauthPopup = null;
+	try {
+		if (typeof callback.token === "string" && loginMode !== "disable") {
+			await restoreWalineRedirectLogin(callback.token);
+			await loadInitial();
+		} else {
+			composerError =
+				callback.error === "access_denied"
+					? "已取消登录授权"
+					: "第三方登录失败，请稍后重试";
+		}
+	} catch (error) {
+		composerError =
+			error instanceof Error && error.message
+				? error.message
+				: "登录信息验证失败，请重新登录";
+	} finally {
+		loggingIn = false;
+	}
+}
+
+function handleOAuthPopupFocus() {
+	if (!oauthPopup?.closed || popupFocusTimer) return;
+	popupFocusTimer = window.setTimeout(() => {
+		popupFocusTimer = undefined;
+		if (!oauthPopup?.closed || !loggingIn) return;
+		oauthPopup = null;
+		loggingIn = false;
+		removeStoredValue(sessionStorage, OAUTH_ATTEMPT_STORAGE_KEY);
+		composerError = "登录窗口已关闭，请重新登录";
+	}, 600);
 }
 
 async function initializeGuestbook() {
@@ -1173,6 +1242,21 @@ async function initializeGuestbook() {
 	const returnedProvider = callbackURL.searchParams.get("oauth_provider");
 	const returnedState = callbackURL.searchParams.get("oauth_state");
 	const hasOAuthCallback = Boolean(returnedToken || returnedError);
+	if (
+		hasOAuthCallback &&
+		callbackURL.searchParams.get("oauth_popup") === "1" &&
+		oauthChannel
+	) {
+		removeOAuthCallbackFromURL();
+		oauthChannel.postMessage({
+			kind: OAUTH_CHANNEL_NAME,
+			provider: returnedProvider,
+			state: returnedState,
+			token: returnedToken,
+			error: returnedError,
+		});
+		return;
+	}
 	const attempt = hasOAuthCallback ? readOAuthAttempt() : null;
 	const callbackIsValid = Boolean(
 		attempt &&
@@ -1246,6 +1330,10 @@ onMount(() => {
 	else authUser = readAuthentication();
 	draft = readStoredString(localStorage, DRAFT_STORAGE_KEY);
 	isOffline = localMode ? false : !navigator.onLine;
+	if (typeof BroadcastChannel !== "undefined") {
+		oauthChannel = new BroadcastChannel(OAUTH_CHANNEL_NAME);
+		oauthChannel.onmessage = (event) => void handleOAuthPopupResult(event);
+	}
 	void loadOAuthProviderAvailability();
 	void initializeGuestbook();
 	if (announcements[0]) void openAnnouncement(announcements[0]);
@@ -1253,9 +1341,13 @@ onMount(() => {
 	document.addEventListener("visibilitychange", handleVisibilityChange);
 	window.addEventListener("online", handleOnline);
 	window.addEventListener("offline", handleOffline);
+	window.addEventListener("focus", handleOAuthPopupFocus);
 
 	return () => {
 		if (pollTimer) window.clearInterval(pollTimer);
+		if (popupFocusTimer) window.clearTimeout(popupFocusTimer);
+		oauthChannel?.close();
+		oauthChannel = null;
 		dataController?.abort();
 		initialMediaCleanup?.();
 		if (announcementDialog?.open) announcementDialog.close();
@@ -1264,6 +1356,7 @@ onMount(() => {
 		document.removeEventListener("visibilitychange", handleVisibilityChange);
 		window.removeEventListener("online", handleOnline);
 		window.removeEventListener("offline", handleOffline);
+		window.removeEventListener("focus", handleOAuthPopupFocus);
 	};
 });
 </script>

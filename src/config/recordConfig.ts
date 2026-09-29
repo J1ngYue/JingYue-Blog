@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.81",
+		date: "2026-09-29",
+		time: "15:40",
+		type: "fix",
+		title: "修复留言板登录回跳并统一中文更新日志",
+		summary: "第三方登录完成后留在留言板，更新日志不再展示英文提交标题。",
+		changes: [
+			"登录在独立窗口完成，留言板即时更新登录身份和消息；弹窗被拦截时回到留言板。",
+			"中文整理记录仍保留完整内容，新提交的自动记录只显示中文摘要。",
+		],
+	},
+	{
 		version: "v6.14.80",
 		date: "2026-09-29",
 		time: "00:43",
@@ -1154,12 +1166,24 @@ const manualChangelogEntries: ChangelogEntry[] = [
 	},
 ];
 
+const latestManualEntry = manualChangelogEntries[0];
+const generatedTypeTitles: Record<ChangelogEntry["type"], string> = {
+	feature: "功能新增记录",
+	optimize: "功能优化记录",
+	fix: "问题修复记录",
+	remove: "功能删除记录",
+};
+
 export const changelogEntries: ChangelogEntry[] = [
-	...generatedChangelogEntries.map((entry) => ({
-		...entry,
-		changes: [...entry.changes],
-		related: [...entry.related],
-	})),
+	...generatedChangelogEntries
+		.filter((entry) => entry.date > latestManualEntry.date)
+		.map((entry) => ({
+			...entry,
+			title: generatedTypeTitles[entry.type],
+			summary: `代码提交 ${entry.version.slice(4)} 已同步。`,
+			changes: ["详细改动请查看对应的代码提交。"],
+			related: [],
+		})),
 	...manualChangelogEntries,
 ];
 
