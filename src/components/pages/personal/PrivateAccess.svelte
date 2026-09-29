@@ -28,6 +28,7 @@ let loading = $state(true);
 let authenticated = $state(false);
 let busy = $state(false);
 let error = $state("");
+let testMailStatus = $state("");
 let password = $state("");
 let events = $state<EventRecord[]>([]);
 let bills = $state<BillRecord[]>([]);
@@ -227,6 +228,18 @@ async function logOut() {
 	}
 }
 
+async function sendTestMail() {
+	testMailStatus = "正在发送测试邮件…";
+	busy = true;
+	try {
+		await request("/reminders/test", { method: "POST" });
+		testMailStatus = "测试邮件已提交，请检查 QQ 邮箱（包括垃圾箱）。";
+	} catch (cause) {
+		testMailStatus = cause instanceof Error ? cause.message : "发送失败";
+	}
+	busy = false;
+}
+
 function resetForm() {
 	editing = "";
 	date = today();
@@ -315,6 +328,7 @@ async function remove(id: string) {
 		<div class="access-actions">
 			<span>私密模式已解锁</span>
 			<button type="button" class="primary" onclick={() => { resetForm(); dialog.showModal(); }}>{mode === "events" ? "管理日历" : "记一笔 / 统计"}</button>
+			{#if mode === "events"}<button type="button" class="secondary" disabled={busy} onclick={sendTestMail}>发送测试邮件</button><span role="status">{testMailStatus}</span>{/if}
 		</div>
 		<dialog bind:this={dialog} class="manage-dialog" onclose={resetForm}>
 			<div class="dialog-heading"><h2>{mode === "events" ? "管理日历" : "账单管理"}</h2><button type="button" class="close" aria-label="关闭" onclick={() => dialog.close()}>×</button></div>

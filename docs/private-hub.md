@@ -23,6 +23,7 @@ wrangler d1 migrations apply jingyue-private-hub --remote --config private-worke
 - `ADMIN_PASSWORD`：重新设置的强密码，切勿复用聊天中出现过的密码。
 - `DEEPSEEK_API_KEY`：撤销旧密钥后重新生成的密钥。仅 Worker 可读取。
 - `REMINDER_TO`：你的 QQ 收件邮箱。它是收件地址，不是 QQ SMTP 发信凭据。
+- `RESEND_API_KEY`：在 Resend 免费账户创建的发信密钥。只填入 Worker Secret，不要写进仓库或前端。
 
 设置好管理密码后部署代码：
 
@@ -34,9 +35,11 @@ wrangler deploy --config private-worker/wrangler.jsonc
 
 ## 2. 邮件发送
 
-在 Cloudflare 的 Email Routing / Email Service 中验证 QQ 邮箱作为收件地址。为 `j1ngyue.cn` 配置 Cloudflare 要求的发信域名 DNS（SPF、DKIM、DMARC），确认 `reminder@j1ngyue.cn` 可以作为发件地址；否则改动 `REMINDER_FROM` 并重新部署。Worker 的 `EMAIL` binding 已写入配置。QQ 邮箱只收信，不需要在 Worker 中保存 QQ 邮箱密码或 SMTP 授权码。
+使用 Resend 免费档发信，不启用需要付费的 Cloudflare Email Sending。先在 Resend 中添加并验证发信子域名 `notify.j1ngyue.cn`，按其页面显示的记录在 Cloudflare DNS 中配置发信所需的 DKIM TXT 和两条 CNAME；只添加 `notify` 下级记录，不要改 `j1ngyue.cn` 根域名的 MX 收信记录，也无需为 Resend 开启收信。验证成功后，确认 `REMINDER_FROM` 为 `JingYue 日历 <reminder@notify.j1ngyue.cn>`，并将新密钥设为 Worker Secret `RESEND_API_KEY`。`REMINDER_TO` 保持为 QQ 收件邮箱。QQ 邮箱只收信，不需要在 Worker 中保存 QQ 邮箱密码或 SMTP 授权码。
 
-定时任务每天 12:00 UTC（北京时间 20:00）检查次日提醒。只有勾选“提前一天发邮件”的日子才会发送，年度重复按月日匹配；2 月 29 日在非闰年不会提醒。提醒记录用于防止同一天重复发送。正式上线前请先创建一条测试日期，验证 QQ 邮箱能收到邮件并检查垃圾箱。
+完成配置并部署后，解锁日历，点“发送测试邮件”；这个入口只向固定的 `REMINDER_TO` 发信、每天最多一次。收到测试信后，再创建一条测试日期验证日历提醒。定时任务每天 12:00 UTC（北京时间 20:00）检查次日提醒。只有勾选“提前一天发邮件”的日子才会发送，年度重复按月日匹配；2 月 29 日在非闰年不会提醒。提醒记录与 Resend 幂等键用于防止同一天重复发送。
+
+Resend 免费档当前每月 3,000 封、每天 100 封；不要在账户中升级付费套餐或启用超额计费。达到免费额度时邮件可能发送失败，日历与账单数据本身不受影响。发信子域名与 QQ 收件地址是两回事：邮件仍送往 `REMINDER_TO`，不会改变邮箱收信路径。
 
 ## 3. 博客构建
 

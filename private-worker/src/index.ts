@@ -7,17 +7,10 @@ interface Statement {
 
 interface Env {
 	DB: { prepare(sql: string): Statement };
-	EMAIL: {
-		send(message: {
-			from: string;
-			to: string;
-			subject: string;
-			text: string;
-		}): Promise<void>;
-	};
 	ALLOWED_ORIGIN: string;
 	REMINDER_FROM: string;
 	REMINDER_TO: string;
+	RESEND_API_KEY: string;
 	ADMIN_PASSWORD: string;
 	DEEPSEEK_API_KEY: string;
 }
@@ -45,6 +38,7 @@ interface BillRow {
 
 const COOKIE = "__Host-jy_private";
 const SESSION_SECONDS = 12 * 60 * 60;
+const EMAIL_TEST_ID = "__email_test__";
 const EVENT_KINDS = ["birthday", "anniversary", "holiday", "other"] as const;
 const BILL_CATEGORIES = [
 	"餐饮",
@@ -373,6 +367,65 @@ async function saveBill(
 	return json(row, id ? 200 : 201);
 }
 
+async function sendEmail(
+	env: Env,
+	subject: string,
+	message: string,
+	idempotencyKey: string,
+): Promise<void> {
+	if (!env.RESEND_API_KEY || !env.REMINDER_FROM || !env.REMINDER_TO)
+		throw new Error("EMAIL_NOT_CONFIGURED");
+	const response = await fetch("https://api.resend.com/emails", {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${env.RESEND_API_KEY}`,
+			"Content-Type": "application/json",
+			"Idempotency-Key": idempotencyKey,
+		},
+		body: JSON.stringify({
+			from: env.REMINDER_FROM,
+			to: [env.REMINDER_TO],
+			subject,
+			text: message,
+		}),
+	});
+	if (!response.ok) {
+		console.error("Resend email request failed", response.status);
+		throw new Error("EMAIL_UNAVAILABLE");
+	}
+}
+
+async function sendTestEmail(env: Env): Promise<Response> {
+	if (!env.RESEND_API_KEY || !env.REMINDER_FROM || !env.REMINDER_TO)
+		return json({ error: "提醒邮件尚未配置完成" }, 503);
+	const today = new Date(Date.now() + 8 * 60 * 60_000)
+		.toISOString()
+		.slice(0, 10);
+	const reserved = await env.DB.prepare(
+		"INSERT OR IGNORE INTO reminder_log (event_id,target_date) VALUES (?,?)",
+	)
+		.bind(EMAIL_TEST_ID, today)
+		.run();
+	if (!reserved.meta.changes)
+		return json({ error: "今天已发送过测试邮件" }, 429);
+	try {
+		await sendEmail(
+			env,
+			"JingYue 日历提醒测试",
+			"这是一封测试邮件。收到后，日历中勾选了提前一天提醒的日子会在前一晚发送到此邮箱。",
+			`test/${today}`,
+		);
+		return json({ ok: true });
+	} catch {
+		await env.DB.prepare(
+			"DELETE FROM reminder_log WHERE event_id=? AND target_date=?",
+		)
+			.bind(EMAIL_TEST_ID, today)
+			.run();
+		return json({ error: "测试邮件发送失败，请检查发信域名与密钥" }, 503);
+	}
+}
+
 async function api(request: Request, env: Env): Promise<Response> {
 	const origin = request.headers.get("Origin");
 	if (!origin || origin !== env.ALLOWED_ORIGIN)
@@ -424,6 +477,8 @@ async function api(request: Request, env: Env): Promise<Response> {
 		);
 	else if (path === "/events" && request.method === "POST")
 		response = await saveEvent(request, env);
+	else if (path === "/reminders/test" && request.method === "POST")
+		response = await sendTestEmail(env);
 	else if (path === "/bills" && request.method === "POST")
 		response = await saveBill(request, env);
 	else {
@@ -447,7 +502,7 @@ async function api(request: Request, env: Env): Promise<Response> {
 }
 
 async function reminders(env: Env, scheduledTime: number): Promise<void> {
-	if (!env.REMINDER_TO || !env.REMINDER_FROM) return;
+	if (!env.RESEND_API_KEY || !env.REMINDER_TO || !env.REMINDER_FROM) return;
 	// The cron runs at 20:00 Shanghai time; add the UTC+8 offset and one day.
 	const tomorrow = new Date(scheduledTime + 32 * 60 * 60_000)
 		.toISOString()
@@ -467,12 +522,12 @@ async function reminders(env: Env, scheduledTime: number): Promise<void> {
 			.run();
 		if (!reserved.meta.changes) continue;
 		try {
-			await env.EMAIL.send({
-				from: env.REMINDER_FROM,
-				to: env.REMINDER_TO,
-				subject: `明日提醒：${event.title}`,
-				text: `${event.title}\n日期：${tomorrow}\n类型：${event.kind}\n说明：${event.note || "无"}\n\n来自 JingYue 私密日历`,
-			});
+			await sendEmail(
+				env,
+				`明日提醒：${event.title}`,
+				`${event.title}\n日期：${tomorrow}\n类型：${event.kind}\n说明：${event.note || "无"}\n\n来自 JingYue 私密日历`,
+				`reminder/${event.id}/${tomorrow}`,
+			);
 		} catch {
 			await env.DB.prepare(
 				"DELETE FROM reminder_log WHERE event_id=? AND target_date=?",

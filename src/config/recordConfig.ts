@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.84",
+		date: "2026-09-29",
+		time: "18:01",
+		type: "feature",
+		title: "私密日历接入免费邮件提醒",
+		summary: "使用已验证的发信子域名向 QQ 邮箱发送次日提醒和测试邮件。",
+		changes: [
+			"改由 Resend 免费档发信，不改变博客域名或 QQ 邮箱的收件路径。",
+			"已解锁的日历可发送一次测试邮件，提醒继续按北京时间前一晚触发。",
+		],
+	},
+	{
 		version: "v6.14.83",
 		date: "2026-09-29",
 		time: "17:05",
