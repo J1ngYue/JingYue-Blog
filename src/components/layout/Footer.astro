@@ -37,6 +37,12 @@ if (footerConfig.enable) {
 <div
   class="transition border-dashed border-[oklch(85%_0.01_var(--hue))] dark:border-white/15 rounded-2xl mb-12 flex flex-col items-center justify-center px-6"
 >
+  <div class="site-footer-mascots" aria-label="菲比啾比、Duro、咕咕嘎嘎和鲸鱼娘">
+    <img src="/pio/models/pets/feibi/loader-feibi-unified.webp" alt="菲比啾比" loading="lazy" decoding="async" />
+    <img src="/pio/models/pets/doro/loader-duro-cute-v2.webp" alt="Duro" loading="lazy" decoding="async" />
+    <img src="/pio/models/pets/gugugaga/loader-gugugaga-unified.webp" alt="咕咕嘎嘎" loading="lazy" decoding="async" />
+    <img src="/pio/models/pets/deepseek/loader-deepseek-whale-girl.webp" alt="鲸鱼娘" loading="lazy" decoding="async" />
+  </div>
   <div class="site-footer-copy transition text-90 text-base font-semibold text-center wrap">
     <div class="mb-2">
       {customFooterHtml && <div set:html={customFooterHtml} />}
@@ -80,6 +86,37 @@ if (footerConfig.enable) {
 </div>
 
 <style>
+	.site-footer-mascots {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		align-items: end;
+		gap: clamp(.4rem, 2vw, 1.5rem);
+		width: min(28rem, 90vw);
+		margin: 0 auto .8rem;
+	}
+
+	.site-footer-mascots img {
+		width: 100%;
+		height: clamp(4.5rem, 9vw, 6.5rem);
+		object-fit: contain;
+		object-position: center bottom;
+		filter: drop-shadow(0 .3rem .3rem rgb(0 0 0 / 18%));
+		animation: site-footer-mascot-float 2.8s ease-in-out infinite;
+	}
+
+	.site-footer-mascots img:nth-child(2) { animation-delay: -.7s; }
+	.site-footer-mascots img:nth-child(3) { animation-delay: -1.4s; }
+	.site-footer-mascots img:nth-child(4) { animation-delay: -2.1s; }
+
+	@keyframes site-footer-mascot-float {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-.35rem); }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.site-footer-mascots img { animation: none; }
+	}
+
 	:global(body.home-landing-active #main-grid > .footer) {
 		position: relative;
 		z-index: 36;

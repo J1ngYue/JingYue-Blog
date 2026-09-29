@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.86",
+		date: "2026-09-29",
+		time: "19:44",
+		type: "feature",
+		title: "赛博朋克片头与页脚四角色",
+		summary: "博客首次入场改为 JingYue 主题的赛博朋克片头，原来的四个动漫角色移到页脚版权文字上方。",
+		changes: [
+			"仅使用 dsh-boot-animation 的赛博朋克片段，保留原视频画质，以网页文字和遮罩替换可见的 DeepSeek 文案。",
+			"片头可跳过，播放失败会自动退出；保持首次播放后不重复出现的逻辑。",
+			"四个角色在桌面和手机页脚平齐展示，并保留轻微浮动动画。",
+		],
+	},
+	{
 		version: "v6.14.85",
 		date: "2026-09-29",
 		time: "18:21",
