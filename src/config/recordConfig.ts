@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.82",
+		date: "2026-09-29",
+		time: "16:20",
+		type: "fix",
+		title: "明确站主撤回权限与留言限流提示",
+		summary: "站主可以撤回其他用户的留言，登录用户遇到限流时不再被误称为游客。",
+		changes: [
+			"站主对其他留言仅显示撤回操作，编辑仍限于自己的留言。",
+			"Waline 基于 IP 的频率限制使用准确提示；站主权限由服务端管理员身份决定。",
+		],
+	},
+	{
 		version: "v6.14.81",
 		date: "2026-09-29",
 		time: "15:40",

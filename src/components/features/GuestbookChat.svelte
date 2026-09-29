@@ -144,12 +144,16 @@ const chatMembers = $derived.by(() => {
 	return members.slice(0, 16);
 });
 
-function canManageMessage(message: GuestbookMessage): boolean {
+function canEditMessage(message: GuestbookMessage): boolean {
 	if (!authUser?.token || !message.objectId || message.localState) return false;
 	return (
-		authUser.type === "administrator" ||
-		(typeof message.userId === "number" && message.userId === authUser.objectId)
+		typeof message.userId === "number" && message.userId === authUser.objectId
 	);
+}
+
+function canDeleteMessage(message: GuestbookMessage): boolean {
+	if (!authUser?.token || !message.objectId || message.localState) return false;
+	return authUser.type === "administrator" || canEditMessage(message);
 }
 
 async function openAnnouncement(announcement: GuestbookAnnouncementItem) {
@@ -172,7 +176,7 @@ function closeDeleteDialog() {
 }
 
 async function requestDeleteMessage(message: GuestbookMessage) {
-	if (!canManageMessage(message)) return;
+	if (!canDeleteMessage(message)) return;
 	messageActionError = null;
 	deleteTarget = message;
 	await tick();
@@ -990,7 +994,7 @@ function discardMessage(message: GuestbookMessage) {
 }
 
 function startEditingMessage(message: GuestbookMessage) {
-	if (!canManageMessage(message) || mutatingMessageId) return;
+	if (!canEditMessage(message) || mutatingMessageId) return;
 	messageActionError = null;
 	editingMessageId = message.id;
 	editDraft = message.body;
@@ -1007,7 +1011,7 @@ async function saveEditedMessage(message: GuestbookMessage) {
 	if (
 		!authUser?.token ||
 		!message.objectId ||
-		!canManageMessage(message) ||
+		!canEditMessage(message) ||
 		mutatingMessageId
 	) {
 		return;
@@ -1061,7 +1065,7 @@ async function confirmDeleteMessage() {
 		!target ||
 		!authUser?.token ||
 		!target.objectId ||
-		!canManageMessage(target) ||
+		!canDeleteMessage(target) ||
 		mutatingMessageId
 	) {
 		return;
@@ -1422,7 +1426,8 @@ onMount(() => {
 								? messages.find((candidate) => candidate.id === message.replyToId)
 								: undefined}
 							timeLabel={formatMessageTime(message.createdAt)}
-							canManage={canManageMessage(message)}
+							canEdit={canEditMessage(message)}
+							canDelete={canDeleteMessage(message)}
 							isEditing={editingMessageId === message.id}
 							isMutating={mutatingMessageId === message.id}
 							{editDraft}
@@ -1606,19 +1611,21 @@ onMount(() => {
 		{#if deleteTarget}
 			<div class="privacy-panel guestbook-delete-modal__panel">
 				<div class="privacy-header">
-					<h2 id="guestbook-delete-title" class="privacy-title">删除消息</h2>
+					<h2 id="guestbook-delete-title" class="privacy-title">
+						{deleteTarget.userId === authUser?.objectId ? "删除消息" : "撤回他人消息"}
+					</h2>
 					<button
 						class="privacy-close"
 						type="button"
 						onclick={closeDeleteDialog}
 						disabled={mutatingMessageId === deleteTarget.id}
-						aria-label="关闭删除确认"
+						aria-label="关闭撤回确认"
 					>
 						<X size={20} aria-hidden="true" />
 					</button>
 				</div>
 				<div class="privacy-body guestbook-delete-modal__body">
-					<p>删除后无法恢复，Waline 服务端也会同步删除这条消息。</p>
+					<p>撤回后无法恢复，Waline 服务端也会同步删除这条消息。</p>
 					<blockquote>{deleteTarget.body.slice(0, 160)}</blockquote>
 					{#if messageActionError?.id === deleteTarget.id}
 						<p class="guestbook-delete-modal__error" role="alert">
@@ -1641,7 +1648,7 @@ onMount(() => {
 						onclick={() => void confirmDeleteMessage()}
 						disabled={mutatingMessageId === deleteTarget.id}
 					>
-						{mutatingMessageId === deleteTarget.id ? "删除中" : "确认删除"}
+						{mutatingMessageId === deleteTarget.id ? "撤回中" : "确认撤回"}
 					</button>
 				</div>
 			</div>

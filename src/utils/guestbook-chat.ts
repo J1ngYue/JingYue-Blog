@@ -304,7 +304,7 @@ export function getGuestbookErrorMessage(error: unknown): string {
 			return "登录状态已失效，请重新登录";
 		}
 		if (/(429|too many|too fast|rate limit|频繁|太快)/iu.test(message)) {
-			return "游客留言有频率限制，请稍后再试";
+			return "留言发送过于频繁，Waline 按 IP 限制频率，请稍后再试";
 		}
 		if (/(required|word|length|content|字数|内容)/iu.test(message)) {
 			return "消息内容不符合留言服务要求，请检查后重试";

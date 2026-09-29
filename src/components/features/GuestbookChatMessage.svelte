@@ -21,7 +21,8 @@ interface Props {
 	isMine: boolean;
 	referencedMessage?: GuestbookChatMessage;
 	timeLabel: string;
-	canManage: boolean;
+	canEdit: boolean;
+	canDelete: boolean;
 	isEditing: boolean;
 	isMutating: boolean;
 	editDraft: string;
@@ -43,7 +44,8 @@ let {
 	isMine,
 	referencedMessage,
 	timeLabel,
-	canManage,
+	canEdit,
+	canDelete,
 	isEditing,
 	isMutating,
 	editDraft,
@@ -209,7 +211,7 @@ async function copyMessage() {
 							<Copy size={15} aria-hidden="true" />
 						{/if}
 					</button>
-					{#if canManage}
+					{#if canEdit}
 						<button
 							type="button"
 							onclick={() => onEdit(message)}
@@ -219,11 +221,13 @@ async function copyMessage() {
 						>
 							<Pencil size={15} aria-hidden="true" />
 						</button>
+					{/if}
+					{#if canDelete}
 						<button
 							type="button"
 							onclick={() => onDelete(message)}
-							aria-label="删除消息"
-							title="删除消息"
+							aria-label={isMine ? "删除消息" : `撤回 ${message.nick} 的消息`}
+							title={isMine ? "删除消息" : "撤回消息"}
 							disabled={isMutating}
 						>
 							<Trash2 size={15} aria-hidden="true" />
