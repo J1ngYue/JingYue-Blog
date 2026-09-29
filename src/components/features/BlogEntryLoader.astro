@@ -29,29 +29,29 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
       <span class="blog-entry-loader__sigil" aria-hidden="true">✦</span>
       <div>
         <strong class="blog-entry-loader__write" style="--write-delay: 100ms; --write-duration: 530ms">JingYue</strong>
-        <small class="blog-entry-loader__write" style="--write-delay: 470ms; --write-duration: 740ms">PERSONAL BLOG · EST. 2026</small>
+        <small class="blog-entry-loader__write" style="--write-delay: 390ms; --write-duration: 620ms">PERSONAL BLOG · EST. 2026</small>
       </div>
       <span class="blog-entry-loader__header-line" aria-hidden="true"></span>
     </header>
 
     <main class="blog-entry-loader__message">
-      <span class="blog-entry-loader__eyebrow blog-entry-loader__write" style="--write-delay: 850ms; --write-duration: 750ms">WORDS · MEMORY · INSPIRATION</span>
+      <span class="blog-entry-loader__eyebrow blog-entry-loader__write" style="--write-delay: 680ms; --write-duration: 620ms">WORDS · MEMORY · INSPIRATION</span>
       <h1 class="blog-entry-loader__title" aria-label="JingYue"><JingYueWordmark idPrefix="jingyue-entry-wordmark" /></h1>
-      <p class="blog-entry-loader__subtitle blog-entry-loader__write" style="--write-delay: 2700ms; --write-duration: 950ms">循着微光，故事正在醒来</p>
-      <span class="blog-entry-loader__translation blog-entry-loader__write" style="--write-delay: 3450ms; --write-duration: 900ms">A LITTLE LIGHT FOR EVERY STORY</span>
-      <p class="blog-entry-loader__terminal blog-entry-loader__write" aria-hidden="true" style="--write-delay: 4200ms; --write-duration: 760ms">&gt; opening a new chapter<span>_</span></p>
+      <p class="blog-entry-loader__subtitle blog-entry-loader__write" style="--write-delay: 1850ms; --write-duration: 720ms">循着微光，故事正在醒来</p>
+      <span class="blog-entry-loader__translation blog-entry-loader__write" style="--write-delay: 2500ms; --write-duration: 680ms">A LITTLE LIGHT FOR EVERY STORY</span>
+      <p class="blog-entry-loader__terminal blog-entry-loader__write" aria-hidden="true" style="--write-delay: 3100ms; --write-duration: 650ms">&gt; opening a new chapter<span>_</span></p>
     </main>
 
     <div class="blog-entry-loader__bottom">
       <div class="blog-entry-loader__progress" role="progressbar" aria-label="开场动画播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-entry-progress>
         <span></span>
       </div>
-      <p class="blog-entry-loader__write" style="--write-delay: 4850ms; --write-duration: 850ms">在字里行间，遇见一场恰好的雨</p>
+      <p class="blog-entry-loader__write" style="--write-delay: 3700ms; --write-duration: 650ms">在字里行间，遇见一场恰好的雨</p>
       <button class="blog-entry-loader__skip" type="button" data-entry-skip>跳过开场 <span aria-hidden="true">↗</span></button>
     </div>
   </div>
 
-  <span class="blog-entry-loader__corner-brand blog-entry-loader__write" aria-hidden="true" style="--write-delay: 650ms; --write-duration: 640ms">JINGYUE / 01</span>
+  <span class="blog-entry-loader__corner-brand blog-entry-loader__write" aria-hidden="true" style="--write-delay: 520ms; --write-duration: 560ms">JINGYUE / 01</span>
 </div>
 
 <script is:inline>
@@ -96,11 +96,11 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
       video?.pause();
       html.classList.remove("blog-entry-loading", "blog-entry-loader-active");
       loader.classList.add("is-leaving");
+      window.dispatchEvent(new CustomEvent("firefly:blog-entry-complete"));
       window.setTimeout(() => {
         html.classList.add("blog-entry-visited");
         loader.remove();
-        window.dispatchEvent(new CustomEvent("firefly:blog-entry-complete"));
-      }, 480);
+      }, 320);
     };
     skip?.addEventListener("click", finish);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -117,7 +117,10 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
     });
     video?.addEventListener("ended", finish, { once: true });
     video?.addEventListener("error", finish, { once: true });
-    video?.addEventListener("playing", startWriting, { once: true });
+    video?.addEventListener("playing", () => {
+      video.playbackRate = 1.35;
+      startWriting();
+    }, { once: true });
     failsafe = window.setTimeout(finish, 11000);
     if (video) {
       video.src = video.dataset.src;
@@ -137,7 +140,7 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
     background: #02060e;
     color: #e8f5ff;
     color-scheme: dark;
-    transition: opacity 480ms ease, visibility 480ms ease;
+    transition: opacity 320ms ease, visibility 320ms ease;
   }
   .blog-entry-loader.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
   .blog-entry-loader__video {

@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.88",
+		date: "2026-09-29",
+		time: "21:04",
+		type: "optimize",
+		title: "缩短片头与拼图入场时间",
+		summary: "保留赛博朋克片头、书写效果和首页拼图，让入场节奏更紧凑。",
+		changes: [
+			"视频开始播放后使用适度倍速，避免浏览器加载视频时重置速度。",
+			"书写文案提前完成，视频淡出时即衔接拼图，缩短拼图的波次等待。",
+		],
+	},
+	{
 		version: "v6.14.87",
 		date: "2026-09-29",
 		time: "20:32",
