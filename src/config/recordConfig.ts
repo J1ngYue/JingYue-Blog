@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.89",
+		date: "2026-09-29",
+		time: "21:38",
+		type: "feature",
+		title: "片头左侧加入流星雨",
+		summary:
+			"在赛博朋克片头左侧暗部加入轻量流星和星点，不改动人物视频、文字和入场节奏。",
+		changes: [
+			"用 CSS 绘制稀疏蓝白流星，避开主要文字区域；移动端降低密度。",
+			"尊重减少动态效果设置，流星层不阻挡点击或延长片头。",
+		],
+	},
+	{
 		version: "v6.14.88",
 		date: "2026-09-29",
 		time: "21:04",

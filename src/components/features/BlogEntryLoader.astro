@@ -22,6 +22,9 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
     aria-hidden="true"
   ></video>
   <div class="blog-entry-loader__video-mask" aria-hidden="true"></div>
+  <div class="blog-entry-loader__meteors" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
   <div class="blog-entry-loader__scanlines" aria-hidden="true"></div>
 
   <div class="blog-entry-loader__content">
@@ -159,6 +162,35 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
     background: linear-gradient(90deg, #02060e 0 38%, rgb(2 6 14 / 90%) 49%, transparent 69%);
     pointer-events: none;
   }
+  .blog-entry-loader__meteors {
+    position: absolute;
+    inset: 0 43% 0 0;
+    overflow: hidden;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 18% 21%, rgb(170 232 255 / 55%) 0 1px, transparent 2px),
+      radial-gradient(circle at 73% 12%, rgb(170 232 255 / 45%) 0 1px, transparent 2px),
+      radial-gradient(circle at 89% 42%, rgb(170 232 255 / 35%) 0 1px, transparent 2px),
+      radial-gradient(circle at 61% 75%, rgb(170 232 255 / 48%) 0 1px, transparent 2px),
+      radial-gradient(circle at 30% 84%, rgb(170 232 255 / 38%) 0 1px, transparent 2px);
+    -webkit-mask-image: linear-gradient(90deg, #000 0 75%, transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0 75%, transparent 100%);
+  }
+  .blog-entry-loader__meteors span {
+    position: absolute;
+    width: 7rem;
+    height: 2px;
+    background: linear-gradient(90deg, #e6faff, rgb(88 206 255 / 70%) 18%, transparent);
+    filter: drop-shadow(0 0 5px #69d8ff);
+    opacity: 0;
+    animation: blog-entry-meteor 4.6s ease-out infinite;
+  }
+  .blog-entry-loader__meteors span:nth-child(1) { top: 15%; left: 78%; animation-delay: -.3s; }
+  .blog-entry-loader__meteors span:nth-child(2) { top: 33%; left: 94%; width: 5rem; animation-delay: -1.1s; }
+  .blog-entry-loader__meteors span:nth-child(3) { top: 53%; left: 77%; animation-delay: -2s; }
+  .blog-entry-loader__meteors span:nth-child(4) { top: 68%; left: 91%; width: 9rem; animation-delay: -2.8s; }
+  .blog-entry-loader__meteors span:nth-child(5) { top: 42%; left: 90%; width: 5rem; animation-delay: -3.6s; }
+  .blog-entry-loader__meteors span:nth-child(6) { top: 81%; left: 68%; animation-delay: -4.3s; }
   .blog-entry-loader__scanlines {
     position: absolute;
     inset: 0;
@@ -276,9 +308,17 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
     100% { left: 100%; opacity: 0; }
   }
   @keyframes blog-entry-cursor { 50% { opacity: 0; } }
+  @keyframes blog-entry-meteor {
+    0%, 16% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-28deg); }
+    23% { opacity: .85; }
+    58% { opacity: .65; }
+    78%, 100% { opacity: 0; transform: translate3d(-16rem, 10rem, 0) rotate(-28deg); }
+  }
   @media (max-width: 640px) {
     .blog-entry-loader__video { object-position: 85% center; -webkit-mask-image: linear-gradient(180deg, #000 0 54%, transparent 80%); mask-image: linear-gradient(180deg, #000 0 54%, transparent 80%); }
     .blog-entry-loader__video-mask { background: linear-gradient(0deg, #02060e 0 24%, rgb(2 6 14 / 90%) 38%, transparent 62%); }
+    .blog-entry-loader__meteors { inset: 4% 47% 48% 0; opacity: .55; }
+    .blog-entry-loader__meteors span:nth-child(n+4) { display: none; }
     .blog-entry-loader__content { width: 100%; padding: 1.4rem; }
     .blog-entry-loader__header-line { max-width: 28%; }
     .blog-entry-loader__message { margin-top: auto; margin-bottom: 1rem; padding: 0; }
@@ -289,6 +329,7 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
     .blog-entry-loader__corner-brand { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
+    .blog-entry-loader__meteors span { animation: none; }
     .blog-entry-loader__write { opacity: 1; clip-path: none; animation: none !important; }
     .blog-entry-loader__write::after { display: none; }
     .blog-entry-loader__terminal span { animation: none; }
