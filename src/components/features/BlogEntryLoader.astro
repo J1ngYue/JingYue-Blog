@@ -23,7 +23,8 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
   ></video>
   <div class="blog-entry-loader__video-mask" aria-hidden="true"></div>
   <div class="blog-entry-loader__meteors" aria-hidden="true">
-    <span></span><span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
   </div>
   <div class="blog-entry-loader__scanlines" aria-hidden="true"></div>
 
@@ -43,6 +44,10 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
       <p class="blog-entry-loader__subtitle blog-entry-loader__write" style="--write-delay: 1850ms; --write-duration: 720ms">循着微光，故事正在醒来</p>
       <span class="blog-entry-loader__translation blog-entry-loader__write" style="--write-delay: 2500ms; --write-duration: 680ms">A LITTLE LIGHT FOR EVERY STORY</span>
       <p class="blog-entry-loader__terminal blog-entry-loader__write" aria-hidden="true" style="--write-delay: 3100ms; --write-duration: 650ms">&gt; opening a new chapter<span>_</span></p>
+      <div class="blog-entry-loader__note">
+        <span class="blog-entry-loader__write" style="--write-delay: 3200ms; --write-duration: 590ms">FIELD NOTE / 001</span>
+        <p class="blog-entry-loader__write" style="--write-delay: 3650ms; --write-duration: 780ms">把短暂的闪光，写成漫长的故事。</p>
+      </div>
     </main>
 
     <div class="blog-entry-loader__bottom">
@@ -183,14 +188,18 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
     background: linear-gradient(90deg, #e6faff, rgb(88 206 255 / 70%) 18%, transparent);
     filter: drop-shadow(0 0 5px #69d8ff);
     opacity: 0;
-    animation: blog-entry-meteor 4.6s ease-out infinite;
+    animation: blog-entry-meteor 3.2s linear infinite;
   }
-  .blog-entry-loader__meteors span:nth-child(1) { top: 15%; left: 78%; animation-delay: -.3s; }
-  .blog-entry-loader__meteors span:nth-child(2) { top: 33%; left: 94%; width: 5rem; animation-delay: -1.1s; }
-  .blog-entry-loader__meteors span:nth-child(3) { top: 53%; left: 77%; animation-delay: -2s; }
-  .blog-entry-loader__meteors span:nth-child(4) { top: 68%; left: 91%; width: 9rem; animation-delay: -2.8s; }
-  .blog-entry-loader__meteors span:nth-child(5) { top: 42%; left: 90%; width: 5rem; animation-delay: -3.6s; }
-  .blog-entry-loader__meteors span:nth-child(6) { top: 81%; left: 68%; animation-delay: -4.3s; }
+  .blog-entry-loader__meteors span:nth-child(1) { top: 15%; left: 78%; animation-delay: -.16s; }
+  .blog-entry-loader__meteors span:nth-child(2) { top: 33%; left: 94%; width: 5rem; animation-delay: -.48s; }
+  .blog-entry-loader__meteors span:nth-child(3) { top: 53%; left: 77%; animation-delay: -.8s; }
+  .blog-entry-loader__meteors span:nth-child(4) { top: 68%; left: 91%; width: 9rem; animation-delay: -1.12s; }
+  .blog-entry-loader__meteors span:nth-child(5) { top: 42%; left: 90%; width: 5rem; animation-delay: -1.44s; }
+  .blog-entry-loader__meteors span:nth-child(6) { top: 81%; left: 68%; animation-delay: -1.76s; }
+  .blog-entry-loader__meteors span:nth-child(7) { top: 22%; left: 66%; width: 6rem; animation-delay: -2.08s; }
+  .blog-entry-loader__meteors span:nth-child(8) { top: 59%; left: 61%; animation-delay: -2.4s; }
+  .blog-entry-loader__meteors span:nth-child(9) { top: 8%; left: 94%; width: 5rem; animation-delay: -2.72s; }
+  .blog-entry-loader__meteors span:nth-child(10) { top: 74%; left: 97%; animation-delay: -3.04s; }
   .blog-entry-loader__scanlines {
     position: absolute;
     inset: 0;
@@ -255,6 +264,27 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
   .blog-entry-loader__translation { color: #8caec7; font-size: .57rem; letter-spacing: .26em; }
   .blog-entry-loader__terminal { margin: 3rem 0 0; color: #61e2d1; font-size: .7rem; letter-spacing: .06em; }
   .blog-entry-loader__terminal span { animation: blog-entry-cursor 900ms steps(1) infinite; }
+  .blog-entry-loader__note {
+    position: relative;
+    width: max-content;
+    max-width: 100%;
+    margin-top: 2rem;
+    padding-left: 1rem;
+    border-left: 1px solid rgb(105 216 255 / 48%);
+  }
+  .blog-entry-loader__note::before {
+    position: absolute;
+    top: 0;
+    left: -3px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #a8f3ff;
+    box-shadow: 0 0 .6rem #69d8ff;
+    content: "";
+  }
+  .blog-entry-loader__note span { color: #61e2d1; font-size: .57rem; letter-spacing: .2em; }
+  .blog-entry-loader__note p { margin: .45rem 0 0; color: #b8d7e9; font-size: .76rem; letter-spacing: .12em; }
   .blog-entry-loader__bottom { display: grid; gap: .75rem; align-items: center; }
   .blog-entry-loader__progress { width: min(28rem, 100%); height: .3rem; background: rgb(196 229 248 / 28%); }
   .blog-entry-loader__progress span {
@@ -309,22 +339,23 @@ import JingYueWordmark from "../pages/home/JingYueWordmark.astro";
   }
   @keyframes blog-entry-cursor { 50% { opacity: 0; } }
   @keyframes blog-entry-meteor {
-    0%, 16% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-28deg); }
-    23% { opacity: .85; }
-    58% { opacity: .65; }
-    78%, 100% { opacity: 0; transform: translate3d(-16rem, 10rem, 0) rotate(-28deg); }
+    0%, 12% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-28deg); }
+    18% { opacity: .85; }
+    62% { opacity: .65; }
+    75%, 100% { opacity: 0; transform: translate3d(-20rem, 12rem, 0) rotate(-28deg); }
   }
   @media (max-width: 640px) {
     .blog-entry-loader__video { object-position: 85% center; -webkit-mask-image: linear-gradient(180deg, #000 0 54%, transparent 80%); mask-image: linear-gradient(180deg, #000 0 54%, transparent 80%); }
     .blog-entry-loader__video-mask { background: linear-gradient(0deg, #02060e 0 24%, rgb(2 6 14 / 90%) 38%, transparent 62%); }
     .blog-entry-loader__meteors { inset: 4% 47% 48% 0; opacity: .55; }
-    .blog-entry-loader__meteors span:nth-child(n+4) { display: none; }
+    .blog-entry-loader__meteors span:nth-child(n+5) { display: none; }
     .blog-entry-loader__content { width: 100%; padding: 1.4rem; }
     .blog-entry-loader__header-line { max-width: 28%; }
     .blog-entry-loader__message { margin-top: auto; margin-bottom: 1rem; padding: 0; }
     .blog-entry-loader__title { width: min(100%, 19rem); }
     .blog-entry-loader__subtitle { font-size: .94rem; letter-spacing: .12em; }
     .blog-entry-loader__terminal { margin-top: 1.5rem; }
+    .blog-entry-loader__note { display: none; }
     .blog-entry-loader__bottom { padding-bottom: env(safe-area-inset-bottom); }
     .blog-entry-loader__corner-brand { display: none; }
   }

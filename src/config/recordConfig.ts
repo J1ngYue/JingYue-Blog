@@ -21,6 +21,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.90",
+		date: "2026-09-29",
+		time: "23:22",
+		type: "fix",
+		title: "去除底部横向滚动条并丰富片头",
+		summary:
+			"修复偶发的页面底部粉色横向滚动条，让片头流星更密更快，并补充左侧手记。",
+		changes: [
+			"仅裁剪页面根层的横向溢出，保留正常纵向滚动和内容区域内部滚动。",
+			"流星数量由 6 条增至 10 条、动画单轮由 4.6 秒缩至 3.2 秒，手机端保留 4 条。",
+			"左侧新增沿用书写效果的手记文字和细线光点，不改变人物视频和拼图衔接。",
+		],
+	},
+	{
 		version: "v6.14.89",
 		date: "2026-09-29",
 		time: "21:38",
