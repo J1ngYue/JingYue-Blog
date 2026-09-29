@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.91",
+		date: "2026-09-30",
+		time: "00:24",
+		type: "fix",
+		title: "统一各页面桌面导航外观",
+		summary:
+			"普通页面导航与首页采用同一浅灰底色、边框和右侧按钮尺寸，保留既有排版和移动端布局。",
+		changes: [
+			"移除浅色内容页单独使用的偏白色导航胶囊样式。",
+			"右侧操作胶囊内边距与首页对齐，使各页面导航位置和宽度一致。",
+		],
+	},
+	{
 		version: "v6.14.90",
 		date: "2026-09-29",
 		time: "23:22",
