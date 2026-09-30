@@ -493,6 +493,9 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 
 	.billing-chart__dot-income { fill: var(--bill-income-line); stroke: var(--bill-paper); stroke-width: 1.5; }
 	.billing-chart__dot-expense { fill: var(--bill-expense-line); stroke: var(--bill-paper); stroke-width: 1.5; }
+	.billing-chart__indicator,
+	.billing-chart__dot-income,
+	.billing-chart__dot-expense { transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 	.billing-chart__zero { position: absolute; left: 0; bottom: 0.9rem; color: var(--bill-muted); font-size: 0.65rem; }
 	.billing-chart__tooltip {
 		position: absolute;
@@ -508,6 +511,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		font-size: 0.72rem;
 		font-variant-numeric: tabular-nums;
 		transform: translateX(-50%);
+		transition: left 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 		pointer-events: none;
 	}
 	.billing-chart__tooltip::after { position: absolute; top: 100%; left: calc(50% - 0.25rem); border: 0.25rem solid transparent; border-top-color: #29292d; content: ""; }
@@ -734,11 +738,9 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		});
 		const updateSelection = () => {
 			const [x] = point(0, selected);
-			indicator.setAttribute("x1", String(x));
-			indicator.setAttribute("x2", String(x));
+			indicator.setAttribute("style", `transform: translateX(${x}px)`);
 			for (const [dot, value] of [[expenseDot, expense[selected]], [incomeDot, income[selected]]] as const) {
-				dot.setAttribute("cx", String(x));
-				dot.setAttribute("cy", String(point(value, selected)[1]));
+				dot.setAttribute("style", `transform: translate(${x}px, ${point(value, selected)[1]}px)`);
 			}
 			plot.style.setProperty("--bill-cursor", `${x / width * 100}%`);
 			tooltipDate.textContent = labels[selected];
@@ -747,22 +749,27 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 			plot.setAttribute("aria-valuenow", String(selected + 1));
 			plot.setAttribute("aria-valuetext", `${labels[selected]}，收入 ${billMoney(income[selected])} 元，支出 ${billMoney(expense[selected])} 元`);
 		};
+		const selectIndex = (index: number) => {
+			const next = Math.max(0, Math.min(count - 1, index));
+			if (next === selected) return;
+			selected = next;
+			updateSelection();
+		};
 		const selectPointer = (event: PointerEvent) => {
 			const rect = plot.getBoundingClientRect();
 			const x = (event.clientX - rect.left) / rect.width * width;
-			selected = Math.max(0, Math.min(count - 1, Math.round((x - paddingX) / (width - paddingX * 2) * (count - 1))));
-			updateSelection();
+			selectIndex(Math.round((x - paddingX) / (width - paddingX * 2) * (count - 1)));
 		};
 		plot.addEventListener("pointermove", selectPointer);
 		plot.addEventListener("pointerdown", selectPointer);
 		plot.addEventListener("keydown", (event) => {
 			if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
 			event.preventDefault();
-			if (event.key === "Home") selected = 0;
-			else if (event.key === "End") selected = count - 1;
-			else selected = Math.max(0, Math.min(count - 1, selected + (["ArrowRight", "ArrowUp"].includes(event.key) ? 1 : -1)));
-			updateSelection();
+			if (event.key === "Home") selectIndex(0);
+			else if (event.key === "End") selectIndex(count - 1);
+			else selectIndex(selected + (["ArrowRight", "ArrowUp"].includes(event.key) ? 1 : -1));
 		});
+		updateSelection();
 		plot.append(svg, zero, tooltip);
 		container.append(plot);
 
@@ -786,7 +793,6 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 			legend.append(item);
 		}
 		container.append(labelRow, legend);
-		updateSelection();
 	}
 
 	function initBillingDashboard() {

@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.97",
+		date: "2026-09-30",
+		time: "18:55",
+		type: "optimize",
+		title: "优化账单图表日期切换动画",
+		summary:
+			"金额提示框、日期指示线与收支圆点使用同步短缓动，快速移动时直接跟随最新日期，不积压动画。",
+		changes: [
+			"跳过同一日期的重复更新，保留鼠标、触屏和键盘操作以及准确的日期金额。",
+			"初始图表直接定位；开启减少动态效果时立即切换，不改变图表样式与账单记录。",
+		],
+	},
+	{
 		version: "v6.14.96",
 		date: "2026-09-30",
 		time: "18:05",
