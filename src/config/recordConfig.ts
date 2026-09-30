@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.109",
+		date: "2026-10-01",
+		time: "02:08",
+		type: "optimize",
+		title: "放大资料卡 GitHub 活动并加快轮换",
+		summary:
+			"本月活动铺满左侧宽度并放大日期文字，全年活动分成上下两段，避免 53 周格子挤成细小点阵。",
+		changes: [
+			"文章与 GitHub 活动改为每三秒轮换，保留悬浮暂停、移开继续及全年查看功能，右侧倒计时布局不变。",
+		],
+	},
+	{
 		version: "v6.14.108",
 		date: "2026-10-01",
 		time: "01:50",

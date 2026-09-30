@@ -145,7 +145,19 @@ const posts = (await getSortedPosts())
 					monthGrid.append(spacer);
 				}
 				appendDays(monthGrid, currentDays);
-				appendDays(yearGrid, github.days);
+				for (let offset = 0; offset < github.days.length; offset += 27 * 7) {
+					const days = github.days.slice(offset, offset + 27 * 7);
+					const section = document.createElement("div");
+					const range = document.createElement("span");
+					range.className = "navbar-profile-card__github-range";
+					range.textContent = `${days[0].date.slice(5).replace("-", ".")} — ${days[days.length - 1].date.slice(5).replace("-", ".")}`;
+					const weeks = document.createElement("div");
+					weeks.className = "navbar-profile-card__github-weeks";
+					weeks.style.setProperty("--github-weeks", String(Math.ceil(days.length / 7)));
+					appendDays(weeks, days);
+					section.append(range, weeks);
+					yearGrid.append(section);
+				}
 				hint.textContent = `年度范围 ${github.dataStart} — ${github.dataEnd}`;
 				setExpanded(expanded);
 			};
@@ -174,7 +186,7 @@ const posts = (await getSortedPosts())
 				rotationTimer = window.setTimeout(() => {
 					if (getComputedStyle(card).visibility === "visible" && !document.hidden) setActivity(activity.dataset.profileActivity === "articles" ? "github" : "articles");
 					syncRotation();
-				}, 6_000);
+				}, 3_000);
 			};
 			toggle.addEventListener("click", () => {
 				closePosts();
