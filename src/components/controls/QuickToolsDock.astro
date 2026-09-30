@@ -1,14 +1,10 @@
 ---
 import { Icon } from "astro-icon/components";
-import { backgroundWallpaper, siteConfig } from "@/config";
+import { backgroundWallpaper } from "@/config";
 import { musicPlayerConfig } from "@/config/musicConfig";
 import { url } from "@/utils/url-utils";
 
-const showThemeColor = !siteConfig.themeColor.fixed;
 const isWallpaperSwitchable = backgroundWallpaper.switchable ?? true;
-const allowLayoutSwitch = siteConfig.postListLayout.allowSwitch;
-const hasDisplaySettings =
-	showThemeColor || isWallpaperSwitchable || allowLayoutSwitch;
 
 const quickLinks = [
 	{
@@ -120,17 +116,6 @@ const quickLinks = [
 			inert
 		>
 			<div class="quick-tools-actions">
-				{hasDisplaySettings && (
-				<button
-					id="display-settings-switch"
-					class="quick-tools-button"
-					type="button"
-					data-tooltip="显示设置"
-					aria-label="打开显示设置"
-				>
-					<Icon is:inline name="material-symbols:palette-outline" />
-				</button>
-			)}
 				<button
 					id="quick-tools-navigation"
 					class="quick-tools-button"
@@ -181,8 +166,6 @@ const quickLinks = [
 		const menu = document.getElementById("quick-tools-menu");
 		const navigationButton = document.getElementById("quick-tools-navigation");
 		const closeButton = document.getElementById("quick-tools-menu-close");
-		const settingsButton = document.getElementById("display-settings-switch");
-		const settingsPanel = document.getElementById("display-setting");
 		const wallpaperButton = document.getElementById("quick-tools-wallpaper");
 		const collapseButton = document.getElementById("quick-tools-collapse");
 		const actionsShell = document.getElementById("quick-tools-actions");
@@ -234,11 +217,6 @@ const quickLinks = [
 					detail: { panel },
 				}),
 			);
-		};
-
-		const closeSettingsPanel = () => {
-			settingsPanel?.classList.add("float-panel-closed");
-			settingsButton?.setAttribute("aria-expanded", "false");
 		};
 
 		const closeWallpaperPicker = () => {
@@ -313,7 +291,6 @@ const quickLinks = [
 			if (panel !== "navigation") setMenuOpen(false);
 			if (panel !== "music") setMusicOpen(false);
 			if (panel !== "immersive") setImmersiveOpen(false);
-			if (panel !== "settings") closeSettingsPanel();
 			if (panel !== "wallpaper") closeWallpaperPicker();
 			if (panel !== "search") {
 				window.dispatchEvent(new Event("firefly:close-search"));
@@ -330,17 +307,6 @@ const quickLinks = [
 		});
 		closeButton?.addEventListener("click", () => setMenuOpen(false, false, true));
 		menu?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenuOpen(false)));
-
-		settingsButton?.addEventListener("click", (event) => {
-			event.stopPropagation();
-			queueMicrotask(() => {
-				const open =
-					settingsPanel &&
-					!settingsPanel.classList.contains("float-panel-closed");
-				settingsButton.setAttribute("aria-expanded", String(Boolean(open)));
-				if (open) requestExclusivePanel("settings");
-			});
-		});
 
 		wallpaperButton?.addEventListener("click", (event) => {
 			event.stopPropagation();
@@ -439,7 +405,6 @@ const quickLinks = [
 			} else if (musicMiniPanel && !musicMiniPanel.classList.contains("music-mini-panel-closed")) {
 				setMusicOpen(false);
 			}
-			closeSettingsPanel();
 		});
 
 		const syncCurrentLink = () => {
@@ -462,7 +427,6 @@ const quickLinks = [
 				setMenuOpen(false);
 				setMusicOpen(false);
 				setImmersiveOpen(false);
-				closeSettingsPanel();
 			});
 			window.swup.hooks.on("page:view", () => {
 				syncCurrentLink();

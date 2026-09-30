@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.101",
+		date: "2026-09-30",
+		time: "20:15",
+		type: "optimize",
+		title: "显示设置迁移至顶部横向面板",
+		summary:
+			"顶部滑杆按钮直接展开显示设置，桌面采用三栏布局，手机自动适配；控件使用独立黑白灰配色，不随站点主题色改变。",
+		changes: [
+			"保留背景、灯光、特效与文章布局设置，以及公告、深浅色切换和搜索；移除右侧悬浮栏的重复入口。",
+			"面板箭头对齐触发按钮，窄屏不会越界；支持关闭按钮、Escape、点外部关闭与切页收起。",
+		],
+	},
+	{
 		version: "v6.14.100",
 		date: "2026-09-30",
 		time: "19:33",

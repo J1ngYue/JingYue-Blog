@@ -2,7 +2,6 @@
 import { Icon } from "astro-icon/components";
 import DropdownItem from "@/components/common/DropdownItem.astro";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
-import DisplaySettings from "@/components/controls/DisplaySettingsIntegrated.svelte";
 import NavbarUtilityPanel from "@/components/controls/NavbarUtilityPanel.astro";
 import CompactMusicPlayer from "@/components/features/CompactMusicPlayer.svelte";
 import ImmersiveMusicPlayer from "@/components/features/ImmersiveMusicPlayer.svelte";
@@ -339,7 +338,6 @@ const navbarProfileAvatarParticles = [
             </>
         )}
         <NavMenuPanel links={links}></NavMenuPanel>
-		<DisplaySettings client:load />
     </div>
 </div>
 
@@ -843,16 +841,6 @@ if (!navbarProfileWindow.__fireflyNavbarProfileInitBound) {
 queueNavbarProfileCardInit();
 
 function loadButtonScript() {
-    let settingBtn = document.getElementById("display-settings-switch");
-    if (settingBtn) {
-        settingBtn.onclick = function () {
-            let settingPanel = document.getElementById("display-setting");
-            if (settingPanel) {
-                settingPanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
-
     let menuBtn = document.getElementById("nav-menu-switch");
     if (menuBtn) {
         menuBtn.onclick = function () {
@@ -909,8 +897,8 @@ function loadButtonScript() {
     }
 
     document.addEventListener("click", function(event) {
-        const panels = ["display-setting", "nav-menu-panel"];
-        const buttons = ["display-settings-switch", "nav-menu-switch"];
+        const panels = ["nav-menu-panel"];
+        const buttons = ["nav-menu-switch"];
 
         panels.forEach((id, index) => {
             const panel = document.getElementById(id);

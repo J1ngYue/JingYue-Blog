@@ -648,63 +648,10 @@ onMount(() => {
 </script>
 
 {#if hasAnyContent}
-<div id="display-setting" class="float-panel float-panel-closed display-setting-panel transition-all w-80 max-w-[calc(100vw-1.5rem)] px-4 py-2" aria-hidden="true" inert>
-    <!-- Theme Color Section -->
-    {#if showThemeColor}
-    <div class="mt-2 mb-2">
-        <div class="flex flex-row gap-2 mb-2 items-center justify-between">
-            <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3
-                before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
-                before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
-            >
-                {i18n(I18nKey.themeColor)}
-                <button aria-label="恢复默认" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetHue}>
-                    <div class="text-(--btn-content)">
-                        <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
-                    </div>
-                </button>
-            </div>
-            <div class="flex gap-1">
-                <input
-                    id="hueValue"
-                    type="number"
-                    min="0"
-                    max="360"
-                    step="1"
-                    value={hue}
-                    aria-label="主题色相数值"
-                    onpointerdown={(event) => handleNumberStepperPointerDown(event, updateAndCommitHue)}
-                    oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
-                    onchange={commitHue}
-                    onblur={commitHue}
-                    class="transition bg-(--btn-regular-bg) w-14 h-8 rounded-lg px-1 text-center font-bold text-sm text-(--btn-content) outline-none focus:ring-1 focus:ring-(--primary)"
-                />
-            </div>
-        </div>
-        <div class="w-full h-6 px-1 bg-[oklch(0.80_0.10_0)] dark:bg-[oklch(0.70_0.10_0)] rounded-sm select-none">
-            <input
-                aria-label={i18n(I18nKey.themeColor)}
-                aria-valuetext={`${hue}°`}
-                type="range"
-                min="0"
-                max="360"
-                value={hue}
-                oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
-                onchange={commitHue}
-                onpointerup={commitHue}
-                onpointercancel={commitHue}
-                onblur={commitHue}
-                class="slider theme-hue-slider"
-                id="colorSlider"
-                step="1"
-            >
-        </div>
-    </div>
-    {/if}
-
+<div id="display-setting" class="float-panel-closed display-setting-panel" aria-hidden="true" inert>
     <!-- Unified banner / fullscreen wallpaper section -->
-    <div class="mt-3 mb-3">
-        <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
+    <div class="settings-section settings-background">
+        <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
             before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
             before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
         >
@@ -735,6 +682,7 @@ onMount(() => {
                         class:opacity-60={wallpaperMode !== WALLPAPER_BANNER}
                         class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_BANNER}
                         class:wallpaper-mode-active={wallpaperMode === WALLPAPER_BANNER}
+                        aria-pressed={wallpaperMode === WALLPAPER_BANNER}
                         onclick={() => switchWallpaperMode(WALLPAPER_BANNER)}
                     >
                         <Icon icon="material-symbols:panorama-outline-rounded" class="text-[1.2rem]"></Icon>
@@ -746,6 +694,7 @@ onMount(() => {
                         class:opacity-60={wallpaperMode !== WALLPAPER_OVERLAY}
                         class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_OVERLAY}
                         class:wallpaper-mode-active={wallpaperMode === WALLPAPER_OVERLAY}
+                        aria-pressed={wallpaperMode === WALLPAPER_OVERLAY}
                         onclick={() => switchWallpaperMode(WALLPAPER_OVERLAY)}
                     >
                         <Icon icon="material-symbols:full-coverage-outline-rounded" class="text-[1.2rem]"></Icon>
@@ -757,6 +706,7 @@ onMount(() => {
                         class:opacity-60={wallpaperMode !== WALLPAPER_NONE}
                         class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_NONE}
                         class:wallpaper-mode-active={wallpaperMode === WALLPAPER_NONE}
+                        aria-pressed={wallpaperMode === WALLPAPER_NONE}
                         onclick={() => switchWallpaperMode(WALLPAPER_NONE)}
                     >
                         <Icon icon="material-symbols:hide-image-outline" class="text-[1.2rem]"></Icon>
@@ -966,8 +916,8 @@ onMount(() => {
     </div>
 
     <!-- Dark mode spotlight section -->
-    <div class="mt-3 mb-3">
-        <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
+    <div class="settings-section settings-spotlight">
+        <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
             before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
             before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
         >
@@ -1065,10 +1015,64 @@ onMount(() => {
         </div>
     </div>
 
+    <div class="settings-secondary">
+    <!-- Theme Color Section -->
+    {#if showThemeColor}
+    <div class="settings-section settings-theme">
+        <div class="flex flex-row gap-2 mb-2 items-center justify-between">
+            <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3
+                before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
+                before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
+            >
+                {i18n(I18nKey.themeColor)}
+                <button aria-label="恢复默认" title="重置" data-tooltip="重置" class="reset-tooltip btn-regular w-7 h-7 rounded-md active:scale-90" onclick={resetHue}>
+                    <div class="text-(--btn-content)">
+                        <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
+                    </div>
+                </button>
+            </div>
+            <div class="flex gap-1">
+                <input
+                    id="hueValue"
+                    type="number"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={hue}
+                    aria-label="主题色相数值"
+                    onpointerdown={(event) => handleNumberStepperPointerDown(event, updateAndCommitHue)}
+                    oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                    onchange={commitHue}
+                    onblur={commitHue}
+                    class="transition bg-(--btn-regular-bg) w-14 h-8 rounded-lg px-1 text-center font-bold text-sm text-(--btn-content) outline-none focus:ring-1 focus:ring-(--primary)"
+                />
+            </div>
+        </div>
+        <div class="hue-track select-none">
+            <input
+                aria-label={i18n(I18nKey.themeColor)}
+                aria-valuetext={`${hue}°`}
+                type="range"
+                min="0"
+                max="360"
+                value={hue}
+                oninput={(event) => updateHue((event.currentTarget as HTMLInputElement).valueAsNumber)}
+                onchange={commitHue}
+                onpointerup={commitHue}
+                onpointercancel={commitHue}
+                onblur={commitHue}
+                class="slider theme-hue-slider"
+                id="colorSlider"
+                step="1"
+            >
+        </div>
+    </div>
+    {/if}
+
     <!-- Effects Settings Section -->
     {#if isSakuraSwitchable || isRainSwitchable || isSnowSwitchable}
-        <div class="mt-2 mb-2">
-            <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
+        <div class="settings-section settings-effects">
+            <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
                 before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
@@ -1085,6 +1089,7 @@ onMount(() => {
                         class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden"
                         class:bg-(--btn-regular-bg-hover)={sakuraEnabled}
                         class:effect-toggle-active={sakuraEnabled}
+                        aria-pressed={sakuraEnabled}
                         onclick={toggleSakuraEnabled}
                     >
                         <Icon icon="mdi:flower-poppy" class="text-[1.25rem] shrink-0"></Icon>
@@ -1103,6 +1108,7 @@ onMount(() => {
                         class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden"
                         class:bg-(--btn-regular-bg-hover)={rainEnabled}
                         class:effect-toggle-active={rainEnabled}
+                        aria-pressed={rainEnabled}
                         onclick={toggleRainEnabled}
                     >
                         <Icon icon="material-symbols:rainy" class="text-[1.25rem] shrink-0"></Icon>
@@ -1121,6 +1127,7 @@ onMount(() => {
                         class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden"
                         class:bg-(--btn-regular-bg-hover)={snowEnabled}
                         class:effect-toggle-active={snowEnabled}
+                        aria-pressed={snowEnabled}
                         onclick={toggleSnowEnabled}
                     >
                         <Icon icon="material-symbols:ac-unit" class="text-[1.25rem] shrink-0"></Icon>
@@ -1140,8 +1147,8 @@ onMount(() => {
 
     <!-- Layout Switch Section -->
     {#if allowLayoutSwitch}
-        <div class="mt-2 mb-2">
-            <div class="flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
+        <div class="settings-section settings-layout">
+            <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
                 before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
@@ -1158,6 +1165,8 @@ onMount(() => {
                     class="flex-1 btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
                     class:opacity-60={currentLayout !== 'list'}
                     class:bg-(--btn-regular-bg-hover)={currentLayout === 'list'}
+                    class:settings-choice-active={currentLayout === 'list'}
+                    aria-pressed={currentLayout === 'list'}
                     disabled={isSwitching}
                     onclick={switchLayout}
                     title={i18n(I18nKey.postListLayoutList)}
@@ -1172,6 +1181,8 @@ onMount(() => {
                     class="flex-1 btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
                     class:opacity-60={currentLayout !== 'grid'}
                     class:bg-(--btn-regular-bg-hover)={currentLayout === 'grid'}
+                    class:settings-choice-active={currentLayout === 'grid'}
+                    aria-pressed={currentLayout === 'grid'}
                     disabled={isSwitching}
                     onclick={switchLayout}
                     title={i18n(I18nKey.postListLayoutGrid)}
@@ -1184,373 +1195,136 @@ onMount(() => {
             </div>
         </div>
     {/if}
+    </div>
 </div>
 {/if}
 
 
-<style lang="stylus">
-    #display-setting
-        position fixed !important
-        top 5.75rem
-        right calc(max(0.5rem, env(safe-area-inset-right)) + 4.75rem)
-        width unquote("min(20rem, calc(100vw - 5.5rem))")
-        max-width calc(100vw - 5.5rem)
-        height unquote("min(48rem, calc(100dvh - 6.5rem))")
-        max-height calc(100dvh - 6.5rem)
-        overflow-x hidden !important
-        overflow-y auto !important
-        overscroll-behavior contain
-        scrollbar-gutter stable
-        touch-action pan-y
-        -webkit-overflow-scrolling touch
+<style>
+    #display-setting {
+        /* Keep controls neutral even when the site hue changes. */
+        --primary: var(--settings-accent);
+        --btn-content: var(--settings-ink);
+        --btn-regular-bg: var(--settings-soft);
+        --btn-regular-bg-hover: var(--settings-hover);
+        --btn-regular-bg-active: var(--settings-hover);
+        --card-bg: var(--settings-panel-bg);
+        display: grid;
+        grid-template-columns: 1.15fr 1fr 1fr;
+        grid-template-areas: "background spotlight secondary";
+        gap: 1.25rem;
+        align-items: start;
+        max-height: min(40rem, calc(100dvh - 10rem));
+        padding: 1.25rem;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: var(--settings-border) transparent;
+        color: var(--settings-ink);
+        touch-action: pan-y;
+    }
 
-        &.float-panel-closed,
-        &.float-panel-closed *
-            pointer-events none !important
+    .settings-section { min-width: 0; }
+    .settings-secondary { grid-area: secondary; display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+    .settings-theme { grid-area: theme; }
+    .settings-background { grid-area: background; }
+    .settings-spotlight { grid-area: spotlight; }
+    .settings-effects { grid-area: effects; }
+    .settings-layout { grid-area: layout; }
 
-        &::-webkit-scrollbar
-            width 0.45rem
+    #display-setting .settings-heading { color: var(--settings-ink); font-size: 1rem; line-height: 1.75rem; }
+    #display-setting button { color: var(--settings-ink) !important; cursor: pointer; transition: background-color 180ms ease, border-color 180ms ease; }
+    #display-setting button:focus-visible,
+    #display-setting input:focus-visible { outline: 2px solid var(--settings-accent); outline-offset: 3px; }
+    #display-setting button:disabled { cursor: wait; }
+    #display-setting p { opacity: 1; color: var(--settings-muted); font-size: 0.75rem; }
 
-        &::-webkit-scrollbar-track
-            background transparent
+    .wallpaper-settings-shell { padding: 0; border: 0; background: transparent; }
+    .wallpaper-picker-entry {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
+        min-height: 2.75rem;
+        margin-bottom: 0.65rem;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--settings-border);
+        border-radius: 0.65rem;
+        background: var(--settings-soft);
+        font-size: 0.8rem;
+        font-weight: 650;
+    }
+    .wallpaper-picker-entry span { flex: 1; text-align: left; }
+    .wallpaper-picker-entry:hover { background: var(--settings-hover); }
+    .wallpaper-mode-grid { padding: 0; background: transparent; }
+    .wallpaper-mode-button { min-height: 4rem; border: 1px solid transparent; opacity: 1 !important; }
+    #display-setting .wallpaper-mode-active,
+    #display-setting .settings-choice-active { border: 1px solid var(--settings-accent); background: var(--settings-hover); opacity: 1; }
+    #display-setting .settings-layout button { border: 1px solid var(--settings-border); }
+    #display-setting .settings-layout .settings-choice-active { border-color: var(--settings-accent); }
 
-        &::-webkit-scrollbar-thumb
-            border 0.12rem solid transparent
-            border-radius 999px
-            background unquote("color-mix(in oklch, var(--primary) 58%, transparent)")
-            background-clip padding-box
+    .wallpaper-control-card { border: 1px solid var(--settings-border); background: var(--settings-panel-bg); }
+    .wallpaper-control-card:focus-within { border-color: var(--settings-accent); }
+    .wallpaper-motion-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.8rem; font-weight: 650; }
+    .effect-toggle-button { min-height: 2.65rem; border: 1px solid transparent; }
+    .effect-toggle-button.effect-toggle-active { border-color: var(--settings-border); }
 
-        .reset-tooltip
-            position relative
-            overflow visible
+    .settings-toggle {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+        width: 2.5rem;
+        height: 1.35rem;
+        border-radius: 999px;
+        background: var(--settings-border);
+        transition: background-color 180ms ease;
+    }
+    .settings-toggle i { width: 1rem; height: 1rem; margin-left: 0.18rem; border-radius: 50%; background: var(--settings-panel-bg); box-shadow: 0 1px 3px rgb(0 0 0 / 18%); transition: transform 180ms ease; }
+    .settings-toggle.toggle-on { background: var(--settings-accent); }
+    .settings-toggle.toggle-on i { transform: translateX(1.08rem); }
 
-            &::after
-                content attr(data-tooltip)
-                position absolute
-                left calc(100% + 0.4rem)
-                top 50%
-                z-index 30
-                transform translate(-0.2rem, -50%)
-                padding 0.25rem 0.45rem
-                border-radius 0.4rem
-                background rgba(20, 24, 31, 0.9)
-                color white
-                font-size 0.68rem
-                font-weight 500
-                line-height 1
-                white-space nowrap
-                opacity 0
-                pointer-events none
-                transition opacity 0.15s ease, transform 0.15s ease
+    .numeric-value-field {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-width: 4.3rem;
+        height: 1.8rem;
+        padding: 0.1rem 0.4rem;
+        border: 1px solid var(--settings-border);
+        border-radius: 0.45rem;
+        background: var(--settings-soft);
+        color: var(--settings-ink);
+    }
+    .numeric-value-field span { margin-left: 0.15rem; font-size: 0.7rem; color: var(--settings-muted); }
+    .numeric-value-input { width: 2.8rem; min-width: 0; border: 0; background: transparent; color: inherit; font-size: 0.8rem; font-weight: 650; text-align: right; }
+    .hue-track { border-radius: 0.5rem; overflow: hidden; }
 
-            &:hover::after,
-            &:focus-visible::after
-                opacity 1
-                transform translate(0, -50%)
+    #display-setting input[type="range"] {
+        appearance: none;
+        display: block;
+        width: 100%;
+        height: 0.65rem;
+        margin: 0.5rem 0;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--settings-accent) 0 var(--range-progress, 50%), var(--settings-border) var(--range-progress, 50%) 100%);
+        cursor: pointer;
+        touch-action: none;
+    }
+    #display-setting input[type="range"]::-webkit-slider-thumb { appearance: none; width: 1rem; height: 1rem; border: 2px solid var(--settings-accent); border-radius: 50%; background: var(--settings-panel-bg); box-shadow: 0 1px 4px rgb(0 0 0 / 15%); }
+    #display-setting input[type="range"]::-moz-range-thumb { width: 1rem; height: 1rem; border: 2px solid var(--settings-accent); border-radius: 50%; background: var(--settings-panel-bg); }
+    #display-setting #colorSlider { height: 1.5rem; margin: 0; border-radius: 0.5rem; background: linear-gradient(90deg, #f29cac, #efc36f, #8ad49b, #58d2ca, #72b9eb, #b8a6ee, #e69dcb); }
+    #display-setting #colorSlider::-webkit-slider-thumb { width: 0.6rem; height: 1.15rem; border: 2px solid #fff; border-radius: 0.2rem; background: #18181b; }
+    #display-setting #colorSlider::-moz-range-thumb { width: 0.6rem; height: 1.15rem; border: 2px solid #fff; border-radius: 0.2rem; background: #18181b; }
 
-        .wallpaper-settings-shell
-            border 1px solid rgba(90, 155, 92, 0.18)
-            background linear-gradient(145deg, rgba(137, 196, 137, 0.14), rgba(246, 252, 246, 0.07))
-            box-shadow inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 28px rgba(23, 45, 32, 0.06)
-            backdrop-filter blur(10px)
-
-        .wallpaper-picker-entry
-            display flex
-            align-items center
-            gap 0.6rem
-            width 100%
-            min-height 2.85rem
-            margin-bottom 0.65rem
-            padding 0.55rem 0.8rem
-            border 1.5px solid rgba(72, 151, 76, 0.28)
-            border-radius 0.75rem
-            background var(--btn-regular-bg)
-            color var(--btn-content)
-            font-size 0.78rem
-            font-weight 750
-            cursor pointer
-            transition border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease
-
-            span
-                flex 1
-                text-align left
-
-            &:hover,
-            &:focus-visible
-                border-color var(--primary)
-                background var(--btn-regular-bg-hover)
-                box-shadow 0 0 0 2px rgba(72, 151, 76, 0.16)
-                outline none
-
-        .wallpaper-mode-grid
-            padding 0.3rem
-            border 1px solid rgba(90, 155, 92, 0.12)
-            border-radius 0.85rem
-            background rgba(137, 196, 137, 0.08)
-
-        .wallpaper-mode-button
-            min-height 4.6rem
-            border 1px solid transparent
-
-            &:hover
-                transform translateY(-1px)
-                border-color rgba(90, 155, 92, 0.22)
-
-            &.wallpaper-mode-active
-                opacity 1 !important
-                transform translateY(-1px)
-                border-color rgba(72, 151, 76, 0.28)
-                box-shadow 0 5px 14px rgba(45, 92, 48, 0.12)
-
-        .wallpaper-control-card
-            border 1px solid rgba(90, 155, 92, 0.12)
-            background var(--card-bg)
-            box-shadow 0 4px 14px rgba(20, 45, 28, 0.045)
-            transition border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease
-
-            &:focus-within
-                border-color rgba(72, 151, 76, 0.36)
-                box-shadow 0 6px 18px rgba(45, 92, 48, 0.09)
-
-        .wallpaper-motion-settings
-            padding-top 0.15rem
-
-        .wallpaper-motion-heading
-            display flex
-            align-items center
-            justify-content space-between
-            margin 0.15rem 0 0.35rem
-            padding 0 0.25rem
-            color var(--btn-content)
-            font-size 0.72rem
-            font-weight 700
-            opacity 0.78
-
-        .settings-toggle
-            position relative
-            display inline-flex
-            width 2.5rem
-            height 1.35rem
-            flex 0 0 auto
-            align-items center
-            border-radius 999px
-            background var(--btn-regular-bg-active)
-            transition background-color 0.18s ease
-
-            i
-                width 1rem
-                height 1rem
-                margin-left 0.18rem
-                border-radius 50%
-                background white
-                box-shadow 0 1px 3px rgba(0, 0, 0, 0.18)
-                transition transform 0.18s ease
-
-            &.toggle-on
-                background var(--primary)
-
-                i
-                    transform translateX(1.08rem)
-
-        .numeric-value-field
-            display flex
-            align-items center
-            justify-content flex-end
-            min-width 4.6rem
-            height 1.9rem
-            padding 0.1rem 0.45rem
-            border 1px solid rgba(90, 155, 92, 0.12)
-            border-radius 0.6rem
-            background var(--btn-regular-bg)
-            color var(--btn-content)
-            transition border-color 0.15s ease, box-shadow 0.15s ease
-
-            &:focus-within
-                border-color var(--primary)
-                box-shadow 0 0 0 2px rgba(72, 151, 76, 0.12)
-
-            span
-                margin-left 0.15rem
-                font-size 0.68rem
-                opacity 0.62
-
-        .numeric-value-input
-            width 2.9rem
-            min-width 0
-            border 0
-            outline 0
-            background transparent
-            color inherit
-            font-size 0.76rem
-            font-weight 650
-            line-height 1
-            text-align right
-
-        .effect-toggle-list
-            padding 0.3rem
-            border 1px solid rgba(90, 155, 92, 0.1)
-            border-radius 0.85rem
-            background rgba(137, 196, 137, 0.06)
-
-        .effect-toggle-button
-            border 1px solid transparent
-
-            &:hover
-                transform translateY(-1px)
-                border-color rgba(90, 155, 92, 0.2)
-
-            &.effect-toggle-active
-                border-color rgba(72, 151, 76, 0.28)
-                box-shadow 0 4px 12px rgba(45, 92, 48, 0.1)
-
-        input[type="range"]
-            -webkit-appearance none
-            appearance none
-            display block
-            width 100%
-            height 1.5rem
-            border-radius 999px
-            background-image unquote("linear-gradient(90deg, var(--primary) 0 var(--range-progress, 50%), hsla(var(--hue), 22%, 28%, 0.18) var(--range-progress, 50%) 100%)")
-            transition background-image 0.15s ease-in-out
-            cursor pointer
-            pointer-events auto
-            user-select none
-            touch-action none
-
-        input[type="range"].theme-hue-slider
-            width 100%
-            height 1.5rem
-            touch-action none
-            background-image linear-gradient(90deg, #f29cac 0%, #efc36f 18%, #8ad49b 36%, #58d2ca 52%, #72b9eb 70%, #b8a6ee 84%, #e69dcb 100%)
-
-            &::-webkit-slider-thumb
-                -webkit-appearance none
-                width 0.72rem
-                height 1.1rem
-                border 2px solid rgba(255, 255, 255, 0.88)
-                border-radius 0.25rem
-                background var(--primary)
-                box-shadow 0 1px 5px rgba(0, 0, 0, 0.25)
-                cursor pointer
-
-            &::-moz-range-thumb
-                width 0.72rem
-                height 1.1rem
-                border 2px solid rgba(255, 255, 255, 0.88)
-                border-radius 0.25rem
-                background var(--primary)
-                box-shadow 0 1px 5px rgba(0, 0, 0, 0.25)
-                cursor pointer
-
-        input[type="range"].overlay-slider
-            height 0.85rem
-            cursor pointer
-            touch-action none
-            outline none
-
-            &:focus-visible::-webkit-slider-thumb
-                box-shadow unquote("0 0 0 3px hsla(var(--hue), 60%, 50%, 0.22), 0 1px 4px rgba(0, 0, 0, 0.18)")
-
-            &:focus-visible::-moz-range-thumb
-                box-shadow unquote("0 0 0 3px hsla(var(--hue), 60%, 50%, 0.22), 0 1px 4px rgba(0, 0, 0, 0.18)")
-
-            /* Input Thumb */
-            &::-webkit-slider-thumb
-                -webkit-appearance none
-                height 1rem
-                width 1rem
-                border 2px solid var(--primary)
-                border-radius 50%
-                background var(--card-bg)
-                box-shadow 0 1px 4px rgba(0, 0, 0, 0.18)
-                cursor pointer
-                transition transform 0.15s ease, box-shadow 0.15s ease
-
-                &:hover
-                    transform scale(1.1)
-                    box-shadow 0 2px 6px rgba(0, 0, 0, 0.22)
-
-                &:active
-                    transform scale(1.18)
-
-            &::-moz-range-thumb
-                height 1rem
-                width 1rem
-                border 2px solid var(--primary)
-                border-radius 50%
-                background var(--card-bg)
-                box-shadow 0 1px 4px rgba(0, 0, 0, 0.18)
-                cursor pointer
-
-                &:hover
-                    transform scale(1.1)
-
-                &:active
-                    transform scale(1.18)
-
-            &::-ms-thumb
-                -webkit-appearance none
-                height 1rem
-                width 1rem
-                border 2px solid var(--primary)
-                border-radius 50%
-                background var(--card-bg)
-                box-shadow 0 1px 4px rgba(0, 0, 0, 0.18)
-                cursor pointer
-
-        #colorSlider
-            background-image var(--color-selection-bar)
-            transition background-image 0.15s ease-in-out
-
-            &::-webkit-slider-thumb
-                -webkit-appearance none
-                height 1rem
-                width 0.5rem
-                border 0
-                border-radius 0.125rem
-                background rgba(255, 255, 255, 0.72)
-                box-shadow none
-
-                &:hover
-                    transform none
-                    background rgba(255, 255, 255, 0.84)
-
-                &:active
-                    transform none
-                    background rgba(255, 255, 255, 0.62)
-
-            &::-moz-range-thumb
-                -webkit-appearance none
-                height 1rem
-                width 0.5rem
-                border 0
-                border-radius 0.125rem
-                background rgba(255, 255, 255, 0.72)
-                box-shadow none
-
-                &:hover
-                    transform none
-                    background rgba(255, 255, 255, 0.84)
-
-                &:active
-                    transform none
-                    background rgba(255, 255, 255, 0.62)
-
-            &::-ms-thumb
-                -webkit-appearance none
-                height 1rem
-                width 0.5rem
-                border 0
-                border-radius 0.125rem
-                background rgba(255, 255, 255, 0.72)
-                box-shadow none
-
-                &:hover
-                    transform none
-                    background rgba(255, 255, 255, 0.84)
-
-                &:active
-                    transform none
-                    background rgba(255, 255, 255, 0.62)
-
+    @media (max-width: 959px) {
+        #display-setting { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "theme theme" "background spotlight" "effects layout"; }
+        .settings-secondary { display: contents; }
+    }
+    @media (max-width: 599px) {
+        #display-setting { grid-template-columns: minmax(0, 1fr); grid-template-areas: "theme" "background" "spotlight" "effects" "layout"; gap: 1.2rem; padding: 1rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #display-setting button, .settings-toggle, .settings-toggle i { transition: none; }
+    }
 </style>
