@@ -6,43 +6,59 @@ import { Icon } from "astro-icon/components";
 	class="schedule-dashboard"
 	data-schedule-dashboard
 >
-	<div class="schedule-toolbar">
-		<button type="button" class="schedule-arrow" data-calendar-prev aria-label="上一周">
-			<Icon is:inline name="material-symbols:chevron-left-rounded" />
-		</button>
-		<button type="button" class="schedule-period" data-calendar-today aria-label="回到今日">
-			<strong data-calendar-title>本周</strong>
-			<span data-calendar-range></span>
-		</button>
-		<button type="button" class="schedule-arrow" data-calendar-next aria-label="下一周">
-			<Icon is:inline name="material-symbols:chevron-right-rounded" />
-		</button>
-		<button type="button" class="schedule-view-switch" data-calendar-view aria-pressed="false">
-			<Icon is:inline name="material-symbols:grid-view-outline-rounded" />
-			<span>月视图</span>
-		</button>
-	</div>
+	<div class="schedule-layout">
+		<aside class="schedule-overview" aria-label="即将到来">
+			{[
+				["holiday", "近期节日"],
+				["birthday", "近期生日"],
+				["anniversary", "近期纪念日"],
+				["other", "近期安排"],
+			].map(([kind, label]) => (
+				<section class:list={["schedule-upcoming", `schedule-upcoming--${kind}`]}>
+					<h2>{label}</h2>
+					<div class="schedule-upcoming__list" data-upcoming={kind}></div>
+				</section>
+			))}
+		</aside>
 
-	<div class="schedule-calendar" data-calendar-mode="week">
-		<div class="schedule-weekdays" aria-hidden="true">
-			<span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+		<div class="schedule-calendar" data-calendar-mode="month">
+			<div class="schedule-toolbar">
+				<button type="button" class="schedule-arrow" data-calendar-prev aria-label="上个月">
+					<Icon is:inline name="material-symbols:chevron-left-rounded" />
+				</button>
+				<button type="button" class="schedule-period" data-calendar-today aria-label="回到今日">
+					<strong data-calendar-title>本月</strong>
+					<span data-calendar-range></span>
+				</button>
+				<button type="button" class="schedule-arrow" data-calendar-next aria-label="下个月">
+					<Icon is:inline name="material-symbols:chevron-right-rounded" />
+				</button>
+				<button type="button" class="schedule-view-switch" data-calendar-view aria-pressed="true">
+					<Icon is:inline name="material-symbols:grid-view-outline-rounded" />
+					<span>周视图</span>
+				</button>
+			</div>
+
+			<div class="schedule-weekdays" aria-hidden="true">
+				<span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+			</div>
+			<div class="schedule-days" data-calendar-grid aria-label="日历"></div>
 		</div>
-		<div class="schedule-days" data-calendar-grid aria-label="日历"></div>
-	</div>
 
-	<div class="schedule-panels">
 		<section class="schedule-panel schedule-panel--agenda" aria-labelledby="schedule-agenda-title">
 			<header>
 				<span class="schedule-panel__icon schedule-panel__icon--dark">
 					<Icon is:inline name="material-symbols:event-note-outline-rounded" />
 				</span>
-				<h2 id="schedule-agenda-title">今日日程</h2>
+				<h2 id="schedule-agenda-title">所选日程</h2>
 				<output data-agenda-count>0</output>
 			</header>
 			<p class="schedule-panel__date" data-agenda-date></p>
 			<div class="schedule-agenda" data-agenda-list aria-live="polite"></div>
 		</section>
+	</div>
 
+	<div class="schedule-panels">
 		<section class="schedule-panel schedule-panel--anniversary" aria-labelledby="schedule-anniversary-title">
 			<header>
 				<span class="schedule-panel__icon schedule-panel__icon--rose">
@@ -59,10 +75,11 @@ import { Icon } from "astro-icon/components";
 <style is:global>
 	.schedule-dashboard {
 		--schedule-ink: #111113;
-		--schedule-muted: #77777e;
-		--schedule-line: rgb(17 17 19 / 72%);
+		--schedule-muted: #62626b;
+		--schedule-line: #252a32;
 		--schedule-soft-line: rgb(17 17 19 / 12%);
 		--schedule-paper: rgb(255 255 255 / 94%);
+		container-type: inline-size;
 		color: var(--schedule-ink);
 	}
 
@@ -74,13 +91,97 @@ import { Icon } from "astro-icon/components";
 		--schedule-paper: rgb(12 12 13 / 94%);
 	}
 
+	.schedule-layout {
+		display: grid;
+		align-items: start;
+		gap: 1rem;
+	}
+
+	.schedule-overview {
+		border: 2px solid var(--schedule-line);
+		border-radius: 0.6rem;
+		background: var(--schedule-paper);
+		padding: 1rem;
+	}
+
+	.schedule-upcoming + .schedule-upcoming {
+		margin-top: 1.2rem;
+	}
+
+	.schedule-upcoming h2 {
+		margin: 0 0 0.6rem;
+		border-left: 3px solid #e55267;
+		padding-left: 0.5rem;
+		color: var(--schedule-muted);
+		font-size: 0.82rem;
+		font-weight: 650;
+	}
+
+	.schedule-upcoming--birthday h2 { border-color: #db679f; }
+	.schedule-upcoming--anniversary h2 { border-color: #ad8cce; }
+	.schedule-upcoming--other h2 { border-color: #289fbc; }
+
+	.schedule-upcoming__list {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.65rem;
+	}
+
+	.schedule-upcoming__empty {
+		grid-column: 1 / -1;
+		margin: 0;
+		padding-block: 0.5rem;
+		color: var(--schedule-muted);
+		font-size: 0.85rem;
+	}
+
+	.schedule-countdown {
+		display: grid;
+		min-width: 0;
+		gap: 0.3rem;
+		border: 2px solid var(--schedule-line);
+		border-radius: 0.5rem;
+		background: transparent;
+		padding: 0.8rem;
+		color: var(--schedule-ink);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		transition: background-color 180ms ease;
+	}
+
+	.schedule-countdown:hover { background: var(--btn-plain-bg-hover, rgb(128 128 128 / 8%)); }
+	.schedule-countdown strong { font-size: 0.94rem; overflow-wrap: anywhere; }
+	.schedule-countdown small, .schedule-countdown time { color: var(--schedule-muted); font-size: 0.75rem; }
+	.schedule-countdown time { font-variant-numeric: tabular-nums; }
+	.schedule-countdown small { line-height: 1.6; overflow-wrap: anywhere; }
+
+	.schedule-dashboard button:focus-visible {
+		outline: 2px solid #e75d8d;
+		outline-offset: 2px;
+	}
+
+	@container (min-width: 1120px) {
+		.schedule-layout {
+			grid-template-columns: minmax(210px, 240px) minmax(0, 1fr) minmax(240px, 270px);
+		}
+
+		.schedule-upcoming__list { grid-template-columns: 1fr; }
+		.schedule-overview, .schedule-panel--agenda {
+			position: sticky;
+			top: 6rem;
+			max-height: calc(100dvh - 7rem);
+			overflow: auto;
+		}
+	}
+
 	.schedule-toolbar {
 		position: relative;
 		display: grid;
 		grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
 		align-items: center;
 		gap: 0.75rem;
-		margin-bottom: 1rem;
+		padding: 1rem 1rem 0;
 	}
 
 	.schedule-arrow,
@@ -127,7 +228,7 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-period strong {
-		font-size: 1rem;
+		font-size: 1.15rem;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -139,9 +240,8 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-view-switch {
-		position: absolute;
-		top: -3.75rem;
-		right: 0;
+		grid-column: 1 / -1;
+		justify-self: end;
 		display: inline-flex;
 		min-height: 2.4rem;
 		align-items: center;
@@ -170,8 +270,9 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-calendar {
 		overflow: hidden;
-		border: 1.5px solid var(--schedule-line);
-		border-radius: 1rem;
+		min-width: 0;
+		border: 2px solid var(--schedule-line);
+		border-radius: 0.6rem;
 		background: var(--schedule-paper);
 	}
 
@@ -194,6 +295,8 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-day {
 		position: relative;
+		display: flex;
+		flex-direction: column;
 		min-width: 0;
 		min-height: 7.5rem;
 		border: 0;
@@ -210,7 +313,7 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-calendar[data-calendar-mode="month"] .schedule-day {
-		min-height: 5.8rem;
+		min-height: 7rem;
 		border-bottom: 1px solid var(--schedule-soft-line);
 	}
 
@@ -231,23 +334,26 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-day.is-selected {
 		z-index: 1;
-		box-shadow: inset 0 0 0 1.5px var(--schedule-ink);
+		box-shadow: inset 0 0 0 2px var(--schedule-ink);
 	}
 
-	.schedule-day.is-outside {
+	.schedule-day.is-today { background: rgb(118 156 183 / 12%); }
+
+	.schedule-day.is-outside .schedule-day__number,
+	.schedule-day.is-outside .schedule-day__lunar {
 		opacity: 0.34;
 	}
 
 	.schedule-day__number {
-		font-size: 0.86rem;
+		font-size: 0.94rem;
 		font-weight: 750;
 		font-variant-numeric: tabular-nums;
 	}
+	.schedule-day__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.2rem; }
 
 	.schedule-day__lunar {
-		float: right;
 		color: var(--schedule-muted);
-		font-size: 0.62rem;
+		font-size: 0.68rem;
 	}
 
 	.schedule-day__event {
@@ -259,7 +365,7 @@ import { Icon } from "astro-icon/components";
 		background: rgb(255 244 174 / 68%);
 		padding: 0.18rem 0.35rem;
 		color: #6b5611;
-		font-size: 0.58rem;
+		font-size: 0.68rem;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -270,9 +376,21 @@ import { Icon } from "astro-icon/components";
 		color: #ffe8a3;
 	}
 
+	.schedule-day__event--holiday {
+		border-color: rgb(229 82 103 / 24%);
+		background: rgb(255 232 233 / 80%);
+		color: #a02e4d;
+	}
+
+	html.dark .schedule-day__event--holiday {
+		border-color: rgb(255 155 173 / 30%);
+		background: rgb(106 35 48 / 45%);
+		color: #ffbdca;
+	}
+
 	.schedule-panels {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-columns: minmax(0, 1fr);
 		gap: 0.9rem;
 		margin-top: 0.9rem;
 	}
@@ -280,8 +398,8 @@ import { Icon } from "astro-icon/components";
 	.schedule-panel {
 		overflow: hidden;
 		min-height: 17rem;
-		border: 1.5px solid var(--schedule-line);
-		border-radius: 1rem;
+		border: 2px solid var(--schedule-line);
+		border-radius: 0.6rem;
 		background: var(--schedule-paper);
 	}
 
@@ -296,7 +414,7 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-panel h2 {
 		margin: 0;
-		font-size: 0.86rem;
+		font-size: 1rem;
 		font-weight: 750;
 	}
 
@@ -345,7 +463,7 @@ import { Icon } from "astro-icon/components";
 		margin: 0;
 		padding: 0.8rem 0.85rem 0;
 		color: var(--schedule-muted);
-		font-size: 0.72rem;
+		font-size: 0.8rem;
 		font-weight: 650;
 	}
 
@@ -415,13 +533,13 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-anniversaries strong {
 		min-width: 0;
-		font-size: 0.76rem;
+		font-size: 0.88rem;
 	}
 
 	.schedule-anniversaries span {
 		margin-left: auto;
 		color: var(--schedule-muted);
-		font-size: 0.67rem;
+		font-size: 0.76rem;
 		white-space: nowrap;
 	}
 
@@ -431,12 +549,11 @@ import { Icon } from "astro-icon/components";
 	}
 
 	@media (max-width: 700px) {
-		.schedule-view-switch {
-			position: static;
-			grid-column: 1 / -1;
-			justify-self: end;
-			margin-top: 0.15rem;
-		}
+		.schedule-upcoming__list { grid-template-columns: 1fr; }
+		.schedule-overview { padding: 0.8rem; }
+		.schedule-toolbar { padding: 0.8rem 0.5rem 0; gap: 0.5rem; }
+		.schedule-weekdays { padding-inline: 0.25rem; }
+		.schedule-days { padding-inline: 0.25rem; }
 
 		.schedule-day {
 			min-height: 5.25rem;
@@ -444,12 +561,14 @@ import { Icon } from "astro-icon/components";
 		}
 
 		.schedule-calendar[data-calendar-mode="month"] .schedule-day {
-			min-height: 4.2rem;
+			min-height: 4rem;
 		}
+		.schedule-day__head { flex-direction: column; gap: 0; }
+		.schedule-day__lunar { font-size: 0.6rem; }
 
 		.schedule-day__event {
 			padding-inline: 0.2rem;
-			font-size: 0.5rem;
+			font-size: 0.6rem;
 		}
 
 		.schedule-panels {
@@ -459,6 +578,8 @@ import { Icon } from "astro-icon/components";
 		.schedule-panel {
 			min-height: auto;
 		}
+		.schedule-anniversaries li { align-items: start; flex-direction: column; gap: 0.25rem; }
+		.schedule-anniversaries span { margin-left: 0; white-space: normal; }
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -470,14 +591,7 @@ import { Icon } from "astro-icon/components";
 </style>
 
 <script>
-	type ScheduleEvent = {
-		id: string;
-		date: string;
-		title: string;
-		note: string;
-		kind: string;
-		recurring: number;
-	};
+	import { calendarDateInfo, nextScheduleDate, upcomingPublicHolidays, type ScheduleRecord as ScheduleEvent } from "@/utils/schedule-calendar";
 
 	const pad = (value: number) => String(value).padStart(2, "0");
 	const dateKey = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -487,14 +601,6 @@ import { Icon } from "astro-icon/components";
 		left.getMonth() === right.getMonth() &&
 		left.getDate() === right.getDate();
 	const weekdayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-
-	function getLunarDay(date: Date) {
-		try {
-			return new Intl.DateTimeFormat("zh-CN-u-ca-chinese", { day: "numeric" }).format(date);
-		} catch {
-			return "";
-		}
-	}
 
 	function initScheduleDashboard() {
 		for (const root of document.querySelectorAll<HTMLElement>("[data-schedule-dashboard]")) {
@@ -519,9 +625,10 @@ import { Icon } from "astro-icon/components";
 
 			if (!calendar || !grid || !title || !range || !previous || !next || !todayButton || !viewButton || !viewLabel || !agendaCount || !agendaDate || !agendaList || !anniversaryCount || !anniversaries) continue;
 
-			let mode: "week" | "month" = "week";
+			let mode: "week" | "month" = "month";
 			let cursor = cloneDate(new Date());
 			let selected = cloneDate(new Date());
+			let currentDay = dateKey(new Date());
 
 			const startOfWeek = (date: Date) => {
 				const result = cloneDate(date);
@@ -532,6 +639,62 @@ import { Icon } from "astro-icon/components";
 			const eventsFor = (date: Date) => events.filter((event) =>
 				event.date === dateKey(date) || (event.recurring && event.date.slice(5) === dateKey(date).slice(5)),
 			);
+
+			const displayedEventsFor = (date: Date) => {
+				const items = eventsFor(date);
+				const holiday = calendarDateInfo(date).holiday;
+				if (!holiday || items.some((event) => event.title === holiday)) return items;
+				return [...items, { id: `public-${dateKey(date)}`, date: dateKey(date), title: holiday, note: "节日当天（不代表放假或调休安排）", kind: "holiday", recurring: 0 }];
+			};
+
+			const updateCountdowns = () => {
+				for (const output of root.querySelectorAll<HTMLElement>("[data-countdown]")) {
+					const seconds = Math.max(0, Math.floor((Number(output.dataset.countdown) - Date.now()) / 1000));
+					output.textContent = `${Math.floor(seconds / 86400)}天 ${Math.floor(seconds / 3600) % 24}时 ${Math.floor(seconds / 60) % 60}分 ${seconds % 60}秒`;
+				}
+			};
+
+			const renderUpcoming = () => {
+				const now = new Date();
+				const publicEvents = upcomingPublicHolidays(now).filter((item) => !events.some((event) => event.kind === "holiday" && event.title === item.title && nextScheduleDate(event, now)?.getTime() === nextScheduleDate(item, now)?.getTime()));
+				const upcoming = [...events, ...publicEvents]
+					.map((event) => ({ event, date: nextScheduleDate(event, now) }))
+					.filter((item): item is { event: ScheduleEvent; date: Date } => item.date !== null)
+					.sort((left, right) => left.date.getTime() - right.date.getTime());
+				for (const list of root.querySelectorAll<HTMLElement>("[data-upcoming]")) {
+					const items = upcoming.filter(({ event }) => list.dataset.upcoming === "other" ? !["holiday", "birthday", "anniversary"].includes(event.kind) : event.kind === list.dataset.upcoming).slice(0, 2);
+					list.replaceChildren();
+					if (!items.length) {
+						const empty = document.createElement("p");
+						empty.className = "schedule-upcoming__empty";
+						empty.textContent = "暂无事件";
+						list.append(empty);
+					}
+					for (const { event, date } of items) {
+						const button = document.createElement("button");
+						button.type = "button";
+						button.className = "schedule-countdown";
+						const when = document.createElement("time");
+						when.dateTime = dateKey(date);
+						when.textContent = `${weekdayNames[date.getDay()]} · ${dateKey(date)}`;
+						const heading = document.createElement("strong");
+						heading.textContent = event.title;
+						const detail = document.createElement("small");
+						const countdown = document.createElement("span");
+						countdown.dataset.countdown = String(date.getTime());
+						detail.append("还有：", countdown);
+						button.append(when, heading, detail);
+						button.addEventListener("click", () => {
+							selected = cloneDate(date);
+							cursor = cloneDate(date);
+							render();
+							renderAgenda();
+						});
+						list.append(button);
+					}
+				}
+				updateCountdowns();
+			};
 
 			const renderAnniversaries = () => {
 				const items = events.filter((event) => ["birthday", "anniversary", "holiday"].includes(event.kind));
@@ -549,9 +712,10 @@ import { Icon } from "astro-icon/components";
 			};
 
 			const renderAgenda = () => {
-				const selectedEvents = eventsFor(selected);
+				const selectedEvents = displayedEventsFor(selected);
 				agendaCount.value = String(selectedEvents.length);
-				agendaDate.textContent = `${selected.getFullYear()}-${pad(selected.getMonth() + 1)}-${pad(selected.getDate())} · ${weekdayNames[selected.getDay()]}`;
+				root.querySelector("#schedule-agenda-title")!.textContent = `${selected.getFullYear()}年 ${selected.getMonth() + 1}月 ${selected.getDate()}日`;
+				agendaDate.textContent = `${weekdayNames[selected.getDay()]} · ${calendarDateInfo(selected).lunarDate}${sameDay(selected, new Date()) ? " · 今天" : ""}`;
 				agendaList.replaceChildren();
 
 				if (selectedEvents.length === 0) {
@@ -618,23 +782,36 @@ import { Icon } from "astro-icon/components";
 					button.type = "button";
 					button.className = "schedule-day";
 					button.classList.toggle("is-selected", sameDay(day, selected));
+					button.classList.toggle("is-today", sameDay(day, new Date()));
 					button.classList.toggle("is-outside", mode === "month" && day.getMonth() !== cursor.getMonth());
 					button.setAttribute("aria-label", `${day.getFullYear()}年${day.getMonth() + 1}月${day.getDate()}日`);
+					button.setAttribute("aria-pressed", String(sameDay(day, selected)));
+					if (sameDay(day, new Date())) button.setAttribute("aria-current", "date");
 
 					const number = document.createElement("span");
 					number.className = "schedule-day__number";
 					number.textContent = String(day.getDate());
 					const lunar = document.createElement("span");
 					lunar.className = "schedule-day__lunar";
-					lunar.textContent = getLunarDay(day);
-					button.append(number, lunar);
+					lunar.textContent = calendarDateInfo(day).lunarDay;
+					const head = document.createElement("span");
+					head.className = "schedule-day__head";
+					head.append(number, lunar);
+					button.append(head);
 
-					const dayEvents = eventsFor(day);
-					if (dayEvents[0]) {
+					const dayEvents = displayedEventsFor(day);
+					for (const event of dayEvents.slice(0, 2)) {
 						const chip = document.createElement("span");
 						chip.className = "schedule-day__event";
-						chip.textContent = dayEvents[0].title;
+						chip.classList.toggle("schedule-day__event--holiday", event.kind === "holiday");
+						chip.textContent = event.title;
 						button.append(chip);
+					}
+					if (dayEvents.length > 2) {
+						const more = document.createElement("span");
+						more.className = "schedule-day__lunar";
+						more.textContent = `+${dayEvents.length - 2} 项`;
+						button.append(more);
 					}
 
 					button.addEventListener("click", () => {
@@ -648,11 +825,11 @@ import { Icon } from "astro-icon/components";
 			};
 
 			previous.addEventListener("click", () => {
-				mode === "week" ? cursor.setDate(cursor.getDate() - 7) : cursor.setMonth(cursor.getMonth() - 1);
+				mode === "week" ? cursor.setDate(cursor.getDate() - 7) : cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1);
 				render();
 			});
 			next.addEventListener("click", () => {
-				mode === "week" ? cursor.setDate(cursor.getDate() + 7) : cursor.setMonth(cursor.getMonth() + 1);
+				mode === "week" ? cursor.setDate(cursor.getDate() + 7) : cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
 				render();
 			});
 			todayButton.addEventListener("click", () => {
@@ -670,12 +847,25 @@ import { Icon } from "astro-icon/components";
 				render();
 				renderAgenda();
 				renderAnniversaries();
+				renderUpcoming();
 			});
 			events = (root as HTMLElement & { privateRecords?: ScheduleEvent[] }).privateRecords ?? [];
 
 			render();
 			renderAgenda();
 			renderAnniversaries();
+			renderUpcoming();
+			const timer = window.setInterval(() => {
+				if (!root.isConnected) { window.clearInterval(timer); return; }
+				const day = dateKey(new Date());
+				if (day !== currentDay) {
+					currentDay = day;
+					renderUpcoming();
+					render();
+					renderAgenda();
+				}
+				if (!root.closest<HTMLElement>("[data-private-content]")?.hidden) updateCountdowns();
+			}, 1000);
 		}
 	}
 
