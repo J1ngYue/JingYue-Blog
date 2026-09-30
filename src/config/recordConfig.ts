@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.99",
+		date: "2026-09-30",
+		time: "19:20",
+		type: "fix",
+		title: "修复关于页时间线卡片宽度",
+		summary:
+			"时间线卡片明确放入内容列，避免因竖线绝对定位而挤入窄列，造成逐字换行。",
+		changes: [
+			"保留时间线文案、配色与动画，以及手机端日期在卡片上方的原有布局。",
+		],
+	},
+	{
 		version: "v6.14.98",
 		date: "2026-09-30",
 		time: "19:10",

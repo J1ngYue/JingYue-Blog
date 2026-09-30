@@ -508,7 +508,7 @@ const showLocalAdminControls = import.meta.env.DEV;
 	.about-timeline__rail { position: absolute; top: 0; bottom: calc(-1 * var(--node-gap)); left: 5.5rem; width: 1.8rem; }
 	.about-timeline__rail::before { position: absolute; inset: 0 auto 0 50%; width: 2px; border-radius: 999px; background: color-mix(in srgb, var(--about-accent) 25%, transparent); content: ""; transform: translateX(-50%) scaleY(0); transform-origin: top; animation: about-line-grow 580ms ease both; animation-delay: calc(var(--timeline-index) * 100ms + 80ms); }
 	.about-timeline__rail i { position: absolute; top: 1.05rem; left: 50%; width: 0.72rem; height: 0.72rem; border-radius: 50%; background: var(--about-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--about-accent) 14%, transparent); transform: translateX(-50%); transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1); }
-	.about-timeline li > div { border-radius: 0.85rem; background: var(--about-soft); padding: 0.85rem 1.05rem; transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+	.about-timeline li > div { grid-column: 3; border-radius: 0.85rem; background: var(--about-soft); padding: 0.85rem 1.05rem; transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
 	.about-timeline li:hover > div { background: color-mix(in srgb, var(--about-ink) 7%, var(--card-bg, #fff)); box-shadow: 0 0.55rem 1.2rem rgb(15 23 42 / 8%); transform: translateX(0.25rem); }
 	.about-timeline li:hover .about-timeline__rail i { transform: translateX(-50%) scale(1.2); }
 	.about-timeline header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
