@@ -10,13 +10,13 @@ const announcementSecondary =
 	announcementConfig.secondaryContent || "最近更新：新增文章与动态模块";
 ---
 
-<div class="navbar-utility" data-navbar-utility data-open="false" data-announcement-open="false">
+<div class="navbar-utility" data-navbar-utility data-open="false" data-settings-open="false" data-announcement-open="false">
 	<Search client:load hideTrigger />
 	<button
-		id="display-settings-switch"
+		id="navbar-utility-trigger"
 		class="navbar-utility__trigger"
 		type="button"
-		aria-label="打开显示设置"
+		aria-label="打开快捷功能"
 		aria-haspopup="dialog"
 		aria-controls="navbar-utility-panel"
 		aria-expanded="false"
@@ -28,13 +28,13 @@ const announcementSecondary =
 		id="navbar-utility-panel"
 		class="navbar-utility__panel"
 		role="dialog"
-		aria-label="显示设置"
+		aria-label="快捷功能"
 		aria-hidden="true"
 		inert
 	>
 		<div class="navbar-utility__pointer" aria-hidden="true"></div>
+		<div class="navbar-utility__quick-view" data-navbar-utility-quick-view>
 		<div class="navbar-utility__actions" role="group" aria-label="快捷操作">
-			<strong class="navbar-utility__title">显示设置</strong>
 			<button
 				class="navbar-utility__action"
 				type="button"
@@ -61,13 +61,6 @@ const announcementSecondary =
 				<span class="navbar-utility__theme-label--dark">深色</span>
 				<span class="navbar-utility__theme-label--light">浅色</span>
 			</button>
-			<button class="navbar-utility__action" type="button" data-navbar-utility-search aria-label="搜索文章或内容">
-				<Icon is:inline name="material-symbols:search-rounded" />
-				<span>搜索</span>
-			</button>
-			<button class="navbar-utility__action" type="button" data-navbar-utility-close aria-label="关闭显示设置">
-				<Icon is:inline name="material-symbols:close-rounded" />
-			</button>
 		</div>
 
 		<div
@@ -88,7 +81,31 @@ const announcementSecondary =
 			</div>
 		</div>
 
-		<DisplaySettings client:load />
+		<button class="navbar-utility__search-field" type="button" data-navbar-utility-search aria-label="搜索文章或内容">
+			<Icon is:inline name="material-symbols:search-rounded" />
+			<span>搜索文章 / 搜索内容</span>
+			<kbd>Ctrl K</kbd>
+		</button>
+		<button id="display-settings-switch" class="navbar-utility__search-field" type="button" aria-label="打开显示设置" aria-controls="navbar-display-settings-view" aria-expanded="false">
+			<Icon is:inline name="material-symbols:palette-outline" />
+			<span>显示设置</span>
+			<Icon is:inline name="material-symbols:chevron-right-rounded" />
+		</button>
+		</div>
+
+		<div id="navbar-display-settings-view" data-navbar-utility-settings-view hidden>
+			<div class="navbar-utility__settings-header">
+				<button class="navbar-utility__action" type="button" data-navbar-utility-back aria-label="返回快捷功能">
+					<Icon is:inline name="material-symbols:arrow-back-rounded" />
+					<span>返回</span>
+				</button>
+				<strong class="navbar-utility__title">显示设置</strong>
+				<button class="navbar-utility__action" type="button" data-navbar-utility-close aria-label="关闭显示设置">
+					<Icon is:inline name="material-symbols:close-rounded" />
+				</button>
+			</div>
+			<DisplaySettings client:load />
+		</div>
 	</div>
 </div>
 
@@ -106,7 +123,7 @@ const announcementSecondary =
 		utilityWindow.__fireflyNavbarUtilityCleanup?.();
 
 		const root = document.querySelector<HTMLElement>("[data-navbar-utility]");
-		const trigger = root?.querySelector<HTMLButtonElement>("#display-settings-switch");
+		const trigger = root?.querySelector<HTMLButtonElement>("#navbar-utility-trigger");
 		const panel = root?.querySelector<HTMLElement>("#navbar-utility-panel");
 		const announcementButton = root?.querySelector<HTMLButtonElement>(
 			"[data-navbar-utility-announcement]",
@@ -122,13 +139,18 @@ const announcementSecondary =
 		);
 		const closeButton = root?.querySelector<HTMLButtonElement>("[data-navbar-utility-close]");
 		const settingsPanel = root?.querySelector<HTMLElement>("#display-setting");
+		const settingsButton = root?.querySelector<HTMLButtonElement>("#display-settings-switch");
+		const quickView = root?.querySelector<HTMLElement>("[data-navbar-utility-quick-view]");
+		const settingsView = root?.querySelector<HTMLElement>("[data-navbar-utility-settings-view]");
+		const backButton = root?.querySelector<HTMLButtonElement>("[data-navbar-utility-back]");
 
-		if (!root || !trigger || !panel || !announcementButton || !announcement || !themeButton) {
+		if (!root || !trigger || !panel || !announcementButton || !announcement || !themeButton || !settingsButton || !quickView || !settingsView) {
 			utilityWindow.__fireflyNavbarUtilityCleanup = undefined;
 			return;
 		}
 
 		let open = false;
+		let settingsOpen = false;
 		let announcementOpen = false;
 		let restoreFocusOnClose = true;
 
@@ -157,6 +179,17 @@ const announcementSecondary =
 			announcement.inert = !nextOpen;
 		};
 
+		const setSettingsOpen = (nextOpen: boolean) => {
+			settingsOpen = nextOpen;
+			root.dataset.settingsOpen = String(nextOpen);
+			quickView.hidden = nextOpen;
+			settingsView.hidden = !nextOpen;
+			settingsButton.setAttribute("aria-expanded", String(nextOpen));
+			panel.setAttribute("aria-label", nextOpen ? "显示设置" : "快捷功能");
+			settingsPanel?.classList.toggle("float-panel-closed", !nextOpen);
+			if (open) syncPanelPosition();
+		};
+
 		const setOpen = (nextOpen: boolean, restoreFocus = true) => {
 			if (open === nextOpen) return;
 			open = nextOpen;
@@ -165,16 +198,16 @@ const announcementSecondary =
 			trigger.setAttribute("aria-expanded", String(nextOpen));
 			trigger.setAttribute(
 				"aria-label",
-				nextOpen ? "关闭显示设置" : "打开显示设置",
+				nextOpen ? "关闭快捷功能" : "打开快捷功能",
 			);
 			panel.setAttribute("aria-hidden", String(!nextOpen));
 			panel.inert = !nextOpen;
-			settingsPanel?.classList.toggle("float-panel-closed", !nextOpen);
 			const topRow = document.getElementById("top-row");
 			if (nextOpen) topRow?.style.setProperty("z-index", "1060", "important");
 			else topRow?.style.removeProperty("z-index");
 			if (nextOpen) syncPanelPosition();
 			if (!nextOpen) {
+				setSettingsOpen(false);
 				setAnnouncementOpen(false);
 				if (restoreFocusOnClose) trigger.focus({ preventScroll: true });
 			}
@@ -186,11 +219,26 @@ const announcementSecondary =
 			if (nextOpen) {
 				window.dispatchEvent(
 					new CustomEvent("jingyue:floating-panel-open", {
-						detail: { panel: "settings" },
+						detail: { panel: "navbar-utility" },
 					}),
 				);
 			}
 			setOpen(nextOpen, false);
+		};
+
+		const handleSettingsClick = () => {
+			if (!open) {
+				window.dispatchEvent(new CustomEvent("jingyue:floating-panel-open", {
+					detail: { panel: "settings" },
+				}));
+				setOpen(true, false);
+			}
+			setSettingsOpen(true);
+			backButton?.focus({ preventScroll: true });
+		};
+		const handleBackClick = () => {
+			setSettingsOpen(false);
+			settingsButton.focus({ preventScroll: true });
 		};
 
 		const handleAnnouncementClick = () => {
@@ -220,12 +268,13 @@ const announcementSecondary =
 		const handleDocumentKeydown = (event: KeyboardEvent) => {
 			if (!open || event.key !== "Escape") return;
 			event.preventDefault();
-			setOpen(false, true);
+			if (settingsOpen) handleBackClick();
+			else setOpen(false, true);
 		};
 
 		const handleExclusivePanelOpen = (event: Event) => {
 			const panelName = (event as CustomEvent<{ panel?: string }>).detail?.panel;
-			if (panelName && panelName !== "settings") setOpen(false, false);
+			if (panelName && panelName !== "settings" && panelName !== "navbar-utility") setOpen(false, false);
 		};
 
 		const themeObserver = new MutationObserver(syncThemeButton);
@@ -235,6 +284,8 @@ const announcementSecondary =
 		});
 
 		trigger.addEventListener("click", handleTriggerClick);
+		settingsButton.addEventListener("click", handleSettingsClick);
+		backButton?.addEventListener("click", handleBackClick);
 		const handleCloseClick = () => setOpen(false, true);
 		closeButton?.addEventListener("click", handleCloseClick);
 		announcementButton.addEventListener("click", handleAnnouncementClick);
@@ -251,6 +302,8 @@ const announcementSecondary =
 			setOpen(false, false);
 			themeObserver.disconnect();
 			trigger.removeEventListener("click", handleTriggerClick);
+			settingsButton.removeEventListener("click", handleSettingsClick);
+			backButton?.removeEventListener("click", handleBackClick);
 			closeButton?.removeEventListener("click", handleCloseClick);
 			announcementButton.removeEventListener("click", handleAnnouncementClick);
 			themeButton.removeEventListener("click", handleThemeClick);
@@ -349,7 +402,7 @@ const announcementSecondary =
         background: var(--settings-panel-bg);
         transform: translateX(-50%) rotate(45deg);
     }
-    .navbar-utility__actions { display: flex; align-items: center; gap: 0.35rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--settings-border); }
+    .navbar-utility__settings-header { display: flex; align-items: center; gap: 0.35rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--settings-border); }
     .navbar-utility__title { flex: 1; font-size: 1.05rem; white-space: nowrap; }
     .navbar-utility__action {
         display: flex;
@@ -376,6 +429,20 @@ const announcementSecondary =
     :global(html.dark) .navbar-utility__theme-icon--dark, :global(html.dark) .navbar-utility__theme-label--dark { display: none; }
     :global(html.dark) .navbar-utility__theme-icon--light, :global(html.dark) .navbar-utility__theme-label--light { display: grid; }
 
+    .navbar-utility__quick-view { padding: 0.7rem; }
+    .navbar-utility__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.38rem; }
+    .navbar-utility__quick-view .navbar-utility__action { display: grid; min-height: 3.35rem; padding: 0.45rem 0.25rem; border-radius: 0.78rem; gap: 0.12rem; font-size: 0.68rem; font-weight: 720; line-height: 1; }
+    .navbar-utility__quick-view .navbar-utility__action :global(svg), .navbar-utility__quick-view .navbar-utility__theme-icon :global(svg) { width: 1.42rem; height: 1.42rem; }
+    .navbar-utility[data-settings-open="false"] .navbar-utility__panel { width: min(18rem, calc(100vw - 2rem)); border: 1px solid var(--settings-border); }
+    .navbar-utility[data-settings-open="false"] .navbar-utility__pointer { border-top-width: 1px; border-left-width: 1px; border-color: var(--settings-border); }
+    .navbar-utility__search-field { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; width: 100%; min-height: 2.55rem; margin-top: 0.55rem; padding: 0.45rem 0.55rem 0.45rem 0.65rem; border: 1px solid var(--settings-border); border-radius: 0.78rem; background: var(--settings-soft); color: var(--settings-ink); cursor: pointer; gap: 0.48rem; text-align: left; transition: background-color 180ms ease, border-color 180ms ease; }
+    .navbar-utility__search-field:is(:hover, :focus-visible) { background: var(--settings-hover); border-color: var(--settings-accent); }
+    .navbar-utility__search-field:focus-visible { outline: 2px solid var(--settings-accent); outline-offset: 2px; }
+    .navbar-utility__search-field :global(svg) { width: 1.12rem; height: 1.12rem; }
+    .navbar-utility__search-field > span { overflow: hidden; font-size: 0.75rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .navbar-utility__search-field kbd { padding: 0.22rem 0.4rem; border: 1px solid var(--settings-border); border-radius: 0.4rem; background: var(--settings-panel-bg); color: var(--settings-muted); font-family: inherit; font-size: 0.61rem; font-weight: 700; white-space: nowrap; }
+    .navbar-utility__quick-view .navbar-utility__announcement { margin: 0.55rem 0 0; }
+
     .navbar-utility__announcement-shell { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 220ms ease; }
     .navbar-utility[data-announcement-open="true"] .navbar-utility__announcement-shell { grid-template-rows: 1fr; }
     .navbar-utility__announcement-clip { min-height: 0; overflow: hidden; }
@@ -393,12 +460,14 @@ const announcementSecondary =
         .navbar-utility__panel { width: calc(100vw - 2rem); }
     }
     @media (max-width: 599px) {
-        .navbar-utility__actions { padding: 0.65rem; gap: 0.15rem; }
-        .navbar-utility__action { padding: 0.4rem; min-width: 2.4rem; }
-        .navbar-utility__action > span:not(.navbar-utility__theme-icon) { display: none; }
+        .navbar-utility__settings-header { padding: 0.65rem; gap: 0.15rem; }
+        .navbar-utility__settings-header .navbar-utility__action { padding: 0.4rem; min-width: 2.4rem; }
         .navbar-utility__title { font-size: 1rem; }
     }
+    @media (max-width: 420px) {
+        .navbar-utility[data-settings-open="false"] .navbar-utility__panel { width: min(16.5rem, calc(100vw - 2rem)); }
+    }
     @media (prefers-reduced-motion: reduce) {
-        .navbar-utility__trigger, .navbar-utility__trigger :global(svg), .navbar-utility__panel, .navbar-utility__action, .navbar-utility__announcement-shell { transition-duration: 1ms !important; }
+        .navbar-utility__trigger, .navbar-utility__trigger :global(svg), .navbar-utility__panel, .navbar-utility__action, .navbar-utility__search-field, .navbar-utility__announcement-shell { transition-duration: 1ms !important; }
     }
 </style>

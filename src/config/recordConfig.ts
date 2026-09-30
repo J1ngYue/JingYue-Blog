@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.102",
+		date: "2026-09-30",
+		time: "22:32",
+		type: "fix",
+		title: "恢复快捷菜单并增加显示设置二级入口",
+		summary:
+			"顶部滑杆先打开原来的快捷菜单，保留公告、深浅色切换和搜索排版，点击新增的显示设置按钮才展开横向面板。",
+		changes: [
+			"横向设置控件和独立黑白灰配色保持不变；支持返回快捷菜单、关闭与切页收起。",
+		],
+	},
+	{
 		version: "v6.14.101",
 		date: "2026-09-30",
 		time: "20:15",
