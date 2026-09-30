@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.103",
+		date: "2026-09-30",
+		time: "23:05",
+		type: "optimize",
+		title: "合并站点一览影像至首页相册",
+		summary:
+			"移除独立的站点一览整屏，将收藏视频加入纸质相册轮播，保留原五张照片与切换效果。",
+		changes: [
+			"视频使用原始地址，不压缩素材；进入视野后加载播放，离开或切页时暂停，保留手动播放控制。",
+		],
+	},
+	{
 		version: "v6.14.102",
 		date: "2026-09-30",
 		time: "22:32",

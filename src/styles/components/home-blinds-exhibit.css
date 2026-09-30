@@ -45,6 +45,7 @@
 .home-blinds-scene__string { position: absolute; bottom: 100%; left: 50%; width: 1px; height: 100svh; background: rgb(249 243 228 / 45%); }
 .home-blinds-scene__card { position: relative; padding: var(--postcard-pad); border: 1px solid rgb(76 69 54 / 45%); border-radius: 0; background: var(--postcard-paper); box-shadow: 0 1rem 2rem rgb(0 0 0 / 19%); }
 .home-blinds-scene__frame { width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: #dedbcf; }
+.home-blinds-scene__frame--video { aspect-ratio: 16 / 9; }
 .home-blinds-scene__image { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
 .home-blinds-scene__tape { position: absolute; top: -.8rem; left: 50%; z-index: 2; width: 4.3rem; height: 1.5rem; background: repeating-linear-gradient(-45deg, #a5d4c7 0 .42rem, #e6c2af .42rem .84rem); box-shadow: 0 2px 5px rgb(0 0 0 / 12%); transform: translateX(-50%) rotate(-2.5deg); opacity: .9; }
 .home-blinds-scene__sticker { position: absolute; top: -.9rem; left: -.9rem; z-index: 3; display: grid; place-items: center; width: 2.5rem; aspect-ratio: 1; border-radius: 50%; background: #398f88; color: #fff; font-size: 1.1rem; font-weight: 800; box-shadow: 0 0 0 .22rem var(--postcard-paper), 0 0 0 calc(.22rem + 1px) var(--postcard-ink); }

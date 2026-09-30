@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import collectionPoster from "@/assets/images/DesktopWallpaper/d4.avif";
 import "@/styles/components/home-blinds-exhibit.css";
 import HomeBlindsScene from "./HomeBlindsScene.astro";
 
@@ -9,6 +10,7 @@ type SceneItem = {
 	description: string;
 	image: string;
 	alt: string;
+	video?: string;
 };
 
 const sceneItems: SceneItem[] = [
@@ -46,6 +48,15 @@ const sceneItems: SceneItem[] = [
 		description: "走过这一程，再与沿途的风景重逢。",
 		image: "/assets/images/home-blinds/act3/4.webp",
 		alt: "第五幕插画",
+	},
+	{
+		eyebrow: "COLLECTION / FILM",
+		title: "收藏片段",
+		description: "把喜欢的画面，留在这一页相册里。",
+		image: collectionPoster.src,
+		alt: "循环播放的收藏影像片段",
+		video:
+			"https://tzyy-1330068502.cos.ap-beijing.myqcloud.com/AI%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87/main/videos/feature-1.mp4",
 	},
 ];
 
@@ -92,6 +103,7 @@ const meterBlocks = Array.from({ length: 20 });
 					sceneItems.map((item, index) => (
 						<HomeBlindsScene
 							index={index}
+							total={sceneItems.length}
 							item={item}
 						/>
 					))

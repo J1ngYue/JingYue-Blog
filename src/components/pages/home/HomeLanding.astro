@@ -94,9 +94,6 @@ const editorialPanels = [
 		image: galleryImage5,
 	},
 ];
-const overviewImage = backgroundImages.desktop[3] || profileDesktop;
-const overviewVideo =
-	"https://tzyy-1330068502.cos.ap-beijing.myqcloud.com/AI%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87/main/videos/feature-1.mp4";
 const siteTimezone = siteConfig.timezone || "Asia/Shanghai";
 const siteStartDate = siteConfig.siteStartDate || "2025-01-01";
 const heroQuotes = [
@@ -367,52 +364,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 
 	<div class="home-sections">
 		<section
-			id="home-overview"
-			class="home-section home-overview home-scroll-scene"
-			aria-labelledby="home-overview-title"
-			data-home-scroll-scene
-			data-home-page
-			data-home-section-tone="light"
-		>
-			<div class="home-section-heading">
-				<div>
-					<p class="home-section-eyebrow">AT A GLANCE</p>
-					<h2 id="home-overview-title">站点一览</h2>
-				</div>
-				<p>把最近的动态、内容分类与站点统计集中放在这里，其他页面保持专注阅读。</p>
-			</div>
-			<div
-				class="home-overview-illustration"
-				aria-label="循环播放的收藏影像片段"
-			>
-				<ImageWrapper
-					src={overviewImage}
-					alt=""
-					class="home-overview-illustration-image"
-					loading="lazy"
-					layout="full-width"
-					widths={[640, 960, 1280]}
-					sizes="(max-width: 720px) 100vw, 74rem"
-				/>
-				<video
-					class="home-overview-video"
-					data-home-overview-video
-					src={overviewVideo}
-					loop
-					muted
-					playsinline
-					preload="auto"
-				></video>
-				<div class="home-overview-illustration-shade"></div>
-				<span class="home-overview-illustration-index">片段 01</span>
-			</div>
-			<a class="home-scene-next home-section-next" href="#home-exhibit" aria-label="向下探索横向影像叙事">
-				<span>向下探索</span>
-				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
-			</a>
-		</section>
-
-		<section
 			id="home-exhibit"
 			class="home-section home-exhibit home-scroll-scene"
 			aria-label="横向影像叙事"
@@ -566,7 +517,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const exhibitPrevious = root.querySelector("[data-home-exhibit-previous]");
 		const exhibitNext = root.querySelector("[data-home-exhibit-next]");
 		const exhibitToggle = root.querySelector("[data-home-exhibit-toggle]");
-		const overviewVideo = root.querySelector("[data-home-overview-video]");
+		const exhibitVideo = root.querySelector("[data-home-exhibit-video]");
 		const profileRail = root.querySelector(".home-profile-rail");
 		const coverSwitcherClosers = Array.from(root.querySelectorAll("[data-home-cover-switcher-close]"));
 		const coverOptions = Array.from(root.querySelectorAll("[data-home-cover-option]"));
@@ -634,6 +585,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		let exhibitSuppressClick = false;
 		let exhibitSuppressClickTimer = 0;
 		let exhibitVisible = false;
+		let exhibitVideoPlaying = false;
 		let exhibitInteractionPaused = false;
 		let exhibitUserPaused = false;
 		let exhibitTransition = null;
@@ -916,6 +868,21 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const exhibitModulo = (value) =>
 			((value % exhibitSlides.length) + exhibitSlides.length) % exhibitSlides.length;
 
+		const syncExhibitVideo = () => {
+			if (!exhibitVideo) return;
+			const visible = exhibitVisible && !document.hidden &&
+				exhibitVideo.closest("[data-home-exhibit-slide]")?.dataset.position === "active";
+			if (visible && !exhibitVideo.getAttribute("src")) {
+				exhibitVideo.src = exhibitVideo.dataset.src;
+				exhibitVideo.load();
+			}
+			const playing = visible && !reducedMotion.matches;
+			if (playing === exhibitVideoPlaying) return;
+			exhibitVideoPlaying = playing;
+			if (playing) exhibitVideo.play().catch(() => {});
+			else exhibitVideo.pause();
+		};
+
 		const renderExhibitMeter = (position) => {
 			if (!exhibitSlides.length) return;
 			const normalized = exhibitModulo(position);
@@ -931,6 +898,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				slide.setAttribute("aria-hidden", String(Math.abs(offset) > 1.5));
 				slide.dataset.position = Math.abs(offset) < .5 ? "active" : "adjacent";
 			});
+			syncExhibitVideo();
 			exhibitMeter?.setAttribute("aria-valuenow", (normalized / exhibitSlides.length * 100).toFixed(1));
 			exhibitMeter?.setAttribute("aria-valuetext", `第 ${exhibitModulo(exhibitActiveIndex) + 1} 张，共 ${exhibitSlides.length} 张`);
 		};
@@ -972,6 +940,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		};
 
 		const syncExhibitPlayback = () => {
+			syncExhibitVideo();
 			const playing = shouldPlayExhibit();
 			exhibitCarousel?.setAttribute("data-playing", String(playing));
 			const paused = exhibitUserPaused || reducedMotion.matches;
@@ -1859,11 +1828,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		});
 		root.setAttribute("data-home-scenes-ready", "true");
 		let sceneObserver = null;
-		let overviewVideoObserver = null;
 		let endingVideoLoaded = false;
-		const markOverviewVideoPlaying = () => {
-			overviewVideo?.classList.add("is-playing");
-		};
 		const syncEndingVideo = (visible) => {
 			if (!endingVideo || reducedMotion.matches) return;
 			if (!visible) {
@@ -1901,26 +1866,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				{ threshold: [0, 0.35, 0.6] },
 			);
 			scrollScenes.forEach((scene) => sceneObserver.observe(scene));
-			if (overviewVideo) {
-				overviewVideoObserver = new IntersectionObserver(
-					([entry]) => {
-						if (entry.isIntersecting) {
-							overviewVideo.play().catch(() => {});
-						} else {
-							overviewVideo.pause();
-						}
-					},
-					{ rootMargin: "240px 0px", threshold: 0.15 },
-				);
-				overviewVideoObserver.observe(overviewVideo);
-			}
 		} else {
 			scrollScenes.forEach((scene) => scene.classList.add("is-visible"));
 			capabilityMatrix?.classList.add("is-visible");
 			syncEndingVideo(true);
-			overviewVideo?.play().catch(() => {});
 		}
-		overviewVideo?.addEventListener("playing", markOverviewVideoPlaying);
 		if (exhibitCarousel) {
 			showExhibitSlide(0, true);
 			if ("IntersectionObserver" in window) {
@@ -2114,8 +2064,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			window.removeEventListener("blur", handleExhibitHoldWindowBlur);
 			exhibitToggle?.removeEventListener("click", toggleExhibitPlayback);
 			document.removeEventListener("visibilitychange", handleExhibitVisibilityChange);
-			overviewVideo?.removeEventListener("playing", markOverviewVideoPlaying);
-			overviewVideo?.pause();
+			exhibitVideo?.pause();
 			endingVideo?.pause();
 			window.removeEventListener("jingyue:local-cover-state-change", handleLocalCoverState);
 			sceneLinks.forEach((link) => link.removeEventListener("click", handleSceneLink));
@@ -2124,7 +2073,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			window.removeEventListener("firefly:home-gallery-lock", handleGalleryLock);
 			window.removeEventListener("firefly:home-section-tone", handleHomeSectionTone);
 			sceneObserver?.disconnect();
-			overviewVideoObserver?.disconnect();
 			exhibitObserver?.disconnect();
 			finishExhibitHold();
 			clearExhibitClickSuppression();
@@ -4343,36 +4291,12 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		margin-inline: auto;
 	}
 
-	.home-section-heading {
-		display: flex;
-		align-items: end;
-		justify-content: space-between;
-		gap: 2rem;
-		margin-bottom: 2rem;
-	}
-
-	.home-section-eyebrow {
-		margin: 0 0 0.5rem;
-		color: var(--primary);
-		font-size: 0.7rem;
-		font-weight: 800;
-		letter-spacing: 0.28em;
-	}
-
 	.home-section h2 {
 		margin: 0;
 		color: var(--deep-text);
 		font-size: clamp(2.1rem, 5vw, 3.8rem);
 		letter-spacing: -0.04em;
 		line-height: 1;
-	}
-
-	.home-section-heading > p {
-		max-width: 29rem;
-		margin: 0;
-		color: color-mix(in oklch, var(--deep-text) 68%, transparent);
-		font-size: 0.92rem;
-		line-height: 1.75;
 	}
 
 	.home-nav-grid {
@@ -4517,83 +4441,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 
 	.home-activity {
 		margin-top: clamp(4rem, 9vw, 7rem);
-	}
-
-	.home-overview {
-		margin-top: clamp(4rem, 9vw, 7rem);
-	}
-
-	.home-overview-illustration {
-		position: relative;
-		min-height: clamp(22rem, 56vh, 40rem);
-		margin-bottom: 1rem;
-		overflow: hidden;
-		border: 1px solid rgba(255, 255, 255, 0.45);
-		border-radius: 2rem;
-		box-shadow: 0 1.8rem 4.5rem color-mix(in oklch, var(--deep-text) 15%, transparent);
-		contain: paint;
-	}
-
-	:global(.home-overview-illustration-image),
-	:global(.home-overview-illustration-image img),
-	:global(.home-overview-illustration-image picture) {
-		width: 100% !important;
-		height: 100% !important;
-	}
-
-	:global(.home-overview-illustration-image) {
-		position: absolute !important;
-		inset: 0;
-	}
-
-	:global(.home-overview-illustration-image img) {
-		object-fit: cover !important;
-		object-position: center !important;
-		filter: saturate(0.78) contrast(0.92);
-		transform: scale(1.02);
-	}
-
-	.home-overview-video {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		object-position: center;
-		opacity: 0;
-		transition: opacity 240ms ease;
-	}
-
-	.home-overview-video.is-playing {
-		opacity: 1;
-	}
-
-	.home-overview-illustration-shade {
-		position: absolute;
-		inset: 0;
-		background:
-			linear-gradient(120deg, rgba(23, 20, 27, 0.12), transparent 48%),
-			linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(18, 16, 22, 0.18));
-		pointer-events: none;
-	}
-
-	.home-overview-illustration-index {
-		position: absolute;
-		left: 1.5rem;
-		top: 1.5rem;
-		display: inline-flex;
-		align-items: center;
-		min-height: 2.35rem;
-		padding: 0.25rem 1rem;
-		border: 1px solid rgba(255, 255, 255, 0.32);
-		border-radius: 999px;
-		background: rgba(45, 40, 50, 0.34);
-		box-shadow: 0 0.65rem 1.6rem rgba(0, 0, 0, 0.16);
-		color: rgba(255, 255, 255, 0.88);
-		font-size: 0.62rem;
-		font-weight: 800;
-		letter-spacing: 0.24em;
-		backdrop-filter: blur(0.8rem);
 	}
 
 	.home-overview-grid {
@@ -4940,8 +4787,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		}
 
 		.home-exhibit,
-		.home-activity,
-		.home-overview {
+		.home-activity {
 			margin-top: 0;
 		}
 
@@ -5153,12 +4999,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		.home-overview-grid :global(.home-overview-tags),
 		.home-overview-grid :global(.home-overview-site-info) {
 			grid-column: span 6;
-		}
-
-		.home-section-heading {
-			align-items: flex-start;
-			flex-direction: column;
-			gap: 1rem;
 		}
 
 		.home-ending {
@@ -5832,10 +5672,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			overflow: hidden;
 		}
 
-		.home-overview-illustration {
-			min-height: clamp(22rem, 58svh, 38rem);
-			margin-bottom: 0;
-		}
 	}
 
 	@media (max-width: 1023px) {

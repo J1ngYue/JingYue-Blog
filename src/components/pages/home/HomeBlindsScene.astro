@@ -1,16 +1,18 @@
 ---
 interface Props {
 	index: number;
+	total: number;
 	item: {
 		eyebrow: string;
 		title: string;
 		description: string;
 		image: string;
 		alt: string;
+		video?: string;
 	};
 }
 
-const { index, item } = Astro.props;
+const { index, total, item } = Astro.props;
 ---
 
 <!-- Postcard composition adapted from MmzMing/my-blog. -->
@@ -18,7 +20,7 @@ const { index, item } = Astro.props;
 	class:list={["home-blinds-scene", { "home-blinds-scene--raised": index % 2 === 1 }]}
 	data-home-exhibit-slide
 	data-slide-index={index}
-	style={`--scene-offset: ${index > 2 ? index - 5 : index}`}
+	style={`--scene-offset: ${index > (total - 1) / 2 ? index - total : index}`}
 	aria-label={item.title}
 >
 	<span class="home-blinds-scene__string" aria-hidden="true"></span>
@@ -31,8 +33,23 @@ const { index, item } = Astro.props;
 	<div class="home-blinds-scene__card">
 		<span class="home-blinds-scene__tape" aria-hidden="true"></span>
 		<span class="home-blinds-scene__sticker" aria-hidden="true">{index + 1}</span>
-		<div class="home-blinds-scene__frame">
-			<img class="home-blinds-scene__image" src={item.image} alt={item.alt} loading="lazy" decoding="async" width="1200" height="900" />
+		<div class:list={["home-blinds-scene__frame", { "home-blinds-scene__frame--video": Boolean(item.video) }]}>
+			{item.video ? (
+				<video
+					class="home-blinds-scene__image"
+					data-home-exhibit-video
+					data-src={item.video}
+					poster={item.image}
+					aria-label={item.alt}
+					controls
+					loop
+					muted
+					playsinline
+					preload="none"
+				></video>
+			) : (
+				<img class="home-blinds-scene__image" src={item.image} alt={item.alt} loading="lazy" decoding="async" width="1200" height="900" />
+			)}
 		</div>
 		<div class="home-blinds-scene__band">
 			<svg class="home-blinds-scene__doodles" viewBox="0 0 720 96" fill="none" preserveAspectRatio="none" aria-hidden="true">
