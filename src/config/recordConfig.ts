@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.95",
+		date: "2026-09-30",
+		time: "17:30",
+		type: "fix",
+		title: "修复手机端登录来源错误",
+		summary: "HTTP 访问博客时尽早切换到 HTTPS，避免留言 OAuth 和私密日历、账单请求被跨域限制阻断。",
+		changes: [
+			"正式博客的 HTTP 页面保持原路径与参数跳转到 HTTPS，不改变本地开发地址。",
+			"留言登录与私密服务连接失败时显示准确的中文网络提示。",
+		],
+	},
+	{
 		version: "v6.14.94",
 		date: "2026-09-30",
 		time: "17:18",

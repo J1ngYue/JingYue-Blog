@@ -199,7 +199,7 @@ async function selectLoginProvider(provider: GuestbookLoginProvider) {
 					: provider === "google"
 						? "Google"
 						: "GitHub";
-		onToolError(`${providerName} OAuth 尚未配置`);
+		onToolError(`${providerName} 登录暂不可用，请使用 HTTPS 地址或检查网络`);
 		return;
 	}
 	const accepted = await onLogin(provider);
@@ -933,7 +933,7 @@ async function handleImageSelection(event: Event) {
 				onclick={() => void selectLoginProvider("google")}
 				disabled={loggingIn || oauthProvidersLoading}
 				aria-disabled={!providerAvailable("google")}
-				title={providerAvailable("google") ? "使用 Google 登录" : "Google OAuth 尚未配置"}
+				title={providerAvailable("google") ? "使用 Google 登录" : "Google 登录暂不可用"}
 			>
 				<span><GoogleLogo size={25} /></span>
 				<strong>Google</strong>
@@ -944,7 +944,7 @@ async function handleImageSelection(event: Event) {
 				onclick={() => void selectLoginProvider("github")}
 				disabled={loggingIn || oauthProvidersLoading}
 				aria-disabled={!providerAvailable("github")}
-				title={providerAvailable("github") ? "使用 GitHub 登录" : "GitHub OAuth 尚未配置"}
+				title={providerAvailable("github") ? "使用 GitHub 登录" : "GitHub 登录暂不可用"}
 			>
 				<span><Icon icon="simple-icons:github" size="xl" /></span>
 				<strong>GitHub</strong>

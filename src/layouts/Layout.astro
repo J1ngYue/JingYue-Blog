@@ -137,6 +137,11 @@ const siteLang = lang.replace("_", "-");
 >
   <head>
     <meta charset="UTF-8" />
+    <script is:inline>
+      if (location.protocol === "http:" && location.hostname === "blog.j1ngyue.cn") {
+        location.replace(location.href.replace(/^http:/, "https:"));
+      }
+    </script>
     <link
       rel="stylesheet"
       href={url("/styles/compact-music-player.css")}

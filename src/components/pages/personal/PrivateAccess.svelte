@@ -111,11 +111,16 @@ const monthly = $derived.by(() => {
 });
 
 async function request(path: string, init?: RequestInit) {
-	const response = await fetch(`${apiBase.replace(/\/$/, "")}${path}`, {
-		credentials: "include",
-		...init,
-		headers: { "Content-Type": "application/json", ...init?.headers },
-	});
+	let response: Response;
+	try {
+		response = await fetch(`${apiBase.replace(/\/$/, "")}${path}`, {
+			credentials: "include",
+			...init,
+			headers: { "Content-Type": "application/json", ...init?.headers },
+		});
+	} catch {
+		throw new Error("无法连接私密服务，请使用 HTTPS 地址并检查网络");
+	}
 	const data = await response.json();
 	if (response.status === 401 && path !== "/auth/login") {
 		unlockedInCurrentDocument = false;
