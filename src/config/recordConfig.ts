@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.106",
+		date: "2026-10-01",
+		time: "01:00",
+		type: "optimize",
+		title: "优化日历周视图与日期卡片排版",
+		summary:
+			"日历与当天安排并排，近期事件改为横向概览，消除旧侧栏撑高周视图造成的空白。",
+		changes: [
+			"日期格使用圆角细边框与圆形今日标记，整理农历及事件间距，保留私密日历的全部功能。",
+			"收紧空记录面板高度，移动端自动改为纵向排列，避免内容溢出。",
+		],
+	},
+	{
 		version: "v6.14.105",
 		date: "2026-10-01",
 		time: "00:42",

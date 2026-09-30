@@ -7,20 +7,6 @@ import { Icon } from "astro-icon/components";
 	data-schedule-dashboard
 >
 	<div class="schedule-layout">
-		<aside class="schedule-overview" aria-label="即将到来">
-			{[
-				["holiday", "近期节日"],
-				["birthday", "近期生日"],
-				["anniversary", "近期纪念日"],
-				["other", "近期安排"],
-			].map(([kind, label]) => (
-				<section class:list={["schedule-upcoming", `schedule-upcoming--${kind}`]}>
-					<h2>{label}</h2>
-					<div class="schedule-upcoming__list" data-upcoming={kind}></div>
-				</section>
-			))}
-		</aside>
-
 		<div class="schedule-calendar" data-calendar-mode="month">
 			<div class="schedule-toolbar">
 				<button type="button" class="schedule-arrow" data-calendar-prev aria-label="上个月">
@@ -56,6 +42,20 @@ import { Icon } from "astro-icon/components";
 			<p class="schedule-panel__date" data-agenda-date></p>
 			<div class="schedule-agenda" data-agenda-list aria-live="polite"></div>
 		</section>
+
+		<aside class="schedule-overview" aria-label="即将到来">
+			{[
+				["holiday", "近期节日"],
+				["birthday", "近期生日"],
+				["anniversary", "近期纪念日"],
+				["other", "近期安排"],
+			].map(([kind, label]) => (
+				<section class:list={["schedule-upcoming", `schedule-upcoming--${kind}`]}>
+					<h2>{label}</h2>
+					<div class="schedule-upcoming__list" data-upcoming={kind}></div>
+				</section>
+			))}
+		</aside>
 	</div>
 
 	<div class="schedule-panels">
@@ -93,11 +93,13 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-layout {
 		display: grid;
+		grid-template-areas: "calendar" "agenda" "overview";
 		align-items: start;
 		gap: 1rem;
 	}
 
 	.schedule-overview {
+		grid-area: overview;
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 1.2rem;
@@ -106,6 +108,8 @@ import { Icon } from "astro-icon/components";
 		background: var(--schedule-paper);
 		padding: 1rem;
 	}
+
+	.schedule-upcoming { min-width: 0; }
 
 	.schedule-upcoming h2 {
 		margin: 0 0 0.6rem;
@@ -161,28 +165,18 @@ import { Icon } from "astro-icon/components";
 	}
 
 	@container (min-width: 840px) {
-		.schedule-layout { grid-template-columns: minmax(0, 1fr) 15rem; }
-		.schedule-overview { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-	}
-
-	@container (min-width: 1120px) {
 		.schedule-layout {
-			grid-template-columns: 13rem minmax(0, 1fr) 15rem;
+			grid-template-columns: minmax(0, 1fr) 16rem;
+			grid-template-areas: "calendar agenda" "overview overview";
 		}
-
-		.schedule-overview { grid-column: auto; grid-template-columns: 1fr; }
-		.schedule-overview, .schedule-panel--agenda {
-			position: sticky;
-			top: 6rem;
-			max-height: calc(100dvh - 7rem);
-			overflow: auto;
-		}
+		.schedule-overview { grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); }
+		.schedule-upcoming--holiday .schedule-upcoming__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	}
 
 	.schedule-toolbar {
 		position: relative;
 		display: grid;
-		grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+		grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem auto;
 		align-items: center;
 		gap: 0.75rem;
 		padding: 1rem 1rem 0;
@@ -244,7 +238,6 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-view-switch {
-		grid-column: 1 / -1;
 		justify-self: end;
 		display: inline-flex;
 		min-height: 2.4rem;
@@ -273,6 +266,7 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-calendar {
+		grid-area: calendar;
 		overflow: hidden;
 		min-width: 0;
 		border: 2px solid var(--schedule-line);
@@ -287,13 +281,15 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-weekdays {
-		padding: 1.15rem 0.7rem 0.3rem;
+		gap: 0.35rem;
+		padding: 1rem 0.7rem 0.45rem;
 		color: var(--schedule-muted);
 		font-size: 0.68rem;
 		text-align: center;
 	}
 
 	.schedule-days {
+		gap: 0.35rem;
 		padding: 0 0.7rem 0.7rem;
 	}
 
@@ -302,27 +298,19 @@ import { Icon } from "astro-icon/components";
 		display: flex;
 		flex-direction: column;
 		min-width: 0;
-		min-height: 7.5rem;
-		border: 0;
-		border-right: 1px solid var(--schedule-soft-line);
+		min-height: 8rem;
+		gap: 0.35rem;
+		border: 1px solid var(--schedule-soft-line);
+		border-radius: 0.6rem;
 		background: transparent;
 		padding: 0.65rem 0.55rem;
 		color: var(--schedule-ink);
 		text-align: left;
-		transition: background-color 180ms ease, box-shadow 180ms ease;
-	}
-
-	.schedule-day:nth-child(7n) {
-		border-right: 0;
+		transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 	}
 
 	.schedule-calendar[data-calendar-mode="month"] .schedule-day {
-		min-height: 6rem;
-		border-bottom: 1px solid var(--schedule-soft-line);
-	}
-
-	.schedule-calendar[data-calendar-mode="month"] .schedule-day:nth-last-child(-n + 7) {
-		border-bottom: 0;
+		min-height: 6.5rem;
 	}
 
 	.schedule-day:hover,
@@ -338,10 +326,15 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-day.is-selected {
 		z-index: 1;
-		box-shadow: inset 0 0 0 2px var(--schedule-ink);
+		border-color: var(--schedule-ink);
+		box-shadow: inset 0 0 0 0.5px var(--schedule-ink);
 	}
 
-	.schedule-day.is-today { background: rgb(118 156 183 / 12%); }
+	.schedule-day.is-today { background: rgb(128 128 128 / 7%); }
+	.schedule-day.is-today .schedule-day__number {
+		background: var(--schedule-ink);
+		color: var(--schedule-paper);
+	}
 
 	.schedule-day.is-outside .schedule-day__number,
 	.schedule-day.is-outside .schedule-day__lunar {
@@ -349,11 +342,16 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-day__number {
-		font-size: 0.94rem;
+		display: grid;
+		width: 1.8rem;
+		height: 1.8rem;
+		place-items: center;
+		border-radius: 50%;
+		font-size: 1rem;
 		font-weight: 750;
 		font-variant-numeric: tabular-nums;
 	}
-	.schedule-day__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.2rem; }
+	.schedule-day__head { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
 
 	.schedule-day__lunar {
 		color: var(--schedule-muted);
@@ -363,7 +361,7 @@ import { Icon } from "astro-icon/components";
 	.schedule-day__event {
 		display: block;
 		overflow: hidden;
-		margin-top: 0.55rem;
+		margin-top: 0.1rem;
 		border: 1px solid rgb(224 175 39 / 36%);
 		border-radius: 0.3rem;
 		background: rgb(255 244 174 / 68%);
@@ -401,11 +399,13 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-panel {
 		overflow: hidden;
-		min-height: 17rem;
+		min-width: 0;
 		border: 2px solid var(--schedule-line);
 		border-radius: 0.6rem;
 		background: var(--schedule-paper);
 	}
+
+	.schedule-panel--agenda { grid-area: agenda; }
 
 	.schedule-panel > header {
 		display: flex;
@@ -479,7 +479,7 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-agenda__empty {
 		display: grid;
-		min-height: 9rem;
+		min-height: 4rem;
 		place-items: center;
 		margin: 0;
 		color: var(--schedule-muted);
@@ -552,6 +552,15 @@ import { Icon } from "astro-icon/components";
 		font-weight: 750;
 	}
 
+	@container (max-width: 580px) {
+		.schedule-toolbar { grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem; }
+		.schedule-view-switch { grid-column: 1 / -1; }
+		.schedule-days { gap: 0.2rem; }
+		.schedule-weekdays { gap: 0.2rem; }
+		.schedule-day__number { width: 1.6rem; height: 1.6rem; font-size: 0.9rem; }
+		.schedule-day__head { flex-direction: column; align-items: start; gap: 0.1rem; }
+	}
+
 	@media (max-width: 700px) {
 		.schedule-upcoming__list { grid-template-columns: 1fr; }
 		.schedule-overview { padding: 0.8rem; }
@@ -565,14 +574,14 @@ import { Icon } from "astro-icon/components";
 		}
 
 		.schedule-calendar[data-calendar-mode="month"] .schedule-day {
-			min-height: 4rem;
+			min-height: 5rem;
 		}
-		.schedule-day__head { flex-direction: column; gap: 0; }
 		.schedule-day__lunar { font-size: 0.6rem; }
 
 		.schedule-day__event {
-			padding-inline: 0.2rem;
+			padding-inline: 0;
 			font-size: 0.6rem;
+			text-align: center;
 		}
 
 		.schedule-panels {
@@ -704,6 +713,12 @@ import { Icon } from "astro-icon/components";
 				const items = events.filter((event) => ["birthday", "anniversary", "holiday"].includes(event.kind));
 				anniversaryCount.value = String(items.length);
 				anniversaries.replaceChildren();
+				if (!items.length) {
+					const empty = document.createElement("li");
+					empty.className = "schedule-upcoming__empty";
+					empty.textContent = "暂无生日、纪念日或节假日记录";
+					anniversaries.append(empty);
+				}
 				for (const event of items) {
 					const item = document.createElement("li");
 					const heading = document.createElement("strong");
