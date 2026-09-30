@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.107",
+		date: "2026-10-01",
+		time: "01:30",
+		type: "optimize",
+		title: "近期日历事件支持分类折叠",
+		summary:
+			"近期节日、生日、纪念日与安排可点击展开或收起，一次只展开一个分类，避免事件卡片持续堆长。",
+		changes: [
+			"默认展开近期节日，其余分类显示标题与数量；保留倒数计时和点击跳转日历功能，支持键盘与触屏。",
+		],
+	},
+	{
 		version: "v6.14.106",
 		date: "2026-10-01",
 		time: "01:00",

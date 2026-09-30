@@ -50,10 +50,14 @@ import { Icon } from "astro-icon/components";
 				["anniversary", "近期纪念日"],
 				["other", "近期安排"],
 			].map(([kind, label]) => (
-				<section class:list={["schedule-upcoming", `schedule-upcoming--${kind}`]}>
-					<h2>{label}</h2>
+				<details class:list={["schedule-upcoming", `schedule-upcoming--${kind}`]} name="schedule-upcoming" open={kind === "holiday"}>
+					<summary>
+						<h2>{label}</h2>
+						<output data-upcoming-count aria-label={`${label}数量`}>0</output>
+						<Icon is:inline name="material-symbols:expand-more-rounded" aria-hidden="true" />
+					</summary>
 					<div class="schedule-upcoming__list" data-upcoming={kind}></div>
-				</section>
+				</details>
 			))}
 		</aside>
 	</div>
@@ -101,6 +105,7 @@ import { Icon } from "astro-icon/components";
 	.schedule-overview {
 		grid-area: overview;
 		display: grid;
+		align-items: start;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 1.2rem;
 		border: 2px solid var(--schedule-line);
@@ -110,9 +115,30 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-upcoming { min-width: 0; }
+	.schedule-upcoming > summary {
+		display: flex;
+		min-height: 2.75rem;
+		align-items: center;
+		gap: 0.4rem;
+		border-radius: 0.35rem;
+		color: var(--schedule-muted);
+		cursor: pointer;
+		list-style: none;
+		transition: background-color 180ms ease;
+	}
+	.schedule-upcoming > summary::-webkit-details-marker { display: none; }
+	.schedule-upcoming > summary:hover { background: rgb(128 128 128 / 8%); }
+	.schedule-upcoming > summary:focus-visible { outline: 2px solid var(--schedule-ink); outline-offset: 2px; }
+	.schedule-upcoming > summary output {
+		margin-left: auto;
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+	}
+	.schedule-upcoming > summary svg { width: 1rem; height: 1rem; flex-shrink: 0; transition: transform 180ms ease; }
+	.schedule-upcoming[open] > summary svg { transform: rotate(180deg); }
 
 	.schedule-upcoming h2 {
-		margin: 0 0 0.6rem;
+		margin: 0;
 		border-left: 3px solid #e55267;
 		padding-left: 0.5rem;
 		color: var(--schedule-muted);
@@ -128,6 +154,7 @@ import { Icon } from "astro-icon/components";
 		display: grid;
 		grid-template-columns: 1fr;
 		gap: 0.65rem;
+		margin-top: 0.6rem;
 	}
 
 	.schedule-upcoming__empty {
@@ -675,7 +702,10 @@ import { Icon } from "astro-icon/components";
 					.filter((item): item is { event: ScheduleEvent; date: Date } => item.date !== null)
 					.sort((left, right) => left.date.getTime() - right.date.getTime());
 				for (const list of root.querySelectorAll<HTMLElement>("[data-upcoming]")) {
-					const items = upcoming.filter(({ event }) => list.dataset.upcoming === "other" ? !["holiday", "birthday", "anniversary"].includes(event.kind) : event.kind === list.dataset.upcoming).slice(0, 2);
+					const matching = upcoming.filter(({ event }) => list.dataset.upcoming === "other" ? !["holiday", "birthday", "anniversary"].includes(event.kind) : event.kind === list.dataset.upcoming);
+					const items = matching.slice(0, 2);
+					const count = list.closest("details")?.querySelector<HTMLOutputElement>("[data-upcoming-count]");
+					if (count) count.value = String(matching.length);
 					list.replaceChildren();
 					if (!items.length) {
 						const empty = document.createElement("p");
