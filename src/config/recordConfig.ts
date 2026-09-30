@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.104",
+		date: "2026-10-01",
+		time: "00:05",
+		type: "optimize",
+		title: "GitHub 活动并入头像资料面板",
+		summary:
+			"移除首页独立 GitHub 整屏，资料面板左下角每六秒轮换文章与 GitHub 活动，悬浮暂停、移开继续。",
+		changes: [
+			"GitHub 默认显示本月，悬浮展开过去一年，触屏可点击切换；保留文章筛选与右侧倒数日布局。",
+			"打开资料面板后才读取已有活动数据，支持键盘操作与减少动态效果设置。",
+		],
+	},
+	{
 		version: "v6.14.103",
 		date: "2026-09-30",
 		time: "23:05",

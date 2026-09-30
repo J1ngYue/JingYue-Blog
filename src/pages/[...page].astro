@@ -4,10 +4,8 @@ import Pagination from "@/components/common/Pagination.astro";
 import PostPage from "@/components/layout/PostPage.astro";
 import HomeLanding from "@/components/pages/home/HomeLanding.astro";
 import { siteConfig } from "@/config";
-import { githubUsername } from "@/config/profileConfig";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
-import { getGithubActivityCalendar } from "@/utils/home-activity";
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
 	// 使用配置中的文章数量
@@ -20,14 +18,11 @@ const { page } = Astro.props;
 
 const len = page.data.length;
 const isLandingPage = page.currentPage === 1;
-const githubActivity = isLandingPage
-	? await getGithubActivityCalendar(githubUsername)
-	: null;
 ---
 
 <MainGridLayout homeLanding={isLandingPage}>
-  {isLandingPage && githubActivity ? (
-    <HomeLanding githubActivity={githubActivity} />
+  {isLandingPage ? (
+    <HomeLanding />
   ) : (
     <>
       <PostPage page={page} />

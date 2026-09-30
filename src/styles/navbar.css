@@ -622,6 +622,32 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 #navbar .navbar-profile-card__activity-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .42rem; color: var(--profile-card-muted); font-size: .58rem; }
 #navbar .navbar-profile-card__activity-heading a { display: inline-flex; align-items: center; gap: .2rem; color: var(--profile-card-text); }
 #navbar .navbar-profile-card__activity-heading svg { width: .7rem; height: .7rem; }
+#navbar .navbar-profile-card__activity-heading button { display: inline-flex; align-items: center; gap: .3rem; padding: .15rem 0; color: inherit; cursor: pointer; }
+#navbar .navbar-profile-card__activity-heading button:hover { color: var(--profile-card-text); }
+#navbar .navbar-profile-card__activity-views { display: grid; }
+#navbar .navbar-profile-card__activity-pane { grid-area: 1 / 1; min-width: 0; opacity: 1; visibility: visible; transition: opacity 180ms ease, visibility 180ms; }
+#navbar .navbar-profile-card__activity-pane[inert] { opacity: 0; visibility: hidden; pointer-events: none; }
+#navbar .navbar-profile-card__activity [hidden] { display: none; }
+#navbar .navbar-profile-card__activity :is(button, a):focus-visible { outline: 2px solid var(--profile-card-text); outline-offset: 2px; }
+#navbar .navbar-profile-card__github-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .35rem; color: var(--profile-card-muted); font-size: .58rem; }
+#navbar .navbar-profile-card__github-heading button { padding: .1rem .4rem; border: 1px solid color-mix(in srgb, var(--profile-card-text) 16%, transparent); border-radius: .25rem; color: var(--profile-card-text); cursor: pointer; }
+#navbar .navbar-profile-card__github-heading button:disabled { opacity: .5; cursor: default; }
+#navbar :is(.navbar-profile-card__github-month, .navbar-profile-card__github-year) { display: grid; align-content: start; gap: .12rem; min-height: 5rem; }
+#navbar .navbar-profile-card__github-month { width: 7rem; max-width: 100%; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+#navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell { display: grid; place-items: center; font-size: .42rem; color: var(--profile-card-bg); }
+#navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell:is([data-level="0"], [data-level="1"], [data-level="2"]) { color: var(--profile-card-text); }
+#navbar .navbar-profile-card__github-year { grid-auto-flow: column; grid-template-rows: repeat(7, auto); grid-template-columns: repeat(53, minmax(0, 1fr)); }
+#navbar .navbar-profile-card__github-cell { display: block; min-width: 0; aspect-ratio: 1; border-radius: .12rem; background: color-mix(in srgb, var(--profile-card-text) 12%, transparent); }
+#navbar .navbar-profile-card__github-cell[data-level="1"] { background: color-mix(in srgb, var(--profile-card-text) 25%, transparent); }
+#navbar .navbar-profile-card__github-cell[data-level="2"] { background: color-mix(in srgb, var(--profile-card-text) 40%, transparent); }
+#navbar .navbar-profile-card__github-cell[data-level="3"] { background: color-mix(in srgb, var(--profile-card-text) 58%, transparent); }
+#navbar .navbar-profile-card__github-cell[data-level="4"] { background: color-mix(in srgb, var(--profile-card-text) 76%, transparent); }
+#navbar .navbar-profile-card__github-cell[data-outside] { opacity: .25; }
+#navbar .navbar-profile-card__github-cell:hover { outline: 1px solid var(--profile-card-text); }
+#navbar .navbar-profile-card__github-hint { margin: .4rem 0 0; color: var(--profile-card-muted); font-size: .5rem; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) {
+    #navbar .navbar-profile-card__activity-pane { transition: none; }
+}
 #navbar .navbar-profile-card__heatmap { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: .28rem; }
 #navbar .navbar-profile-card__heat-column { display: grid; gap: .28rem; text-align: center; font-size: .55rem; color: var(--profile-card-muted); }
 #navbar .navbar-profile-card__heat-column button { display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 1px solid transparent; border-radius: .24rem; background: color-mix(in srgb, var(--profile-card-text) 12%, transparent); cursor: pointer; transition: border-color 150ms ease, transform 150ms ease; }

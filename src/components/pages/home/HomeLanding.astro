@@ -12,11 +12,9 @@ import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import LocalWallpaperLayer from "@/components/features/LocalWallpaperLayer.svelte";
 import { musicPlayerConfig } from "@/config/musicConfig";
 import { homeWallpaper, pageWallpaperAssets } from "@/config/pageWallpapers";
-import { githubUsername, profileConfig } from "@/config/profileConfig";
+import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
-import type { ActivityCalendar } from "@/utils/home-activity";
 import { getBackgroundImages } from "@/utils/layout-utils";
-import ContributionHeatmap from "./ContributionHeatmap.astro";
 import HomeEditorialPanels from "./HomeEditorialPanels.astro";
 import HomeEntrance from "./HomeEntrance.astro";
 import HomeExhibitCarousel from "./HomeExhibitCarousel.astro";
@@ -26,11 +24,6 @@ import HomeProfileMatrix from "./HomeProfileMatrix.astro";
 import HomeTicker from "./HomeTicker.astro";
 import JingYueWordmark from "./JingYueWordmark.astro";
 
-interface Props {
-	githubActivity: ActivityCalendar;
-}
-
-const { githubActivity } = Astro.props;
 const backgroundImages = getBackgroundImages();
 const heroDesktop = homeWallpaper.desktopUrl;
 const heroMobile = homeWallpaper.mobileUrl;
@@ -372,27 +365,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			data-home-section-tone="light"
 		>
 			<HomeExhibitCarousel />
-		</section>
-
-		<section
-			id="home-activity"
-			class="home-section home-activity home-scroll-scene"
-			aria-label="GitHub 提交记录"
-			data-home-scroll-scene
-			data-home-page
-			data-home-section-tone="light"
-		>
-			<ContributionHeatmap
-				github={githubActivity}
-				githubUsername={githubUsername}
-				eyebrow="GITHUB ACTIVITY"
-				title="GitHub 提交记录"
-				description="把过去一年的代码贡献，整理成一眼可读的时间纹理。"
-			/>
-			<a class="home-scene-next home-section-next" href="#home-ending" aria-label="向下探索结束页">
-				<span>向下探索</span>
-				<Icon is:inline name="material-symbols:arrow-downward-rounded" />
-			</a>
 		</section>
 
 		<section
@@ -4439,10 +4411,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		height: 1rem;
 	}
 
-	.home-activity {
-		margin-top: clamp(4rem, 9vw, 7rem);
-	}
-
 	.home-overview-grid {
 		display: grid;
 		grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -4786,8 +4754,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			min-height: clamp(12.5rem, 27vh, 15rem);
 		}
 
-		.home-exhibit,
-		.home-activity {
+		.home-exhibit {
 			margin-top: 0;
 		}
 
