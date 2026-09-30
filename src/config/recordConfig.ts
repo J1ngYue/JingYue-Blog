@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.108",
+		date: "2026-10-01",
+		time: "01:50",
+		type: "optimize",
+		title: "统一快捷按钮并补充显示设置入场动画",
+		summary:
+			"搜索与显示设置改为和公告、深浅色相同的图标文字按钮，合并为紧凑网格，不再单独占满一行。",
+		changes: [
+			"显示设置面板每次打开均以短暂淡入与轻微位移动画展开，保留横向设置布局，并尊重减少动态效果偏好。",
+		],
+	},
+	{
 		version: "v6.14.107",
 		date: "2026-10-01",
 		time: "01:30",
