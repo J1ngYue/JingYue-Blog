@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.100",
+		date: "2026-09-30",
+		time: "19:33",
+		type: "fix",
+		title: "修复首页翻屏时页尾滞留",
+		summary:
+			"首页正文和页尾使用同一滚动动画层，上滑时一起离开视野，不再到翻屏结束才跳走。",
+		changes: [
+			"保留整屏平滑过渡、页尾角色与配色，动画完成或切页后恢复正常文档滚动。",
+		],
+	},
+	{
 		version: "v6.14.99",
 		date: "2026-09-30",
 		time: "19:20",

@@ -545,6 +545,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const hero = root.querySelector("[data-home-hero]");
 		const frame = root.querySelector("[data-home-hero-frame]");
 		if (!hero || !frame) return;
+		const pageScrollLayer = root.closest("#main-grid") || root;
 
 		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 		const clock = root.querySelector("[data-home-clock]");
@@ -1360,11 +1361,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			pageScrollBehaviorLocked = false;
 		};
 
-		// Keep the 800ms movement on the compositor, then sync the real scroll position once.
+		// Move content and footer together, then sync the real scroll position once.
 		const getVisualScrollPosition = () => {
 			if (!pageScrollTransitionActive) return window.scrollY;
 			try {
-				const matrix = new DOMMatrixReadOnly(window.getComputedStyle(root).transform);
+				const matrix = new DOMMatrixReadOnly(window.getComputedStyle(pageScrollLayer).transform);
 				return window.scrollY - matrix.m42;
 			} catch {
 				return window.scrollY;
@@ -1377,18 +1378,18 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (pageScrollFallbackTimer) window.clearTimeout(pageScrollFallbackTimer);
 			pageScrollFallbackTimer = 0;
 			if (pageScrollTransitionEndHandler) {
-				root.removeEventListener("transitionend", pageScrollTransitionEndHandler);
+				pageScrollLayer.removeEventListener("transitionend", pageScrollTransitionEndHandler);
 				pageScrollTransitionEndHandler = null;
 			}
 
-			root.style.transition = "none";
-			root.style.transform = "none";
-			root.style.willChange = "auto";
+			pageScrollLayer.style.transition = "none";
+			pageScrollLayer.style.setProperty("transform", "none", "important");
+			pageScrollLayer.style.willChange = "auto";
 			window.scrollTo(0, Math.max(0, targetY));
-			void root.offsetWidth;
-			root.style.removeProperty("transition");
-			root.style.removeProperty("transform");
-			root.style.removeProperty("will-change");
+			void pageScrollLayer.offsetWidth;
+			pageScrollLayer.style.removeProperty("transition");
+			pageScrollLayer.style.removeProperty("transform");
+			pageScrollLayer.style.removeProperty("will-change");
 			pageScrollTransitionActive = false;
 		};
 
@@ -1415,19 +1416,19 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				onComplete?.();
 			};
 			pageScrollTransitionEndHandler = (event) => {
-				if (event.target === root && event.propertyName === "transform") finish();
+				if (event.target === pageScrollLayer && event.propertyName === "transform") finish();
 			};
-			root.addEventListener("transitionend", pageScrollTransitionEndHandler);
+			pageScrollLayer.addEventListener("transitionend", pageScrollTransitionEndHandler);
 			pageScrollTransitionActive = true;
-			root.style.transition = "none";
-			root.style.transform = "translate3d(0, 0, 0)";
-			root.style.willChange = "transform";
-			void root.offsetWidth;
+			pageScrollLayer.style.transition = "none";
+			pageScrollLayer.style.setProperty("transform", "translate3d(0, 0, 0)", "important");
+			pageScrollLayer.style.willChange = "transform";
+			void pageScrollLayer.offsetWidth;
 
 			pageScrollAnimation = requestAnimationFrame(() => {
 				pageScrollAnimation = 0;
-				root.style.transition = `transform ${duration}ms cubic-bezier(0.65, 0, 0.35, 1)`;
-				root.style.transform = `translate3d(0, ${-distance}px, 0)`;
+				pageScrollLayer.style.transition = `transform ${duration}ms cubic-bezier(0.65, 0, 0.35, 1)`;
+				pageScrollLayer.style.setProperty("transform", `translate3d(0, ${-distance}px, 0)`, "important");
 			});
 			pageScrollFallbackTimer = window.setTimeout(finish, duration + 160);
 		}
