@@ -160,7 +160,7 @@ const posts = (await getSortedPosts())
 			};
 			const syncRotation = () => {
 				window.clearTimeout(rotationTimer);
-				const open = getComputedStyle(card).visibility === "visible";
+				const open = card.getAttribute("aria-hidden") === "false" || getComputedStyle(card).visibility === "visible";
 				if (!open) setExpanded(false);
 				if (open && !githubLoaded) {
 					githubLoaded = true;
@@ -172,7 +172,7 @@ const posts = (await getSortedPosts())
 				}
 				if (!open || document.hidden || hovered || expanded || activity.querySelector(":focus-visible") || !postPane.hidden || motion.matches) return;
 				rotationTimer = window.setTimeout(() => {
-					setActivity(activity.dataset.profileActivity === "articles" ? "github" : "articles");
+					if (getComputedStyle(card).visibility === "visible" && !document.hidden) setActivity(activity.dataset.profileActivity === "articles" ? "github" : "articles");
 					syncRotation();
 				}, 6_000);
 			};
