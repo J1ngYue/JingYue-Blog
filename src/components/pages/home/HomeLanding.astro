@@ -842,13 +842,14 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 
 		const syncExhibitVideo = () => {
 			if (!exhibitVideo) return;
-			const visible = exhibitVisible && !document.hidden &&
+			const visible = exhibitVisible && !document.hidden;
+			const active = visible &&
 				exhibitVideo.closest("[data-home-exhibit-slide]")?.dataset.position === "active";
 			if (visible && !exhibitVideo.getAttribute("src")) {
 				exhibitVideo.src = exhibitVideo.dataset.src;
 				exhibitVideo.load();
 			}
-			const playing = visible && !reducedMotion.matches;
+			const playing = active && !reducedMotion.matches;
 			if (playing === exhibitVideoPlaying) return;
 			exhibitVideoPlaying = playing;
 			if (playing) exhibitVideo.play().catch(() => {});

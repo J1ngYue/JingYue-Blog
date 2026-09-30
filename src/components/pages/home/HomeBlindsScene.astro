@@ -6,7 +6,7 @@ interface Props {
 		eyebrow: string;
 		title: string;
 		description: string;
-		image: string;
+		image?: string;
 		alt: string;
 		video?: string;
 	};
@@ -39,13 +39,12 @@ const { index, total, item } = Astro.props;
 					class="home-blinds-scene__image"
 					data-home-exhibit-video
 					data-src={item.video}
-					poster={item.image}
 					aria-label={item.alt}
 					controls
 					loop
 					muted
 					playsinline
-					preload="none"
+					preload="auto"
 				></video>
 			) : (
 				<img class="home-blinds-scene__image" src={item.image} alt={item.alt} loading="lazy" decoding="async" width="1200" height="900" />

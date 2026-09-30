@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.105",
+		date: "2026-10-01",
+		time: "00:42",
+		type: "fix",
+		title: "移除相册视频的不匹配预览画面",
+		summary:
+			"删除收藏视频误用的壁纸封面，相册进入视野后预载视频自身画面，避免开始播放时突然换图。",
+		changes: [
+			"保持原视频画质与轮播动画，仅在视频卡片选中时自动播放，离开视野或切页仍会暂停。",
+		],
+	},
+	{
 		version: "v6.14.104",
 		date: "2026-10-01",
 		time: "00:05",

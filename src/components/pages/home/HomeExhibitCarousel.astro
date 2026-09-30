@@ -1,6 +1,5 @@
 ---
 import { Icon } from "astro-icon/components";
-import collectionPoster from "@/assets/images/DesktopWallpaper/d4.avif";
 import "@/styles/components/home-blinds-exhibit.css";
 import HomeBlindsScene from "./HomeBlindsScene.astro";
 
@@ -8,7 +7,7 @@ type SceneItem = {
 	eyebrow: string;
 	title: string;
 	description: string;
-	image: string;
+	image?: string;
 	alt: string;
 	video?: string;
 };
@@ -53,7 +52,6 @@ const sceneItems: SceneItem[] = [
 		eyebrow: "COLLECTION / FILM",
 		title: "收藏片段",
 		description: "把喜欢的画面，留在这一页相册里。",
-		image: collectionPoster.src,
 		alt: "循环播放的收藏影像片段",
 		video:
 			"https://tzyy-1330068502.cos.ap-beijing.myqcloud.com/AI%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87/main/videos/feature-1.mp4",
