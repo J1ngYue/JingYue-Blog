@@ -17,53 +17,56 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		</article>
 	</div>
 
-	<section class="billing-card billing-ledger" aria-labelledby="billing-ledger-title">
-		<header class="billing-card__header">
-			<div>
-				<h2 id="billing-ledger-title">本月流水</h2>
-				<span>私密记录 · 仅自己可见</span>
-			</div>
-			<label class="billing-month-select">
-				<span class="sr-only">筛选月份</span>
-				<select data-bill-month aria-label="筛选月份">
-					<option value={new Date().toLocaleDateString("sv-SE").slice(0, 7)}>本月</option>
-				</select>
-			</label>
-		</header>
-		<div class="billing-transactions" data-bill-transactions aria-live="polite"></div>
-		<nav class="billing-pagination" aria-label="账单分页">
-			<button type="button" data-bill-page-prev aria-label="上一页">‹</button>
-			<span data-bill-page>1 / 1</span>
-			<button type="button" data-bill-page-next aria-label="下一页">›</button>
-		</nav>
-	</section>
+	<div class="billing-main-grid">
+		<section class="billing-card billing-ledger" aria-labelledby="billing-ledger-title">
+			<header class="billing-card__header">
+				<div>
+					<h2 id="billing-ledger-title">本月流水</h2>
+					<span>私密记录 · 仅自己可见</span>
+				</div>
+				<label class="billing-month-select">
+					<span class="sr-only">筛选月份</span>
+					<select data-bill-month aria-label="筛选月份">
+						<option value={new Date().toLocaleDateString("sv-SE").slice(0, 7)}>本月</option>
+					</select>
+				</label>
+			</header>
+			<div class="billing-transactions" data-bill-transactions aria-live="polite"></div>
+			<nav class="billing-pagination" aria-label="账单分页">
+				<button type="button" data-bill-page-prev aria-label="上一页">‹</button>
+				<span data-bill-page>1 / 1</span>
+				<button type="button" data-bill-page-next aria-label="下一页">›</button>
+			</nav>
+		</section>
 
-	<section class="billing-card billing-calendar-card" aria-labelledby="billing-calendar-title">
-		<header class="billing-card__header">
-			<div>
-				<h2 id="billing-calendar-title">账单日历</h2>
-				<span>农历 · 每日收支</span>
+		<section class="billing-card billing-calendar-card" aria-labelledby="billing-calendar-title">
+			<header class="billing-card__header">
+				<div>
+					<h2 id="billing-calendar-title">账单日历</h2>
+					<span>农历 · 每日收支</span>
+				</div>
+			</header>
+			<div class="billing-weekdays" aria-hidden="true">
+				<span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
 			</div>
-		</header>
-		<div class="billing-weekdays" aria-hidden="true">
-			<span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
-		</div>
-		<div class="billing-calendar" data-bill-calendar></div>
-	</section>
+			<div class="billing-calendar" data-bill-calendar></div>
+		</section>
+	</div>
 
 	<div class="billing-insight-grid">
 		<section class="billing-card billing-chart-card" aria-labelledby="billing-daily-title">
 			<header class="billing-card__header">
 				<div><h2 id="billing-daily-title">本月每日收支</h2><span data-daily-summary></span></div>
 			</header>
-			<div class="billing-chart" data-daily-chart role="img" aria-label="本月每日收入与支出折线图"></div>
+			<div class="billing-chart" data-daily-chart role="group" aria-label="本月每日收入与支出折线图"></div>
 		</section>
 
 		<section class="billing-card billing-chart-card" aria-labelledby="billing-year-title">
 			<header class="billing-card__header">
 				<div><h2 id="billing-year-title">本年流水情况</h2><span data-year-summary></span></div>
 			</header>
-			<div class="billing-chart" data-year-chart role="img" aria-label="本年每月收入与支出折线图"></div>
+			<div class="billing-chart" data-year-chart role="group" aria-label="本年每月收入与支出折线图"></div>
+			<p class="billing-chart-summary" data-year-balance></p>
 		</section>
 	</div>
 
@@ -87,11 +90,14 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 <style is:global>
 	.billing-dashboard {
 		--bill-ink: #111113;
-		--bill-muted: #77777e;
+		--bill-muted: #62626b;
 		--bill-line: rgb(17 17 19 / 12%);
 		--bill-paper: rgb(255 255 255 / 95%);
-		--bill-income: #ef8268;
-		--bill-expense: #4abcb4;
+		--bill-income: #b94c0d;
+		--bill-expense: #137f79;
+		--bill-income-line: #f97316;
+		--bill-expense-line: #14b8a6;
+		container-type: inline-size;
 		display: grid;
 		gap: 0.85rem;
 		color: var(--bill-ink);
@@ -102,6 +108,15 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		--bill-muted: #aaaab2;
 		--bill-line: rgb(255 255 255 / 14%);
 		--bill-paper: rgb(12 12 13 / 94%);
+		--bill-income: #ffac75;
+		--bill-expense: #5dd8c9;
+	}
+
+	.billing-main-grid { display: grid; gap: 0.85rem; align-items: start; }
+	.billing-calendar-card { width: 100%; max-width: 48rem; justify-self: center; }
+
+	@container (min-width: 1000px) {
+		.billing-main-grid { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
 	}
 
 	.billing-hero-grid,
@@ -151,7 +166,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	}
 
 	.billing-hero p {
-		font-size: 0.72rem;
+		font-size: 0.9rem;
 		font-weight: 700;
 	}
 
@@ -164,7 +179,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 
 	.billing-hero span {
 		margin-top: 0.45rem;
-		font-size: 0.62rem;
+		font-size: 0.78rem;
 		opacity: 0.82;
 	}
 
@@ -173,6 +188,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	}
 
 	.billing-card {
+		min-width: 0;
 		overflow: hidden;
 		border: 1px solid var(--bill-line);
 		border-radius: 0.85rem;
@@ -200,7 +216,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	}
 
 	.billing-card__header h2 {
-		font-size: 0.84rem;
+		font-size: 1rem;
 		font-weight: 760;
 	}
 
@@ -212,7 +228,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		display: block;
 		margin-top: 0.12rem;
 		color: var(--bill-muted);
-		font-size: 0.58rem;
+		font-size: 0.75rem;
 	}
 
 	.billing-ledger .billing-card__header span {
@@ -377,7 +393,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	.billing-weekdays {
 		padding: 0.75rem 0.75rem 0.25rem;
 		color: var(--bill-muted);
-		font-size: 0.58rem;
+		font-size: 0.75rem;
 		text-align: center;
 	}
 
@@ -387,12 +403,14 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	}
 
 	.billing-calendar__day {
+		min-width: 0;
 		min-height: 4.25rem;
 		border: 1px solid transparent;
 		border-radius: 0.5rem;
 		background: rgb(17 17 19 / 3.5%);
-		padding: 0.4rem;
+		padding: 0.4rem 0.2rem;
 		color: var(--bill-ink);
+		text-align: center;
 	}
 
 	html.dark .billing-calendar__day {
@@ -411,24 +429,27 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	.billing-calendar__number,
 	.billing-calendar__lunar,
 	.billing-calendar__amount {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 		display: block;
 	}
 
 	.billing-calendar__number {
-		font-size: 0.72rem;
+		font-size: 0.9rem;
 		font-weight: 750;
 	}
 
 	.billing-calendar__lunar {
 		margin-top: 0.08rem;
 		color: var(--bill-muted);
-		font-size: 0.5rem;
+		font-size: 0.66rem;
 	}
 
 	.billing-calendar__amount {
 		margin-top: 0.35rem;
 		color: var(--bill-expense);
-		font-size: 0.55rem;
+		font-size: clamp(0.6rem, 1.2cqi, 0.78rem);
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 	}
@@ -438,44 +459,69 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	}
 
 	.billing-chart {
-		min-height: 12rem;
-		padding: 0.7rem 0.7rem 0.35rem;
+		padding: 0.85rem 0.85rem 0.65rem;
 	}
 
-	.billing-chart svg {
+	.billing-chart__plot { position: relative; padding-top: 4rem; cursor: crosshair; touch-action: pan-y; }
+	.billing-chart__plot:focus-visible { outline: 2px solid var(--bill-ink); outline-offset: 3px; border-radius: 0.4rem; }
+	.billing-chart__plot svg {
 		display: block;
 		width: 100%;
-		height: auto;
+		height: 12rem;
 		overflow: visible;
 	}
+	.billing-chart__plot svg * { vector-effect: non-scaling-stroke; }
 
 	.billing-chart__grid {
 		stroke: var(--bill-line);
 		stroke-width: 1;
+		stroke-dasharray: 3 4;
 	}
 
 	.billing-chart__income,
 	.billing-chart__expense {
 		fill: none;
-		stroke-width: 2.5;
+		stroke-width: 1.6;
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}
 
-	.billing-chart__income { stroke: var(--bill-income); }
-	.billing-chart__expense { stroke: var(--bill-expense); }
+	.billing-chart__income { stroke: var(--bill-income-line); }
+	.billing-chart__expense { stroke: var(--bill-expense-line); }
+	.billing-chart__baseline { stroke: #f43f5e; stroke-width: 1.4; }
+	.billing-chart__indicator { stroke: var(--bill-muted); stroke-width: 1; opacity: 0.5; }
 
-	.billing-chart__dot-income { fill: var(--bill-income); }
-	.billing-chart__dot-expense { fill: var(--bill-expense); }
+	.billing-chart__dot-income { fill: var(--bill-income-line); stroke: var(--bill-paper); stroke-width: 1.5; }
+	.billing-chart__dot-expense { fill: var(--bill-expense-line); stroke: var(--bill-paper); stroke-width: 1.5; }
+	.billing-chart__zero { position: absolute; left: 0; bottom: 0.9rem; color: var(--bill-muted); font-size: 0.65rem; }
+	.billing-chart__tooltip {
+		position: absolute;
+		top: 0;
+		left: clamp(4.5rem, var(--bill-cursor), calc(100% - 4.5rem));
+		display: grid;
+		gap: 0.15rem;
+		min-width: 8.6rem;
+		border-radius: 0.5rem;
+		background: #29292d;
+		padding: 0.4rem 0.65rem;
+		color: #fff;
+		font-size: 0.72rem;
+		font-variant-numeric: tabular-nums;
+		transform: translateX(-50%);
+		pointer-events: none;
+	}
+	.billing-chart__tooltip::after { position: absolute; top: 100%; left: calc(50% - 0.25rem); border: 0.25rem solid transparent; border-top-color: #29292d; content: ""; }
+	.billing-chart__tooltip strong { font-size: 0.68rem; color: #d5d5da; }
+	.billing-chart__tooltip span { display: flex; align-items: center; gap: 0.3rem; }
 
 	.billing-chart-labels {
-		display: flex;
-		justify-content: space-between;
-		gap: 0.5rem;
+		position: relative;
+		height: 1.75rem;
 		margin-top: 0.15rem;
 		color: var(--bill-muted);
-		font-size: 0.5rem;
+		font-size: 0.67rem;
 	}
+	.billing-chart-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 
 	.billing-chart-legend {
 		display: flex;
@@ -483,21 +529,24 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		gap: 1rem;
 		margin-top: 0.25rem;
 		color: var(--bill-muted);
-		font-size: 0.56rem;
+		font-size: 0.75rem;
 	}
 
-	.billing-chart-legend i {
+	.billing-chart-legend i,
+	.billing-chart__tooltip i {
 		display: inline-block;
 		width: 0.45rem;
 		height: 0.45rem;
 		margin-right: 0.25rem;
 		border-radius: 50%;
-		background: var(--bill-income);
+		background: var(--bill-income-line);
 	}
 
-	.billing-chart-legend span:last-child i {
-		background: var(--bill-expense);
+	.billing-chart-legend span:last-child i,
+	.billing-chart__tooltip span:last-child i {
+		background: var(--bill-expense-line);
 	}
+	.billing-chart-summary { margin: 0; padding: 0 0.85rem 0.85rem; color: var(--bill-muted); font-size: 0.75rem; text-align: center; }
 
 	.billing-ranking ol {
 		margin: 0;
@@ -540,18 +589,18 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	}
 
 	.billing-ranking strong {
-		font-size: 0.7rem;
+		font-size: 0.88rem;
 	}
 
 	.billing-ranking small {
 		margin-top: 0.1rem;
 		color: var(--bill-muted);
-		font-size: 0.53rem;
+		font-size: 0.7rem;
 	}
 
 	.billing-ranking__value {
 		color: var(--bill-expense);
-		font-size: 0.68rem;
+		font-size: 0.88rem;
 		font-weight: 750;
 		font-variant-numeric: tabular-nums;
 	}
@@ -585,7 +634,8 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		}
 
 		.billing-calendar__amount {
-			font-size: 0.48rem;
+			font-size: 0.6rem;
+			letter-spacing: -0.025em;
 		}
 	}
 
@@ -597,6 +647,8 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 </style>
 
 <script>
+	import { calendarDateInfo } from "@/utils/schedule-calendar";
+
 	type BillEntry = {
 		date: string;
 		time: string;
@@ -611,14 +663,6 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 	const billWeekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 	const svgNamespace = "http://www.w3.org/2000/svg";
 
-	function billLunarDay(date: Date) {
-		try {
-			return new Intl.DateTimeFormat("zh-CN-u-ca-chinese", { day: "numeric" }).format(date);
-		} catch {
-			return "";
-		}
-	}
-
 	function billDate(value: string) {
 		const [year, month, day] = value.split("-").map(Number);
 		return new Date(year, month - 1, day);
@@ -628,60 +672,109 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		return entries.filter((entry) => entry.type === type).reduce((sum, entry) => sum + entry.amount, 0);
 	}
 
-	function createBillChart(container: HTMLElement, income: number[], expense: number[], labels: string[]) {
+	function createBillChart(container: HTMLElement, income: number[], expense: number[], labels: string[], initialIndex: number) {
 		container.replaceChildren();
-		const width = 620;
-		const height = 180;
-		const paddingX = 14;
-		const paddingY = 16;
+		const width = 640;
+		const height = 220;
+		const paddingX = 28;
+		const paddingY = 12;
 		const maximum = Math.max(1, ...income, ...expense);
-		const count = Math.max(2, income.length);
+		const count = income.length;
+		let selected = Math.max(0, Math.min(count - 1, initialIndex));
 		const point = (value: number, index: number) => {
 			const x = paddingX + (index / (count - 1)) * (width - paddingX * 2);
 			const y = height - paddingY - (value / maximum) * (height - paddingY * 2);
 			return [x, y] as const;
 		};
-
-		const svg = document.createElementNS(svgNamespace, "svg");
-		svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-		svg.setAttribute("aria-hidden", "true");
-		for (let index = 0; index < 4; index += 1) {
-			const line = document.createElementNS(svgNamespace, "line");
-			const y = paddingY + (index / 3) * (height - paddingY * 2);
-			line.setAttribute("x1", String(paddingX));
-			line.setAttribute("x2", String(width - paddingX));
-			line.setAttribute("y1", String(y));
-			line.setAttribute("y2", String(y));
-			line.setAttribute("class", "billing-chart__grid");
-			svg.append(line);
-		}
-
-		const addSeries = (values: number[], className: string, dotClass: string) => {
-			const polyline = document.createElementNS(svgNamespace, "polyline");
-			polyline.setAttribute("points", values.map((value, index) => point(value, index).join(",")).join(" "));
-			polyline.setAttribute("class", className);
-			svg.append(polyline);
-			values.forEach((value, index) => {
-				if (value <= 0) return;
-				const [x, y] = point(value, index);
-				const circle = document.createElementNS(svgNamespace, "circle");
-				circle.setAttribute("cx", String(x));
-				circle.setAttribute("cy", String(y));
-				circle.setAttribute("r", "3.4");
-				circle.setAttribute("class", dotClass);
-				svg.append(circle);
-			});
+		const svgElement = (tag: string, attributes: Record<string, string>) => {
+			const element = document.createElementNS(svgNamespace, tag);
+			for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+			return element;
 		};
+		const plot = document.createElement("div");
+		plot.className = "billing-chart__plot";
+		plot.tabIndex = 0;
+		plot.setAttribute("role", "slider");
+		plot.setAttribute("aria-label", `${container.getAttribute("aria-label")}，选择日期查看金额`);
+		plot.setAttribute("aria-valuemin", "1");
+		plot.setAttribute("aria-valuemax", String(count));
 
-		addSeries(income, "billing-chart__income", "billing-chart__dot-income");
-		addSeries(expense, "billing-chart__expense", "billing-chart__dot-expense");
-		container.append(svg);
+		const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: "none", "aria-hidden": "true" });
+		for (let index = 0; index <= 3; index += 1) {
+			const y = paddingY + (index / 3) * (height - paddingY * 2);
+			svg.append(svgElement("line", { x1: String(paddingX), x2: String(width - paddingX), y1: String(y), y2: String(y), class: "billing-chart__grid" }));
+		}
+		svg.append(svgElement("line", { x1: String(paddingX), x2: String(width - paddingX), y1: String(height - paddingY), y2: String(height - paddingY), class: "billing-chart__baseline" }));
+
+		const addSeries = (values: number[], className: string) => {
+			svg.append(svgElement("polyline", { points: values.map((value, index) => point(value, index).join(",")).join(" "), class: className }));
+		};
+		addSeries(income, "billing-chart__income");
+		addSeries(expense, "billing-chart__expense");
+		const indicator = svgElement("line", { y1: String(paddingY), y2: String(height - paddingY), class: "billing-chart__indicator" });
+		const expenseDot = svgElement("circle", { r: "5", class: "billing-chart__dot-expense" });
+		const incomeDot = svgElement("circle", { r: "3", class: "billing-chart__dot-income" });
+		svg.append(indicator, expenseDot, incomeDot);
+		const zero = document.createElement("span");
+		zero.className = "billing-chart__zero";
+		zero.textContent = "0";
+		zero.setAttribute("aria-hidden", "true");
+		const tooltip = document.createElement("div");
+		tooltip.className = "billing-chart__tooltip";
+		tooltip.setAttribute("aria-hidden", "true");
+		const tooltipDate = document.createElement("strong");
+		tooltip.append(tooltipDate);
+		const values = ["收入", "支出"].map((label) => {
+			const row = document.createElement("span");
+			const dot = document.createElement("i");
+			const value = document.createElement("span");
+			row.append(dot, `${label} `, value);
+			tooltip.append(row);
+			return value;
+		});
+		const updateSelection = () => {
+			const [x] = point(0, selected);
+			indicator.setAttribute("x1", String(x));
+			indicator.setAttribute("x2", String(x));
+			for (const [dot, value] of [[expenseDot, expense[selected]], [incomeDot, income[selected]]] as const) {
+				dot.setAttribute("cx", String(x));
+				dot.setAttribute("cy", String(point(value, selected)[1]));
+			}
+			plot.style.setProperty("--bill-cursor", `${x / width * 100}%`);
+			tooltipDate.textContent = labels[selected];
+			values[0].textContent = billMoney(income[selected]);
+			values[1].textContent = billMoney(expense[selected]);
+			plot.setAttribute("aria-valuenow", String(selected + 1));
+			plot.setAttribute("aria-valuetext", `${labels[selected]}，收入 ${billMoney(income[selected])} 元，支出 ${billMoney(expense[selected])} 元`);
+		};
+		const selectPointer = (event: PointerEvent) => {
+			const rect = plot.getBoundingClientRect();
+			const x = (event.clientX - rect.left) / rect.width * width;
+			selected = Math.max(0, Math.min(count - 1, Math.round((x - paddingX) / (width - paddingX * 2) * (count - 1))));
+			updateSelection();
+		};
+		plot.addEventListener("pointermove", selectPointer);
+		plot.addEventListener("pointerdown", selectPointer);
+		plot.addEventListener("keydown", (event) => {
+			if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+			event.preventDefault();
+			if (event.key === "Home") selected = 0;
+			else if (event.key === "End") selected = count - 1;
+			else selected = Math.max(0, Math.min(count - 1, selected + (["ArrowRight", "ArrowUp"].includes(event.key) ? 1 : -1)));
+			updateSelection();
+		});
+		plot.append(svg, zero, tooltip);
+		container.append(plot);
 
 		const labelRow = document.createElement("div");
 		labelRow.className = "billing-chart-labels";
-		for (const label of labels) {
+		labelRow.setAttribute("aria-hidden", "true");
+		const step = Math.ceil((count - 1) / 5);
+		for (let index = 0; index < count; index += 1) {
+			if (index % step !== 0 && index !== count - 1) continue;
 			const item = document.createElement("span");
-			item.textContent = label;
+			item.textContent = labels[index];
+			item.style.left = `clamp(1.5rem, ${point(0, index)[0] / width * 100}%, calc(100% - 1.5rem))`;
 			labelRow.append(item);
 		}
 		const legend = document.createElement("div");
@@ -693,6 +786,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 			legend.append(item);
 		}
 		container.append(labelRow, legend);
+		updateSelection();
 	}
 
 	function initBillingDashboard() {
@@ -711,6 +805,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 			const yearChart = root.querySelector<HTMLElement>("[data-year-chart]");
 			const dailySummary = root.querySelector<HTMLElement>("[data-daily-summary]");
 			const yearSummary = root.querySelector<HTMLElement>("[data-year-summary]");
+			const yearBalance = root.querySelector<HTMLElement>("[data-year-balance]");
 			const incomeList = root.querySelector<HTMLOListElement>("[data-income-categories]");
 			const expenseList = root.querySelector<HTMLOListElement>("[data-expense-categories]");
 			const incomeSummary = root.querySelector<HTMLElement>("[data-income-summary]");
@@ -721,7 +816,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 			const annualBalance = root.querySelector<HTMLElement>("[data-annual-balance]");
 			const annualSummary = root.querySelector<HTMLElement>("[data-annual-summary]");
 
-			if (!monthSelect || !transactions || !previousPage || !nextPage || !pageLabel || !calendar || !dailyChart || !yearChart || !dailySummary || !yearSummary || !incomeList || !expenseList || !incomeSummary || !expenseSummary || !monthBalance || !monthIncome || !monthExpense || !annualBalance || !annualSummary) continue;
+			if (!monthSelect || !transactions || !previousPage || !nextPage || !pageLabel || !calendar || !dailyChart || !yearChart || !dailySummary || !yearSummary || !yearBalance || !incomeList || !expenseList || !incomeSummary || !expenseSummary || !monthBalance || !monthIncome || !monthExpense || !annualBalance || !annualSummary) continue;
 
 			let page = 0;
 			const groupsPerPage = 2;
@@ -790,8 +885,9 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 				const today = new Date();
 				const monthEntries = selectedEntries();
 				calendar.replaceChildren();
+				const cellCount = Math.ceil((first.getDay() + new Date(year, month, 0).getDate()) / 7) * 7;
 
-				for (let index = 0; index < 42; index += 1) {
+				for (let index = 0; index < cellCount; index += 1) {
 					const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
 					const key = `${date.getFullYear()}-${billPad(date.getMonth() + 1)}-${billPad(date.getDate())}`;
 					const dayEntries = monthEntries.filter((entry) => entry.date === key);
@@ -806,13 +902,15 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 					number.textContent = String(date.getDate());
 					const lunar = document.createElement("span");
 					lunar.className = "billing-calendar__lunar";
-					lunar.textContent = billLunarDay(date);
+					const dateInfo = calendarDateInfo(date);
+					lunar.textContent = dateInfo.holiday || dateInfo.lunarDay;
 					cell.append(number, lunar);
 					if (income > 0 || expense > 0) {
 						const amount = document.createElement("span");
 						amount.className = "billing-calendar__amount";
 						amount.classList.toggle("is-income", income > expense);
 						amount.textContent = income > expense ? `+${billMoney(income - expense)}` : `-${billMoney(expense - income)}`;
+						amount.title = `收入 ¥${billMoney(income)} · 支出 ¥${billMoney(expense)}`;
 						cell.append(amount);
 					}
 					calendar.append(cell);
@@ -863,8 +961,9 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 					const day = Number(entry.date.slice(8, 10)) - 1;
 					(entry.type === "income" ? dailyIncome : dailyExpense)[day] += entry.amount;
 				}
-				const dailyLabelIndexes = [0, 6, 12, 18, 24, days - 1];
-				createBillChart(dailyChart, dailyIncome, dailyExpense, dailyLabelIndexes.map((index) => `${billPad(index + 1)}日`));
+				const now = new Date();
+				const isCurrentMonth = monthSelect.value === `${now.getFullYear()}-${billPad(now.getMonth() + 1)}`;
+				createBillChart(dailyChart, dailyIncome, dailyExpense, dailyIncome.map((_, index) => `${billPad(month)}.${billPad(index + 1)}`), isCurrentMonth ? now.getDate() - 1 : days - 1);
 				dailySummary.textContent = `收入 ${billMoney(sumBill(selectedEntries(), "income"))} · 支出 ${billMoney(sumBill(selectedEntries(), "expense"))}`;
 
 				const yearEntries = entries.filter((entry) => entry.date.startsWith(String(year)));
@@ -874,8 +973,9 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 					const entryMonth = Number(entry.date.slice(5, 7)) - 1;
 					(entry.type === "income" ? yearlyIncome : yearlyExpense)[entryMonth] += entry.amount;
 				}
-				createBillChart(yearChart, yearlyIncome, yearlyExpense, ["01月", "03月", "05月", "07月", "09月", "12月"]);
+				createBillChart(yearChart, yearlyIncome, yearlyExpense, yearlyIncome.map((_, index) => `${billPad(index + 1)}月`), month - 1);
 				yearSummary.textContent = `${year}年 · 收入 ${billMoney(sumBill(yearEntries, "income"))} · 支出 ${billMoney(sumBill(yearEntries, "expense"))}`;
+				yearBalance.textContent = `年结余 ${billMoney(sumBill(yearEntries, "income") - sumBill(yearEntries, "expense"))} · 月均收入 ${billMoney(sumBill(yearEntries, "income") / 12)}`;
 			};
 
 			const renderSummary = () => {

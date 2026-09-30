@@ -98,14 +98,13 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-overview {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1.2rem;
 		border: 2px solid var(--schedule-line);
 		border-radius: 0.6rem;
 		background: var(--schedule-paper);
 		padding: 1rem;
-	}
-
-	.schedule-upcoming + .schedule-upcoming {
-		margin-top: 1.2rem;
 	}
 
 	.schedule-upcoming h2 {
@@ -123,7 +122,7 @@ import { Icon } from "astro-icon/components";
 
 	.schedule-upcoming__list {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: 1fr;
 		gap: 0.65rem;
 	}
 
@@ -161,12 +160,17 @@ import { Icon } from "astro-icon/components";
 		outline-offset: 2px;
 	}
 
+	@container (min-width: 840px) {
+		.schedule-layout { grid-template-columns: minmax(0, 1fr) 15rem; }
+		.schedule-overview { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	}
+
 	@container (min-width: 1120px) {
 		.schedule-layout {
-			grid-template-columns: minmax(210px, 240px) minmax(0, 1fr) minmax(240px, 270px);
+			grid-template-columns: 13rem minmax(0, 1fr) 15rem;
 		}
 
-		.schedule-upcoming__list { grid-template-columns: 1fr; }
+		.schedule-overview { grid-column: auto; grid-template-columns: 1fr; }
 		.schedule-overview, .schedule-panel--agenda {
 			position: sticky;
 			top: 6rem;
@@ -313,7 +317,7 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.schedule-calendar[data-calendar-mode="month"] .schedule-day {
-		min-height: 7rem;
+		min-height: 6rem;
 		border-bottom: 1px solid var(--schedule-soft-line);
 	}
 

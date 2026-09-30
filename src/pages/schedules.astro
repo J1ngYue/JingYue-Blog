@@ -20,9 +20,15 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 		icon="material-symbols:calendar-month-outline-rounded"
 		defaultSidebarsCollapsed
 	>
-		<PrivateAccess client:load mode="events" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL || "https://private.j1ngyue.cn"} />
-		<div data-private-content hidden>
-			<ScheduleDashboard />
+		<div class="personal-dashboard-content">
+			<PrivateAccess client:load mode="events" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL || "https://private.j1ngyue.cn"} />
+			<div data-private-content hidden>
+				<ScheduleDashboard />
+			</div>
 		</div>
 	</RecordPageShell>
 </MainGridLayout>
+
+<style>
+	.personal-dashboard-content { width: 100%; max-width: 80rem; margin-inline: auto; }
+</style>

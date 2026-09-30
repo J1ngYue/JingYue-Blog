@@ -21,9 +21,15 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 		showHeader={false}
 		defaultSidebarsCollapsed
 	>
-		<PrivateAccess client:load mode="bills" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL || "https://private.j1ngyue.cn"} />
-		<div data-private-content hidden>
-			<BillingDashboard />
+		<div class="personal-dashboard-content">
+			<PrivateAccess client:load mode="bills" apiBase={import.meta.env.PUBLIC_PRIVATE_API_URL || "https://private.j1ngyue.cn"} />
+			<div data-private-content hidden>
+				<BillingDashboard />
+			</div>
 		</div>
 	</RecordPageShell>
 </MainGridLayout>
+
+<style>
+	.personal-dashboard-content { width: 100%; max-width: 80rem; margin-inline: auto; }
+</style>
