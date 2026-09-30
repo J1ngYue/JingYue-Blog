@@ -21,6 +21,15 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.98",
+		date: "2026-09-30",
+		time: "19:10",
+		type: "fix",
+		title: "修复账单分类空提示竖排",
+		summary: "分类收入与支出的“暂无记录”独占一整行横向显示，不再挤入排名列。",
+		changes: ["仅调整分类空状态，保留正常排行、金额与卡片排版。"],
+	},
+	{
 		version: "v6.14.97",
 		date: "2026-09-30",
 		time: "18:55",

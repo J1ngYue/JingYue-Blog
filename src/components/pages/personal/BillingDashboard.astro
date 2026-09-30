@@ -571,6 +571,10 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 		border-bottom: 0;
 	}
 
+	.billing-ranking li.billing-ranking__empty {
+		display: block;
+	}
+
 	.billing-ranking__rank {
 		display: grid;
 		width: 1.45rem;
@@ -935,6 +939,7 @@ import annualCover from "@/assets/images/HomeReference/gallery-2.webp";
 				list.replaceChildren();
 				if (ranking.length === 0) {
 					const empty = document.createElement("li");
+					empty.className = "billing-ranking__empty";
 					empty.textContent = "暂无记录";
 					list.append(empty);
 					return;
