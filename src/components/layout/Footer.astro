@@ -120,18 +120,34 @@ if (footerConfig.enable) {
 	:global(body.home-landing-active #main-grid > .footer) {
 		position: relative;
 		z-index: 36;
-		background: #0b0e14;
+		background: #fff;
 	}
 
 	:global(body.home-landing-active) .site-footer-copy {
-		color: #fff;
+		color: #18181b;
 	}
 
 	:global(body.home-landing-active) .site-footer-divider {
-		border-color: rgb(255 255 255 / 30%);
+		border-color: rgb(0 0 0 / 20%);
 	}
 
 	:global(body.home-landing-active) .site-footer-copy a {
+		color: #126580;
+	}
+
+	:global(html.dark body.home-landing-active #main-grid > .footer) {
+		background: #0b0e14;
+	}
+
+	:global(html.dark body.home-landing-active) .site-footer-copy {
+		color: #fff;
+	}
+
+	:global(html.dark body.home-landing-active) .site-footer-divider {
+		border-color: rgb(255 255 255 / 30%);
+	}
+
+	:global(html.dark body.home-landing-active) .site-footer-copy a {
 		color: #93dcff;
 	}
 </style>

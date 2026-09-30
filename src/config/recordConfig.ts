@@ -21,6 +21,16 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.93",
+		date: "2026-09-30",
+		time: "16:44",
+		type: "fix",
+		title: "首页页脚改为浅色背景",
+		summary:
+			"浅色模式下的首页页脚改成白底，并同步调整文字、链接和分隔线对比度；深色模式保留原有深底。",
+		changes: ["首页页脚四个角色下方区域使用白底，保留原有排版与角色动画。"],
+	},
+	{
 		version: "v6.14.92",
 		date: "2026-09-30",
 		time: "01:25",
