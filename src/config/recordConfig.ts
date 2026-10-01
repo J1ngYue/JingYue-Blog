@@ -21,6 +21,16 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.110",
+		date: "2026-10-01",
+		time: "14:44",
+		type: "optimize",
+		title: "隐藏相册收藏视频的拖动进度条",
+		summary:
+			"隐藏收藏片段底部的视频进度条，保留播放暂停、时间与全屏控件，不影响原视频和相册轮播。",
+		changes: ["仅调整相册视频控件样式，不改动其他页面的视频播放器。"],
+	},
+	{
 		version: "v6.14.109",
 		date: "2026-10-01",
 		time: "02:08",
