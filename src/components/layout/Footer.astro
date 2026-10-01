@@ -121,9 +121,8 @@ if (footerConfig.enable) {
       {customFooterHtml && <div set:html={customFooterHtml} />}
     </div>
     <div class="m-0.5 flex gap-2 justify-center flex-wrap">
-      &copy; <span id="copyright-year">{currentYear}</span>
-      {profileConfig.name}. All Rights Reserved.
-      <span aria-hidden="true">/</span>
+      <span class="site-footer-copyright">&copy; <span id="copyright-year">{currentYear}</span> {profileConfig.name}. All Rights Reserved.</span>
+      <span class="site-footer-copy-divider" aria-hidden="true">/</span>
       <a
         class="transition link text-(--primary) font-medium"
         target="_blank"
@@ -268,8 +267,15 @@ if (footerConfig.enable) {
 	@media (min-width: 768px) {
 		:global(body.home-landing-active) .site-footer-content { width: min(76rem, calc(100% - 8rem)); }
 	}
-	@media (max-width: 767px) {
+	@media (max-width: 767.98px) {
 		.site-footer-primary, .site-footer-lower { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+		.site-footer-panel { padding-inline: 1rem; margin-bottom: 1rem; }
+		.site-footer-divider { margin: 1.5rem 1rem; }
+		.site-footer-primary { padding-block: .75rem 1.25rem; }
+		.site-footer-copy { font-size: .85rem; line-height: 1.7; }
+		.site-footer-copyright { flex-basis: 100%; }
+		.site-footer-copy-divider { display: none; }
+		.site-footer-policies button, .site-footer-status a { min-height: 2.75rem; display: inline-flex; align-items: center; }
 		.site-footer-brand { width: 100%; }
 		.site-footer-contact { text-align: left; }
 		.site-footer-socials, .site-footer-policies { justify-content: flex-start; }
@@ -311,9 +317,9 @@ if (footerConfig.enable) {
 	.site-footer-mascots img:nth-child(6) { animation-delay: -1.1s; }
 	.site-footer-mascots img:nth-child(7) { animation-delay: -1.8s; }
 
-	@media (max-width: 767px) {
-		.site-footer-mascots { justify-content: center; }
-		.site-footer-mascots img { max-width: calc((100% - clamp(1.2rem, 6vw, 4.5rem)) / 4); }
+	@media (max-width: 767.98px) {
+		.site-footer-mascots { justify-content: center; gap: .6rem; padding-top: 1rem; }
+		.site-footer-mascots img { width: 4rem; height: 4rem; max-width: calc((100% - 1.8rem) / 4); }
 	}
 
 	@keyframes site-footer-mascot-float {

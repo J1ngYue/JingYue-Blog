@@ -21,6 +21,22 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.118",
+		date: "2026-10-02",
+		time: "00:27",
+		type: "optimize",
+		title: "统一移动端导航与阅读体验",
+		summary:
+			"参考 MmzMing 的移动端胶囊工具栏与上展开面板，保留本站角色、鲸鱼娘目录背景及桌面布局。",
+		changes: [
+			"手机端统一首页、搜索、菜单、显示设置与回顶入口，菜单内保留主题、音乐和阅读目录。",
+			"菜单、显示设置与目录平滑上展开，适配安全区，隐藏面板不可聚焦，页面切换自动收起。",
+			"增加触控搜索关闭按钮、放大关键触控区域，改善文章留白与代码横向滚动，设置只保留一层滚动。",
+			"恢复手机首页完整页尾，七位角色与签名保留，版权链接在窄屏整齐分行。",
+		],
+		related: ["https://github.com/MmzMing/my-blog"],
+	},
+	{
 		version: "v6.14.117",
 		date: "2026-10-01",
 		time: "22:39",

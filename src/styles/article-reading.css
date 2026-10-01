@@ -157,10 +157,16 @@ html:has([data-article-reading-rails]) #post-container .markdown-content {
 	line-height: 1.9;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 767.98px) {
 	html:has([data-article-reading-rails]) #post-container {
 		padding-inline: 1rem;
 	}
+	html:has([data-article-reading-rails]) .post-reading-meta { gap: .55rem .75rem; margin-top: .85rem; }
+	html:has([data-article-reading-rails]) .post-reading-summary { grid-template-columns: 2rem minmax(0, 1fr); gap: .65rem; padding: .85rem; }
+	html:has([data-article-reading-rails]) .post-reading-summary p { font-size: .88rem; }
+	html:has([data-article-reading-rails]) #post-container .markdown-content { font-size: 1rem; line-height: 1.85; overflow-wrap: anywhere; }
+	html:has([data-article-reading-rails]) #post-container .markdown-content :is(pre, .expressive-code, .table-wrapper) { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+	html:has([data-article-reading-rails]) .post-reading-breadcrumb a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 
 	html:has([data-article-reading-rails]) .post-reading-breadcrumb {
 		justify-content: flex-start;

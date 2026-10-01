@@ -262,6 +262,7 @@ $: if (initialized) queueSearch(keyword);
 	>
 		<div class="search-modal-content">
 			<p id="global-search-title" class="search-modal-title">搜索文章</p>
+			<button class="search-mobile-close" type="button" aria-label="关闭搜索" on:click={() => closeSearch()}><Icon icon="material-symbols:close-rounded" /></button>
 
 			<form class="search-input-shell" role="search" on:submit|preventDefault={submitSearch}>
 				<input
@@ -337,6 +338,16 @@ $: if (initialized) queueSearch(keyword);
 {/if}
 
 <style>
+	.search-mobile-close { display: none; }
+	@media (max-width: 767.98px) {
+		.search-modal-content { position: relative; }
+		.search-modal .search-modal-title { min-height: 2.75rem; margin-bottom: .5rem; line-height: 2.75rem; }
+		.search-mobile-close { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: rgb(255 255 255 / 12%); color: #fff; cursor: pointer; }
+		.search-mobile-close :global(svg) { width: 1.3rem; height: 1.3rem; }
+		.search-mobile-close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+		.search-modal .search-submit { min-width: 2.75rem; min-height: 2.75rem; }
+		.search-modal .search-hints { display: none; }
+	}
 	.search-trigger-shell {
 		display: flex;
 		align-items: center;

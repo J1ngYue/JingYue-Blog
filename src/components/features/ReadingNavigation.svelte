@@ -452,9 +452,12 @@ li.in-path > .outline-children > ul { border-left-color: color-mix(in srgb, var(
 .map-branches .outline-row a > span:last-child { white-space: normal; }
 .map-branches .outline-children > ul { margin: 0; padding: 0; border: 0; }
 .map-panel > p { margin: 0; padding: .6rem 1rem; border-top: 1px solid var(--line-divider); font-size: .7rem; opacity: .65; }
-@media (max-width: 760px) {
+@media (max-width: 767.98px) {
 	.navigation-tabs { padding-left: .6rem; gap: .1rem; }
 	.navigation-tabs button { font-size: .8rem; padding-inline: .45rem; }
+	.outline-row { min-height: 2.75rem; }
+	.outline-row a { padding-block: .75rem; font-size: .88rem; }
+	.branch-toggle { width: 2.75rem; height: 2.75rem; }
 	.map-panel header { flex-wrap: wrap; }
 	.map-panel header small { max-width: calc(100vw - 4rem); }
 	.map-tools { margin-left: auto; }

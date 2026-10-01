@@ -173,31 +173,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		</a>
 	</nav>
 
-	<nav class="home-mobile-dock" aria-label="手机端快捷导航">
-		<a href="/" aria-current="page">
-			<Icon is:inline name="material-symbols:home-outline-rounded" />
-			<span>首页</span>
-		</a>
-		<button type="button" data-home-quick-tool="search" aria-label="打开站内搜索">
-			<Icon is:inline name="material-symbols:search-rounded" />
-			<span>搜索</span>
-		</button>
-		<button class="home-mobile-dock__menu" type="button" data-home-quick-tool="navigation" aria-label="打开快捷导航">
-			<Icon is:inline name="material-symbols:menu-rounded" />
-			<span>菜单</span>
-		</button>
-		<button type="button" data-home-mobile-theme aria-label="切换深色与浅色模式">
-			<Icon class="home-mobile-theme__light" is:inline name="material-symbols:light-mode-outline-rounded" />
-			<Icon class="home-mobile-theme__dark" is:inline name="material-symbols:dark-mode-outline-rounded" />
-			<span class="home-mobile-theme__dark">深色</span>
-			<span class="home-mobile-theme__light">浅色</span>
-		</button>
-		<button type="button" data-home-mobile-back aria-label="返回上一页">
-			<Icon is:inline name="material-symbols:keyboard-return-rounded" />
-			<span>返回</span>
-		</button>
-	</nav>
-
 	<section
 		id="home-hero"
 		class="home-hero"
@@ -450,7 +425,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				const bootstrapUrl = asset
 					? asset.type === "video"
 						? asset.posterUrl
-						: window.matchMedia("(max-width: 640px)").matches
+						: window.matchMedia("(max-width: 767.98px)").matches
 							? asset.mobileUrl
 							: asset.desktopUrl
 					: "";
@@ -499,8 +474,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const themePresets = Array.from(root.querySelectorAll("[data-home-cover-theme-preset]"));
 		const themeReset = root.querySelector("[data-home-cover-theme-reset]");
 		const homeQuickTools = Array.from(root.querySelectorAll("[data-home-quick-tool]"));
-		const mobileBackButton = root.querySelector("[data-home-mobile-back]");
-		const mobileThemeButton = root.querySelector("[data-home-mobile-theme]");
 		const coverImages = Array.from(
 			root.querySelectorAll("[id^='home-cover-desktop-'], [id^='home-cover-mobile-']"),
 		);
@@ -1137,25 +1110,12 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			}[action];
 			if (targetId) document.getElementById(targetId)?.click();
 		};
-		const handleMobileBack = () => {
-			if (window.history.length > 1) {
-				window.history.back();
-				return;
-			}
-			window.scrollTo({ top: 0, behavior: reducedMotion.matches ? "auto" : "smooth" });
-		};
-		const handleMobileTheme = (event) => {
-			event.stopPropagation();
-			window.dispatchEvent(new Event("firefly:toggle-theme"));
-		};
 
 		homeQuickTools.forEach((tool) => {
 			if (tool.dataset.homeQuickTool !== "home") {
 				tool.addEventListener("click", handleHomeQuickTool);
 			}
 		});
-		mobileBackButton?.addEventListener("click", handleMobileBack);
-		mobileThemeButton?.addEventListener("click", handleMobileTheme);
 
 		const setCoverSwitcherOpen = (open, restoreFocus = true) => {
 			if (!coverSwitcher || !coverSwitcherTrigger || coverSwitcherOpen === open) return;
@@ -2019,8 +1979,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 					tool.removeEventListener("click", handleHomeQuickTool);
 				}
 			});
-			mobileBackButton?.removeEventListener("click", handleMobileBack);
-			mobileThemeButton?.removeEventListener("click", handleMobileTheme);
 			coverSwitcher?.removeEventListener("keydown", handleCoverSwitcherKeydown);
 			coverOrbit?.removeEventListener("pointermove", handleCoverOrbitPointerMove);
 			coverOrbit?.removeEventListener("pointerleave", handleCoverOrbitPointerLeave);
@@ -2127,7 +2085,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		color: var(--deep-text);
 	}
 
-	.home-mobile-dock,
 	.home-mobile-profile {
 		display: none;
 	}
@@ -4994,9 +4951,9 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		}
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 767.98px) {
 		:global(body.home-landing-active #main-grid > .footer) {
-			display: none !important;
+			display: block !important;
 		}
 
 		.home-capability-page,
@@ -5995,7 +5952,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), 0 0.24rem 0.75rem rgb(0 0 0 / 34%);
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 767.98px) {
 		:global(body.home-landing-active #navbar > div > div:first-child) {
 			display: none !important;
 		}
@@ -6161,98 +6118,6 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			letter-spacing: 0.02em;
 		}
 
-		.home-mobile-dock {
-			position: fixed;
-			right: max(0.75rem, env(safe-area-inset-right));
-			bottom: max(0.55rem, env(safe-area-inset-bottom));
-			left: max(0.75rem, env(safe-area-inset-left));
-			z-index: 1100;
-			display: grid;
-			grid-template-columns: repeat(5, minmax(0, 1fr));
-			align-items: end;
-			min-height: 4.45rem;
-			padding: 0.35rem 0.5rem;
-			border: 1px solid rgb(255 255 255 / 0.46);
-			border-radius: 999px;
-			background: rgb(247 247 247 / 0.84);
-			box-shadow: 0 0.9rem 2.6rem rgb(0 0 0 / 0.34);
-			backdrop-filter: blur(1.25rem) saturate(1.16);
-		}
-
-		.home-mobile-dock a,
-		.home-mobile-dock button {
-			display: grid;
-			align-content: center;
-			justify-items: center;
-			gap: 0.1rem;
-			min-width: 0;
-			min-height: 3.45rem;
-			padding: 0.3rem 0.15rem;
-			border: 0;
-			border-radius: 0.9rem;
-			background: transparent;
-			color: #111;
-			font-size: 0.64rem;
-			font-weight: 750;
-			line-height: 1;
-			cursor: pointer;
-			transition: background-color 180ms ease, color 180ms ease;
-		}
-
-		.home-mobile-dock a:focus-visible,
-		.home-mobile-dock button:focus-visible {
-			outline: 2px solid hsl(var(--hue) 70% 46%);
-			outline-offset: 1px;
-		}
-
-		.home-mobile-dock a:active,
-		.home-mobile-dock button:active {
-			background: rgb(0 0 0 / 0.09);
-		}
-
-		.home-mobile-dock :global(svg) {
-			width: 1.35rem;
-			height: 1.35rem;
-		}
-
-		.home-mobile-theme__dark {
-			display: none;
-		}
-
-		:global(html.dark) .home-mobile-theme__light {
-			display: none;
-		}
-
-		:global(html.dark) .home-mobile-theme__dark {
-			display: block;
-		}
-
-		.home-mobile-dock__menu {
-			align-self: center;
-			width: 4.4rem;
-			height: 4.4rem;
-			margin: -1.05rem auto 0;
-			border: 3px solid #fff !important;
-			border-radius: 50% !important;
-			background: #090909 !important;
-			box-shadow: 0 0.65rem 1.6rem rgb(0 0 0 / 0.38);
-			color: #fff !important;
-		}
-
-		.home-mobile-dock__menu :global(svg) {
-			width: 2.2rem;
-			height: 2.2rem;
-		}
-
-		.home-mobile-dock__menu span {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			overflow: hidden;
-			clip: rect(0 0 0 0);
-			white-space: nowrap;
-		}
-
 		.home-ending-copy {
 			top: 4.8rem;
 			width: calc(100% - 1.25rem);
@@ -6300,7 +6165,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		}
 	}
 
-	@media (max-width: 640px) and (max-height: 720px) {
+	@media (max-width: 767.98px) and (max-height: 720px) {
 		.home-mobile-profile {
 			top: max(4.2rem, env(safe-area-inset-top));
 		}

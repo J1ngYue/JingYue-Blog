@@ -153,6 +153,11 @@ const announcementSecondary =
 		let restoreFocusOnClose = true;
 
 		const syncPanelPosition = () => {
+			if (window.matchMedia("(max-width: 767.98px)").matches) {
+				panel.style.removeProperty("left");
+				panel.style.removeProperty("right");
+				return;
+			}
 			const anchor = root.getBoundingClientRect();
 			const width = panel.offsetWidth;
 			const left = Math.max(16, Math.min(anchor.right - width, window.innerWidth - width - 16));
@@ -207,7 +212,11 @@ const announcementSecondary =
 			if (!nextOpen) {
 				setSettingsOpen(false);
 				setAnnouncementOpen(false);
-				if (restoreFocusOnClose) trigger.focus({ preventScroll: true });
+				if (restoreFocusOnClose) {
+					const focusTarget = window.matchMedia("(max-width: 767.98px)").matches
+						? document.querySelector<HTMLElement>("[data-mobile-action=settings]") : trigger;
+					focusTarget?.focus({ preventScroll: true });
+				}
 			}
 		};
 
@@ -459,6 +468,22 @@ const announcementSecondary =
     @media (max-width: 1023px) {
         .navbar-utility__panel { width: calc(100vw - 2rem); }
     }
+	@media (max-width: 767.98px) {
+		.navbar-utility__panel {
+			position: fixed; top: auto; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px));
+			left: max(.75rem, env(safe-area-inset-left, 0px)) !important;
+			right: max(.75rem, env(safe-area-inset-right, 0px)) !important;
+			width: auto !important; max-width: 30rem; margin-inline: auto;
+			max-height: min(76dvh, calc(100dvh - 7rem)); overflow-y: auto;
+			overscroll-behavior: contain; border-width: 1px; border-radius: 1.4rem;
+			transform: translate3d(0, .8rem, 0);
+		}
+		.navbar-utility__pointer { display: none; }
+		.navbar-utility__settings-header { position: sticky; top: 0; z-index: 2; background: var(--settings-panel-bg); padding: .5rem .65rem; }
+		.navbar-utility__action { min-width: 2.75rem; min-height: 2.75rem; }
+		.navbar-utility[data-open="true"][data-settings-open="true"] .navbar-utility__panel { animation: mobile-settings-enter 260ms cubic-bezier(.22, 1, .36, 1) both; }
+	}
+	@keyframes mobile-settings-enter { from { opacity: 0; transform: translate3d(0, .8rem, 0) scale(.985); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
     @media (max-width: 599px) {
         .navbar-utility__settings-header { padding: 0.65rem; gap: 0.15rem; }
         .navbar-utility__settings-header .navbar-utility__action { padding: 0.4rem; min-width: 2.4rem; }

@@ -200,7 +200,7 @@ const navbarProfileAvatarParticles = [
                     </div>
                 </button>
 
-                <aside id="navbar-profile-card" class="navbar-profile-card" aria-label={`${profileConfig.name} 个人资料`} aria-hidden="true">
+                <aside id="navbar-profile-card" class="navbar-profile-card" aria-label={`${profileConfig.name} 个人资料`} aria-hidden="true" inert>
                     <div class="navbar-profile-card__identity">
                     <div class="navbar-profile-card__avatar-wrap" data-navbar-profile-avatar-wrap>
                         <ImageWrapper
@@ -643,6 +643,7 @@ function initNavbarProfileCard() {
         const isOpen = cardIsOpen();
         brand.setAttribute("aria-expanded", String(isOpen));
         card.setAttribute("aria-hidden", String(!isOpen));
+        card.inert = !isOpen;
     };
 
     const stopTerminal = () => {
@@ -841,16 +842,6 @@ if (!navbarProfileWindow.__fireflyNavbarProfileInitBound) {
 queueNavbarProfileCardInit();
 
 function loadButtonScript() {
-    let menuBtn = document.getElementById("nav-menu-switch");
-    if (menuBtn) {
-        menuBtn.onclick = function () {
-            let menuPanel = document.getElementById("nav-menu-panel");
-            if (menuPanel) {
-                menuPanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
-
     // 背景视频播放器控制按钮
     let bgPlayerBtn = document.getElementById("bg-player-toggle");
     if (bgPlayerBtn) {
@@ -896,20 +887,6 @@ function loadButtonScript() {
         }
     }
 
-    document.addEventListener("click", function(event) {
-        const panels = ["nav-menu-panel"];
-        const buttons = ["nav-menu-switch"];
-
-        panels.forEach((id, index) => {
-            const panel = document.getElementById(id);
-            const button = document.getElementById(buttons[index]);
-            if (panel && button && !panel.classList.contains("float-panel-closed")) {
-                if (event.target instanceof Node && !panel.contains(event.target) && !button.contains(event.target)) {
-                    panel.classList.add("float-panel-closed");
-                }
-            }
-        });
-    });
 }
 
 loadButtonScript();
@@ -995,6 +972,7 @@ if (document.readyState === 'loading') {
 		const syncAccessibility = (brand, card, open) => {
 			brand.setAttribute("aria-expanded", String(open));
 			card.setAttribute("aria-hidden", String(!open));
+			card.inert = !open;
 		};
 
 		const bind = () => {

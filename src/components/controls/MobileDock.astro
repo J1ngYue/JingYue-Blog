@@ -1,0 +1,102 @@
+---
+import { Icon } from "astro-icon/components";
+import { url } from "@/utils/url-utils";
+---
+
+<nav id="mobile-dock" class="mobile-dock" aria-label="手机端快捷导航">
+	<a href={url("/")} aria-label="返回首页"><Icon is:inline name="material-symbols:home-outline-rounded" /><span>首页</span></a>
+	<button type="button" data-mobile-action="search" aria-label="打开站内搜索"><Icon is:inline name="material-symbols:search-rounded" /><span>搜索</span></button>
+	<button id="mobile-dock-menu" type="button" data-mobile-action="menu" aria-label="打开导航菜单" aria-controls="nav-menu-panel" aria-expanded="false"><Icon is:inline name="material-symbols:menu-rounded" /><span>菜单</span></button>
+	<button type="button" data-mobile-action="settings" aria-label="打开显示设置" aria-controls="navbar-utility-panel"><Icon is:inline name="material-symbols:tune-rounded" /><span>设置</span></button>
+	<button type="button" data-mobile-action="top" aria-label="返回页面顶部"><Icon is:inline name="material-symbols:keyboard-arrow-up-rounded" /><span>顶部</span></button>
+</nav>
+
+<script>
+	const dock = document.getElementById("mobile-dock");
+	if (dock && !dock.dataset.bound) {
+		dock.dataset.bound = "true";
+		const mobile = matchMedia("(max-width: 767.98px)");
+		// Keep the existing panel controllers; only move their mobile anchor out of
+		// the home scene and navbar, whose transforms/visibility would clip them.
+		const portals = ["nav-menu-panel", "navbar-utility-trigger", "music-mini-panel", "music-nav-panel"].flatMap((id) => {
+			const target = document.getElementById(id);
+			const element = id === "navbar-utility-trigger" ? target?.closest<HTMLElement>("[data-navbar-utility]") : target;
+			if (!element) return [];
+			const placeholder = document.createComment("mobile-panel-anchor");
+			element.before(placeholder);
+			return [{ element, placeholder }];
+		});
+		const syncLayout = () => {
+			for (const { element, placeholder } of portals) {
+				if (mobile.matches) document.body.appendChild(element);
+				else placeholder.after(element);
+			}
+		};
+		const syncPage = () => {
+			const home = dock.querySelector("a");
+			home?.toggleAttribute("aria-current", location.pathname === home.pathname);
+			if (home?.hasAttribute("aria-current")) home.setAttribute("aria-current", "page");
+		};
+		dock.addEventListener("click", (event) => {
+			const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>("[data-mobile-action]") : null;
+			if (!button) return;
+			event.stopPropagation();
+			const action = button.dataset.mobileAction;
+			if (action === "menu") window.dispatchEvent(new Event("jingyue:toggle-mobile-navigation"));
+			if (action === "search") window.dispatchEvent(new Event("firefly:open-search"));
+			if (action === "settings") document.getElementById("display-settings-switch")?.click();
+			if (action === "top") window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+		});
+		const syncKeyboard = () => {
+			const editing = document.activeElement instanceof HTMLElement && document.activeElement.matches("input:not([type=range]):not([type=checkbox]), textarea, [contenteditable=true]");
+			dock.classList.toggle("is-keyboard-open", editing && (window.visualViewport?.height || innerHeight) < innerHeight * .75);
+		};
+		mobile.addEventListener("change", syncLayout);
+		window.visualViewport?.addEventListener("resize", syncKeyboard);
+		document.addEventListener("focusout", syncKeyboard);
+		document.addEventListener("swup:contentReplaced", syncPage);
+		document.addEventListener("astro:page-load", syncPage);
+		syncLayout();
+		syncPage();
+	}
+</script>
+
+<style is:global>
+	.mobile-dock { display: none; }
+	@media (max-width: 767.98px) {
+		html { scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)); scrollbar-width: none; }
+		html::-webkit-scrollbar { display: none; }
+		body { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+		#mobile-dock {
+			position: fixed; z-index: 1040;
+			left: max(.75rem, env(safe-area-inset-left, 0px));
+			right: max(.75rem, env(safe-area-inset-right, 0px));
+			bottom: calc(.6rem + env(safe-area-inset-bottom, 0px));
+			display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+			gap: .2rem; padding: .4rem; max-width: 30rem; margin-inline: auto;
+			border: 1px solid #d4d4d8; border-radius: 1.75rem;
+			background: rgb(250 250 250 / 96%); color: #18181b;
+			box-shadow: 0 .5rem 2rem rgb(0 0 0 / 16%); backdrop-filter: blur(16px);
+			transition: opacity 180ms, transform 240ms cubic-bezier(.22, 1, .36, 1);
+		}
+		#mobile-dock a, #mobile-dock button {
+			display: grid; justify-items: center; align-content: center; gap: .25rem;
+			min-width: 0; min-height: 3rem; padding: .35rem .15rem;
+			border: 0; border-radius: 1.2rem; color: inherit; background: transparent;
+			font-size: .68rem; font-weight: 700; line-height: 1; cursor: pointer;
+			transition: background-color 180ms, color 180ms;
+		}
+		#mobile-dock svg { width: 1.35rem; height: 1.35rem; }
+		#mobile-dock button[aria-expanded=true], #mobile-dock a[aria-current=page] { background: #18181b; color: #fff; }
+		#mobile-dock :is(a, button):focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+		#mobile-dock :is(a, button):active { background: #e4e4e7; color: #18181b; }
+		html.dark #mobile-dock { background: rgb(24 24 27 / 96%); border-color: #424248; color: #f4f4f5; }
+		html.dark #mobile-dock button[aria-expanded=true], html.dark #mobile-dock a[aria-current=page] { background: #f4f4f5; color: #18181b; }
+		#mobile-dock.is-keyboard-open { opacity: 0; transform: translateY(140%); pointer-events: none; }
+		#quick-tools-dock, #navbar .navbar-actions { display: none !important; }
+		body > [data-navbar-utility] { position: fixed; bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); left: 0; width: 0; height: 0; z-index: 1050; }
+		body > [data-navbar-utility] > .navbar-utility__trigger { display: none; }
+		body > #music-mini-panel { top: auto !important; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px)) !important; left: .75rem !important; right: .75rem !important; width: auto !important; max-width: 30rem; margin-inline: auto; max-height: 72dvh; overflow-y: auto; overscroll-behavior: contain; }
+	}
+	@media (prefers-reduced-motion: reduce) { #mobile-dock, #mobile-dock a, #mobile-dock button { transition: none; } }
+</style>

@@ -226,6 +226,10 @@ const quickLinks = [
 		const syncMusicPanelPosition = () => {
 			if (!musicButton || !musicMiniPanel) return;
 			if (musicLayoutFrame) cancelAnimationFrame(musicLayoutFrame);
+			if (window.matchMedia("(max-width: 767.98px)").matches) {
+				for (const property of ["left", "right", "top", "width"]) musicMiniPanel.style.removeProperty(property);
+				return;
+			}
 			musicLayoutFrame = requestAnimationFrame(() => {
 				musicLayoutFrame = 0;
 				const buttonRect = musicButton.getBoundingClientRect();

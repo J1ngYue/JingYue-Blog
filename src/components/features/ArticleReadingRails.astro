@@ -117,13 +117,14 @@ const title =
 		const trigger = root.querySelector<HTMLButtonElement>("[data-article-toc-mobile-trigger]");
 		const close = root.querySelector<HTMLButtonElement>("[data-article-toc-close]");
 		if (!toc) return;
-		const mobile = window.matchMedia("(max-width: 760px)");
+		const mobile = window.matchMedia("(max-width: 767.98px)");
 		const hover = window.matchMedia("(hover: hover) and (pointer: fine)");
 		const events = new AbortController();
 		let collapseTimer: number | undefined;
 		const cancelCollapse = () => window.clearTimeout(collapseTimer);
 		const setExpanded = (expanded: boolean) => {
 			cancelCollapse();
+			if (expanded && mobile.matches) window.dispatchEvent(new CustomEvent("jingyue:floating-panel-open", { detail: { panel: "reading-navigation" } }));
 			toc.classList.toggle("is-collapsed", !expanded);
 			toc.inert = !expanded;
 			trigger?.setAttribute("aria-expanded", String(expanded));
@@ -148,6 +149,13 @@ const title =
 		toc.addEventListener("focusin", cancelCollapse, options);
 		toc.addEventListener("focusout", scheduleCollapse, options);
 		root.addEventListener("article:navigate", () => { if (mobile.matches) setExpanded(false); }, options);
+		window.addEventListener("jingyue:floating-panel-open", (event) => {
+			if (mobile.matches && (event as CustomEvent<{ panel: string }>).detail.panel !== "reading-navigation") setExpanded(false);
+		}, options);
+		window.addEventListener("firefly:open-search", () => { if (mobile.matches) setExpanded(false); }, options);
+		document.addEventListener("click", (event) => {
+			if (mobile.matches && !toc.inert && event.target instanceof Node && !root.contains(event.target)) setExpanded(false);
+		}, options);
 		root.addEventListener("keydown", (event) => {
 			if (event.key === "Escape") { setExpanded(false); trigger?.focus(); }
 		}, options);
@@ -190,10 +198,12 @@ const title =
 	:global(html:has([data-article-reading-rails]) body.content-only-active #swup-container) { width: 100% !important; max-width: none !important; }
 	:global(html:has([data-article-reading-rails]) body.content-only-active #main-layout-container),
 	:global(html:has([data-article-reading-rails]) body.content-only-active #main-grid) { margin-inline: 0 !important; padding-inline: 0 !important; }
-	@media (max-width: 760px) {
+	@media (max-width: 767.98px) {
 		.article-reading-toc-edge { display: none; }
-		.article-reading-toc__mobile-trigger { top: 5.1rem; z-index: 41; }
-		.article-reading-toc { top: 4.8rem; bottom: auto; left: .5rem; width: min(20rem, calc(100vw - 1rem)); height: min(72dvh, 36rem); border-radius: 1rem; }
+		.article-reading-toc__mobile-trigger { top: auto; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px)); left: .75rem; z-index: 41; }
+		.article-reading-toc { top: auto; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px)); left: max(.75rem, env(safe-area-inset-left, 0px)); right: max(.75rem, env(safe-area-inset-right, 0px)); margin-inline: auto; width: auto; max-width: 30rem; height: min(72dvh, 36rem); border-radius: 1.4rem; z-index: 1050; }
+		.article-reading-toc.is-collapsed { transform: translateY(calc(100% + 6rem)); visibility: hidden; }
+		.article-reading-toc__close { width: 2.75rem; height: 2.75rem; top: .45rem; }
 		.article-reading-toc::after { height: 55%; background-size: auto 100%; }
 	}
 	@media (prefers-reduced-motion: reduce) { .article-reading-toc { transition-duration: .01ms; } }

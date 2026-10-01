@@ -9,6 +9,7 @@ import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import FloatingControls from "@/components/controls/FloatingControls.astro";
+import MobileDock from "@/components/controls/MobileDock.astro";
 import PageWallpaperPicker from "@/components/controls/PageWallpaperPicker.svelte";
 import QuickToolsDock from "@/components/controls/QuickToolsDock.astro";
 import ScrollDownIndicator from "@/components/controls/ScrollDownIndicator.astro";
@@ -960,6 +961,7 @@ const hasMultipleImages =
 
 <FloatingControls headings={headings} encrypted={encrypted} />
 <QuickToolsDock />
+<MobileDock />
 <SlidingPillGroups />
 <PageWallpaperPicker client:load />
 

@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import { musicPlayerConfig } from "@/config/musicConfig";
 import type { NavBarLink } from "@/types/config";
 import { url } from "@/utils/url-utils";
 
@@ -9,12 +10,18 @@ interface Props {
 
 const processedLinks = Astro.props.links;
 ---
-<div id="nav-menu-panel" class:list={["float-panel float-panel-closed transition-all fixed right-4 max-h-[80vh] overflow-y-auto jingyue-mobile-nav"]}>
+<div id="nav-menu-panel" class:list={["float-panel float-panel-closed transition-all fixed right-4 max-h-[80vh] overflow-y-auto jingyue-mobile-nav"]} role="navigation" aria-label="站点导航" aria-hidden="true" inert>
 	<header class="jingyue-mobile-nav-heading">
 		<span>JINGYUE</span>
 		<small>探索我的个人空间</small>
+		<button type="button" data-mobile-menu-close aria-label="关闭导航菜单"><Icon is:inline name="material-symbols:close-rounded" /></button>
 	</header>
-    {processedLinks.map((link) => (
+	<div class="mobile-menu-tools" role="group" aria-label="常用功能">
+		<button type="button" data-mobile-menu-action="theme"><Icon is:inline name="material-symbols:dark-mode-outline-rounded" /><span>切换主题</span></button>
+		{musicPlayerConfig.showInNavbar && <button type="button" data-mobile-menu-action="music"><Icon is:inline name="material-symbols:music-note-rounded" /><span>音乐</span></button>}
+		<button type="button" data-mobile-menu-action="toc" hidden><Icon is:inline name="material-symbols:format-list-bulleted-rounded" /><span>阅读目录</span></button>
+	</div>
+    {processedLinks.map((link, index) => (
         <div class="mobile-menu-item">
             {link.children && link.children.length > 0 ? (
                 /* 有子菜单的项目 */
@@ -24,6 +31,7 @@ const processedLinks = Astro.props.links;
 						class="group jingyue-mobile-trigger"
                         data-mobile-dropdown-trigger
                         aria-expanded="false"
+                        aria-controls={`mobile-submenu-${index}`}
                     >
 						<div class="jingyue-mobile-label">
 							{link.icon && <Icon is:inline name={link.icon} class="jingyue-mobile-icon" />}
@@ -33,7 +41,7 @@ const processedLinks = Astro.props.links;
 							  class="mobile-dropdown-arrow jingyue-mobile-arrow"
                         />
                     </button>
-                    <div class="mobile-submenu" data-mobile-submenu>
+                    <div id={`mobile-submenu-${index}`} class="mobile-submenu" data-mobile-submenu inert>
                         {link.children.map((child) => (
                             <a href={child.external ? child.url : url(child.url)}
 							   class="group jingyue-mobile-child"
@@ -208,38 +216,95 @@ const processedLinks = Astro.props.links;
 			transition: none !important;
 		}
 	}
+	.jingyue-mobile-nav-heading button { display: grid; place-items: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: .7rem; cursor: pointer; color: var(--content-meta); }
+	.jingyue-mobile-nav-heading button svg { width: 1.3rem; height: 1.3rem; }
+	.mobile-menu-tools { display: none; }
+	@media (max-width: 767.98px) {
+		#nav-menu-panel {
+			top: auto !important; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px));
+			left: max(.75rem, env(safe-area-inset-left, 0px)); right: max(.75rem, env(safe-area-inset-right, 0px)) !important;
+			width: auto; max-width: 30rem; margin-inline: auto; max-height: min(70dvh, calc(100dvh - 7rem));
+			padding: .65rem; border: 1px solid var(--line-divider); border-radius: 1.4rem;
+			background: var(--card-bg); z-index: 1050; overscroll-behavior: contain;
+			transform-origin: bottom center; transition: opacity 180ms, transform 260ms cubic-bezier(.22, 1, .36, 1), visibility 260ms;
+		}
+		#nav-menu-panel.float-panel-closed { transform: translateY(.8rem) scale(.98); visibility: hidden; }
+		.jingyue-mobile-nav-heading { align-items: center; gap: .35rem; padding: .2rem .5rem .5rem; }
+		.jingyue-mobile-nav-heading small { margin-left: auto; }
+		.mobile-menu-tools { display: flex; gap: .35rem; margin-bottom: .45rem; }
+		.mobile-menu-tools button { display: flex; flex: 1; align-items: center; justify-content: center; gap: .35rem; min-height: 2.75rem; border-radius: .7rem; background: var(--btn-card-bg); color: var(--content-meta); font-size: .75rem; cursor: pointer; }
+		.mobile-menu-tools button[hidden] { display: none; }
+		.mobile-menu-tools svg { width: 1.1rem; height: 1.1rem; }
+		.jingyue-mobile-trigger, .jingyue-mobile-child { min-height: 2.875rem; font-size: .88rem; }
+		.jingyue-mobile-trigger[aria-current=page], .jingyue-mobile-child[aria-current=page] { background: var(--btn-card-bg); color: var(--content-meta); box-shadow: inset 3px 0 currentColor; }
+	}
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const mobileDropdowns = document.querySelectorAll('[data-mobile-dropdown]');
-
-        mobileDropdowns.forEach(dropdown => {
-            const trigger = dropdown.querySelector('[data-mobile-dropdown-trigger]');
-            const submenu = dropdown.querySelector('[data-mobile-submenu]');
-
-            if (!trigger || !submenu) return;
-
-            trigger.addEventListener('click', function(e) {
-                e.preventDefault();
-                const isExpanded = dropdown.getAttribute('data-expanded') === 'true';
-
-                // 关闭其他打开的下拉菜单
-                mobileDropdowns.forEach(otherDropdown => {
-                    if (otherDropdown !== dropdown) {
-                        otherDropdown.setAttribute('data-expanded', 'false');
-                        const otherTrigger = otherDropdown.querySelector('[data-mobile-dropdown-trigger]');
-                        if (otherTrigger) {
-                            otherTrigger.setAttribute('aria-expanded', 'false');
-                        }
-                    }
-                });
-
-                // 切换当前下拉菜单
-                const newState = !isExpanded;
-                dropdown.setAttribute('data-expanded', newState.toString());
-                trigger.setAttribute('aria-expanded', newState.toString());
-            });
-        });
-    });
+	const panel = document.getElementById("nav-menu-panel");
+	if (panel && !panel.dataset.bound) {
+		panel.dataset.bound = "true";
+		let opener: HTMLElement | null = null;
+		const setOpen = (open: boolean, restoreFocus = false) => {
+			panel.classList.toggle("float-panel-closed", !open);
+			panel.inert = !open;
+			panel.setAttribute("aria-hidden", String(!open));
+			for (const id of ["nav-menu-switch", "mobile-dock-menu"]) document.getElementById(id)?.setAttribute("aria-expanded", String(open));
+			if (restoreFocus) opener?.focus({ preventScroll: true });
+		};
+		const toggle = () => {
+			const open = panel.classList.contains("float-panel-closed");
+			if (open) {
+				opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+				window.dispatchEvent(new CustomEvent("jingyue:floating-panel-open", { detail: { panel: "mobile-navigation" } }));
+			}
+			setOpen(open);
+		};
+		const syncPage = () => {
+			setOpen(false);
+			panel.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
+				if (link.origin === location.origin && link.pathname === location.pathname) link.setAttribute("aria-current", "page");
+				else link.removeAttribute("aria-current");
+			});
+			panel.querySelector<HTMLElement>("[data-mobile-menu-action=toc]")?.toggleAttribute("hidden", !document.querySelector("[data-article-toc-mobile-trigger]"));
+		};
+		document.getElementById("nav-menu-switch")?.addEventListener("click", (event) => { event.stopPropagation(); toggle(); });
+		window.addEventListener("jingyue:toggle-mobile-navigation", toggle);
+		panel.addEventListener("click", (event) => {
+			if (!(event.target instanceof Element)) return;
+			const trigger = event.target.closest<HTMLButtonElement>("[data-mobile-dropdown-trigger]");
+			if (trigger) {
+				const selected = trigger.closest<HTMLElement>("[data-mobile-dropdown]");
+				const expanded = selected?.dataset.expanded !== "true";
+				panel.querySelectorAll<HTMLElement>("[data-mobile-dropdown]").forEach((dropdown) => {
+					const open = dropdown === selected && expanded;
+					dropdown.dataset.expanded = String(open);
+					dropdown.querySelector("button")?.setAttribute("aria-expanded", String(open));
+					dropdown.querySelector<HTMLElement>("[data-mobile-submenu]")?.toggleAttribute("inert", !open);
+				});
+			}
+			if (event.target.closest("[data-mobile-menu-close]")) setOpen(false, true);
+			if (event.target.closest("a")) setOpen(false);
+			const action = event.target.closest<HTMLElement>("[data-mobile-menu-action]")?.dataset.mobileMenuAction;
+			if (!action) return;
+			event.stopPropagation();
+			setOpen(false);
+			if (action === "theme") window.dispatchEvent(new Event("firefly:toggle-theme"));
+			if (action === "music") window.dispatchEvent(new Event("jingyue:toggle-music-mini"));
+			if (action === "toc") document.querySelector<HTMLButtonElement>("[data-article-toc-mobile-trigger]")?.click();
+		});
+		document.addEventListener("click", (event) => {
+			if (event.target instanceof Element && !panel.contains(event.target) && !event.target.closest("#nav-menu-switch, #mobile-dock-menu")) setOpen(false);
+		});
+		document.addEventListener("keydown", (event) => {
+			if (event.key === "Escape" && !panel.inert) { event.preventDefault(); setOpen(false, true); }
+		});
+		window.addEventListener("jingyue:floating-panel-open", (event) => {
+			if ((event as CustomEvent<{ panel: string }>).detail.panel !== "mobile-navigation") setOpen(false);
+		});
+		window.addEventListener("firefly:open-search", () => setOpen(false));
+		document.addEventListener("swup:contentReplaced", syncPage);
+		document.addEventListener("astro:page-load", syncPage);
+		syncPage();
+	}
 </script>

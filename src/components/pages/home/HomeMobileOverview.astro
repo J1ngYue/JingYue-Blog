@@ -47,7 +47,6 @@ const notices = [
 	`[公告] ${announcementConfig.content}`,
 	`[更新] 最近整理了 ${posts.length} 篇文章、${categories.length} 个分类与 ${tags.length} 个标签`,
 ];
-const currentYear = new Date().getFullYear();
 const externalLink = (url: string) => /^https?:\/\//.test(url);
 ---
 
@@ -186,10 +185,6 @@ const externalLink = (url: string) => /^https?:\/\//.test(url);
 			</nav>
 		</section>
 
-		<footer class="home-mobile-overview__footer">
-			<p>Copyright © {currentYear} {siteConfig.title}. 保留所有权利。</p>
-			<a href="/rss/">RSS</a><span aria-hidden="true">/</span><a href="/about/">关于本站</a>
-		</footer>
 	</div>
 </section>
 
@@ -198,7 +193,7 @@ const externalLink = (url: string) => /^https?:\/\//.test(url);
 		display: none;
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 767.98px) {
 		.home-mobile-overview {
 			--mobile-paper: #f8f8f6;
 			--mobile-card: rgb(255 255 255 / 0.88);
@@ -684,26 +679,6 @@ const externalLink = (url: string) => /^https?:\/\//.test(url);
 		.home-mobile-subscribe nav :global(svg) {
 			width: 1.2rem;
 			height: 1.2rem;
-		}
-
-		.home-mobile-overview__footer {
-			padding: 3.5rem 0 1.5rem;
-			color: var(--mobile-muted);
-			font-size: 0.7rem;
-			line-height: 1.8;
-			text-align: center;
-		}
-
-		.home-mobile-overview__footer p {
-			margin: 0;
-		}
-
-		.home-mobile-overview__footer a {
-			color: inherit;
-		}
-
-		.home-mobile-overview__footer span {
-			margin-inline: 0.4rem;
 		}
 
 		@keyframes mobile-ticker {

@@ -1321,6 +1321,12 @@ onMount(() => {
         #display-setting { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "theme theme" "background spotlight" "effects layout"; }
         .settings-secondary { display: contents; }
     }
+    @media (max-width: 767.98px) {
+        #display-setting { max-height: none; overflow: visible; }
+        #display-setting .settings-heading > button { min-width: 2.75rem; min-height: 2.75rem; }
+        #display-setting :is(input[type="number"], input[type="color"]) { min-height: 2.75rem; font-size: 1rem; }
+        #display-setting input[type="range"] { min-height: 2.75rem; }
+    }
     @media (max-width: 599px) {
         #display-setting { grid-template-columns: minmax(0, 1fr); grid-template-areas: "theme" "background" "spotlight" "effects" "layout"; gap: 1.2rem; padding: 1rem; }
     }
