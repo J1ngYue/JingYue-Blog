@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.114",
+		date: "2026-10-01",
+		time: "17:18",
+		type: "feature",
+		title: "鲸鱼娘阅读导航整合目录与文章库",
+		summary:
+			"参考 MmzMing 的目录交互，保留鲸鱼娘背景，将分类文章库嵌入同一个面板，新增阅读进度、自动手风琴与可缩放的思维导图。",
+		changes: [
+			"支持逐级折叠、全部展开收起及当前章节跟随；目录和全部文章平滑切换，移除重复的右侧文章入口。",
+			"面板开合与分组展开使用轻量动画，适配手机、键盘、减少动态效果及加密文章解锁，并在切页时清理监听。",
+		],
+	},
+	{
 		version: "v6.14.113",
 		date: "2026-10-01",
 		time: "16:24",
