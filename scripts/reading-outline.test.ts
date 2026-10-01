@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
 	buildReadingOutline,
 	outlinePath,
+	readingHeading,
 	readingProgress,
 } from "../src/utils/reading-outline";
 
@@ -41,4 +42,15 @@ test("reading progress clamps both ends and supports short articles", () => {
 	assert.equal(readingProgress(2000, 100, 1100), 100);
 	assert.equal(readingProgress(99, 100, 100), 0);
 	assert.equal(readingProgress(100, 100, 100), 100);
+});
+
+test("active heading follows content movement after an upstream cover loads", () => {
+	const positions = [
+		{ id: "overview", top: 0 },
+		{ id: "sidebar", top: 800 },
+	];
+	assert.equal(readingHeading(positions, -720), "sidebar");
+	assert.equal(readingHeading(positions, -500), "overview");
+	assert.equal(readingHeading(positions, 200), "");
+	assert.equal(readingHeading([], -720), "");
 });

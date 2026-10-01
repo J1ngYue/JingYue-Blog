@@ -6,6 +6,7 @@ import {
 	buildReadingOutline,
 	type OutlineNode,
 	outlinePath,
+	readingHeading,
 	readingProgress,
 } from "@/utils/reading-outline";
 import type { TocInput } from "@/utils/toc-shared";
@@ -213,31 +214,25 @@ onMount(() => {
 	function update() {
 		frame = 0;
 		if (!content || locked) return;
+		const contentBounds = content.getBoundingClientRect();
 		if (dirty) {
-			const titleElement =
-				document.querySelector(".post-reading-title") || content;
-			start = titleElement.getBoundingClientRect().top + window.scrollY - 100;
-			end =
-				content.getBoundingClientRect().bottom +
-				window.scrollY -
-				window.innerHeight;
 			positions = Array.from(
 				content.querySelectorAll<HTMLElement>(
 					"h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]",
 				),
 				(element) => ({
 					id: element.id,
-					top: element.getBoundingClientRect().top + window.scrollY,
+					top: element.getBoundingClientRect().top - contentBounds.top,
 				}),
 			);
 			dirty = false;
 		}
+		const titleElement =
+			document.querySelector(".post-reading-title") || content;
+		start = titleElement.getBoundingClientRect().top + window.scrollY - 100;
+		end = contentBounds.bottom + window.scrollY - window.innerHeight;
 		progress = readingProgress(window.scrollY, start, Math.max(start, end));
-		let current = "";
-		for (const position of positions) {
-			if (position.top > window.scrollY + 120) break;
-			current = position.id;
-		}
+		const current = readingHeading(positions, contentBounds.top);
 		if (current !== activeId) {
 			activeId = current;
 			if (automatic) expanded = new Set(outlinePath(outline, current));

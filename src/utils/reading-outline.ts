@@ -46,3 +46,15 @@ export function readingProgress(
 		Math.max(0, Math.min(1, (position - start) / (end - start))) * 100,
 	);
 }
+
+export function readingHeading(
+	positions: { id: string; top: number }[],
+	contentTop: number,
+): string {
+	let current = "";
+	for (const position of positions) {
+		if (position.top + contentTop > 120) break;
+		current = position.id;
+	}
+	return current;
+}
