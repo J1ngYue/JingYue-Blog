@@ -1,0 +1,170 @@
+<div class="pig-scrollbar" id="pig-scrollbar" hidden data-home-native-scroll>
+  <div class="pig-scrollbar__track" data-pig-track>
+    <div
+      class="pig-scrollbar__thumb"
+      data-pig-thumb
+      role="scrollbar"
+      tabindex="0"
+      aria-label="小猪页面滚动条"
+      aria-controls="main-grid"
+      aria-orientation="vertical"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+    >
+      <img src="/assets/images/ui/pig-scrollbar.svg" width="44" height="44" alt="" draggable="false" />
+    </div>
+  </div>
+</div>
+
+<script>
+	(() => {
+		const rail = document.querySelector<HTMLElement>("#pig-scrollbar");
+		const track = rail?.querySelector<HTMLElement>("[data-pig-track]");
+		const thumb = rail?.querySelector<HTMLElement>("[data-pig-thumb]");
+		if (!rail || !track || !thumb || rail.dataset.bound) return;
+		rail.dataset.bound = "true";
+		const html = document.documentElement;
+		const desktop = matchMedia("(hover: hover) and (pointer: fine) and (min-width: 768px) and (forced-colors: none)");
+		const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+		let maxScroll = 0;
+		let travel = 0;
+		let position = 0;
+		let frame = 0;
+		let lastTime = 0;
+		let dragging = false;
+		let dragOffset = 24;
+
+		const paint = () => {
+			thumb.style.transform = `translate3d(0, ${position}px, 0)`;
+			thumb.setAttribute("aria-valuenow", String(Math.round(travel ? position / travel * 100 : 0)));
+		};
+
+		// Keep native scrolling; sync the visual thumb with the browser's render frames.
+		const tick = (time: number) => {
+			frame = 0;
+			if (rail.hidden || document.hidden) return;
+			const sceneAnimating = html.classList.contains("home-scene-scroll-active");
+			let visualScroll = window.scrollY;
+			if (sceneAnimating) {
+				const layer = document.querySelector<HTMLElement>("#main-grid");
+				if (layer) visualScroll -= new DOMMatrixReadOnly(getComputedStyle(layer).transform).m42;
+			}
+			const target = Math.max(0, Math.min(1, visualScroll / maxScroll)) * travel;
+			const elapsed = lastTime ? Math.min(time - lastTime, 64) : 16;
+			lastTime = time;
+			position = sceneAnimating || dragging || reducedMotion.matches
+				? target
+				: position + (target - position) * (1 - Math.exp(-elapsed / 55));
+			if (Math.abs(target - position) < .08) position = target;
+			paint();
+			if (sceneAnimating || Math.abs(target - position) >= .08) frame = requestAnimationFrame(tick);
+		};
+		const schedule = () => {
+			if (!frame) {
+				lastTime = 0;
+				frame = requestAnimationFrame(tick);
+			}
+		};
+		const measure = () => {
+			maxScroll = Math.max(0, html.scrollHeight - html.clientHeight);
+			rail.hidden = !desktop.matches || maxScroll < 1;
+			html.classList.toggle("pig-scrollbar-ready", !rail.hidden);
+			travel = Math.max(0, track.clientHeight - 48);
+			if (!rail.hidden) schedule();
+		};
+		const scrollFromPointer = (event: PointerEvent) => {
+			const top = event.clientY - track.getBoundingClientRect().top - dragOffset;
+			position = Math.max(0, Math.min(travel, top));
+			paint();
+			window.scrollTo({ top: travel ? position / travel * maxScroll : 0, behavior: "instant" });
+		};
+		track.addEventListener("pointerdown", (event) => {
+			if (event.button !== 0) return;
+			window.dispatchEvent(new Event("firefly:scrollbar-drag-start"));
+			dragOffset = thumb.contains(event.target as Node) ? event.clientY - thumb.getBoundingClientRect().top : 24;
+			dragging = true;
+			html.classList.add("pig-scrollbar-dragging");
+			track.setPointerCapture(event.pointerId);
+			event.preventDefault();
+			scrollFromPointer(event);
+		});
+		track.addEventListener("pointermove", (event) => {
+			if (dragging) scrollFromPointer(event);
+		});
+		track.addEventListener("lostpointercapture", () => {
+			dragging = false;
+			html.classList.remove("pig-scrollbar-dragging");
+			schedule();
+		});
+		thumb.addEventListener("keydown", (event) => {
+			const offsets: Record<string, number> = {
+				ArrowUp: -80, ArrowDown: 80, PageUp: -html.clientHeight, PageDown: html.clientHeight,
+				Home: -maxScroll, End: maxScroll,
+			};
+			if (!(event.key in offsets)) return;
+			event.preventDefault();
+			window.dispatchEvent(new Event("firefly:scrollbar-drag-start"));
+			window.scrollBy({ top: offsets[event.key], behavior: reducedMotion.matches ? "instant" : "smooth" });
+		});
+		window.addEventListener("scroll", schedule, { passive: true });
+		window.addEventListener("resize", measure, { passive: true });
+		desktop.addEventListener("change", measure);
+		reducedMotion.addEventListener("change", schedule);
+		document.addEventListener("visibilitychange", schedule);
+		document.addEventListener("swup:contentReplaced", measure);
+		document.addEventListener("astro:page-load", measure);
+		new ResizeObserver(measure).observe(document.body);
+		new MutationObserver(schedule).observe(html, { attributes: true, attributeFilter: ["class"] });
+		measure();
+	})();
+</script>
+
+<style is:global>
+	.pig-scrollbar {
+		position: fixed;
+		inset-block: 6px;
+		right: 0;
+		width: 18px;
+		z-index: 90;
+	}
+	.pig-scrollbar[hidden] { display: none; }
+	.pig-scrollbar__track { position: relative; height: 100%; touch-action: none; cursor: pointer; }
+	.pig-scrollbar__track::before {
+		content: '';
+		position: absolute;
+		inset: 0 7px;
+		border-radius: 999px;
+		background: var(--pig-scrollbar-track-border);
+		opacity: .4;
+	}
+	.pig-scrollbar__thumb {
+		position: absolute;
+		top: 0;
+		left: -26px;
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 48px;
+		border-radius: 14px;
+		cursor: grab;
+		will-change: transform;
+	}
+	.pig-scrollbar__thumb img {
+		width: 44px;
+		height: 44px;
+		user-select: none;
+		filter: drop-shadow(0 2px 2px rgb(71 37 25 / 18%));
+		transition: filter 150ms ease;
+	}
+	.pig-scrollbar__thumb:hover img { filter: drop-shadow(0 2px 3px rgb(71 37 25 / 30%)); }
+	.pig-scrollbar__thumb:focus-visible { outline: 2px solid var(--pig-scrollbar-outline); outline-offset: 1px; }
+	html.pig-scrollbar-dragging .pig-scrollbar__thumb { cursor: grabbing; }
+	html.pig-scrollbar-dragging { scroll-snap-type: none !important; scroll-behavior: auto !important; user-select: none; }
+	html.pig-scrollbar-ready::-webkit-scrollbar-thumb { background: transparent; border-color: transparent; box-shadow: none; }
+	html.blog-entry-loading .pig-scrollbar { visibility: hidden; }
+	@supports (-moz-appearance: none) {
+		html.pig-scrollbar-ready { scrollbar-color: transparent var(--pig-scrollbar-track); }
+	}
+	@media (prefers-reduced-motion: reduce) { .pig-scrollbar__thumb img { transition: none; } }
+</style>

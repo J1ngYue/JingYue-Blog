@@ -106,7 +106,7 @@ html::-webkit-scrollbar-thumb {
     border: 2px solid var(--pig-scrollbar-outline);
     border-radius: 999px;
     background-color: var(--pig-scrollbar-thumb);
-    background-image: url('/assets/images/ui/pig-scrollbar.png');
+    background-image: url('/assets/images/ui/pig-scrollbar.svg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: 15px 15px;

@@ -10,6 +10,7 @@ import FontSetup from "@components/features/FontSetup.astro";
 import LayoutStabilityAgent from "@components/features/LayoutStabilityAgent.astro";
 import MusicLibraryDialog from "@components/features/MusicLibraryDialog.astro";
 import MusicManager from "@components/features/MusicManager.astro";
+import PigScrollbar from "@components/features/PigScrollbar.astro";
 import RainEffect from "@components/features/RainEffect.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import SiteAvatarManager from "@components/features/SiteAvatarManager.astro";
@@ -810,6 +811,7 @@ const siteLang = lang.replace("_", "-");
     {showLocalAdminControls && <SiteAvatarManager />}
     {showLocalAdminControls && <SiteProfileCoverManager />}
     <LayoutStabilityAgent />
+    <PigScrollbar />
     <MusicManager />
     <MusicLibraryDialog />
     <DarkModeSpotlight client:load />

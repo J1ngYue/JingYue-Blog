@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.111",
+		date: "2026-10-01",
+		time: "15:12",
+		type: "optimize",
+		title: "小猪滚动条全身造型与平滑跟随",
+		summary:
+			"将滚动条改为圆润的蜜桃色全身小猪，逐帧同步首页转场中的画面位置，普通页面使用短缓动消除跳动。",
+		changes: [
+			"保留原有页面滚动与动画，支持拖动、轨道点击、键盘操作和减少动态效果，触屏与高对比模式保留原生滚动条。",
+		],
+	},
+	{
 		version: "v6.14.110",
 		date: "2026-10-01",
 		time: "14:44",
