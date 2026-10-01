@@ -1,10 +1,49 @@
 ---
+import { getCollection } from "astro:content";
 import fs from "node:fs";
 import path from "node:path";
-import { footerConfig, profileConfig } from "@/config";
+import { Icon } from "astro-icon/components";
+import {
+	footerConfig,
+	licenseConfig,
+	profileConfig,
+	siteConfig,
+} from "@/config";
+import { changelogEntries } from "@/config/recordConfig";
+import { getSortedPosts } from "@/utils/content-utils";
+import { formatFooterUpdate, formatFooterUptime } from "@/utils/footer-stats";
 import { url } from "@/utils/url-utils";
+import FooterSignature from "./FooterSignature.astro";
+import "@/styles/privacy-modal.css";
 
 const currentYear = new Date().getFullYear();
+const started = Date.parse(
+	`${siteConfig.siteStartDate || "2025-01-01"}T00:00:00+08:00`,
+);
+const posts = await getSortedPosts();
+const dynamics = siteConfig.pages.dynamic ? await getCollection("dynamic") : [];
+const updated = Math.max(
+	...posts.map((post) =>
+		Math.max(post.data.published.getTime(), post.data.updated?.getTime() || 0),
+	),
+	...dynamics.map((entry) => entry.data.published.getTime()),
+	...changelogEntries.map((entry) =>
+		Date.parse(`${entry.date}T${entry.time}:00+08:00`),
+	),
+);
+const bilibiliUid = siteConfig.anime?.bilibili?.uid;
+const contacts = [
+	...profileConfig.links.filter((link) => link.name !== "RSS"),
+	...(bilibiliUid
+		? [
+				{
+					name: "B站",
+					icon: "fa7-brands:bilibili",
+					url: `https://space.bilibili.com/${bilibiliUid}`,
+				},
+			]
+		: []),
+];
 
 // 读取FooterConfig.html文件内容
 let customFooterHtml = "";
@@ -34,8 +73,12 @@ if (footerConfig.enable) {
 >
 </div>
 
-<div
-  class="transition border-dashed border-[oklch(85%_0.01_var(--hue))] dark:border-white/15 rounded-2xl mb-12 flex flex-col items-center justify-center px-6"
+<site-footer-panel
+  class="site-footer-panel transition border-dashed border-[oklch(85%_0.01_var(--hue))] dark:border-white/15 rounded-2xl mb-12 flex flex-col items-center justify-center px-6"
+  role="contentinfo"
+  aria-label="站点页尾"
+  data-started={started}
+  data-updated={updated}
 >
   <div class="site-footer-mascots" aria-label="菲比啾比、Duro、咕咕嘎嘎和鲸鱼娘">
     <img src="/pio/models/pets/feibi/loader-feibi-unified.webp" alt="菲比啾比" loading="lazy" decoding="async" />
@@ -43,6 +86,29 @@ if (footerConfig.enable) {
     <img src="/pio/models/pets/gugugaga/loader-gugugaga-unified.webp" alt="咕咕嘎嘎" loading="lazy" decoding="async" />
     <img src="/pio/models/pets/deepseek/loader-deepseek-whale-girl.webp" alt="鲸鱼娘" loading="lazy" decoding="async" />
   </div>
+  <div class="site-footer-content">
+  <div class="site-footer-primary">
+    <section class="site-footer-brand" aria-label="JingYue 的签名">
+      <FooterSignature />
+      <p class="site-footer-tagline">{siteConfig.subtitle}</p>
+    </section>
+    <nav class="site-footer-contact" aria-label="页尾联系方式">
+      <p class="site-footer-contact-title">常用联系方式</p>
+      <div class="site-footer-socials">
+        {contacts.map((contact) => (
+          <a href={contact.url} target={contact.url.startsWith("mailto:") ? undefined : "_blank"} rel="noopener noreferrer" aria-label={contact.name === "qq" ? "QQ" : contact.name} title={contact.name === "qq" ? "QQ" : contact.name}>
+            <Icon name={contact.icon} aria-hidden="true" />
+          </a>
+        ))}
+      </div>
+      <div class="site-footer-policies">
+        <button type="button" data-footer-open="footer-privacy-dialog" aria-haspopup="dialog">隐私政策</button>
+        <span aria-hidden="true">/</span>
+        <button type="button" data-footer-open="footer-agreement-dialog" aria-haspopup="dialog">用户协议</button>
+      </div>
+    </nav>
+  </div>
+  <div class="site-footer-lower">
   <div class="site-footer-copy transition text-90 text-base font-semibold text-center wrap">
     <div class="mb-2">
       {customFooterHtml && <div set:html={customFooterHtml} />}
@@ -83,9 +149,130 @@ if (footerConfig.enable) {
       您可以随意在src/config/FooterConfig.html中随意添加自定义内容，不需要修改Footer.astro文件。
     -->
   </div>
-</div>
+  <div class="site-footer-status" aria-label="站点运行状态">
+    <p><Icon name="material-symbols:calendar-clock-outline" aria-hidden="true" /><span data-footer-uptime>{formatFooterUptime(started)}</span></p>
+    <a href={url("changelog/")} title="查看更新日志"><Icon name="material-symbols:monitor-heart-outline" aria-hidden="true" /><span data-footer-updated>{formatFooterUpdate(updated)}</span></a>
+  </div>
+  </div>
+  </div>
+  <dialog id="footer-privacy-dialog" class="privacy-modal" aria-labelledby="footer-privacy-title">
+    <div class="privacy-overlay" data-footer-close></div>
+    <div class="privacy-panel">
+      <div class="privacy-header"><h2 class="privacy-title" id="footer-privacy-title">隐私政策</h2><button type="button" class="privacy-close" data-footer-close aria-label="关闭隐私政策" autofocus><Icon name="material-symbols:close-rounded" /></button></div>
+      <div class="privacy-body">
+        <h3>浏览器中的偏好与记录</h3>
+        <p>本站会使用浏览器本地存储保存主题、壁纸、显示设置、动画状态及部分功能的本地记录。你可以通过浏览器的站点数据设置清除这些内容，清除后相关偏好与本地记录会重置。</p>
+        <h3>留言与第三方服务</h3>
+        <p>提交留言、登录或上传内容时，相关资料会发送到对应的留言或认证服务；留言中公开发布的昵称、头像与内容可能被其他访客看到。请勿在公开留言中填写密码、证件号码或其他敏感信息。</p>
+        <p>本站的图片、字体、视频及外部链接可能使用第三方服务。访问这些资源时，服务提供方可能接收网络请求信息；第三方网站的数据处理方式以其自身说明为准。</p>
+        <h3>联系与反馈</h3>
+        <p>如需反馈公开内容或隐私相关问题，请通过页尾邮箱联系站主。这份说明介绍本站功能的数据使用方式，不作超出实际服务能力的承诺。</p>
+      </div>
+      <div class="privacy-footer"><button type="button" class="privacy-confirm-btn" data-footer-close>关闭</button></div>
+    </div>
+  </dialog>
+  <dialog id="footer-agreement-dialog" class="privacy-modal" aria-labelledby="footer-agreement-title">
+    <div class="privacy-overlay" data-footer-close></div>
+    <div class="privacy-panel">
+      <div class="privacy-header"><h2 class="privacy-title" id="footer-agreement-title">用户协议</h2><button type="button" class="privacy-close" data-footer-close aria-label="关闭用户协议" autofocus><Icon name="material-symbols:close-rounded" /></button></div>
+      <div class="privacy-body">
+        <h3>关于本站</h3>
+        <p>这是 {profileConfig.name} 的个人博客，用于分享文章、代码与生活记录。内容代表个人经历与观点，使用示例代码前请自行确认是否适合你的环境。</p>
+        <h3>内容使用</h3>
+        <p>原创文章的使用请遵循页面标注的许可；本站当前配置为 <a href={licenseConfig.url} target="_blank" rel="noopener noreferrer">{licenseConfig.name}</a>。第三方图片、视频、字体及其他素材的权利归各自权利人，不能据此推定可自由使用。</p>
+        <h3>友善交流</h3>
+        <p>请勿发布骚扰、恶意攻击、广告垃圾或侵害他人权益的内容。站主可对不适合公开展示的留言进行审核或删除。</p>
+        <h3>联系站主</h3>
+        <p>遇到内容错误、链接失效或权利相关问题，欢迎通过页尾联系方式反馈。这是一份简明的站点使用说明，关闭弹窗不代表另行签署协议。</p>
+      </div>
+      <div class="privacy-footer"><button type="button" class="privacy-confirm-btn" data-footer-close>关闭</button></div>
+    </div>
+  </dialog>
+</site-footer-panel>
+
+<script>
+	import { formatFooterUpdate, formatFooterUptime } from "@/utils/footer-stats";
+
+	class SiteFooterPanel extends HTMLElement {
+		private timer = 0;
+		private observer?: IntersectionObserver;
+		private handleClick = (event: MouseEvent) => {
+			if (!(event.target instanceof Element)) return;
+			const opener = event.target.closest<HTMLElement>("[data-footer-open]");
+			if (opener) this.querySelector<HTMLDialogElement>(`#${opener.dataset.footerOpen}`)?.showModal();
+			if (event.target.closest("[data-footer-close]")) event.target.closest("dialog")?.close();
+		};
+
+		connectedCallback() {
+			const uptime = this.querySelector<HTMLElement>("[data-footer-uptime]");
+			const update = this.querySelector<HTMLElement>("[data-footer-updated]");
+			const updateStats = () => {
+				if (uptime) uptime.textContent = formatFooterUptime(Number(this.dataset.started));
+				if (update) update.textContent = formatFooterUpdate(Number(this.dataset.updated));
+			};
+			updateStats();
+			this.timer = window.setInterval(updateStats, 1000);
+			this.addEventListener("click", this.handleClick);
+			const signature = this.querySelector<SVGElement>("[data-footer-signature]");
+			if (!signature || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+			signature.setAttribute("data-signature-pending", "");
+			this.observer = new IntersectionObserver(([entry]) => {
+				if (!entry.isIntersecting) return;
+				signature.classList.add("is-signature-drawn");
+				this.observer?.disconnect();
+			}, { threshold: .35 });
+			this.observer.observe(signature);
+		}
+
+		disconnectedCallback() {
+			window.clearInterval(this.timer);
+			this.observer?.disconnect();
+			this.removeEventListener("click", this.handleClick);
+		}
+	}
+	if (!customElements.get("site-footer-panel")) customElements.define("site-footer-panel", SiteFooterPanel);
+</script>
 
 <style>
+	.site-footer-panel { --footer-ink: #18181b; --footer-muted: #5c5c63; --footer-border: #d4d4d8; color: var(--footer-ink); }
+	:global(html.dark) .site-footer-panel { --footer-ink: #f4f4f5; --footer-muted: #b4b4bd; --footer-border: #3f3f46; }
+	.site-footer-content { width: min(76rem, 100%); }
+	.site-footer-primary { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 1.25rem 0 2rem; }
+	.site-footer-brand { min-width: 0; }
+	.site-footer-tagline { margin: .2rem 0 0; color: var(--footer-muted); font-size: 1rem; line-height: 1.8; }
+	.site-footer-contact { flex-shrink: 0; text-align: right; }
+	.site-footer-contact-title { margin: 0 0 1rem; font-weight: 700; }
+	.site-footer-socials { display: flex; justify-content: flex-end; gap: .75rem; }
+	.site-footer-socials a { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid var(--footer-border); border-radius: .9rem; color: var(--footer-ink); transition: color .2s, background .2s, border-color .2s; }
+	.site-footer-socials a:hover { color: #fff; background: #18181b; border-color: #18181b; }
+	:global(html.dark) .site-footer-socials a:hover { color: #18181b; background: #f4f4f5; border-color: #f4f4f5; }
+	.site-footer-socials :global(svg) { width: 1.3rem; height: 1.3rem; }
+	.site-footer-policies { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1rem; color: var(--footer-muted); }
+	.site-footer-policies button { cursor: pointer; background: none; border: none; padding: 0; font: inherit; color: inherit; transition: color .2s; }
+	.site-footer-policies button:hover { color: var(--footer-ink); text-decoration: underline; text-underline-offset: .3rem; }
+	.site-footer-lower { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 2rem; border-top: 1px solid var(--footer-border); padding-top: 1.5rem; }
+	.site-footer-lower .site-footer-copy { text-align: left; }
+	.site-footer-lower .site-footer-copy > div { justify-content: flex-start; }
+	.site-footer-status { display: grid; gap: .65rem; flex-shrink: 0; margin-left: auto; color: var(--footer-muted); font-size: .95rem; }
+	.site-footer-status p, .site-footer-status a { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin: 0; font-variant-numeric: tabular-nums; }
+	.site-footer-status a:hover { color: var(--footer-ink); }
+	.site-footer-status :global(svg) { flex-shrink: 0; width: 1.1rem; height: 1.1rem; }
+	.site-footer-panel a:focus-visible, .site-footer-panel button:focus-visible { outline: 2px solid var(--footer-ink); outline-offset: 4px; border-radius: .25rem; }
+	@media (min-width: 768px) {
+		:global(body.home-landing-active) .site-footer-content { width: min(76rem, calc(100% - 8rem)); }
+	}
+	@media (max-width: 767px) {
+		.site-footer-primary, .site-footer-lower { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+		.site-footer-brand { width: 100%; }
+		.site-footer-contact { text-align: left; }
+		.site-footer-socials, .site-footer-policies { justify-content: flex-start; }
+		.site-footer-status { margin-left: 0; font-size: .85rem; flex-shrink: 1; }
+		.site-footer-status p, .site-footer-status a { justify-content: flex-start; flex-wrap: wrap; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.site-footer-panel a, .site-footer-panel button { transition: none; }
+		.site-footer-panel .privacy-panel, .site-footer-panel .privacy-overlay { animation: none; }
+	}
 	.site-footer-mascots {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));

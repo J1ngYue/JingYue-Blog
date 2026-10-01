@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.113",
+		date: "2026-10-01",
+		time: "16:24",
+		type: "feature",
+		title: "页尾新增手写签名与站点信息",
+		summary:
+			"参考 MmzMing 的横向页尾布局，保留四个动漫人物及原版权链接，新增 JingYue 手写描绘动画、联系方式和站点运行状态。",
+		changes: [
+			"补充 GitHub、QQ、B站与邮箱入口，以及可打开的隐私政策和用户协议说明，不添加备案信息。",
+			"运行时间实时更新，最后更新汇总文章、动态及站点日志；适配小屏与减少动态效果，切页清理计时器。",
+		],
+	},
+	{
 		version: "v6.14.112",
 		date: "2026-10-01",
 		time: "15:48",
