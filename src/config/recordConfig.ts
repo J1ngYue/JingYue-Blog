@@ -21,6 +21,16 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.115",
+		date: "2026-10-01",
+		time: "20:59",
+		type: "optimize",
+		title: "隐藏小猪滚动条轨迹线",
+		summary:
+			"隐藏右侧轨迹线和原生轨道边线，保留小猪的平滑跟随、拖动、轨道点击及键盘滚动。",
+		changes: ["仅调整小猪滚动条启用时的轨道样式，不改变页面布局或滚动行为。"],
+	},
+	{
 		version: "v6.14.114",
 		date: "2026-10-01",
 		time: "17:18",

@@ -130,14 +130,6 @@
 	}
 	.pig-scrollbar[hidden] { display: none; }
 	.pig-scrollbar__track { position: relative; height: 100%; touch-action: none; cursor: pointer; }
-	.pig-scrollbar__track::before {
-		content: '';
-		position: absolute;
-		inset: 0 7px;
-		border-radius: 999px;
-		background: var(--pig-scrollbar-track-border);
-		opacity: .4;
-	}
 	.pig-scrollbar__thumb {
 		position: absolute;
 		top: 0;
@@ -162,9 +154,10 @@
 	html.pig-scrollbar-dragging .pig-scrollbar__thumb { cursor: grabbing; }
 	html.pig-scrollbar-dragging { scroll-snap-type: none !important; scroll-behavior: auto !important; user-select: none; }
 	html.pig-scrollbar-ready::-webkit-scrollbar-thumb { background: transparent; border-color: transparent; box-shadow: none; }
+	html.pig-scrollbar-ready::-webkit-scrollbar-track { background: transparent; border: 0; }
 	html.blog-entry-loading .pig-scrollbar { visibility: hidden; }
 	@supports (-moz-appearance: none) {
-		html.pig-scrollbar-ready { scrollbar-color: transparent var(--pig-scrollbar-track); }
+		html.pig-scrollbar-ready { scrollbar-color: transparent transparent; }
 	}
 	@media (prefers-reduced-motion: reduce) { .pig-scrollbar__thumb img { transition: none; } }
 </style>
