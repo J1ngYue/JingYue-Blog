@@ -4,6 +4,9 @@ import { getCollection } from "astro:content";
 import fs from "node:fs";
 import path from "node:path";
 import { Icon } from "astro-icon/components";
+import mamboMascot from "@/assets/images/footer-mascots/mambo.png";
+import roxyMascot from "@/assets/images/footer-mascots/roxy.png";
+import taffyMascot from "@/assets/images/footer-mascots/taffy.png";
 import {
 	footerConfig,
 	licenseConfig,
@@ -14,9 +17,6 @@ import { changelogEntries } from "@/config/recordConfig";
 import { getSortedPosts } from "@/utils/content-utils";
 import { formatFooterUpdate, formatFooterUptime } from "@/utils/footer-stats";
 import { url } from "@/utils/url-utils";
-import taffyMascot from "@/assets/images/footer-mascots/taffy.png";
-import mamboMascot from "@/assets/images/footer-mascots/mambo.png";
-import roxyMascot from "@/assets/images/footer-mascots/roxy.png";
 import FooterSignature from "./FooterSignature.astro";
 import "@/styles/privacy-modal.css";
 
