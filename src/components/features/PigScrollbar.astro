@@ -33,7 +33,7 @@
 		let frame = 0;
 		let lastTime = 0;
 		let dragging = false;
-		let dragOffset = 24;
+		let dragOffset = 32;
 
 		const paint = () => {
 			thumb.style.transform = `translate3d(0, ${position}px, 0)`;
@@ -70,7 +70,10 @@
 			maxScroll = Math.max(0, html.scrollHeight - html.clientHeight);
 			rail.hidden = !desktop.matches || maxScroll < 1;
 			html.classList.toggle("pig-scrollbar-ready", !rail.hidden);
-			travel = Math.max(0, track.clientHeight - 48);
+			const trackHeight = track.clientHeight;
+			const thumbHeight = Math.min(trackHeight, Math.max(64, trackHeight * html.clientHeight / html.scrollHeight));
+			thumb.style.height = `${thumbHeight}px`;
+			travel = Math.max(0, trackHeight - thumbHeight);
 			if (!rail.hidden) schedule();
 		};
 		const scrollFromPointer = (event: PointerEvent) => {
@@ -82,7 +85,7 @@
 		track.addEventListener("pointerdown", (event) => {
 			if (event.button !== 0) return;
 			window.dispatchEvent(new Event("firefly:scrollbar-drag-start"));
-			dragOffset = thumb.contains(event.target as Node) ? event.clientY - thumb.getBoundingClientRect().top : 24;
+			dragOffset = thumb.contains(event.target as Node) ? event.clientY - thumb.getBoundingClientRect().top : thumb.clientHeight / 2;
 			dragging = true;
 			html.classList.add("pig-scrollbar-dragging");
 			track.setPointerCapture(event.pointerId);
@@ -137,14 +140,30 @@
 		display: grid;
 		place-items: center;
 		width: 44px;
-		height: 48px;
+		height: 64px;
 		border-radius: 14px;
 		cursor: grab;
 		will-change: transform;
 	}
+	.pig-scrollbar__thumb::before {
+		content: '';
+		position: absolute;
+		inset-block: 0;
+		right: 0;
+		width: 12px;
+		border-radius: 999px;
+		background: var(--pig-scrollbar-thumb);
+		transition: background-color 150ms ease;
+	}
+	.pig-scrollbar__thumb:hover::before { background: var(--pig-scrollbar-thumb-hover); }
+	html.pig-scrollbar-dragging .pig-scrollbar__thumb::before { background: var(--pig-scrollbar-thumb-active); }
 	.pig-scrollbar__thumb img {
+		position: absolute;
+		top: 50%;
+		left: -20px;
 		width: 44px;
 		height: 44px;
+		transform: translateY(-50%);
 		user-select: none;
 		filter: drop-shadow(0 2px 2px rgb(71 37 25 / 18%));
 		transition: filter 150ms ease;
@@ -153,11 +172,13 @@
 	.pig-scrollbar__thumb:focus-visible { outline: 2px solid var(--pig-scrollbar-outline); outline-offset: 1px; }
 	html.pig-scrollbar-dragging .pig-scrollbar__thumb { cursor: grabbing; }
 	html.pig-scrollbar-dragging { scroll-snap-type: none !important; scroll-behavior: auto !important; user-select: none; }
-	html.pig-scrollbar-ready::-webkit-scrollbar-thumb { background: transparent; border-color: transparent; box-shadow: none; }
+	html.pig-scrollbar-ready::-webkit-scrollbar-thumb,
+	html.pig-scrollbar-ready::-webkit-scrollbar-thumb:hover,
+	html.pig-scrollbar-ready::-webkit-scrollbar-thumb:active { background: transparent; border-color: transparent; box-shadow: none; }
 	html.pig-scrollbar-ready::-webkit-scrollbar-track { background: transparent; border: 0; }
 	html.blog-entry-loading .pig-scrollbar { visibility: hidden; }
 	@supports (-moz-appearance: none) {
 		html.pig-scrollbar-ready { scrollbar-color: transparent transparent; }
 	}
-	@media (prefers-reduced-motion: reduce) { .pig-scrollbar__thumb img { transition: none; } }
+	@media (prefers-reduced-motion: reduce) { .pig-scrollbar__thumb img, .pig-scrollbar__thumb::before { transition: none; } }
 </style>

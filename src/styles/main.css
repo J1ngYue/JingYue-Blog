@@ -70,9 +70,9 @@ body {
     --ui-icon-border: #d4d4d8;
     --pig-scrollbar-track: rgba(250, 250, 250, 0.92);
     --pig-scrollbar-track-border: rgba(24, 24, 27, 0.28);
-    --pig-scrollbar-thumb: #ffc2cf;
-    --pig-scrollbar-thumb-hover: #ffadbf;
-    --pig-scrollbar-thumb-active: #f792aa;
+    --pig-scrollbar-thumb: #8b8b93;
+    --pig-scrollbar-thumb-hover: #71717a;
+    --pig-scrollbar-thumb-active: #52525b;
     --pig-scrollbar-outline: #27272a;
 }
 
@@ -84,9 +84,9 @@ body {
     --ui-icon-border: #3f3f46;
     --pig-scrollbar-track: rgba(24, 24, 27, 0.94);
     --pig-scrollbar-track-border: rgba(255, 255, 255, 0.18);
-    --pig-scrollbar-thumb: #f5a9ba;
-    --pig-scrollbar-thumb-hover: #ffbdcb;
-    --pig-scrollbar-thumb-active: #ee8fa7;
+    --pig-scrollbar-thumb: #71717a;
+    --pig-scrollbar-thumb-hover: #a1a1aa;
+    --pig-scrollbar-thumb-active: #d4d4d8;
     --pig-scrollbar-outline: #fafafa;
 }
 

@@ -21,6 +21,16 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.116",
+		date: "2026-10-01",
+		time: "21:08",
+		type: "fix",
+		title: "恢复灰色滚动滑块与小猪同步显示",
+		summary:
+			"将粉色滑块改为常规灰色，与小猪共用平滑跟随；滑块长度按页面比例计算，保留透明轨道。",
+		changes: ["保留拖动、轨道点击、键盘和减少动态效果支持，并适配深浅色模式。"],
+	},
+	{
 		version: "v6.14.115",
 		date: "2026-10-01",
 		time: "20:59",
