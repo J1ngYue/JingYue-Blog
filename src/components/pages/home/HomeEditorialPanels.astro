@@ -103,6 +103,11 @@ const { panels } = Astro.props;
 		const compactViewport = window.matchMedia("(max-width: 1023px)");
 		const sceneId = section.id;
 		const landing = section.closest("[data-home-landing]");
+		const introStorageKey = "firefly:home-gallery-intro-played";
+		let introPlayed = Boolean(window.__fireflyHomeGalleryIntroPlayed);
+		try {
+			introPlayed ||= sessionStorage.getItem(introStorageKey) === "true";
+		} catch {}
 		let state = "idle";
 		let activeSceneId = landing?.dataset.homeSceneId || "";
 		let visibleRatio = 0;
@@ -143,6 +148,13 @@ const { panels } = Astro.props;
 			if (state === nextState) return;
 			clearHoldTimer();
 			state = nextState;
+			if (!introPlayed && (nextState === "intro" || nextState === "expanded")) {
+				introPlayed = true;
+				window.__fireflyHomeGalleryIntroPlayed = true;
+				try {
+					sessionStorage.setItem(introStorageKey, "true");
+				} catch {}
+			}
 			section.dataset.homeGalleryState = nextState;
 			section.dataset.homeSectionTone =
 				nextState === "transitioning" || nextState === "expanded" ? "dark" : "light";
@@ -162,11 +174,12 @@ const { panels } = Astro.props;
 			return wasPreparing;
 		};
 
-		const resetToIdle = () => {
+		const resetScene = () => {
 			clearHoldTimer();
 			const wasPreparing = invalidatePendingStart();
-			if (state === "idle" && wasPreparing) announceState("idle");
-			setState("idle");
+			const nextState = introPlayed ? "expanded" : "idle";
+			if (state === nextState && wasPreparing) announceState(nextState);
+			setState(nextState);
 		};
 
 		const waitForImageLoad = (image) => {
@@ -248,7 +261,7 @@ const { panels } = Astro.props;
 		const handleSceneChange = (event) => {
 			activeSceneId = typeof event.detail?.id === "string" ? event.detail.id : "";
 			if (activeSceneId !== sceneId) {
-				if (state !== "expanded" || visibleRatio === 0) resetToIdle();
+				if (state !== "expanded" || visibleRatio === 0) resetScene();
 				return;
 			}
 			tryStart();
@@ -292,12 +305,17 @@ const { panels } = Astro.props;
 			void ensurePanelImagesReady();
 		};
 
+		if (introPlayed) {
+			setState("expanded");
+			void ensurePanelImagesReady();
+		}
+
 		if ("IntersectionObserver" in window) {
 			visibilityObserver = new IntersectionObserver(
 				([entry]) => {
 					visibleRatio = entry?.intersectionRatio ?? 0;
 					if (!entry?.isIntersecting && activeSceneId !== sceneId && state === "expanded") {
-						resetToIdle();
+						resetScene();
 					}
 					tryStart();
 				},

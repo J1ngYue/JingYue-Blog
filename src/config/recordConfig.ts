@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.112",
+		date: "2026-10-01",
+		time: "15:48",
+		type: "optimize",
+		title: "作品展示入场动画仅播放一次",
+		summary:
+			"同一次浏览中保留作品展示的首次入场动画，滚动返回、站内切页返回或刷新后直接显示完整的五列内容。",
+		changes: [
+			"仅记录当前标签页的播放状态，不影响作品分类链接、图片悬浮效果及其他首页动画。",
+		],
+	},
+	{
 		version: "v6.14.111",
 		date: "2026-10-01",
 		time: "15:12",
