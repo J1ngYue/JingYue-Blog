@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.117",
+		date: "2026-10-01",
+		time: "22:39",
+		type: "feature",
+		title: "页尾新增三位 Q 版角色",
+		summary:
+			"保留原四位角色，加入统一画风的永雏塔菲、待兼诗歌剧（曼波）与洛琪希，按原有视觉大小横向铺开。",
+		changes: [
+			"新增透明底二创素材并生成轻量 WebP，窄屏自动换行，保留浮动动画及减少动态效果支持。",
+		],
+	},
+	{
 		version: "v6.14.116",
 		date: "2026-10-01",
 		time: "21:08",
