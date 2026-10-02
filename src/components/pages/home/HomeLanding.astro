@@ -868,8 +868,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				return;
 			}
 			if (exhibitTransition) {
-				const t = Math.min(1, (timestamp - exhibitTransition.started) / 950);
-				const eased = t * t * (3 - 2 * t);
+				const t = Math.max(0, Math.min(1, (timestamp - exhibitTransition.started) / 620));
+				const eased = 1 - (1 - t) ** 3;
 				exhibitProgressPosition = exhibitTransition.from +
 					(exhibitTransition.to - exhibitTransition.from) * eased;
 				if (t === 1) exhibitTransition = null;
@@ -953,6 +953,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (exhibitSuppressClick) {
 				clearExhibitClickSuppression();
 				event.preventDefault();
+				releaseExhibitPointerFocus(event);
 				return;
 			}
 			showPreviousExhibitSlide(event);
@@ -961,6 +962,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (exhibitSuppressClick) {
 				clearExhibitClickSuppression();
 				event.preventDefault();
+				releaseExhibitPointerFocus(event);
 				return;
 			}
 			showNextExhibitSlide(event);
@@ -982,7 +984,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			exhibitInteractionPaused = true;
 			stopExhibitProgress();
 			exhibitHoldButton.setAttribute("data-holding", "true");
-			exhibitHoldLastTime = 0;
+			exhibitHoldLastTime = performance.now();
 			exhibitHoldFrame = requestAnimationFrame(tickExhibitHold);
 		};
 		const finishExhibitHold = (suppressClick = false) => {
@@ -1016,6 +1018,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			exhibitHoldPointerId = event.pointerId;
 			exhibitHoldDirection = event.currentTarget === exhibitPrevious ? -1 : 1;
 			event.currentTarget.setPointerCapture?.(event.pointerId);
+			// Start on press; the following click must not advance a second time.
+			exhibitSuppressClick = true;
+			if (exhibitHoldDirection < 0) showPreviousExhibitSlide(event);
+			else showNextExhibitSlide(event);
 			exhibitHoldTimer = window.setTimeout(startExhibitHold, exhibitHoldDelay);
 		};
 		const handleExhibitHoldPointerUp = (event) => {
@@ -1025,12 +1031,17 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const handleExhibitHoldPointerCancel = (event) => {
 			if (event.pointerId !== exhibitHoldPointerId) return;
 			finishExhibitHold();
+			clearExhibitClickSuppression();
 		};
 		const handleExhibitHoldLostCapture = (event) => {
 			if (event.pointerId !== exhibitHoldPointerId) return;
 			finishExhibitHold();
+			clearExhibitClickSuppression();
 		};
-		const handleExhibitHoldWindowBlur = () => finishExhibitHold();
+		const handleExhibitHoldWindowBlur = () => {
+			finishExhibitHold();
+			clearExhibitClickSuppression();
+		};
 		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
 
 		const handleLocalCoverState = (event) => {

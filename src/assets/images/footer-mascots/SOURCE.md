@@ -85,3 +85,43 @@ Primary request: draw a new fan-art chibi of 奶油-cream-. Preserve Image 3's f
 ```text
 Primary request: draw a new fan-art chibi of 雫るる_Official / Shizuku Lulu. Preserve Image 3's long straight silver-white hair, neat bangs, bright blue-turquoise eyes, blue/purple butterfly clips on either side. Simplify her recognizable modern aqua-teal oversized jacket with lavender inner lining, white high-neck hoodie and black belt into a cute fully clothed compact outfit: aqua jacket, white hoodie, white pleated skirt, opaque white knee socks and small white shoes. Friendly smile and one tiny hand raised in her signature salute near her forehead. Butterfly clips and teal jacket readable at about 100px tall. No background, text, labels, scenery or extra objects.
 ```
+
+## Cream replacement on 2026-10-02
+
+The user supplied a preferred livestream still (codex-clipboard-d713e3fd-5d1c-4cd6-88d7-c3350a0e7e74.jpg) and clarified the white eyelashes and white suit with a black bow tie. The current `cream.png` replaces the earlier horned black/red-dress version above. Other companions are unchanged. The original livestream screenshot is a reference only and is not shipped.
+
+Built-in image_gen generated the cat-ear version, then made two targeted edits for white eyelashes and the white suit, preserving transparent alpha throughout. These are generated fan-art assets, not official illustrations. Final workspace file: `src/assets/images/footer-mascots/cream.png`.
+
+### Cat-ear base prompt
+
+```text
+Use case: stylized-concept
+Asset type: transparent personal-blog footer chibi fan-art companion replacing the previous 奶油-cream- illustration.
+Input images: Image 1 is the user's preferred CHARACTER IDENTITY reference. Image 2 is the existing chibi for STYLE, compact full-body composition and fully clothed black/red outfit only; do NOT preserve its horns or wide-open eye shape. Image 3 is an existing footer companion for the clean cute STYLE and tiny body proportions only.
+Primary request: redraw 奶油-cream- in the preferred pink CAT-GIRL version from Image 1, without any glasses. Preserve her fluffy long pastel-pink layered hair, curved forelock, two large upright triangular pink CAT EARS with white inner fur, black ribbon bows behind the ears, and two stacked bone hairclips (black above white) on one side. Absolutely NO horns.
+Eyes are especially important: large readable chibi eyes with the relaxed slightly half-lidded gentle mischievous gaze from Image 1, muted dusty rose / mauve-gray irises, dark pupils, small glossy highlights, soft pink upper eyelids and fine dark lashes. Both eyes unobstructed and clearly visible; no eyeglasses, frames, lenses, eye-covering strands or sunglasses. Tiny playful cat-like smile and subtle blush.
+Style: polished 2D anime chibi, about two heads tall, oversized round head, tiny fully clothed body and short limbs, soft cel shading and rounded dark-brown outlines to match existing footer companions. Retain the compact black ruffled dress, little red ribbon accents, opaque black stockings and black boots from Image 2, one tiny hand making a V sign.
+Composition: exactly one centered standing full-body character on a square canvas; entire cat ears, hair, limbs and feet visible, about 92% of canvas height, minimal transparent margins. Genuine alpha transparency around the character.
+Avoid: glasses of any kind, horns, other characters, plush toys, food, stream/chat UI, text, captions, logo, watermark, floor, scenery, colored background, sticker border, drop shadow, realistic proportions, exposed torso.
+```
+
+### White-eyelash correction prompt
+
+```text
+Use case: precise-object-edit
+Asset type: transparent blog-footer chibi mascot.
+Image 1 is the EDIT TARGET. Image 2 is the user's identity reference showing her white eyelashes.
+Primary request: correct ONLY the eye/eyelash area of Image 1: the 奶油-cream- character's upper eyelashes and lash fringe are WHITE, not dark brown or black. Recolor the heavy dark upper lash bands and their lash tips to a soft opaque ivory-white with only a thin light mauve contour for readability, matching Image 2. Both eyes have visibly white upper eyelashes, including the outer lashes. Retain the relaxed slightly half-lidded gentle playful gaze, muted dusty rose/mauve irises, dark pupils, highlights and pale pink eyelids. No eyeglasses of any kind.
+Invariants: keep the full-body Q-version composition, pink cat ears with white inner fur, pink hairstyle, black/white bone clips, black bows, face/mouth, fully clothed black/red ruffled outfit, V-sign pose, proportions, linework, placement and genuine transparent alpha unchanged. Do not add horns, background, text or any other element. Change only the eyelashes as described.
+```
+
+### Final white-suit edit prompt
+
+```text
+Use case: precise-object-edit
+Asset type: transparent blog-footer chibi mascot.
+Image 1 is the EDIT TARGET, the corrected cat-ear and white-eyelash version of 奶油-cream-.
+Primary request: replace ONLY the clothing with a WHITE SUIT and a BLACK BOW TIE as specified by the user. A clean tailored ivory-white suit jacket with small lapels and simple dark buttons over a white collared shirt, a clearly visible black ribbon bow tie at the neck, matching white tailored trousers on the tiny short chibi legs and little polished black shoes. Keep it fully clothed, cute and readable at 104px. Keep the same raised V-sign hand pose; sleeve now part of the white suit.
+Invariants: keep the pink cat ears with white inner fur (NO horns), black ear ribbons, pink layered hairstyle and forelock, black and white bone clips, face, gentle half-lidded dusty-rose eyes, WHITE upper eyelashes and outer lash tips with light mauve contours, pupils/highlights, tiny cat-like smile and blush exactly unchanged. NO glasses. Preserve full-body two-head chibi proportions, composition, feet alignment, linework/shading and genuinely transparent background.
+Avoid: black/red gothic dress, skirt ruffles, red clothing ribbons, horns, black eyelashes, glasses, extra props or characters, floor, shadows, scene, backdrop, text or watermark. Change clothing only, not character identity.
+```

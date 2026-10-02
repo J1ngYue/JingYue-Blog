@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.122",
+		date: "2026-10-02",
+		time: "18:44",
+		type: "optimize",
+		title: "奶油猫耳 Q 图重绘与相册即时切换",
+		summary:
+			"按指定形象重绘奶油，保留粉色猫耳与白色睫毛，去掉眼镜，改穿白色西装和黑色蝴蝶结。",
+		changes: [
+			"相册左右按钮按下即平滑移动，缩短缓动起步并柔和收尾；保留长按、连续点击、键盘及减少动态效果支持。",
+		],
+	},
+	{
 		version: "v6.14.121",
 		date: "2026-10-02",
 		time: "18:12",
