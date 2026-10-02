@@ -23,9 +23,12 @@ async function articleSources(): Promise<ArticleSource[]> {
 	if (sources && sources.expires > Date.now()) return sources.articles;
 	const response = await fetch(`${PUBLIC_BLOG}/api/article-sources.json`, {
 		signal: AbortSignal.timeout(10_000),
-		redirect: "error",
+		redirect: "manual",
 	});
-	if (!response.ok) throw new Error("ARTICLE_SOURCE_UNAVAILABLE");
+	if (!response.ok) {
+		console.error("Article summary source request failed", response.status);
+		throw new Error("ARTICLE_SOURCE_UNAVAILABLE");
+	}
 	const articles = (await response.json()) as ArticleSource[];
 	if (!Array.isArray(articles)) throw new Error("ARTICLE_SOURCE_UNAVAILABLE");
 	sources = { articles, expires: Date.now() + 5 * 60_000 };
@@ -83,6 +86,7 @@ export async function articleSummary(
 		if (!reserved.meta.changes) return reply({ pending: true }, 202);
 		const response = await fetch("https://api.deepseek.com/chat/completions", {
 			method: "POST",
+			redirect: "manual",
 			headers: {
 				Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
 				"Content-Type": "application/json",
@@ -123,7 +127,11 @@ export async function articleSummary(
 			.bind(summary, article.version)
 			.run();
 		return reply({ summary, model: "DeepSeek", cached: false });
-	} catch {
+	} catch (error) {
+		console.error(
+			"Article summary unavailable",
+			error instanceof Error ? error.message : "UNKNOWN",
+		);
 		return reply({ error: "AI 摘要暂不可用，仍可阅读正文" }, 503);
 	}
 }

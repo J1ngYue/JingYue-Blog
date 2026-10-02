@@ -31,8 +31,12 @@ let holdGeneration;
 let failure = false;
 let incomplete = false;
 globalThis.fetch = async (input, options) => {
-	if (input === "https://jing-yue-blog.vercel.app/api/article-sources.json") return Response.json(articles);
+	if (input === "https://jing-yue-blog.vercel.app/api/article-sources.json") {
+		assert.equal(options.redirect, "manual");
+		return Response.json(articles);
+	}
 	assert.equal(input, "https://api.deepseek.com/chat/completions");
+	assert.equal(options.redirect, "manual");
 	aiCalls++;
 	assert.equal(options.headers.Authorization, "Bearer test-only-server-key");
 	const payload = JSON.parse(options.body);
