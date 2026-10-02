@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.125",
+		date: "2026-10-02",
+		time: "23:05",
+		type: "fix",
+		title: "修复手机首页彩虹签名缺色",
+		summary:
+			"补足渐变文字的绘制边界，修复 g 下缘和 e 右缘缺色，保留原字形、大小、位置与动画。",
+		changes: [
+			"扩大文字背景的填色余量，并抵消新增间距，避免紧凑行高及负字距裁掉字形边缘。",
+		],
+	},
+	{
 		version: "v6.14.124",
 		date: "2026-10-02",
 		time: "22:17",

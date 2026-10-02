@@ -6028,7 +6028,9 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 
 		.home-mobile-profile__title {
 			display: block;
-			margin: 0;
+			/* Extend the gradient over glyph overhangs without moving the profile. */
+			margin: -0.12em -0.16em -0.2em;
+			padding: 0.12em 0.16em 0.2em;
 			background: linear-gradient(90deg, #ff6868 0 16%, #ffbd4a 22%, #fff276 37%, #55df91 52%, #55cfff 68%, #a987ff 84%, #ff6f9f 100%);
 			background-clip: text;
 			color: transparent;
