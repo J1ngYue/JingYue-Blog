@@ -7,8 +7,8 @@ import { url } from "@/utils/url-utils";
 	<a href={url("/")} aria-label="返回首页"><Icon is:inline name="material-symbols:home-outline-rounded" /><span>首页</span></a>
 	<button type="button" data-mobile-action="search" aria-label="打开站内搜索"><Icon is:inline name="material-symbols:search-rounded" /><span>搜索</span></button>
 	<button id="mobile-dock-menu" type="button" data-mobile-action="menu" aria-label="打开导航菜单" aria-controls="nav-menu-panel" aria-expanded="false"><Icon is:inline name="material-symbols:menu-rounded" /><span>菜单</span></button>
-	<button type="button" data-mobile-action="settings" aria-label="打开显示设置" aria-controls="navbar-utility-panel"><Icon is:inline name="material-symbols:tune-rounded" /><span>设置</span></button>
-	<button type="button" data-mobile-action="top" aria-label="返回页面顶部"><Icon is:inline name="material-symbols:keyboard-arrow-up-rounded" /><span>顶部</span></button>
+	<button type="button" data-mobile-action="theme" aria-label="切换主题"><Icon is:inline name="material-symbols:wb-sunny-outline-rounded" /><span>主题</span></button>
+	<button type="button" data-mobile-action="tools" aria-label="打开快捷功能" aria-controls="navbar-utility-panel" aria-expanded="false"><Icon is:inline name="material-symbols:more-horiz" /><span>工具</span></button>
 </nav>
 
 <script>
@@ -18,7 +18,7 @@ import { url } from "@/utils/url-utils";
 		const mobile = matchMedia("(max-width: 767.98px)");
 		// Keep the existing panel controllers; only move their mobile anchor out of
 		// the home scene and navbar, whose transforms/visibility would clip them.
-		const portals = ["nav-menu-panel", "navbar-utility-trigger", "music-mini-panel", "music-nav-panel"].flatMap((id) => {
+		const portals = ["nav-menu-panel", "mobile-nav-backdrop", "navbar-utility-trigger", "music-mini-panel", "music-nav-panel"].flatMap((id) => {
 			const target = document.getElementById(id);
 			const element = id === "navbar-utility-trigger" ? target?.closest<HTMLElement>("[data-navbar-utility]") : target;
 			if (!element) return [];
@@ -44,8 +44,8 @@ import { url } from "@/utils/url-utils";
 			const action = button.dataset.mobileAction;
 			if (action === "menu") window.dispatchEvent(new Event("jingyue:toggle-mobile-navigation"));
 			if (action === "search") window.dispatchEvent(new Event("firefly:open-search"));
-			if (action === "settings") document.getElementById("display-settings-switch")?.click();
-			if (action === "top") window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+			if (action === "theme") window.dispatchEvent(new Event("firefly:toggle-theme"));
+			if (action === "tools") document.getElementById("navbar-utility-trigger")?.click();
 		});
 		const syncKeyboard = () => {
 			const editing = document.activeElement instanceof HTMLElement && document.activeElement.matches("input:not([type=range]):not([type=checkbox]), textarea, [contenteditable=true]");
@@ -72,11 +72,12 @@ import { url } from "@/utils/url-utils";
 			left: max(.75rem, env(safe-area-inset-left, 0px));
 			right: max(.75rem, env(safe-area-inset-right, 0px));
 			bottom: calc(.6rem + env(safe-area-inset-bottom, 0px));
-			display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
-			gap: .2rem; padding: .4rem; max-width: 30rem; margin-inline: auto;
-			border: 1px solid #d4d4d8; border-radius: 1.75rem;
-			background: rgb(250 250 250 / 96%); color: #18181b;
-			box-shadow: 0 .5rem 2rem rgb(0 0 0 / 16%); backdrop-filter: blur(16px);
+			display: grid;
+			grid-template-columns: 1fr 1fr 4.75rem 1fr 1fr;
+			gap: .1rem; padding: .3rem .45rem; width: min(27rem, 80vw); margin-inline: auto;
+			border: 1px solid rgb(255 255 255 / 24%); border-radius: 999px;
+			background: rgb(225 225 225 / 78%); color: #18181b;
+			box-shadow: 0 .5rem 2rem rgb(0 0 0 / 16%); backdrop-filter: blur(18px);
 			transition: opacity 180ms, transform 240ms cubic-bezier(.22, 1, .36, 1);
 		}
 		#mobile-dock a, #mobile-dock button {
@@ -87,16 +88,25 @@ import { url } from "@/utils/url-utils";
 			transition: background-color 180ms, color 180ms;
 		}
 		#mobile-dock svg { width: 1.35rem; height: 1.35rem; }
-		#mobile-dock button[aria-expanded=true], #mobile-dock a[aria-current=page] { background: #18181b; color: #fff; }
+		#mobile-dock button[aria-expanded=true], #mobile-dock a[aria-current=page] { background: rgb(0 0 0 / 8%); }
 		#mobile-dock :is(a, button):focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
 		#mobile-dock :is(a, button):active { background: #e4e4e7; color: #18181b; }
-		html.dark #mobile-dock { background: rgb(24 24 27 / 96%); border-color: #424248; color: #f4f4f5; }
-		html.dark #mobile-dock button[aria-expanded=true], html.dark #mobile-dock a[aria-current=page] { background: #f4f4f5; color: #18181b; }
+		html.dark #mobile-dock { background: rgb(48 48 52 / 82%); border-color: #55555b; color: #f4f4f5; }
+		html.dark #mobile-dock button[aria-expanded=true], html.dark #mobile-dock a[aria-current=page] { background: rgb(255 255 255 / 10%); }
+		#mobile-dock #mobile-dock-menu {
+			width: 4.75rem; height: 4.75rem; min-height: 0; margin-block: -.95rem -.4rem;
+			border-radius: 50%; background: #050505; color: #fff;
+			box-shadow: 0 .3rem 1rem rgb(0 0 0 / 20%);
+		}
+		#mobile-dock-menu svg { width: 2rem; height: 2rem; }
+		#mobile-dock-menu span { display: none; }
+		#mobile-dock #mobile-dock-menu:active { background: #252525; }
 		#mobile-dock.is-keyboard-open { opacity: 0; transform: translateY(140%); pointer-events: none; }
 		#quick-tools-dock, #navbar .navbar-actions { display: none !important; }
 		body > [data-navbar-utility] { position: fixed; bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); left: 0; width: 0; height: 0; z-index: 1050; }
 		body > [data-navbar-utility] > .navbar-utility__trigger { display: none; }
 		body > #music-mini-panel { top: auto !important; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px)) !important; left: .75rem !important; right: .75rem !important; width: auto !important; max-width: 30rem; margin-inline: auto; max-height: 72dvh; overflow-y: auto; overscroll-behavior: contain; }
 	}
+	@media (max-width: 360px) { #mobile-dock { width: calc(100vw - 1.5rem); } }
 	@media (prefers-reduced-motion: reduce) { #mobile-dock, #mobile-dock a, #mobile-dock button { transition: none; } }
 </style>

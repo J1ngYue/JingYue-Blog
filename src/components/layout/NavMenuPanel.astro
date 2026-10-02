@@ -1,6 +1,8 @@
 ---
 import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import { musicPlayerConfig } from "@/config/musicConfig";
+import { profileConfig } from "@/config/profileConfig";
 import type { NavBarLink } from "@/types/config";
 import { url } from "@/utils/url-utils";
 
@@ -10,22 +12,25 @@ interface Props {
 
 const processedLinks = Astro.props.links;
 ---
+<div id="mobile-nav-backdrop" aria-hidden="true"></div>
 <div id="nav-menu-panel" class:list={["float-panel float-panel-closed transition-all fixed right-4 max-h-[80vh] overflow-y-auto jingyue-mobile-nav"]} role="navigation" aria-label="站点导航" aria-hidden="true" inert>
+	<a class="mobile-menu-brand" href={url("/")}>
+		<ImageWrapper src={profileConfig.avatar || "assets/images/avatar.avif"} alt="" class="mobile-menu-avatar" widths={[32, 64]} sizes="32px" fadeIn={false} siteAvatar />
+		<strong>{profileConfig.name}的博客</strong>
+	</a>
 	<header class="jingyue-mobile-nav-heading">
-		<span>JINGYUE</span>
+		<span class="mobile-menu-desktop-label">JINGYUE</span>
+		<span class="mobile-menu-label">MENU</span>
 		<small>探索我的个人空间</small>
 		<button type="button" data-mobile-menu-close aria-label="关闭导航菜单"><Icon is:inline name="material-symbols:close-rounded" /></button>
 	</header>
-	<div class="mobile-menu-tools" role="group" aria-label="常用功能">
-		<button type="button" data-mobile-menu-action="theme"><Icon is:inline name="material-symbols:dark-mode-outline-rounded" /><span>切换主题</span></button>
-		{musicPlayerConfig.showInNavbar && <button type="button" data-mobile-menu-action="music"><Icon is:inline name="material-symbols:music-note-rounded" /><span>音乐</span></button>}
-		<button type="button" data-mobile-menu-action="toc" hidden><Icon is:inline name="material-symbols:format-list-bulleted-rounded" /><span>阅读目录</span></button>
-	</div>
+	<div class="mobile-menu-links">
     {processedLinks.map((link, index) => (
         <div class="mobile-menu-item">
             {link.children && link.children.length > 0 ? (
                 /* 有子菜单的项目 */
                 <div class="mobile-dropdown" data-mobile-dropdown>
+                    <h2 class="mobile-menu-section">{link.name}</h2>
                     <button
 						type="button"
 						class="group jingyue-mobile-trigger"
@@ -77,6 +82,12 @@ const processedLinks = Astro.props.links;
             )}
         </div>
     ))}
+	</div>
+	<div class="mobile-menu-tools" role="group" aria-label="常用功能">
+		<button type="button" data-mobile-menu-action="theme"><Icon is:inline name="material-symbols:dark-mode-outline-rounded" /><span>切换主题</span></button>
+		{musicPlayerConfig.showInNavbar && <button type="button" data-mobile-menu-action="music"><Icon is:inline name="material-symbols:music-note-rounded" /><span>音乐</span></button>}
+		<button type="button" data-mobile-menu-action="toc" hidden><Icon is:inline name="material-symbols:format-list-bulleted-rounded" /><span>阅读目录</span></button>
+	</div>
 </div>
 
 <style>
@@ -219,37 +230,73 @@ const processedLinks = Astro.props.links;
 	.jingyue-mobile-nav-heading button { display: grid; place-items: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: .7rem; cursor: pointer; color: var(--content-meta); }
 	.jingyue-mobile-nav-heading button svg { width: 1.3rem; height: 1.3rem; }
 	.mobile-menu-tools { display: none; }
+	.mobile-menu-brand, .mobile-menu-label, .mobile-menu-section { display: none; }
+	:global(#mobile-nav-backdrop) { display: none; }
 	@media (max-width: 767.98px) {
-		#nav-menu-panel {
-			top: auto !important; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px));
-			left: max(.75rem, env(safe-area-inset-left, 0px)); right: max(.75rem, env(safe-area-inset-right, 0px)) !important;
-			width: auto; max-width: 30rem; margin-inline: auto; max-height: min(70dvh, calc(100dvh - 7rem));
-			padding: .65rem; border: 1px solid var(--line-divider); border-radius: 1.4rem;
-			background: var(--card-bg); z-index: 1050; overscroll-behavior: contain;
-			transform-origin: bottom center; transition: opacity 180ms, transform 260ms cubic-bezier(.22, 1, .36, 1), visibility 260ms;
+		:global(html.mobile-navigation-open), :global(body.mobile-navigation-open) { overflow: hidden; }
+		:global(#mobile-nav-backdrop) {
+			display: block; position: fixed; inset: 0; z-index: 1045;
+			background: rgb(0 0 0 / 42%); backdrop-filter: blur(6px);
+			opacity: 0; visibility: hidden; pointer-events: none;
+			transition: opacity 300ms ease, visibility 0s linear 300ms;
 		}
-		#nav-menu-panel.float-panel-closed { transform: translateY(.8rem) scale(.98); visibility: hidden; }
-		.jingyue-mobile-nav-heading { align-items: center; gap: .35rem; padding: .2rem .5rem .5rem; }
-		.jingyue-mobile-nav-heading small { margin-left: auto; }
-		.mobile-menu-tools { display: flex; gap: .35rem; margin-bottom: .45rem; }
+		:global(body.mobile-navigation-open #mobile-nav-backdrop) { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
+		#nav-menu-panel {
+			top: 0 !important; bottom: 0; left: auto; right: 0 !important;
+			width: min(24rem, 82vw); height: 100dvh; max-height: 100dvh; margin: 0;
+			padding: env(safe-area-inset-top, 0px) max(1rem, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) 1rem;
+			border: 0 !important; border-radius: 0; background: #fff !important; color: #202020; color-scheme: light;
+			z-index: 1050; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+			backdrop-filter: none; box-shadow: -.5rem 0 2rem rgb(0 0 0 / 12%) !important;
+			transform: translate3d(0, 0, 0); translate: none;
+			transition: transform 320ms cubic-bezier(.22, 1, .36, 1), visibility 0s;
+		}
+		#nav-menu-panel.float-panel-closed { transform: translate3d(100%, 0, 0); opacity: 1; visibility: hidden; transition: transform 320ms cubic-bezier(.22, 1, .36, 1), visibility 0s linear 320ms; }
+		:global(body) #nav-menu-panel.jingyue-mobile-nav { background: #fff !important; }
+		:global(html.dark body) #nav-menu-panel.jingyue-mobile-nav { background: #202020 !important; color: #eee; color-scheme: dark; }
+		.mobile-menu-brand { display: flex; align-items: center; gap: .65rem; min-height: 4.5rem; margin-inline: -1rem; padding-inline: 1.25rem; border-bottom: 1px solid #d7d7d7; font-size: .95rem; letter-spacing: .06em; }
+		:global(.mobile-menu-avatar) { width: 2rem; height: 2rem; flex-shrink: 0; border-radius: 50%; overflow: hidden; }
+		.jingyue-mobile-nav-heading { align-items: center; gap: .35rem; margin: .7rem 0 1rem; padding: 0 .25rem; border: 0; }
+		.jingyue-mobile-nav-heading .mobile-menu-label { display: inline; color: #777; font-size: .68rem; letter-spacing: .2em; }
+		.jingyue-mobile-nav-heading small, .mobile-menu-desktop-label { display: none; }
+		.jingyue-mobile-nav-heading button { color: inherit; }
+		.mobile-menu-section { display: block; margin: .8rem 0 .3rem; padding: .7rem .25rem .85rem; border-bottom: 1px solid #d7d7d7; color: #808080; font-size: .95rem; font-weight: 750; }
+		.mobile-dropdown > [data-mobile-dropdown-trigger] { display: none; }
+		.mobile-dropdown .mobile-submenu { max-height: none; overflow: visible; transition: none; }
+		.mobile-menu-tools { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: 1.25rem; padding-top: .8rem; border-top: 1px solid #d7d7d7; }
 		.mobile-menu-tools button { display: flex; flex: 1; align-items: center; justify-content: center; gap: .35rem; min-height: 2.75rem; border-radius: .7rem; background: var(--btn-card-bg); color: var(--content-meta); font-size: .75rem; cursor: pointer; }
 		.mobile-menu-tools button[hidden] { display: none; }
 		.mobile-menu-tools svg { width: 1.1rem; height: 1.1rem; }
-		.jingyue-mobile-trigger, .jingyue-mobile-child { min-height: 2.875rem; font-size: .88rem; }
-		.jingyue-mobile-trigger[aria-current=page], .jingyue-mobile-child[aria-current=page] { background: var(--btn-card-bg); color: var(--content-meta); box-shadow: inset 3px 0 currentColor; }
+		.jingyue-mobile-trigger, .jingyue-mobile-child { min-height: 3rem; font-size: .95rem; color: inherit; border-radius: .4rem; }
+		.jingyue-mobile-trigger { font-weight: 800; }
+		.jingyue-mobile-child { margin: 0; padding-left: 1.3rem; color: #606060; font-weight: 500; }
+		:global(.jingyue-mobile-icon) { width: 1.15rem; height: 1.15rem; color: currentColor; }
+		.jingyue-mobile-label { gap: .85rem; }
+		.jingyue-mobile-trigger > :global(.jingyue-mobile-arrow) { display: none; }
+		.jingyue-mobile-trigger[aria-current=page], .jingyue-mobile-child[aria-current=page] { background: #f1f1f1; color: #202020; }
+		:global(html.dark) .jingyue-mobile-child { color: #ccc; }
+		:global(html.dark) .mobile-menu-brand, :global(html.dark) .mobile-menu-section, :global(html.dark) .mobile-menu-tools { border-color: #444; }
+		:global(html.dark) :is(.jingyue-mobile-trigger, .jingyue-mobile-child)[aria-current=page] { background: #363636; color: #fff; }
 	}
+	@media (prefers-reduced-motion: reduce) { #nav-menu-panel, :global(#mobile-nav-backdrop) { transition: none !important; } }
 </style>
 
 <script>
 	const panel = document.getElementById("nav-menu-panel");
 	if (panel && !panel.dataset.bound) {
 		panel.dataset.bound = "true";
+		const mobile = matchMedia("(max-width: 767.98px)");
 		let opener: HTMLElement | null = null;
 		const setOpen = (open: boolean, restoreFocus = false) => {
 			panel.classList.toggle("float-panel-closed", !open);
 			panel.inert = !open;
 			panel.setAttribute("aria-hidden", String(!open));
+			panel.setAttribute("role", mobile.matches ? "dialog" : "navigation");
+			panel.toggleAttribute("aria-modal", open && mobile.matches);
+			if (open && mobile.matches) panel.setAttribute("aria-modal", "true");
+			for (const root of [document.documentElement, document.body]) root.classList.toggle("mobile-navigation-open", open && mobile.matches);
 			for (const id of ["nav-menu-switch", "mobile-dock-menu"]) document.getElementById(id)?.setAttribute("aria-expanded", String(open));
+			if (open && mobile.matches) panel.querySelector<HTMLElement>("[data-mobile-menu-close]")?.focus({ preventScroll: true });
 			if (restoreFocus) opener?.focus({ preventScroll: true });
 		};
 		const toggle = () => {
@@ -262,6 +309,9 @@ const processedLinks = Astro.props.links;
 		};
 		const syncPage = () => {
 			setOpen(false);
+			panel.querySelectorAll<HTMLElement>("[data-mobile-dropdown]").forEach((dropdown) => {
+				dropdown.querySelector<HTMLElement>("[data-mobile-submenu]")?.toggleAttribute("inert", !mobile.matches && dropdown.dataset.expanded !== "true");
+			});
 			panel.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
 				if (link.origin === location.origin && link.pathname === location.pathname) link.setAttribute("aria-current", "page");
 				else link.removeAttribute("aria-current");
@@ -294,10 +344,16 @@ const processedLinks = Astro.props.links;
 			if (action === "toc") document.querySelector<HTMLButtonElement>("[data-article-toc-mobile-trigger]")?.click();
 		});
 		document.addEventListener("click", (event) => {
-			if (event.target instanceof Element && !panel.contains(event.target) && !event.target.closest("#nav-menu-switch, #mobile-dock-menu")) setOpen(false);
+			if (event.target instanceof Element && !panel.contains(event.target) && !event.target.closest("#nav-menu-switch, #mobile-dock-menu")) setOpen(false, mobile.matches && !panel.inert);
 		});
 		document.addEventListener("keydown", (event) => {
 			if (event.key === "Escape" && !panel.inert) { event.preventDefault(); setOpen(false, true); }
+			if (event.key !== "Tab" || panel.inert || !mobile.matches) return;
+			const focusable = Array.from(panel.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")).filter((element) => !element.closest("[inert]") && element.getClientRects().length > 0);
+			const first = focusable[0];
+			const last = focusable[focusable.length - 1];
+			if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+			else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
 		});
 		window.addEventListener("jingyue:floating-panel-open", (event) => {
 			if ((event as CustomEvent<{ panel: string }>).detail.panel !== "mobile-navigation") setOpen(false);
@@ -305,6 +361,7 @@ const processedLinks = Astro.props.links;
 		window.addEventListener("firefly:open-search", () => setOpen(false));
 		document.addEventListener("swup:contentReplaced", syncPage);
 		document.addEventListener("astro:page-load", syncPage);
+		mobile.addEventListener("change", syncPage);
 		syncPage();
 	}
 </script>

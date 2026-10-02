@@ -199,6 +199,7 @@ const announcementSecondary =
 			restoreFocusOnClose = restoreFocus;
 			root.dataset.open = String(nextOpen);
 			trigger.setAttribute("aria-expanded", String(nextOpen));
+			document.querySelector("[data-mobile-action=tools]")?.setAttribute("aria-expanded", String(nextOpen));
 			trigger.setAttribute(
 				"aria-label",
 				nextOpen ? "关闭快捷功能" : "打开快捷功能",
@@ -214,7 +215,7 @@ const announcementSecondary =
 				setAnnouncementOpen(false);
 				if (restoreFocusOnClose) {
 					const focusTarget = window.matchMedia("(max-width: 767.98px)").matches
-						? document.querySelector<HTMLElement>("[data-mobile-action=settings]") : trigger;
+						? document.querySelector<HTMLElement>("[data-mobile-action=tools]") : trigger;
 					focusTarget?.focus({ preventScroll: true });
 				}
 			}

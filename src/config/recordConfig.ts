@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.123",
+		date: "2026-10-02",
+		time: "19:24",
+		type: "optimize",
+		title: "恢复移动端胶囊导航与右侧分组抽屉",
+		summary:
+			"参考 hellorx.site，还原半透明胶囊栏、中央黑色菜单按钮与右侧全高导航，保留本站头像及栏目。",
+		changes: [
+			"底栏提供首页、搜索、主题和工具，菜单分组直接展开；加入平滑滑入、背景模糊、独立滚动、焦点管理和安全区适配。",
+		],
+		related: ["https://www.hellorx.site/"],
+	},
+	{
 		version: "v6.14.122",
 		date: "2026-10-02",
 		time: "18:44",
