@@ -71,7 +71,9 @@ function setup() {
 			now += elapsed;
 			const pending = [...frames.values()];
 			frames.clear();
-			pending.forEach((callback) => callback(now));
+			pending.forEach((callback) => {
+				callback(now);
+			});
 		},
 		event: (button, detail = 0) => ({
 			currentTarget: context[button],
