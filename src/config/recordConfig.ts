@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.120",
+		date: "2026-10-02",
+		time: "17:42",
+		type: "optimize",
+		title: "页尾联系方式横向铺开",
+		summary:
+			"扩大页尾右侧联系方式，使用带名称和说明的四张卡片填充留白，保留左侧手写签名及角色。",
+		changes: [
+			"桌面四列平铺，手机和平板两列自适应；沿用黑白灰配色、悬浮反馈和原有联系方式。",
+		],
+	},
+	{
 		version: "v6.14.119",
 		date: "2026-10-02",
 		time: "17:28",
