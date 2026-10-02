@@ -21,6 +21,15 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.119",
+		date: "2026-10-02",
+		time: "17:28",
+		type: "remove",
+		title: "相册动态画面移除播放器控件",
+		summary: "收藏片段仅保留动态画面，不再显示暂停、继续、播放时间或时间轴。",
+		changes: ["保留原视频、静音循环及进入当前相册卡片时自动播放的行为。"],
+	},
+	{
 		version: "v6.14.118",
 		date: "2026-10-02",
 		time: "00:27",
