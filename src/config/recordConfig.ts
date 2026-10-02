@@ -21,6 +21,20 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.124",
+		date: "2026-10-02",
+		time: "22:17",
+		type: "feature",
+		title: "文章接入 DeepSeek 摘要与分层阅读引导",
+		summary:
+			"参考 MmzMing，将文章开头改为 AI 摘要、封面图与蓝色提示，保留原有文章内容。",
+		changes: [
+			"复用服务端 DeepSeek 密钥，公开文章按正文版本缓存摘要；草稿与加密文章不发送，加入并发去重和生成次数限制。",
+			"摘要和封面支持平滑折叠，兼顾手机、键盘与深色模式，AI 失败明确回退作者简介；提示可用 notice 单独填写。",
+		],
+		related: ["https://github.com/MmzMing/my-blog"],
+	},
+	{
 		version: "v6.14.123",
 		date: "2026-10-02",
 		time: "19:24",

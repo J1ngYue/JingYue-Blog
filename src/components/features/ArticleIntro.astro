@@ -1,0 +1,127 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+	slug: string;
+	version: string;
+	description: string;
+	notice: string;
+	hasCover: boolean;
+	aiEnabled: boolean;
+}
+const { slug, version, description, notice, hasCover, aiEnabled } = Astro.props;
+const api =
+	import.meta.env.PUBLIC_PRIVATE_API_URL || "https://private.j1ngyue.cn";
+---
+
+<div class="article-intro onload-animation" data-article-intro data-slug={slug} data-version={version} data-api={api} data-ai-enabled={aiEnabled} data-pagefind-ignore>
+	<section class="article-intro-section">
+		<button class="article-intro-heading" type="button" aria-expanded="true" aria-controls="article-summary-body">
+			<span><Icon is:inline name="material-symbols:auto-awesome" /><strong>{aiEnabled ? "AI 摘要" : "文章简介"}</strong>{aiEnabled && <span class="article-intro-model">- DeepSeek</span>}</span>
+			<Icon is:inline name="material-symbols:keyboard-arrow-up-rounded" class="article-intro-chevron" />
+		</button>
+		<div class="article-intro-collapse" id="article-summary-body">
+			<div><div class="article-intro-content">
+				<p data-ai-summary>{description || "摘要生成中，你可以先继续阅读正文。"}</p>
+				<small data-ai-status role="status">{aiEnabled ? "正在生成 AI 摘要 · 当前显示作者简介" : "此文章不发送给 AI · 当前显示作者简介"}</small>
+			</div></div>
+		</div>
+	</section>
+	{hasCover && <section class="article-intro-section">
+		<button class="article-intro-heading" type="button" aria-expanded="true" aria-controls="article-cover-body">
+			<span><Icon is:inline name="material-symbols:image-outline-rounded" /><strong>封面图</strong></span>
+			<Icon is:inline name="material-symbols:keyboard-arrow-up-rounded" class="article-intro-chevron" />
+		</button>
+		<div class="article-intro-collapse" id="article-cover-body"><div><div class="article-intro-cover"><slot name="cover" /></div></div></div>
+	</section>}
+</div>
+
+<aside class="article-intro-notice onload-animation" aria-label="阅读提示" data-pagefind-ignore>
+	<strong><Icon is:inline name="material-symbols:info-outline-rounded" />提示</strong>
+	<p>{notice || description || "AI 摘要仅供快速了解文章，具体说明和示例请以正文为准。"}</p>
+</aside>
+
+<script>
+	type IntroWindow = Window & { __articleIntroBound?: boolean; __articleIntroCleanup?: () => void };
+	const introWindow = window as IntroWindow;
+	function initArticleIntro() {
+		const root = document.querySelector<HTMLElement>("[data-article-intro]");
+		if (root?.dataset.bound === "true") return;
+		introWindow.__articleIntroCleanup?.();
+		if (!root) return;
+		root.dataset.bound = "true";
+		const events = new AbortController();
+		let pollTimer: number | undefined;
+		let polls = 0;
+		introWindow.__articleIntroCleanup = () => { events.abort(); window.clearTimeout(pollTimer); };
+		for (const button of root.querySelectorAll<HTMLButtonElement>(".article-intro-heading")) {
+			button.addEventListener("click", () => {
+				const expanded = button.getAttribute("aria-expanded") !== "true";
+				button.setAttribute("aria-expanded", String(expanded));
+				const panel = document.getElementById(button.getAttribute("aria-controls") || "");
+				panel?.classList.toggle("is-collapsed", !expanded);
+				if (panel) panel.inert = !expanded;
+			}, { signal: events.signal });
+		}
+		const summary = root.querySelector<HTMLElement>("[data-ai-summary]");
+		const status = root.querySelector<HTMLElement>("[data-ai-status]");
+		if (root.dataset.aiEnabled !== "true" || !summary || !status) return;
+		async function loadSummary() {
+			if (!root || !summary || !status || !root.isConnected) return;
+			try {
+				const endpoint = new URL(`${root.dataset.api?.replace(/\/$/, "")}/article-summary`);
+				endpoint.searchParams.set("slug", root.dataset.slug || "");
+				endpoint.searchParams.set("version", root.dataset.version || "");
+				const response = await fetch(endpoint, { credentials: "omit", signal: AbortSignal.any([events.signal, AbortSignal.timeout(40_000)]) });
+				if (response.status === 202 && polls++ < 20) {
+					status.textContent = "DeepSeek 正在生成摘要…";
+					pollTimer = window.setTimeout(loadSummary, 2_000);
+					return;
+				}
+				if (!response.ok || response.status === 202) throw new Error("SUMMARY_UNAVAILABLE");
+				const result = await response.json() as { summary?: string };
+				if (typeof result.summary !== "string" || !result.summary.trim()) throw new Error("SUMMARY_UNAVAILABLE");
+				if (!root.isConnected) return;
+				summary.textContent = result.summary;
+				status.textContent = "由 DeepSeek 生成 · 仅供参考，请以正文为准";
+			} catch {
+				if (!events.signal.aborted && root.isConnected) status.textContent = "AI 摘要暂不可用 · 当前显示作者简介，不影响阅读";
+			}
+		}
+		void loadSummary();
+	}
+	initArticleIntro();
+	if (!introWindow.__articleIntroBound) {
+		introWindow.__articleIntroBound = true;
+		document.addEventListener("astro:page-load", initArticleIntro);
+		document.addEventListener("swup:contentReplaced", initArticleIntro);
+	}
+</script>
+
+<style>
+	.article-intro { margin: 0 0 2.6rem; border: 1px solid var(--line-divider); border-radius: 1rem; overflow: hidden; background: color-mix(in srgb, var(--content-meta) 4%, var(--page-bg)); }
+	.article-intro-section + .article-intro-section { border-top: 1px solid var(--line-divider); }
+	.article-intro-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 3.75rem; padding: 1rem 1.25rem; color: var(--content-meta); text-align: left; cursor: pointer; transition: background 180ms ease; }
+	.article-intro-heading:hover { background: color-mix(in srgb, var(--content-meta) 4%, transparent); }
+	.article-intro-heading:focus-visible { outline: 2px solid var(--primary); outline-offset: -4px; border-radius: .75rem; }
+	.article-intro-heading > span { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+	.article-intro-heading :global(svg), .article-intro-notice :global(svg) { width: 1.3rem; height: 1.3rem; flex-shrink: 0; }
+	.article-intro-model { color: color-mix(in srgb, var(--content-meta) 72%, transparent); font-weight: 400; }
+	.article-intro-heading :global(.article-intro-chevron) { transition: transform 240ms ease; }
+	.article-intro-heading[aria-expanded="false"] :global(.article-intro-chevron) { transform: rotate(180deg); }
+	.article-intro-collapse { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 260ms ease, opacity 220ms ease; }
+	.article-intro-collapse.is-collapsed { grid-template-rows: 0fr; opacity: 0; }
+	.article-intro-collapse > div { min-height: 0; overflow: hidden; }
+	.article-intro-content { padding: .4rem 1.25rem 1.3rem; }
+	.article-intro-content p { margin: 0; color: color-mix(in srgb, var(--content-meta) 88%, transparent); line-height: 1.85; overflow-wrap: anywhere; }
+	.article-intro-content small { display: block; margin-top: .85rem; color: color-mix(in srgb, var(--content-meta) 64%, transparent); font-size: .75rem; }
+	.article-intro-cover { padding: 0 1.25rem 1.25rem; }
+	.article-intro-cover :global(#post-cover) { border-radius: .9rem; aspect-ratio: 16 / 9; }
+	.article-intro-cover :global(img) { width: 100%; height: 100%; object-fit: contain; }
+	.article-intro-notice { margin: 0 0 2rem; padding: 1rem 1.25rem; border-left: 4px solid #1677ff; border-radius: .3rem; background: color-mix(in srgb, #1677ff 11%, var(--page-bg)); }
+	.article-intro-notice strong { display: flex; align-items: center; gap: .5rem; color: #1677ff; font-weight: 650; }
+	.article-intro-notice p { margin: .7rem 0 0; color: color-mix(in srgb, var(--content-meta) 88%, transparent); line-height: 1.85; overflow-wrap: anywhere; }
+	:global(.dark) .article-intro-notice strong { color: #80b7ff; }
+	@media (max-width: 767.98px) { .article-intro { margin-bottom: 1.5rem; } .article-intro-heading { padding: .85rem 1rem; } .article-intro-content { padding: .25rem 1rem 1rem; } .article-intro-cover { padding: 0 .75rem .75rem; } .article-intro-notice { padding: .85rem 1rem; } }
+	@media (prefers-reduced-motion: reduce) { .article-intro-collapse, .article-intro-heading :global(.article-intro-chevron) { transition: none; } }
+</style>

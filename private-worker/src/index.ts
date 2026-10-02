@@ -1,3 +1,5 @@
+import { articleSummary } from "./article-summary";
+
 interface Statement {
 	bind(...values: unknown[]): Statement;
 	first<T>(): Promise<T | null>;
@@ -541,6 +543,8 @@ async function reminders(env: Env, scheduledTime: number): Promise<void> {
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		try {
+			if (new URL(request.url).pathname === "/article-summary")
+				return await articleSummary(request, env);
 			return await api(request, env);
 		} catch {
 			return json({ error: "服务暂不可用" }, 500);

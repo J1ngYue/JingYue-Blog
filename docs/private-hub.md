@@ -31,7 +31,7 @@ wrangler d1 migrations apply jingyue-private-hub --remote --config private-worke
 wrangler deploy --config private-worker/wrangler.jsonc
 ```
 
-自定义域名 `private.j1ngyue.cn` 已绑定该 Worker。`ALLOWED_ORIGIN` 目前只允许 `https://blog.j1ngyue.cn`；如果博客主域名改变，要同步修改并重新部署。不要给 Worker 添加公开数据接口或宽松 CORS。
+自定义域名 `private.j1ngyue.cn` 已绑定该 Worker。私密接口的 `ALLOWED_ORIGIN` 只允许 `https://blog.j1ngyue.cn`；如果博客主域名改变，要同步修改并重新部署。日历、账单和会话接口不允许公开读取或宽松 CORS。
 
 ## 2. 邮件发送
 
@@ -56,5 +56,13 @@ PUBLIC_PRIVATE_API_URL=https://private.j1ngyue.cn
 登录 cookie 设置为 `HttpOnly`、`Secure`、`SameSite=Strict`，12 小时过期；登录失败按来源 IP 限速。D1 保存事件、账单和会话，页面不会把明文密码存入浏览器存储。Cloudflare 账号建议开启双因素认证，定期导出 D1 备份；部署时确认 D1 免费额度和邮件服务额度满足使用量。
 
 选择“AI 自动识别/分类”时，输入的日期标题或账单用途会发送给 DeepSeek 处理；不希望发送某条说明时，请手动选类型或分类。
+
+## 5. 公开文章 AI 摘要
+
+`GET /article-summary?slug=...&version=...` 复用服务端 `DEEPSEEK_API_KEY`，不接收读者提交的正文、提示词或模型参数。Worker 仅从本站正式托管地址 `https://jing-yue-blog.vercel.app/api/article-sources.json` 获取公开文章白名单；草稿、加密文章不进入该清单。此独立公开接口允许主域名及正式托管域名，不携带登录 Cookie，不放宽其他私密接口。
+
+`0002_article_summaries.sql` 给现有 D1 新增摘要缓存表，不改日历、账单或会话数据。摘要按标题与完整正文的 SHA-256 版本缓存，多人同时访问只保留一个生成请求；每个版本最多尝试三次，失败后保留一分钟冷却，不提供读者强制刷新。正文较长时，仅发送前 14,000 与后 4,000 个字符，并标记省略内容。DeepSeek 使用非思考模式，每次输出最多 600 tokens。
+
+文章开头按 AI 摘要、封面图、蓝色提示排列。摘要和封面默认展开，可平滑折叠；AI 不可用时明确显示作者简介而非伪称 AI 结果。提示优先读取文章 frontmatter 的 `notice`，未填写则沿用 `description`。新文章和正文修改随正常博客构建自动更新清单；Worker 五分钟内刷新清单并为新版本生成摘要。
 
 若想完全停止 GitHub 的工作流通知，请在自己的 GitHub 账号 Settings → Notifications 调整 Actions 的邮件通知；仓库不会因此关闭代码质量检查。本次已经修正导致近期检查失败的格式问题。

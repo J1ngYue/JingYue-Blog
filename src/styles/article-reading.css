@@ -134,23 +134,6 @@ html:has([data-article-reading-rails]) .post-reading-summary p {
 	line-height: 1.75;
 }
 
-html:has([data-article-reading-rails]) .post-reading-cover {
-	margin: 0 0 1.9rem;
-	overflow: hidden;
-	border-radius: 0.9rem;
-}
-
-html:has([data-article-reading-rails]) .post-reading-cover #post-cover,
-html:has([data-article-reading-rails]) .post-reading-cover .banner-container {
-	max-height: 22rem;
-	margin-bottom: 0 !important;
-}
-
-html:has([data-article-reading-rails]) .post-reading-cover img {
-	max-height: 22rem;
-	object-fit: cover;
-}
-
 html:has([data-article-reading-rails]) #post-container .markdown-content {
 	color: color-mix(in srgb, var(--content-meta) 88%, transparent);
 	font-size: 0.98rem;

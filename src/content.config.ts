@@ -8,6 +8,7 @@ type PostData = {
 	updated?: Date;
 	draft: boolean;
 	description: string;
+	notice: string;
 	image: string;
 	tags: string[];
 	category: string | null;
@@ -45,6 +46,7 @@ const postsSchema: z.ZodType<PostData> = z.object({
 	updated: z.date().optional(),
 	draft: z.boolean().optional().default(false),
 	description: z.string().optional().default(""),
+	notice: z.string().optional().default(""),
 	image: z.string().optional().default(""),
 	tags: z.array(z.string()).optional().default([]),
 	category: z.string().optional().nullable().default(""),

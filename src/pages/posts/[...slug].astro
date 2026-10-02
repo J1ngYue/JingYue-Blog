@@ -3,6 +3,7 @@ import { render } from "astro:content";
 import * as path from "node:path";
 import Comment from "@components/comment/index.astro";
 import Markdown from "@components/common/Markdown.astro";
+import ArticleIntro from "@components/features/ArticleIntro.astro";
 import ArticleReadingRails from "@components/features/ArticleReadingRails.astro";
 import EncryptedPost from "@components/features/EncryptedPost.astro";
 import KatexManager from "@components/features/KatexManager.astro";
@@ -29,6 +30,7 @@ import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
 import { sponsorConfig } from "@/config/sponsorConfig";
+import { articleSummarySource } from "@/utils/article-summary-source";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
 import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
 import { url } from "@/utils/url-utils";
@@ -139,6 +141,7 @@ const publicPosts = (await getSortedPosts()).filter(
 const currentCategoryCount = publicPosts.filter(
 	(post) => (post.data.category || "未分类") === currentCategory,
 ).length;
+const summarySource = articleSummarySource(entry.data.title, entry.body || "");
 ---
 
 <MainGridLayout
@@ -233,34 +236,30 @@ const currentCategoryCount = publicPosts.filter(
         </div>
       </header>
 
-      {entry.data.description && (
-        <aside class="post-reading-summary onload-animation" aria-label="文章摘要">
-          <Icon is:inline name="material-symbols:format-quote-rounded" />
-          <div>
-            <strong>文章摘要</strong>
-            <p>{entry.data.description}</p>
-          </div>
-        </aside>
-      )}
-
-      <!-- always show cover as long as it has one -->
-
-      {
-        processedImage && coverImageConfig.enableInPost && (
-          <div class="post-reading-cover">
+      <ArticleIntro
+        slug={removeFileExtension(entry.id)}
+        version={summarySource.version}
+        description={entry.data.description}
+        notice={entry.data.notice}
+        hasCover={!!processedImage && coverImageConfig.enableInPost}
+        aiEnabled={!entry.data.draft && !entry.data.password}
+      >
+        {processedImage && coverImageConfig.enableInPost && (
+          <Fragment slot="cover">
             <CoverImage
               id="post-cover"
               src={processedImage}
               basePath={getFileDirFromPath(entry.filePath || '')}
-              class="mb-8 rounded-xl banner-container onload-animation"
+              alt={`${entry.data.title} - 封面图`}
+              class="rounded-xl"
               preview={false}
               loading="eager"
               fetchpriority="high"
               apiUrls={apiUrls}
             />
-          </div>
-        )
-      }
+          </Fragment>
+        )}
+      </ArticleIntro>
 
       {entry.data.password ? (
         <EncryptedPost password={entry.data.password} slug={entry.id} hint={entry.data.passwordHint}>

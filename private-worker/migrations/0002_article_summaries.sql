@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS article_summaries (
+  version TEXT PRIMARY KEY,
+  summary TEXT NOT NULL DEFAULT '',
+  attempts INTEGER NOT NULL DEFAULT 0,
+  locked_until INTEGER NOT NULL DEFAULT 0
+);
