@@ -809,7 +809,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 
 		const exhibitSlideDuration = 12000;
 		const exhibitHoldDelay = 300;
-		const exhibitHoldSpeed = 1.6;
+		const exhibitManualSpeed = 1.6;
 		const exhibitModulo = (value) =>
 			((value % exhibitSlides.length) + exhibitSlides.length) % exhibitSlides.length;
 
@@ -840,9 +840,11 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			exhibitSlides.forEach((slide, index) => {
 				// Recycle only beyond the clipped viewport; visible postcards never jump.
 				const offset = exhibitModulo(index - position + exhibitSlides.length / 2) - exhibitSlides.length / 2;
-				slide.style.setProperty("--scene-offset", offset.toFixed(5));
-				slide.setAttribute("aria-hidden", String(Math.abs(offset) > 1.5));
-				slide.dataset.position = Math.abs(offset) < .5 ? "active" : "adjacent";
+				slide.style.transform = `translate3d(calc(-50% + ${offset.toFixed(5)} * var(--postcard-step)), -50%, 0)`;
+				const hidden = String(Math.abs(offset) > 1.5);
+				if (slide.getAttribute("aria-hidden") !== hidden) slide.setAttribute("aria-hidden", hidden);
+				const state = Math.abs(offset) < .5 ? "active" : "adjacent";
+				if (slide.dataset.position !== state) slide.dataset.position = state;
 			});
 			syncExhibitVideo();
 			exhibitMeter?.setAttribute("aria-valuenow", (normalized / exhibitSlides.length * 100).toFixed(1));
@@ -868,13 +870,22 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				return;
 			}
 			if (exhibitTransition) {
-				const t = Math.max(0, Math.min(1, (timestamp - exhibitTransition.started) / 620));
-				const eased = 1 - (1 - t) ** 3;
-				exhibitProgressPosition = exhibitTransition.from +
-					(exhibitTransition.to - exhibitTransition.from) * eased;
-				if (t === 1) exhibitTransition = null;
+				const elapsed = Math.max(0, timestamp - (exhibitProgressStartTime || exhibitTransition.started));
+				const travel = exhibitManualSpeed * elapsed / 1000;
+				const distance = exhibitTransition.to - exhibitProgressPosition;
+				const movement = Math.min(travel, Math.abs(distance));
+				exhibitProgressPosition += Math.sign(distance) * movement;
+				if (movement === Math.abs(distance)) {
+					exhibitProgressPosition = exhibitTransition.to;
+					// A held press must keep moving while the hold timer is pending.
+					if (exhibitHoldButton) exhibitProgressPosition += exhibitHoldDirection * (travel - movement);
+					exhibitTransition = null;
+				}
+			} else if (exhibitHoldButton && !exhibitHoldStarted) {
+				exhibitProgressPosition += exhibitHoldDirection * exhibitManualSpeed *
+					Math.max(0, timestamp - exhibitProgressStartTime) / 1000;
 			} else if (shouldPlayExhibit()) {
-				const elapsed = exhibitProgressStartTime ? Math.min(timestamp - exhibitProgressStartTime, 64) : 0;
+				const elapsed = exhibitProgressStartTime ? Math.max(0, timestamp - exhibitProgressStartTime) : 0;
 				exhibitProgressPosition += elapsed / exhibitSlideDuration;
 			} else {
 				stopExhibitProgress();
@@ -897,6 +908,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			if (playing || (exhibitTransition && exhibitVisible && !document.hidden)) {
 				if (!exhibitProgressFrame) {
 					exhibitProgressStartTime = 0;
+					if (exhibitTransition) exhibitTransition.started = performance.now();
 					exhibitProgressFrame = requestAnimationFrame(tickExhibitProgress);
 				}
 			} else stopExhibitProgress();
@@ -909,7 +921,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 				exhibitTransition = null;
 				renderExhibitMeter(exhibitProgressPosition);
 			} else {
-				exhibitTransition = { from: exhibitProgressPosition, to: requestedIndex, started: performance.now() };
+				exhibitTransition = {
+					to: requestedIndex,
+					started: performance.now(),
+				};
 			}
 			syncExhibitPlayback();
 		};
@@ -970,9 +985,9 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		const tickExhibitHold = (timestamp) => {
 			exhibitHoldFrame = 0;
 			if (!exhibitHoldStarted || !exhibitHoldDirection) return;
-			const elapsed = exhibitHoldLastTime ? Math.min(timestamp - exhibitHoldLastTime, 64) : 0;
+			const elapsed = exhibitHoldLastTime ? Math.max(0, timestamp - exhibitHoldLastTime) : 0;
 			exhibitHoldLastTime = timestamp;
-			exhibitProgressPosition += exhibitHoldDirection * exhibitHoldSpeed * elapsed / 1000;
+			exhibitProgressPosition += exhibitHoldDirection * exhibitManualSpeed * elapsed / 1000;
 			renderExhibitMeter(exhibitProgressPosition);
 			exhibitHoldFrame = requestAnimationFrame(tickExhibitHold);
 		};
@@ -982,9 +997,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			exhibitHoldStarted = true;
 			exhibitTransition = null;
 			exhibitInteractionPaused = true;
+			const lastFrameTime = exhibitProgressStartTime;
 			stopExhibitProgress();
 			exhibitHoldButton.setAttribute("data-holding", "true");
-			exhibitHoldLastTime = performance.now();
+			exhibitHoldLastTime = lastFrameTime || performance.now();
 			exhibitHoldFrame = requestAnimationFrame(tickExhibitHold);
 		};
 		const finishExhibitHold = (suppressClick = false) => {
@@ -1042,7 +1058,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			finishExhibitHold();
 			clearExhibitClickSuppression();
 		};
-		const handleExhibitVisibilityChange = () => syncExhibitPlayback();
+		const handleExhibitVisibilityChange = () => {
+			if (document.hidden) handleExhibitHoldWindowBlur();
+			syncExhibitPlayback();
+		};
 
 		const handleLocalCoverState = (event) => {
 			const localCoverActive = Boolean(event.detail?.active);

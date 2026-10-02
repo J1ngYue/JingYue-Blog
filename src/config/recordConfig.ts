@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.126",
+		date: "2026-10-02",
+		time: "23:29",
+		type: "fix",
+		title: "相册切换改为恒速连续移动",
+		summary:
+			"移除左右按钮的先快后慢，连续点击按剩余距离接续同一速度，点击与长按之间不再停顿。",
+		changes: [
+			"统一手动移动速度，保留自动播放、暂停与键盘操作；长按接管不丢失帧间时间，延迟帧按真实时间推进。",
+			"直接更新卡片 transform，仅在状态改变时更新辅助属性，减少每帧对子元素的重复样式计算。",
+		],
+	},
+	{
 		version: "v6.14.125",
 		date: "2026-10-02",
 		time: "23:05",
