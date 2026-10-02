@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.121",
+		date: "2026-10-02",
+		time: "18:12",
+		type: "feature",
+		title: "页尾新增四位虚拟主播 Q 版角色",
+		summary:
+			"保留原七位角色，加入阿梓从小就很可爱、雪糕cheese、奶油-cream-和雫るる_Official的透明底 Q 版二创。",
+		changes: [
+			"十一位角色在桌面横向铺开，窄屏保留清晰尺寸并自动换行，沿用轻浮动动画和减少动态效果支持。",
+		],
+	},
+	{
 		version: "v6.14.120",
 		date: "2026-10-02",
 		time: "17:42",
