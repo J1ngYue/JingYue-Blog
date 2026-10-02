@@ -35,7 +35,7 @@ const posts = (await getSortedPosts())
 		<div class="navbar-profile-card__activity-pane navbar-profile-card__github" data-profile-pane="github" inert>
 			<div class="navbar-profile-card__github-heading"><span data-profile-github-summary>GitHub 活动加载中…</span><button type="button" data-profile-github-year aria-expanded="false" aria-controls="profile-github-year">全年</button></div>
 			<div class="navbar-profile-card__github-month" data-profile-github-month role="group" aria-label="本月 GitHub 活动"></div>
-			<div id="profile-github-year" class="navbar-profile-card__github-year" data-profile-github-year-grid role="group" aria-label="过去一年 GitHub 活动" hidden></div>
+			<div id="profile-github-year" class="navbar-profile-card__github-year" data-profile-github-year-grid role="group" aria-label="过去一年 GitHub 活动，左右滚动查看" tabindex="0" hidden></div>
 			<p class="navbar-profile-card__github-hint" data-profile-github-hint>悬浮查看全年 · 点击标题切换活动</p>
 		</div>
 		</div>

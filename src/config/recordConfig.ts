@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.127",
+		date: "2026-10-03",
+		time: "00:15",
+		type: "fix",
+		title: "收紧个人资料卡与 GitHub 活动布局",
+		summary:
+			"隐藏的活动面板不再撑高资料卡，恢复文章热力图下方的紧凑间距，保留原有头像与字号。",
+		changes: [
+			"GitHub 月历采用清晰的短格日期，全年热力图在栏内横向滚动，避免整张卡片随日历拉长。",
+			"保留三秒轮换、悬浮暂停和文章筛选，全年图支持键盘左右滚动。",
+		],
+	},
+	{
 		version: "v6.14.126",
 		date: "2026-10-02",
 		time: "23:29",

@@ -624,19 +624,21 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 #navbar .navbar-profile-card__activity-heading svg { width: .7rem; height: .7rem; }
 #navbar .navbar-profile-card__activity-heading button { display: inline-flex; align-items: center; gap: .3rem; padding: .15rem 0; color: inherit; cursor: pointer; }
 #navbar .navbar-profile-card__activity-heading button:hover { color: var(--profile-card-text); }
-#navbar .navbar-profile-card__activity-views { display: grid; align-items: start; }
+#navbar .navbar-profile-card__activity-views { position: relative; display: grid; align-items: start; }
 #navbar .navbar-profile-card__activity-pane { grid-area: 1 / 1; min-width: 0; opacity: 1; visibility: visible; transition: opacity 180ms ease, visibility 180ms; }
-#navbar .navbar-profile-card__activity-pane[inert] { opacity: 0; visibility: hidden; pointer-events: none; }
+#navbar .navbar-profile-card__activity-pane[inert] { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; }
 #navbar .navbar-profile-card__activity [hidden] { display: none; }
 #navbar .navbar-profile-card__activity :is(button, a):focus-visible { outline: 2px solid var(--profile-card-text); outline-offset: 2px; }
 #navbar .navbar-profile-card__github-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .45rem; color: var(--profile-card-muted); font-size: .66rem; }
 #navbar .navbar-profile-card__github-heading button { padding: .1rem .4rem; border: 1px solid color-mix(in srgb, var(--profile-card-text) 16%, transparent); border-radius: .25rem; color: var(--profile-card-text); cursor: pointer; }
 #navbar .navbar-profile-card__github-heading button:disabled { opacity: .5; cursor: default; }
-#navbar :is(.navbar-profile-card__github-month, .navbar-profile-card__github-year) { display: grid; align-content: start; gap: .3rem; min-height: 5rem; }
+#navbar :is(.navbar-profile-card__github-month, .navbar-profile-card__github-year) { display: grid; align-content: start; gap: .18rem; min-height: 5rem; }
 #navbar .navbar-profile-card__github-month { width: 100%; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-#navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell { display: grid; place-items: center; border-radius: .25rem; font-size: .7rem; font-variant-numeric: tabular-nums; color: var(--profile-card-bg); }
+#navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell { display: grid; place-items: center; height: 1.05rem; aspect-ratio: auto; border-radius: .25rem; font-size: .7rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--profile-card-bg); }
 #navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell:is([data-level="0"], [data-level="1"], [data-level="2"]) { color: var(--profile-card-text); }
-#navbar .navbar-profile-card__github-year { gap: .65rem; }
+#navbar .navbar-profile-card__github-year { display: flex; gap: .65rem; min-height: 0; overflow-x: auto; padding: 1px 1px .25rem; scrollbar-width: thin; }
+#navbar .navbar-profile-card__github-year > div { flex: 0 0 100%; min-width: 0; }
+#navbar .navbar-profile-card__github-year:focus-visible { outline: 2px solid var(--profile-card-text); outline-offset: 2px; }
 #navbar .navbar-profile-card__github-range { display: block; margin-bottom: .25rem; color: var(--profile-card-muted); font-size: .6rem; }
 #navbar .navbar-profile-card__github-weeks { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, auto); grid-template-columns: repeat(var(--github-weeks), minmax(0, 1fr)); gap: .18rem; }
 #navbar .navbar-profile-card__github-cell { display: block; min-width: 0; aspect-ratio: 1; border-radius: .12rem; background: color-mix(in srgb, var(--profile-card-text) 12%, transparent); }
