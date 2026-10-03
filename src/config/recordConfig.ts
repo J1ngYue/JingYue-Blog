@@ -21,6 +21,16 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.131",
+		date: "2026-10-03",
+		time: "21:05",
+		type: "optimize",
+		title: "放大 GitHub 月度贡献方格",
+		summary:
+			"移除月格下方的操作提示，放大每日方格并保持正方形，沿用原有间距与绿色深浅。",
+		changes: ["保留当月天数自适应、全年预览、单击固定与年份选择。"],
+	},
+	{
 		version: "v6.14.130",
 		date: "2026-10-03",
 		time: "20:47",

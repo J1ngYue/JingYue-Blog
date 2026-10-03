@@ -37,7 +37,6 @@ const posts = (await getSortedPosts())
 		<div class="navbar-profile-card__activity-pane navbar-profile-card__github" data-profile-pane="github" inert>
 			<div class="navbar-profile-card__github-heading"><span data-profile-github-summary>GitHub 活动加载中…</span><button type="button" data-profile-github-year aria-expanded="false" aria-controls="profile-github-popover">全年大图</button></div>
 			<div class="navbar-profile-card__github-month" data-profile-github-month role="button" tabindex="0" aria-label="本月 GitHub 活动，点击固定全年大图" aria-expanded="false" aria-controls="profile-github-popover"></div>
-			<p class="navbar-profile-card__github-hint" data-profile-github-hint>悬浮预览全年 · 单击固定并选择年份</p>
 		</div>
 		</div>
 	</div>
@@ -108,7 +107,6 @@ const posts = (await getSortedPosts())
 			const yearSummary = popover.querySelector<HTMLElement>("[data-profile-github-year-summary]")!;
 			const pinHint = popover.querySelector<HTMLElement>("[data-profile-github-pin-hint]")!;
 			const summary = activity.querySelector<HTMLElement>("[data-profile-github-summary]")!;
-			const hint = activity.querySelector<HTMLElement>("[data-profile-github-hint]")!;
 			const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
 			let github: ActivityCalendar | null = null;
 			let githubLoaded = false;
@@ -211,7 +209,6 @@ const posts = (await getSortedPosts())
 				monthGrid.replaceChildren();
 				if (!github?.available) {
 					summary.textContent = "GitHub 活动暂不可用";
-					hint.textContent = "可通过右上角链接查看 GitHub";
 					yearButton.disabled = true;
 					return;
 				}
@@ -219,7 +216,6 @@ const posts = (await getSortedPosts())
 				const monthTotal = currentDays.reduce((sum, day) => sum + (day.isOutsideRange ? 0 : day.count), 0);
 				appendDays(monthGrid, currentDays);
 				summary.textContent = `${Number(dateKey.slice(5, 7))}月 · ${monthTotal} 次贡献`;
-				hint.textContent = "悬浮预览全年 · 单击固定并选择年份";
 				if (githubPane.matches(":hover")) openPopover();
 			};
 			const setActivity = (view: "articles" | "github") => {

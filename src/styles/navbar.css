@@ -642,7 +642,7 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 #navbar .navbar-profile-card__github-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .45rem; color: var(--profile-card-muted); font-size: .66rem; }
 #navbar .navbar-profile-card__github-heading button { padding: .1rem .4rem; border: 1px solid color-mix(in srgb, var(--profile-card-text) 16%, transparent); border-radius: .25rem; color: var(--profile-card-text); cursor: pointer; }
 #navbar .navbar-profile-card__github-heading button:disabled { opacity: .5; cursor: default; }
-#navbar .navbar-profile-card__github-month { display: grid; width: 100%; grid-template-columns: repeat(auto-fit, minmax(1.25rem, 1fr)); gap: .28rem; cursor: pointer; }
+#navbar .navbar-profile-card__github-month { display: grid; width: 100%; grid-template-columns: repeat(auto-fit, minmax(1.5rem, 1fr)); gap: .28rem; cursor: pointer; }
 #navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell { display: grid; place-items: center; border-radius: .24rem; font-size: .6rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--profile-card-text); }
 #navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell[data-level="4"] { color: #fff; }
 :root.dark #navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell:is([data-level="3"], [data-level="4"]) { color: #0d1117; }
@@ -655,7 +655,6 @@ html:not(.dark) body.music-immersive-open.home-landing-active #top-row #navbar[d
 #navbar .navbar-profile-card__github-cell[data-outside] { opacity: .25; }
 #navbar .navbar-profile-card__github-month .navbar-profile-card__github-cell[data-outside] { opacity: 1; background: var(--github-empty); color: var(--profile-card-muted); }
 #navbar .navbar-profile-card__github-cell:hover { outline: 1px solid var(--profile-card-text); }
-#navbar .navbar-profile-card__github-hint { margin: .5rem 0 0; color: var(--profile-card-muted); font-size: .6rem; line-height: 1.5; }
 #navbar .navbar-profile-card__github-popover { position: fixed; inset: auto; width: min(52rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; margin: 0; padding: 1.15rem; border: 1px solid var(--profile-card-border); border-radius: .85rem; background: var(--profile-card-bg); color: var(--profile-card-text); box-shadow: 0 .9rem 3rem rgb(0 0 0 / 22%); letter-spacing: 0; }
 #navbar .navbar-profile-card__github-popover:popover-open { animation: navbar-github-popover-in 180ms ease-out both; }
 #navbar .navbar-profile-card__github-popover header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .9rem; }
