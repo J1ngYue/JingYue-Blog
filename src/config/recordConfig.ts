@@ -21,6 +21,18 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.130",
+		date: "2026-10-03",
+		time: "20:47",
+		type: "fix",
+		title: "首次进入即显示独立小猪滚动条",
+		summary:
+			"统一初始与滚动后的外观，保留灰色圆角滑块及左侧小猪，移除原生白色轨道、描边和内嵌小猪。",
+		changes: [
+			"提前初始化滚动条并取消原生轨道占位，保留平滑跟随、拖动与键盘滚动。",
+		],
+	},
+	{
 		version: "v6.14.129",
 		date: "2026-10-03",
 		time: "18:14",

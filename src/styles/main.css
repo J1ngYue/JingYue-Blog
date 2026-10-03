@@ -68,8 +68,6 @@ body {
     --ui-icon-surface: #fff;
     --ui-icon-soft-bg: #f4f4f5;
     --ui-icon-border: #d4d4d8;
-    --pig-scrollbar-track: rgba(250, 250, 250, 0.92);
-    --pig-scrollbar-track-border: rgba(24, 24, 27, 0.28);
     --pig-scrollbar-thumb: #8b8b93;
     --pig-scrollbar-thumb-hover: #71717a;
     --pig-scrollbar-thumb-active: #52525b;
@@ -82,8 +80,6 @@ body {
     --ui-icon-surface: #09090b;
     --ui-icon-soft-bg: #18181b;
     --ui-icon-border: #3f3f46;
-    --pig-scrollbar-track: rgba(24, 24, 27, 0.94);
-    --pig-scrollbar-track-border: rgba(255, 255, 255, 0.18);
     --pig-scrollbar-thumb: #71717a;
     --pig-scrollbar-thumb-hover: #a1a1aa;
     --pig-scrollbar-thumb-active: #d4d4d8;
@@ -97,20 +93,15 @@ html::-webkit-scrollbar {
 }
 
 html::-webkit-scrollbar-track {
-    background: var(--pig-scrollbar-track);
-    border-inline-start: 1px solid var(--pig-scrollbar-track-border);
+    background: transparent;
+    border: 0;
 }
 
 html::-webkit-scrollbar-thumb {
     min-height: 64px;
-    border: 2px solid var(--pig-scrollbar-outline);
+    border: 0;
     border-radius: 999px;
     background-color: var(--pig-scrollbar-thumb);
-    background-image: url('/assets/images/ui/pig-scrollbar.svg');
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 15px 15px;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.58);
 }
 
 html::-webkit-scrollbar-thumb:hover {
@@ -128,12 +119,12 @@ html::-webkit-scrollbar-button {
 }
 
 html::-webkit-scrollbar-corner {
-    background: var(--pig-scrollbar-track);
+    background: transparent;
 }
 
 @supports (-moz-appearance: none) {
     html {
-        scrollbar-color: var(--pig-scrollbar-thumb) var(--pig-scrollbar-track);
+        scrollbar-color: var(--pig-scrollbar-thumb) transparent;
         scrollbar-width: auto;
     }
 }
