@@ -445,7 +445,10 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		if (!hero || !frame) return;
 		const pageScrollLayer = root.closest("#main-grid") || root;
 
-		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const systemMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const reducedMotion = {
+			get matches() { return systemMotion.matches || document.documentElement.dataset.reduceMotion === "true"; },
+		};
 		const clock = root.querySelector("[data-home-clock]");
 		const date = root.querySelector("[data-home-date]");
 		const greeting = root.querySelector("[data-home-greeting]");
@@ -903,7 +906,7 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			const paused = exhibitUserPaused || reducedMotion.matches;
 			exhibitToggle?.setAttribute("aria-pressed", String(paused));
 			exhibitToggle?.setAttribute("aria-label", paused ? "播放自动滚动" : "暂停自动滚动");
-			exhibitToggle?.setAttribute("title", reducedMotion.matches ? "已跟随系统减少动态效果" : paused ? "播放自动滚动" : "暂停自动滚动");
+			exhibitToggle?.setAttribute("title", reducedMotion.matches ? "已启用减少动态效果" : paused ? "播放自动滚动" : "暂停自动滚动");
 			if (exhibitToggle) exhibitToggle.disabled = reducedMotion.matches;
 			if (playing || (exhibitTransition && exhibitVisible && !document.hidden)) {
 				if (!exhibitProgressFrame) {
@@ -1966,7 +1969,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 		window.addEventListener("scroll", scheduleRender, { passive: true });
 		window.addEventListener("resize", handleViewportResize);
 		window.addEventListener("theme-change", handleThemeChange);
-		reducedMotion.addEventListener("change", handleMotionPreference);
+		systemMotion.addEventListener("change", handleMotionPreference);
+		window.addEventListener("firefly:motion-preference-change", handleMotionPreference);
 		render();
 
 		window.__fireflyHomeLandingCleanup = () => {
@@ -1975,7 +1979,8 @@ const profileAvatar = profileConfig.avatar || "assets/images/avatar.avif";
 			window.removeEventListener("scroll", scheduleRender);
 			window.removeEventListener("resize", handleViewportResize);
 			window.removeEventListener("theme-change", handleThemeChange);
-			reducedMotion.removeEventListener("change", handleMotionPreference);
+			systemMotion.removeEventListener("change", handleMotionPreference);
+			window.removeEventListener("firefly:motion-preference-change", handleMotionPreference);
 			musicTrigger?.removeEventListener("click", openMusicDockFromClick);
 			musicTrigger?.removeEventListener("keydown", handleMusicDockKeydown);
 			window.removeEventListener("jingyue:music-mini-state", syncMusicDockState);

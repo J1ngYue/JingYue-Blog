@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.135",
+		date: "2026-10-04",
+		time: "00:20",
+		type: "feature",
+		title: "扩展并融合显示设置",
+		summary:
+			"按外观、壁纸、特效分组，新增九种 Material 配色、配色规范、六种背景纹理和全屏布局，保持原有功能完整。",
+		changes: [
+			"加入取色器、首页壁纸标题和减少动态效果，保存个人偏好，支持键盘操作与浅深色。",
+			"以分段按钮、配色小卡片和折叠分区优化桌面及移动端，保留透明度、模糊度、导航栏、轮播、水波、雨雪及深色灯光。",
+		],
+	},
+	{
 		version: "v6.14.134",
 		date: "2026-10-03",
 		time: "22:54",

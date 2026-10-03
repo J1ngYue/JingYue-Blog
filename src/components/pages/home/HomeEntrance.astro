@@ -126,7 +126,7 @@ const tileSlots = Array.from({ length: 120 });
 				if (readyPreview) settle(readyPreview);
 			});
 
-		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+		if (document.documentElement.dataset.reduceMotion === "true" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 			finish();
 			return;
 		}

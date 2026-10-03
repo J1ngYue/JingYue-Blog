@@ -170,6 +170,7 @@ const config = sakuraConfig;
 
 			// 初始化樱花特效
 			async init() {
+				if (document.documentElement.dataset.reduceMotion === "true") return;
 				if (!this.config.enable || this.isInitializing) return;
 				if (this.isRunning && this.canvas?.isConnected) return;
 				if (this.isRunning) this.stop();

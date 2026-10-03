@@ -10,6 +10,7 @@
 @import './categories.css';
 @import './privacy-modal.css';
 @import './guestbook-chat.css';
+@import './appearance.css';
 
 @plugin '@tailwindcss/typography';
 

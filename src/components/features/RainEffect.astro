@@ -324,6 +324,7 @@ const config = rainConfig;
 			}
 
 			start() {
+				if (document.documentElement.dataset.reduceMotion === "true") return;
 				if (!this.isHomePage()) return;
 				if (this.state === "active" && this.canvas?.isConnected) return;
 				if (this.state === "draining" && this.canvas?.isConnected) {

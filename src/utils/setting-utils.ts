@@ -935,9 +935,7 @@ function getDefaultWallpaperModeForCurrentPage(): WALLPAPER_MODE {
 	) {
 		return WALLPAPER_NONE;
 	}
-	return backgroundWallpaper.mode === WALLPAPER_FULLSCREEN
-		? WALLPAPER_BANNER
-		: backgroundWallpaper.mode;
+	return backgroundWallpaper.mode;
 }
 
 function getWallpaperModeStorageKeyForCurrentPage(): string {
@@ -964,12 +962,9 @@ export function getStoredWallpaperMode(): WALLPAPER_MODE {
 	}
 
 	const storedMode = localStorage.getItem(storageKey) as WALLPAPER_MODE | null;
-	if (storedMode === WALLPAPER_FULLSCREEN) {
-		localStorage.setItem(storageKey, WALLPAPER_BANNER);
-		return WALLPAPER_BANNER;
-	}
 	if (
 		storedMode === WALLPAPER_BANNER ||
+		storedMode === WALLPAPER_FULLSCREEN ||
 		storedMode === WALLPAPER_OVERLAY ||
 		storedMode === WALLPAPER_NONE
 	) {

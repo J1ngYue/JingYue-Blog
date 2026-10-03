@@ -213,6 +213,7 @@ const config = snowConfig;
 			}
 
 			start() {
+				if (document.documentElement.dataset.reduceMotion === "true") return;
 				if (this.state === "active" && this.canvas?.isConnected) return;
 				if (this.state === "draining" && this.canvas?.isConnected) {
 					this.state = "active";

@@ -1,6 +1,7 @@
 <script lang="ts">
 import {
 	WALLPAPER_BANNER,
+	WALLPAPER_FULLSCREEN,
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
 } from "@constants/constants";
@@ -9,6 +10,7 @@ import { i18n } from "@i18n/translation";
 import {
 	applyNavbarOpacityToDocument,
 	getDefaultBannerCarouselEnabled,
+	getDefaultBannerTitleEnabled,
 	getDefaultGradientEnabled,
 	getDefaultHue,
 	getDefaultNavbarOpacity,
@@ -19,6 +21,7 @@ import {
 	getDefaultWavesEnabled,
 	getHue,
 	getStoredBannerCarouselEnabled,
+	getStoredBannerTitleEnabled,
 	getStoredGradientEnabled,
 	getStoredNavbarOpacity,
 	getStoredOverlayCardOpacity,
@@ -28,6 +31,7 @@ import {
 	getStoredWallpaperMode,
 	getStoredWavesEnabled,
 	setBannerCarouselEnabled,
+	setBannerTitleEnabled,
 	setGradientEnabled,
 	setHue,
 	setNavbarOpacity,
@@ -40,6 +44,19 @@ import {
 	setWallpaperMode,
 	setWavesEnabled,
 } from "@utils/setting-utils";
+import {
+	Check,
+	ChevronDown,
+	CircleOff,
+	Flower2,
+	Grid2X2,
+	Image,
+	Layers,
+	Palette,
+	Shapes,
+	Sparkles,
+	WandSparkles,
+} from "lucide-svelte";
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
 import {
@@ -50,6 +67,18 @@ import {
 	snowConfig,
 } from "@/config";
 import type { WALLPAPER_MODE } from "@/types/config";
+import {
+	APPEARANCE_CHANGE_EVENT,
+	type AppearanceSettings,
+	applyAppearanceColors,
+	backgroundTextures,
+	getAppearanceSettings,
+	getAppearanceSourceColor,
+	getPaletteSwatches,
+	hueFromSourceColor,
+	paletteStyles,
+	setAppearanceSettings,
+} from "@/utils/appearance-settings";
 import {
 	DARK_MODE_SPOTLIGHT_CHANGE_EVENT,
 	DARK_MODE_SPOTLIGHT_RANGE_MAX,
@@ -67,6 +96,48 @@ import {
 	setLocalWallpaperBlur,
 	setLocalWallpaperOpacity,
 } from "@/utils/local-wallpaper";
+
+const settingsTabs = [
+	{ id: "appearance", label: "外观", icon: Palette },
+	{ id: "wallpaper", label: "壁纸", icon: Image },
+	{ id: "effects", label: "特效", icon: Sparkles },
+] as const;
+type SettingsTab = (typeof settingsTabs)[number]["id"];
+let activeTab = $state<SettingsTab>("appearance");
+let appearance = $state(getAppearanceSettings());
+let bannerTitleEnabled = $state(getDefaultBannerTitleEnabled());
+const textureIcons = [CircleOff, Sparkles, Grid2X2, Layers, Shapes, Flower2];
+
+function selectSettingsTab(tab: SettingsTab) {
+	activeTab = tab;
+	const panel = document.getElementById("display-setting");
+	panel?.scrollTo({ top: 0 });
+	panel?.closest(".navbar-utility__panel")?.scrollTo({ top: 0 });
+	requestAnimationFrame(refreshAllRangeProgress);
+}
+function handleTabKey(event: KeyboardEvent, index: number) {
+	if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+	event.preventDefault();
+	const next =
+		event.key === "Home"
+			? 0
+			: event.key === "End"
+				? 2
+				: (index + (event.key === "ArrowRight" ? 1 : -1) + 3) % 3;
+	selectSettingsTab(settingsTabs[next].id);
+	document.getElementById(`display-tab-${settingsTabs[next].id}`)?.focus();
+}
+function updateAppearance(patch: Partial<AppearanceSettings>) {
+	appearance = setAppearanceSettings(patch);
+}
+function updateSourceColor(color: string) {
+	updateAppearance({ sourceColor: color });
+	updateAndCommitHue(hueFromSourceColor(color));
+}
+function toggleBannerTitle() {
+	bannerTitleEnabled = !bannerTitleEnabled;
+	setBannerTitleEnabled(bannerTitleEnabled);
+}
 
 let hue = $state(getHue());
 let wallpaperMode: WALLPAPER_MODE = $state(backgroundWallpaper.mode);
@@ -205,6 +276,7 @@ function updateHue(value: number) {
 	hueFrame = requestAnimationFrame(() => {
 		hueFrame = 0;
 		document.documentElement.style.setProperty("--hue", String(pendingHue));
+		applyAppearanceColors(pendingHue, { ...appearance, sourceColor: "" });
 	});
 }
 
@@ -213,6 +285,7 @@ function commitHue() {
 	if (hueFrame) cancelAnimationFrame(hueFrame);
 	hueFrame = 0;
 	document.documentElement.style.setProperty("--hue", String(pendingHue));
+	applyAppearanceColors(pendingHue, { ...appearance, sourceColor: "" });
 	setHue(pendingHue);
 	hueAdjusting = false;
 	document.documentElement.classList.remove("is-theme-hue-adjusting");
@@ -387,6 +460,7 @@ function resetEffectsSettings() {
 		snowEnabled = defaultSnowEnabled;
 		setSnowEnabled(defaultSnowEnabled);
 	}
+	updateAppearance({ reducedMotion: false });
 }
 
 function updateSpotlight(patch: Partial<DarkModeSpotlightSettings>) {
@@ -437,7 +511,6 @@ function updateRangeProgress(input: HTMLInputElement) {
 function refreshAllRangeProgress() {
 	const panel = document.getElementById("display-setting");
 	if (!panel) return;
-
 	const rangeInputs = Array.from(
 		panel.querySelectorAll('input[type="range"]'),
 	) as HTMLInputElement[];
@@ -468,6 +541,8 @@ function switchLayout() {
 
 onMount(() => {
 	mounted = true;
+	appearance = getAppearanceSettings();
+	bannerTitleEnabled = getStoredBannerTitleEnabled();
 	checkScreenSize();
 
 	// 从localStorage读取保存的壁纸模式
@@ -543,6 +618,11 @@ onMount(() => {
 onMount(() => {
 	const panel = document.getElementById("display-setting");
 	if (!panel) return;
+	panel.classList.toggle(
+		"float-panel-closed",
+		panel.closest<HTMLElement>("[data-navbar-utility]")?.dataset
+			.settingsOpen !== "true",
+	);
 	const syncPanelInteractivity = () => {
 		const closed = panel.classList.contains("float-panel-closed");
 		panel.toggleAttribute("inert", closed);
@@ -628,6 +708,15 @@ onMount(() => {
 });
 
 onMount(() => {
+	const syncAppearance = (event: Event) => {
+		appearance = (event as CustomEvent<AppearanceSettings>).detail;
+	};
+	window.addEventListener(APPEARANCE_CHANGE_EVENT, syncAppearance);
+	return () =>
+		window.removeEventListener(APPEARANCE_CHANGE_EVENT, syncAppearance);
+});
+
+onMount(() => {
 	const handleSpotlightChange = (event: Event) => {
 		const next = (event as CustomEvent<DarkModeSpotlightSettings>).detail;
 		if (!next || typeof next !== "object") return;
@@ -649,8 +738,56 @@ onMount(() => {
 
 {#if hasAnyContent}
 <div id="display-setting" class="float-panel-closed display-setting-panel" aria-hidden="true" inert>
+    <div class="settings-tabs" role="tablist" aria-label="显示设置分组">
+        {#each settingsTabs as tab, index}
+            <button id={`display-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="display-settings-content" tabindex={activeTab === tab.id ? 0 : -1} class:tab-active={activeTab === tab.id} onclick={() => selectSettingsTab(tab.id)} onkeydown={(event) => handleTabKey(event, index)}>
+                <tab.icon size={19} aria-hidden="true" /><span>{tab.label}</span>
+            </button>
+        {/each}
+    </div>
+    <div class="settings-body" id="display-settings-content" role="tabpanel" aria-labelledby={`display-tab-${activeTab}`}>
+    <div class="settings-section settings-palette" hidden={activeTab !== "appearance"}>
+        <details open class="settings-disclosure">
+            <summary><Palette size={19} aria-hidden="true" /><span>配色风格</span><ChevronDown size={16} aria-hidden="true" /></summary>
+            <div class="palette-grid">
+                {#each paletteStyles as style}
+                    <button class="palette-option" type="button" aria-pressed={appearance.palette === style.id} class:choice-active={appearance.palette === style.id} onclick={() => updateAppearance({ palette: style.id })}>
+                        <span class="palette-swatches" aria-hidden="true">{#each getPaletteSwatches(hue, appearance, style.id) as color}<i style:background={color}></i>{/each}</span>
+                        <span>{style.label}</span>{#if appearance.palette === style.id}<Check size={14} class="choice-check" aria-hidden="true" />{/if}
+                    </button>
+                {/each}
+            </div>
+            <button type="button" class="original-palette" aria-pressed={appearance.palette === "original"} onclick={() => updateAppearance({ palette: "original", sourceColor: "" })}>恢复原有配色{#if appearance.palette === "original"}<Check size={14} aria-hidden="true" />{/if}</button>
+        </details>
+    </div>
+    <div class="settings-section settings-spec" hidden={activeTab !== "appearance"}>
+        <details open class="settings-disclosure">
+            <summary><WandSparkles size={19} aria-hidden="true" /><span>配色规范</span><ChevronDown size={16} aria-hidden="true" /></summary>
+            <div class="segmented-options">
+                {#each ["2021", "2025"] as spec}
+                    <button type="button" aria-pressed={appearance.spec === spec} class:choice-active={appearance.spec === spec} onclick={() => updateAppearance({ spec: spec as AppearanceSettings["spec"] })}>
+                        {#if appearance.spec === spec}<Check size={16} aria-hidden="true" />{/if}{spec === "2021" ? "MD3 2021" : "M3E 2025"}
+                    </button>
+                {/each}
+            </div>
+            <p class="settings-note">选择上方配色后生效；部分风格沿用 MD3 标准。</p>
+        </details>
+    </div>
+    <div class="settings-section settings-texture" hidden={activeTab !== "appearance"}>
+        <details class="settings-disclosure">
+            <summary><Shapes size={19} aria-hidden="true" /><span>背景纹理</span><span class="current-choice">{backgroundTextures.find(item => item.id === appearance.texture)?.label}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+            <div class="texture-grid">
+                {#each backgroundTextures as texture, index}
+                    {@const TextureIcon = textureIcons[index]}
+                    <button type="button" class="texture-option" aria-pressed={appearance.texture === texture.id} class:choice-active={appearance.texture === texture.id} onclick={() => updateAppearance({ texture: texture.id })}>
+                        <TextureIcon size={23} aria-hidden="true" /><span>{texture.label}</span>{#if appearance.texture === texture.id}<Check size={14} class="choice-check" aria-hidden="true" />{/if}
+                    </button>
+                {/each}
+            </div>
+        </details>
+    </div>
     <!-- Unified banner / fullscreen wallpaper section -->
-    <div class="settings-section settings-background">
+    <div class="settings-section settings-background" hidden={activeTab !== "wallpaper"}>
         <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
             before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
             before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
@@ -675,7 +812,7 @@ onMount(() => {
         {/if}
         <div class="wallpaper-settings-shell rounded-xl p-3 space-y-2.5">
             {#if isWallpaperSwitchable}
-                <div class="wallpaper-mode-grid grid grid-cols-3 gap-1.5">
+                <div class="wallpaper-mode-grid grid grid-cols-2 gap-2">
                     <button
                         type="button"
                         class="wallpaper-mode-button btn-regular rounded-lg py-2.5 px-1.5 flex flex-col items-center justify-center gap-1 transition-all"
@@ -687,6 +824,9 @@ onMount(() => {
                     >
                         <Icon icon="material-symbols:panorama-outline-rounded" class="text-[1.2rem]"></Icon>
                         <span class="text-[0.68rem] font-medium">横幅背景</span>
+                    </button>
+                    <button type="button" class="wallpaper-mode-button btn-regular rounded-lg py-2.5 px-1.5 flex flex-col items-center justify-center gap-1" class:wallpaper-mode-active={wallpaperMode === WALLPAPER_FULLSCREEN} aria-pressed={wallpaperMode === WALLPAPER_FULLSCREEN} onclick={() => switchWallpaperMode(WALLPAPER_FULLSCREEN)}>
+                        <Image size={22} aria-hidden="true" /><span class="text-[0.68rem] font-medium">全屏壁纸</span>
                     </button>
                     <button
                         type="button"
@@ -713,6 +853,16 @@ onMount(() => {
                         <span class="text-[0.68rem] font-medium">纯色背景</span>
                     </button>
                 </div>
+            {/if}
+			{#if wallpaperMode === WALLPAPER_FULLSCREEN}
+                <details open class="settings-disclosure fullscreen-layout">
+                    <summary><Layers size={19} aria-hidden="true" /><span>全屏布局</span><ChevronDown size={16} aria-hidden="true" /></summary>
+                    <div class="segmented-options">
+                        <button type="button" aria-pressed={appearance.fullscreenLayout === "classic"} class:choice-active={appearance.fullscreenLayout === "classic"} onclick={() => updateAppearance({ fullscreenLayout: "classic" })}>{#if appearance.fullscreenLayout === "classic"}<Check size={16} aria-hidden="true" />{/if}经典模式</button>
+                        <button type="button" aria-pressed={appearance.fullscreenLayout === "hero"} class:choice-active={appearance.fullscreenLayout === "hero"} onclick={() => updateAppearance({ fullscreenLayout: "hero" })}>{#if appearance.fullscreenLayout === "hero"}<Check size={16} aria-hidden="true" />{/if}Hero 模式</button>
+                    </div>
+                    <p class="settings-note">经典居中展示首页标题，Hero 保留当前沉浸式布局。</p>
+                </details>
             {/if}
 
             {#if wallpaperMode !== WALLPAPER_NONE}
@@ -842,7 +992,7 @@ onMount(() => {
                     </div>
                 {/if}
 
-                {#if wallpaperMode === WALLPAPER_BANNER && hasWallpaperMotionSettings}
+                {#if (wallpaperMode === WALLPAPER_BANNER || wallpaperMode === WALLPAPER_FULLSCREEN) && hasWallpaperMotionSettings}
                     <div class="wallpaper-motion-settings">
                         <div class="wallpaper-motion-heading">
                             <span>壁纸动态</span>
@@ -905,18 +1055,21 @@ onMount(() => {
                 {/if}
 
                 <p class="m-0 px-1 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
-                    横幅与全屏透明模式共用这一组显示参数；透明度越高，图层越透明（0% 完全显示，100% 完全透明）。
+                    横幅、全屏壁纸与全屏透明模式共用显示参数；透明度越高，图层越透明（0% 完全显示，100% 完全透明）。
                 </p>
             {:else}
                 <p class="m-0 px-1 py-2 text-[0.68rem] leading-relaxed text-(--btn-content) opacity-60">
                     纯色背景不使用壁纸透明度和模糊度。
                 </p>
             {/if}
+            <button type="button" class="effect-toggle-button title-toggle" aria-pressed={bannerTitleEnabled} onclick={toggleBannerTitle}>
+                <Icon icon="material-symbols:title" class="text-[1.25rem]"></Icon><span>首页壁纸标题</span><span class:toggle-on={bannerTitleEnabled} class="settings-toggle" aria-hidden="true"><i></i></span>
+            </button>
         </div>
     </div>
 
     <!-- Dark mode spotlight section -->
-    <div class="settings-section settings-spotlight">
+    <div class="settings-section settings-spotlight" hidden={activeTab !== "effects"}>
         <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
             before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
             before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
@@ -1018,7 +1171,7 @@ onMount(() => {
     <div class="settings-secondary">
     <!-- Theme Color Section -->
     {#if showThemeColor}
-    <div class="settings-section settings-theme">
+    <div class="settings-section settings-theme" hidden={activeTab !== "appearance"}>
         <div class="flex flex-row gap-2 mb-2 items-center justify-between">
             <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3
                 before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
@@ -1032,6 +1185,7 @@ onMount(() => {
                 </button>
             </div>
             <div class="flex gap-1">
+                <input type="color" class="theme-source-color" aria-label="主题色取色器" value={getAppearanceSourceColor(hue, appearance)} oninput={(event) => updateSourceColor(event.currentTarget.value)} />
                 <input
                     id="hueValue"
                     type="number"
@@ -1071,7 +1225,7 @@ onMount(() => {
 
     <!-- Effects Settings Section -->
     {#if isSakuraSwitchable || isRainSwitchable || isSnowSwitchable}
-        <div class="settings-section settings-effects">
+        <div class="settings-section settings-effects" hidden={activeTab !== "effects"}>
             <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
                 before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
@@ -1084,6 +1238,9 @@ onMount(() => {
                 </button>
             </div>
             <div class="space-y-1">
+                <button type="button" class="effect-toggle-button motion-toggle" aria-label="减少动态效果" aria-describedby="display-reduced-motion-note" aria-pressed={appearance.reducedMotion} onclick={() => updateAppearance({ reducedMotion: !appearance.reducedMotion })}>
+                    <CircleOff size={21} aria-hidden="true" /><span>减少动态效果<small id="display-reduced-motion-note">减少动画与装饰特效，保留已有开关状态</small></span><span class:toggle-on={appearance.reducedMotion} class="settings-toggle" aria-hidden="true"><i></i></span>
+                </button>
                 {#if isSakuraSwitchable}
                     <button
                         class="effect-toggle-button w-full btn-regular rounded-lg py-2.5 px-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden"
@@ -1147,7 +1304,7 @@ onMount(() => {
 
     <!-- Layout Switch Section -->
     {#if allowLayoutSwitch}
-        <div class="settings-section settings-layout">
+        <div class="settings-section settings-layout" hidden={activeTab !== "appearance"}>
             <div class="settings-heading flex gap-2 font-bold text-lg text-neutral-900 dark:text-neutral-100 transition relative ml-3 mb-2
                 before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
@@ -1168,7 +1325,7 @@ onMount(() => {
                     class:settings-choice-active={currentLayout === 'list'}
                     aria-pressed={currentLayout === 'list'}
                     disabled={isSwitching}
-                    onclick={switchLayout}
+                    onclick={() => { if (currentLayout !== 'list') switchLayout(); }}
                     title={i18n(I18nKey.postListLayoutList)}
                 >
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -1184,7 +1341,7 @@ onMount(() => {
                     class:settings-choice-active={currentLayout === 'grid'}
                     aria-pressed={currentLayout === 'grid'}
                     disabled={isSwitching}
-                    onclick={switchLayout}
+                    onclick={() => { if (currentLayout !== 'grid') switchLayout(); }}
                     title={i18n(I18nKey.postListLayoutGrid)}
                 >
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -1195,6 +1352,7 @@ onMount(() => {
             </div>
         </div>
     {/if}
+    </div>
     </div>
 </div>
 {/if}
@@ -1209,13 +1367,11 @@ onMount(() => {
         --btn-regular-bg-hover: var(--settings-hover);
         --btn-regular-bg-active: var(--settings-hover);
         --card-bg: var(--settings-panel-bg);
-        display: grid;
-        grid-template-columns: 1.15fr 1fr 1fr;
-        grid-template-areas: "background spotlight secondary";
-        gap: 1.25rem;
-        align-items: start;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
         max-height: min(40rem, calc(100dvh - 10rem));
-        padding: 1.25rem;
+        padding: 1rem;
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-width: thin;
@@ -1224,13 +1380,47 @@ onMount(() => {
         touch-action: pan-y;
     }
 
+    .settings-tabs { position: sticky; top: -1rem; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; padding: .35rem; border: 1px solid var(--settings-border); border-radius: 1rem; background: var(--settings-soft); }
+    .settings-tabs button { display: flex; align-items: center; justify-content: center; gap: .55rem; min-height: 2.75rem; border: 1px solid transparent; border-radius: .75rem; font-size: .9rem; font-weight: 650; }
+    .settings-tabs button:hover { background: var(--settings-hover); }
+    .settings-tabs .tab-active { border-color: var(--settings-border); background: var(--settings-panel-bg); box-shadow: 0 2px 5px rgb(0 0 0 / 6%); }
+    .settings-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+    .settings-body [hidden] { display: none !important; }
     .settings-section { min-width: 0; }
-    .settings-secondary { grid-area: secondary; display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
-    .settings-theme { grid-area: theme; }
-    .settings-background { grid-area: background; }
-    .settings-spotlight { grid-area: spotlight; }
-    .settings-effects { grid-area: effects; }
-    .settings-layout { grid-area: layout; }
+    .settings-secondary { display: contents; }
+    .settings-theme { order: 0; grid-column: 1 / -1; padding: 1rem; border: 1px solid var(--settings-border); border-radius: 1rem; }
+    .settings-palette { order: 1; grid-column: 1 / -1; }
+    .settings-spec { order: 2; }
+    .settings-layout { order: 3; padding: .75rem; border: 1px solid var(--settings-border); border-radius: 1rem; }
+    .settings-texture { order: 4; grid-column: 1 / -1; }
+    .settings-background { grid-column: 1 / -1; }
+    .settings-effects { order: 0; grid-column: 1 / -1; }
+    .settings-spotlight { order: 1; grid-column: 1 / -1; padding-top: .75rem; border-top: 1px solid var(--settings-border); }
+    .settings-disclosure { border: 1px solid var(--settings-border); border-radius: 1rem; background: var(--settings-panel-bg); overflow: hidden; }
+    .settings-disclosure summary { display: flex; align-items: center; gap: .55rem; min-height: 2.75rem; padding: .65rem .85rem; cursor: pointer; list-style: none; font-size: .9rem; font-weight: 650; }
+    .settings-disclosure summary::-webkit-details-marker { display: none; }
+    .settings-disclosure summary > span:first-of-type { flex: 1; }
+    .settings-disclosure summary :global(svg:last-child) { flex-shrink: 0; transition: transform 180ms ease; }
+    .settings-disclosure[open] summary :global(svg:last-child) { transform: rotate(180deg); }
+    .settings-disclosure summary:hover { background: var(--settings-soft); }
+    .settings-disclosure summary:focus-visible { outline: 2px solid var(--settings-accent); outline-offset: -3px; border-radius: .9rem; }
+    .current-choice { color: var(--settings-muted); font-size: .72rem; font-weight: 400; }
+    .palette-grid, .texture-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; padding: .2rem .75rem .75rem; }
+    .palette-option, .texture-option { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .55rem; min-height: 4.25rem; padding: .65rem .3rem; border: 1px solid transparent; border-radius: .75rem; font-size: .82rem; background: var(--settings-soft); }
+    .palette-option:hover, .texture-option:hover { background: var(--settings-hover); }
+    #display-setting .choice-active { border-color: var(--settings-accent); background: var(--settings-hover); font-weight: 650; }
+    .palette-swatches { display: flex; gap: .28rem; }
+    .palette-swatches i { display: block; width: .85rem; height: .85rem; border: 1px solid rgb(0 0 0 / 10%); border-radius: 50%; }
+    .choice-check { position: absolute; top: .4rem; right: .4rem; }
+    .original-palette { display: flex; align-items: center; justify-content: center; gap: .4rem; width: calc(100% - 1.5rem); min-height: 2.75rem; margin: 0 .75rem .75rem; border: 1px dashed var(--settings-border); border-radius: .65rem; font-size: .78rem; }
+    .original-palette:hover { background: var(--settings-soft); }
+    .segmented-options { display: flex; gap: .3rem; margin: .2rem .75rem .75rem; padding: .3rem; border-radius: .75rem; background: var(--settings-soft); }
+    .segmented-options button { display: flex; flex: 1; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem; padding: .4rem .2rem; border: 1px solid transparent; border-radius: .55rem; font-size: .78rem; white-space: nowrap; }
+    #display-setting .settings-note { margin: 0; padding: 0 .85rem .75rem; font-size: .72rem; line-height: 1.6; }
+    .theme-source-color { width: 2.75rem; height: 2.75rem; padding: .2rem; border: 1px solid var(--settings-border); border-radius: 50%; background: var(--settings-panel-bg); cursor: pointer; }
+    .theme-source-color::-webkit-color-swatch-wrapper { padding: 0; }
+    .theme-source-color::-webkit-color-swatch { border: 0; border-radius: 50%; }
+    .theme-source-color::-moz-color-swatch { border: 0; border-radius: 50%; }
 
     #display-setting .settings-heading { color: var(--settings-ink); font-size: 1rem; line-height: 1.75rem; }
     #display-setting button { color: var(--settings-ink) !important; cursor: pointer; transition: background-color 180ms ease, border-color 180ms ease; }
@@ -1257,7 +1447,8 @@ onMount(() => {
     .wallpaper-picker-entry span { flex: 1; text-align: left; }
     .wallpaper-picker-entry:hover { background: var(--settings-hover); }
     .wallpaper-mode-grid { padding: 0; background: transparent; }
-    .wallpaper-mode-button { min-height: 4rem; border: 1px solid transparent; opacity: 1 !important; }
+    .wallpaper-mode-button { min-height: 4.5rem; border: 1px solid transparent; opacity: 1 !important; }
+    #display-setting .wallpaper-mode-button span { font-size: .82rem; }
     #display-setting .wallpaper-mode-active,
     #display-setting .settings-choice-active { border: 1px solid var(--settings-accent); background: var(--settings-hover); opacity: 1; }
     #display-setting .settings-layout button { border: 1px solid var(--settings-border); }
@@ -1266,8 +1457,12 @@ onMount(() => {
     .wallpaper-control-card { border: 1px solid var(--settings-border); background: var(--settings-panel-bg); }
     .wallpaper-control-card:focus-within { border-color: var(--settings-accent); }
     .wallpaper-motion-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.8rem; font-weight: 650; }
-    .effect-toggle-button { min-height: 2.65rem; border: 1px solid transparent; }
+    .effect-toggle-button { min-height: 3rem; border: 1px solid transparent; }
     .effect-toggle-button.effect-toggle-active { border-color: var(--settings-border); }
+    .motion-toggle, .title-toggle { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .8rem; border-color: var(--settings-border); border-radius: .8rem; background: var(--settings-soft); text-align: left; font-size: .9rem; font-weight: 650; }
+    .motion-toggle { margin-bottom: .65rem; }
+    .motion-toggle > span:first-of-type, .title-toggle > span:first-of-type { flex: 1; }
+    .motion-toggle small { display: block; margin-top: .25rem; color: var(--settings-muted); font-size: .7rem; line-height: 1.5; font-weight: 400; }
 
     .settings-toggle {
         position: relative;
@@ -1317,18 +1512,20 @@ onMount(() => {
     #display-setting #colorSlider::-webkit-slider-thumb { width: 0.6rem; height: 1.15rem; border: 2px solid #fff; border-radius: 0.2rem; background: #18181b; }
     #display-setting #colorSlider::-moz-range-thumb { width: 0.6rem; height: 1.15rem; border: 2px solid #fff; border-radius: 0.2rem; background: #18181b; }
 
-    @media (max-width: 959px) {
-        #display-setting { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "theme theme" "background spotlight" "effects layout"; }
-        .settings-secondary { display: contents; }
-    }
     @media (max-width: 767.98px) {
         #display-setting { max-height: none; overflow: visible; }
-        #display-setting .settings-heading > button { min-width: 2.75rem; min-height: 2.75rem; }
-        #display-setting :is(input[type="number"], input[type="color"]) { min-height: 2.75rem; font-size: 1rem; }
-        #display-setting input[type="range"] { min-height: 2.75rem; }
+        .settings-tabs { top: 4.1rem; }
+        .settings-body { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+        #display-setting button, .settings-disclosure summary { min-height: 44px; }
+        #display-setting .settings-heading > button { min-width: 44px; }
+        #display-setting :is(input[type="number"], input[type="color"]) { min-height: 44px; font-size: 1rem; }
+        #display-setting input[type="range"] { min-height: 44px; }
+        .numeric-value-field { min-height: 44px; }
     }
     @media (max-width: 599px) {
-        #display-setting { grid-template-columns: minmax(0, 1fr); grid-template-areas: "theme" "background" "spotlight" "effects" "layout"; gap: 1.2rem; padding: 1rem; }
+        #display-setting { gap: .8rem; padding: .85rem; }
+        .settings-theme { padding: .75rem; }
+        .palette-grid, .texture-grid { gap: .35rem; padding-inline: .55rem; }
     }
     @media (prefers-reduced-motion: reduce) {
         #display-setting button, .settings-toggle, .settings-toggle i { transition: none; }

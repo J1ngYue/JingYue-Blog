@@ -103,7 +103,7 @@ const announcementSecondary =
 					<Icon is:inline name="material-symbols:close-rounded" />
 				</button>
 			</div>
-			<DisplaySettings client:load />
+			<DisplaySettings client:only="svelte" />
 		</div>
 	</div>
 </div>
@@ -137,7 +137,6 @@ const announcementSecondary =
 			root?.querySelectorAll<HTMLButtonElement>("[data-navbar-utility-search]") || [],
 		);
 		const closeButton = root?.querySelector<HTMLButtonElement>("[data-navbar-utility-close]");
-		const settingsPanel = root?.querySelector<HTMLElement>("#display-setting");
 		const settingsButton = root?.querySelector<HTMLButtonElement>("#display-settings-switch");
 		const quickView = root?.querySelector<HTMLElement>("[data-navbar-utility-quick-view]");
 		const settingsView = root?.querySelector<HTMLElement>("[data-navbar-utility-settings-view]");
@@ -190,7 +189,12 @@ const announcementSecondary =
 			settingsView.hidden = !nextOpen;
 			settingsButton.setAttribute("aria-expanded", String(nextOpen));
 			panel.setAttribute("aria-label", nextOpen ? "显示设置" : "快捷功能");
+			const settingsPanel = root.querySelector<HTMLElement>("#display-setting");
 			settingsPanel?.classList.toggle("float-panel-closed", !nextOpen);
+			if (nextOpen) {
+				panel.scrollTo({ top: 0 });
+				settingsPanel?.scrollTo({ top: 0 });
+			}
 			if (open) syncPanelPosition();
 		};
 
@@ -401,9 +405,13 @@ const announcementSecondary =
     }
     .navbar-utility[data-open="true"] .navbar-utility__panel { opacity: 1; pointer-events: auto; transform: translate3d(0, 0, 0); visibility: visible; transition-delay: 0s; }
     .navbar-utility[data-open="true"][data-settings-open="true"] .navbar-utility__panel {
+        width: min(38rem, calc(100vw - 2rem));
+        border: 1px solid var(--settings-border);
+        border-radius: 1.4rem;
         transform-origin: var(--settings-pointer-left, 100%) top;
         animation: navbar-settings-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
     }
+    .navbar-utility[data-settings-open="true"] .navbar-utility__pointer { border-width: 1px 0 0 1px; border-color: var(--settings-border); }
     @keyframes navbar-settings-enter {
         from { opacity: 0; transform: translate3d(0, -0.5rem, 0) scale(0.985); }
         to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }

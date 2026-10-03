@@ -54,7 +54,7 @@
 			const target = Math.max(0, Math.min(1, visualScroll / maxScroll)) * travel;
 			const elapsed = lastTime ? Math.min(time - lastTime, 64) : 16;
 			lastTime = time;
-			position = sceneAnimating || dragging || reducedMotion.matches
+			position = sceneAnimating || dragging || reducedMotion.matches || html.dataset.reduceMotion === "true"
 				? target
 				: position + (target - position) * (1 - Math.exp(-elapsed / 55));
 			if (Math.abs(target - position) < .08) position = target;
@@ -109,7 +109,7 @@
 			if (!(event.key in offsets)) return;
 			event.preventDefault();
 			window.dispatchEvent(new Event("firefly:scrollbar-drag-start"));
-			window.scrollBy({ top: offsets[event.key], behavior: reducedMotion.matches ? "instant" : "smooth" });
+			window.scrollBy({ top: offsets[event.key], behavior: reducedMotion.matches || html.dataset.reduceMotion === "true" ? "instant" : "smooth" });
 		});
 		window.addEventListener("scroll", schedule, { passive: true });
 		window.addEventListener("resize", measure, { passive: true });

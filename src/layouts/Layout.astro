@@ -369,6 +369,12 @@ const siteLang = lang.replace("_", "-");
       // Load the hue from local storage
       const hue = localStorage.getItem("hue") || configHue;
       document.documentElement.style.setProperty("--hue", hue);
+      try {
+        const appearance = JSON.parse(localStorage.getItem("jingyueAppearance") || "{}");
+        document.documentElement.dataset.backgroundTexture = appearance.texture || "none";
+        document.documentElement.dataset.fullscreenLayout = appearance.fullscreenLayout === "classic" ? "classic" : "hero";
+        document.documentElement.dataset.reduceMotion = String(appearance.reducedMotion === true || matchMedia("(prefers-reduced-motion: reduce)").matches);
+      } catch { /* Ignore malformed visitor preferences. */ }
 
       // 设置卡片透明度（横幅与全屏透明模式共用），优先使用用户自定义值
       const storedCardOpacity = localStorage.getItem("overlayCardOpacity");
@@ -512,18 +518,13 @@ const siteLang = lang.replace("_", "-");
       let wallpaperMode = isWallpaperSwitchable
         ? localStorage.getItem(wallpaperModeStorageKey) || defaultWallpaperMode
         : defaultWallpaperMode;
-      if (wallpaperMode === WALLPAPER_FULLSCREEN) {
-        wallpaperMode = WALLPAPER_BANNER;
-        localStorage.setItem(wallpaperModeStorageKey, wallpaperMode);
-      }
       if (
         wallpaperMode !== WALLPAPER_BANNER &&
+        wallpaperMode !== WALLPAPER_FULLSCREEN &&
         wallpaperMode !== WALLPAPER_OVERLAY &&
         wallpaperMode !== WALLPAPER_NONE
       ) {
-        wallpaperMode = defaultWallpaperMode === WALLPAPER_FULLSCREEN
-          ? WALLPAPER_BANNER
-          : defaultWallpaperMode;
+        wallpaperMode = defaultWallpaperMode;
       }
 
       // 设置data-wallpaper-mode属性
@@ -820,6 +821,7 @@ const siteLang = lang.replace("_", "-");
 
 
     <!-- Sakura Effect -->
+    <div class="appearance-texture-layer" aria-hidden="true"></div>
     <SakuraEffect />
     <RainEffect />
     <SnowEffect />
@@ -2135,6 +2137,8 @@ function disableAnimation() {
   // Initialize wallpaper mode
   import { initWallpaperMode, initThemeListener } from "@/utils/setting-utils";
   import { initIconLoader } from "@/utils/icon-loader";
+  import { initAppearanceSettings } from "@/utils/appearance-settings";
+  initAppearanceSettings();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       syncHomeLandingLayout();
