@@ -124,7 +124,7 @@ const posts = (await getSortedPosts())
 				if (!popover.matches(":popover-open")) return;
 				const anchor = activity.getBoundingClientRect();
 				const bounds = popover.getBoundingClientRect();
-				popover.style.left = `${Math.max(16, Math.min(anchor.left, window.innerWidth - bounds.width - 16))}px`;
+				popover.style.left = `${Math.max(16, Math.min(card.getBoundingClientRect().left, window.innerWidth - bounds.width - 16))}px`;
 				const below = anchor.bottom + 12;
 				popover.style.top = `${Math.max(16, Math.min(below + bounds.height <= window.innerHeight - 16 ? below : anchor.top - bounds.height - 12, window.innerHeight - bounds.height - 16))}px`;
 			};

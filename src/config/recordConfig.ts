@@ -21,6 +21,15 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.129",
+		date: "2026-10-03",
+		time: "18:14",
+		type: "fix",
+		title: "年度贡献浮层与资料卡左端对齐",
+		summary: "年度贡献大图改为贴齐个人资料卡左边缘，不再向右缩进。",
+		changes: ["保留浮层大小、固定与年份切换，以及窄屏边界保护。"],
+	},
+	{
 		version: "v6.14.128",
 		date: "2026-10-03",
 		time: "16:00",
