@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.128",
+		date: "2026-10-03",
+		time: "16:00",
+		type: "feature",
+		title: "GitHub 绿色方格与可固定的年度贡献浮层",
+		summary:
+			"当月每天一格，按贡献次数显示绿色深浅；悬浮预览独立全年大图，单击固定后切换真实年份。",
+		changes: [
+			"取消悬浮切换本月与全年，月格自适应28至31天，保持正方形与紧凑资料卡。",
+			"年度浮层完整显示一至十二月，支持历史年份、触屏点按、键盘与关闭操作，沿用GitHub浅深色绿阶。",
+		],
+	},
+	{
 		version: "v6.14.127",
 		date: "2026-10-03",
 		time: "00:15",

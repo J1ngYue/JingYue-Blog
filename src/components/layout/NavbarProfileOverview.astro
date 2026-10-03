@@ -3,10 +3,12 @@ import { Icon } from "astro-icon/components";
 import { siteConfig } from "@/config";
 import { githubUsername } from "@/config/profileConfig";
 import { getSortedPosts } from "@/utils/content-utils";
+import { getGithubContributionYears } from "@/utils/home-activity";
 import { profileDateKey } from "@/utils/profile-calendar";
 import { getPostUrlBySlug, url } from "@/utils/url-utils";
 
 const timeZone = siteConfig.timezone || "Asia/Shanghai";
+const githubYears = await getGithubContributionYears(githubUsername);
 const posts = (await getSortedPosts())
 	.filter((post) => !post.data.draft)
 	.map((post) => ({
@@ -33,10 +35,9 @@ const posts = (await getSortedPosts())
 			))}
 		</div>
 		<div class="navbar-profile-card__activity-pane navbar-profile-card__github" data-profile-pane="github" inert>
-			<div class="navbar-profile-card__github-heading"><span data-profile-github-summary>GitHub 活动加载中…</span><button type="button" data-profile-github-year aria-expanded="false" aria-controls="profile-github-year">全年</button></div>
-			<div class="navbar-profile-card__github-month" data-profile-github-month role="group" aria-label="本月 GitHub 活动"></div>
-			<div id="profile-github-year" class="navbar-profile-card__github-year" data-profile-github-year-grid role="group" aria-label="过去一年 GitHub 活动，左右滚动查看" tabindex="0" hidden></div>
-			<p class="navbar-profile-card__github-hint" data-profile-github-hint>悬浮查看全年 · 点击标题切换活动</p>
+			<div class="navbar-profile-card__github-heading"><span data-profile-github-summary>GitHub 活动加载中…</span><button type="button" data-profile-github-year aria-expanded="false" aria-controls="profile-github-popover">全年大图</button></div>
+			<div class="navbar-profile-card__github-month" data-profile-github-month role="button" tabindex="0" aria-label="本月 GitHub 活动，点击固定全年大图" aria-expanded="false" aria-controls="profile-github-popover"></div>
+			<p class="navbar-profile-card__github-hint" data-profile-github-hint>悬浮预览全年 · 单击固定并选择年份</p>
 		</div>
 		</div>
 	</div>
@@ -59,16 +60,29 @@ const posts = (await getSortedPosts())
 			<div class="navbar-profile-card__post-list" data-profile-post-list></div>
 		</div>
 	</div>
+	<section id="profile-github-popover" class="navbar-profile-card__github-popover" data-profile-github-popover popover="manual" role="dialog" aria-label="GitHub 年度贡献" tabindex="-1">
+		<header><div><strong>GitHub 年度贡献</strong><p data-profile-github-year-summary aria-live="polite">活动加载中…</p></div><div class="navbar-profile-card__github-actions"><select data-profile-github-year-select aria-label="选择贡献年份" disabled>{githubYears.map((year) => <option value={year}>{year} 年</option>)}</select><button type="button" data-profile-github-close aria-label="关闭年度贡献">×</button></div></header>
+		<div class="navbar-profile-card__github-year-scroll" tabindex="0" role="group" aria-label="全年贡献热力图，可左右滚动"><div class="navbar-profile-card__github-year-months" data-profile-github-year-months></div><div class="navbar-profile-card__github-weeks" data-profile-github-year-grid></div></div>
+		<footer><span data-profile-github-pin-hint>单击固定后可选择年份</span><span class="navbar-profile-card__github-legend" aria-label="绿色越深，贡献次数越多">少 {Array.from({ length: 5 }, (_, level) => <i class="navbar-profile-card__github-cell" data-level={level}></i>)} 多</span></footer>
+	</section>
 </navbar-profile-overview>
 
 <script>
 	import type { ActivityCalendar } from "@/utils/home-activity";
 	import { getProfileCountdowns, profileDateKey } from "@/utils/profile-calendar";
+	import { getGithubMonthDays } from "@/utils/profile-github";
 
 	let githubRequest: Promise<ActivityCalendar | null> | undefined;
 	const loadGithubActivity = () => githubRequest ??= fetch("/api/home-activity.json", { signal: AbortSignal.timeout(10_000) })
 		.then(async (response) => response.ok ? (await response.json()).github as ActivityCalendar : null)
 		.catch(() => null);
+	const yearRequests = new Map<string, Promise<ActivityCalendar | null>>();
+	const loadGithubYear = (year: string) => {
+		if (!yearRequests.has(year)) yearRequests.set(year, fetch(`/api/github-activity/${year}.json`, { signal: AbortSignal.timeout(10_000) })
+			.then(async (response) => response.ok ? await response.json() as ActivityCalendar : null)
+			.catch(() => null).then((data) => { if (!data?.available) yearRequests.delete(year); return data; }));
+		return yearRequests.get(year)!;
+	};
 
 	class NavbarProfileOverview extends HTMLElement {
 		private cleanup?: () => void;
@@ -86,7 +100,13 @@ const posts = (await getSortedPosts())
 			const toggle = activity.querySelector<HTMLButtonElement>("[data-profile-activity-toggle]")!;
 			const yearButton = activity.querySelector<HTMLButtonElement>("[data-profile-github-year]")!;
 			const monthGrid = activity.querySelector<HTMLElement>("[data-profile-github-month]")!;
-			const yearGrid = activity.querySelector<HTMLElement>("[data-profile-github-year-grid]")!;
+			const githubPane = activity.querySelector<HTMLElement>("[data-profile-pane=github]")!;
+			const popover = this.querySelector<HTMLElement>("[data-profile-github-popover]")!;
+			const yearGrid = popover.querySelector<HTMLElement>("[data-profile-github-year-grid]")!;
+			const yearMonths = popover.querySelector<HTMLElement>("[data-profile-github-year-months]")!;
+			const yearSelect = popover.querySelector<HTMLSelectElement>("[data-profile-github-year-select]")!;
+			const yearSummary = popover.querySelector<HTMLElement>("[data-profile-github-year-summary]")!;
+			const pinHint = popover.querySelector<HTMLElement>("[data-profile-github-pin-hint]")!;
 			const summary = activity.querySelector<HTMLElement>("[data-profile-github-summary]")!;
 			const hint = activity.querySelector<HTMLElement>("[data-profile-github-hint]")!;
 			const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -94,72 +114,113 @@ const posts = (await getSortedPosts())
 			let githubLoaded = false;
 			let rotationTimer = 0;
 			let hovered = false;
-			let expanded = false;
-			let monthTotal = 0;
-			let monthAvailable = false;
+			let pinned = false;
+			let closeTimer = 0;
+			let yearRequestId = 0;
+			let renderedYear = "";
 			let dateKey = "";
 			let groups = new Map<string, typeof posts>();
-			const setExpanded = (value: boolean) => {
-				expanded = value;
-				monthGrid.hidden = value;
-				yearGrid.hidden = !value;
-				yearButton.setAttribute("aria-expanded", String(value));
-				yearButton.textContent = value ? "本月" : "全年";
-				if (github?.available) summary.textContent = value ? `过去一年 · ${github.total} 次贡献` : monthAvailable ? `${Number(dateKey.slice(5, 7))}月 · ${monthTotal} 次贡献` : "本月数据尚未更新";
+			const positionPopover = () => {
+				if (!popover.matches(":popover-open")) return;
+				const anchor = activity.getBoundingClientRect();
+				const bounds = popover.getBoundingClientRect();
+				popover.style.left = `${Math.max(16, Math.min(anchor.left, window.innerWidth - bounds.width - 16))}px`;
+				const below = anchor.bottom + 12;
+				popover.style.top = `${Math.max(16, Math.min(below + bounds.height <= window.innerHeight - 16 ? below : anchor.top - bounds.height - 12, window.innerHeight - bounds.height - 16))}px`;
+			};
+			const closePopover = () => {
+				window.clearTimeout(closeTimer);
+				if (popover.matches(":popover-open")) popover.hidePopover();
+				pinned = false;
+				delete popover.dataset.pinned;
+				yearSelect.disabled = true;
+				yearButton.setAttribute("aria-expanded", "false");
+				monthGrid.setAttribute("aria-expanded", "false");
+			};
+			const appendDays = (grid: HTMLElement, days: ActivityCalendar["days"]) => {
+				for (const day of days) {
+					const cell = document.createElement("span");
+					cell.className = "navbar-profile-card__github-cell";
+					cell.dataset.level = String(day.level);
+					cell.dataset.date = day.date;
+					cell.title = day.isOutsideRange ? `${day.date} · 暂无数据` : `${day.date} · ${day.count} 次贡献`;
+					cell.setAttribute("aria-label", cell.title);
+					if (grid === monthGrid) cell.textContent = String(Number(day.date.slice(8)));
+					if (day.isOutsideRange) cell.dataset.outside = "true";
+					grid.append(cell);
+				}
+			};
+			const renderYear = async () => {
+				const year = yearSelect.value;
+				if (renderedYear === year) return;
+				const requestId = ++yearRequestId;
+				renderedYear = "";
+				yearSummary.textContent = `${year} 年 · 加载中…`;
+				yearGrid.replaceChildren();
+				yearMonths.replaceChildren();
+				popover.setAttribute("aria-busy", "true");
+				const data = await loadGithubYear(year);
+				if (controller.signal.aborted || requestId !== yearRequestId) return;
+				popover.setAttribute("aria-busy", "false");
+				if (!data?.available) {
+					yearSummary.textContent = `${year} 年数据暂不可用，请稍后重新打开`;
+					return;
+				}
+				renderedYear = year;
+				const weeks = String(Math.ceil(data.days.length / 7));
+				yearGrid.style.setProperty("--github-weeks", weeks);
+				yearMonths.style.setProperty("--github-weeks", weeks);
+				appendDays(yearGrid, data.days);
+				data.days.forEach((day, index) => {
+					if (!day.date.startsWith(year) || day.date.slice(8) !== "01") return;
+					const label = document.createElement("span");
+					label.textContent = `${Number(day.date.slice(5, 7))}月`;
+					label.style.gridColumn = String(Math.floor(index / 7) + 1);
+					yearMonths.append(label);
+				});
+				yearSummary.textContent = `${year} 年 · ${data.total} 次贡献`;
+				positionPopover();
+			};
+			const openPopover = (fix = false) => {
+				if (activity.dataset.profileActivity !== "github" || !github?.available) return;
+				window.clearTimeout(closeTimer);
+				if (fix) {
+					pinned = true;
+					popover.dataset.pinned = "true";
+					card.closest<HTMLElement>(".navbar-brand-shell")!.dataset.profileOpen = "true";
+				}
+				yearSelect.disabled = !pinned;
+				pinHint.textContent = pinned ? "已固定 · 可选择年份 · Esc 关闭" : "单击固定后可选择年份";
+				if (!popover.matches(":popover-open")) popover.showPopover();
+				yearButton.setAttribute("aria-expanded", "true");
+				monthGrid.setAttribute("aria-expanded", "true");
+				positionPopover();
+				void renderYear();
+				syncRotation();
+			};
+			const schedulePopoverClose = () => {
+				window.clearTimeout(closeTimer);
+				closeTimer = window.setTimeout(() => {
+					if (!pinned && !githubPane.matches(":hover") && !popover.matches(":hover") && !popover.contains(document.activeElement)) {
+						closePopover();
+						syncRotation();
+					}
+				}, 150);
 			};
 			const renderGithub = () => {
 				monthGrid.replaceChildren();
-				yearGrid.replaceChildren();
 				if (!github?.available) {
 					summary.textContent = "GitHub 活动暂不可用";
 					hint.textContent = "可通过右上角链接查看 GitHub";
 					yearButton.disabled = true;
 					return;
 				}
-				const month = dateKey.slice(0, 7);
-				const byDate = new Map(github.days.map((day) => [day.date, day]));
-				const monthLength = new Date(Date.UTC(Number(dateKey.slice(0, 4)), Number(dateKey.slice(5, 7)), 0)).getUTCDate();
-				const currentDays = Array.from({ length: monthLength }, (_, index) => {
-					const date = `${month}-${String(index + 1).padStart(2, "0")}`;
-					return byDate.get(date) ?? { date, count: 0, level: 0 as const, isOutsideRange: true };
-				});
-				monthAvailable = currentDays.some((day) => !day.isOutsideRange);
-				monthTotal = currentDays.reduce((sum, day) => sum + (day.isOutsideRange ? 0 : day.count), 0);
-				const appendDays = (grid: HTMLElement, days: ActivityCalendar["days"]) => {
-					for (const day of days) {
-						const cell = document.createElement("span");
-						cell.className = "navbar-profile-card__github-cell";
-						cell.dataset.level = String(day.level);
-						cell.dataset.date = day.date;
-						cell.title = day.isOutsideRange ? day.date : `${day.date} · ${day.count} 次贡献`;
-						cell.setAttribute("aria-label", cell.title);
-						if (grid === monthGrid) cell.textContent = String(Number(day.date.slice(8)));
-						if (day.isOutsideRange) cell.dataset.outside = "true";
-						grid.append(cell);
-					}
-				};
-				const weekday = new Date(`${currentDays[0].date}T00:00:00Z`).getUTCDay();
-				for (let i = 0; i < weekday; i++) {
-					const spacer = document.createElement("span");
-					spacer.setAttribute("aria-hidden", "true");
-					monthGrid.append(spacer);
-				}
+				const currentDays = getGithubMonthDays(github, dateKey);
+				const monthTotal = currentDays.reduce((sum, day) => sum + (day.isOutsideRange ? 0 : day.count), 0);
 				appendDays(monthGrid, currentDays);
-				for (let offset = 0; offset < github.days.length; offset += 27 * 7) {
-					const days = github.days.slice(offset, offset + 27 * 7);
-					const section = document.createElement("div");
-					const range = document.createElement("span");
-					range.className = "navbar-profile-card__github-range";
-					range.textContent = `${days[0].date.slice(5).replace("-", ".")} — ${days[days.length - 1].date.slice(5).replace("-", ".")}`;
-					const weeks = document.createElement("div");
-					weeks.className = "navbar-profile-card__github-weeks";
-					weeks.style.setProperty("--github-weeks", String(Math.ceil(days.length / 7)));
-					appendDays(weeks, days);
-					section.append(range, weeks);
-					yearGrid.append(section);
-				}
-				hint.textContent = `年度范围 ${github.dataStart} — ${github.dataEnd}`;
-				setExpanded(expanded);
+				summary.textContent = `${Number(dateKey.slice(5, 7))}月 · ${monthTotal} 次贡献`;
+				hint.textContent = "悬浮预览全年 · 单击固定并选择年份";
+				if (githubPane.matches(":hover")) openPopover();
 			};
 			const setActivity = (view: "articles" | "github") => {
 				activity.dataset.profileActivity = view;
@@ -168,12 +229,12 @@ const posts = (await getSortedPosts())
 				toggle.setAttribute("aria-label", view === "articles" ? "切换到 GitHub 活动" : "切换到文章活动");
 				activity.querySelector<HTMLElement>("[data-profile-archive-link]")!.hidden = view !== "articles";
 				activity.querySelector<HTMLElement>("[data-profile-github-link]")!.hidden = view !== "github";
-				setExpanded(view === "github" && hovered);
+				if (view === "articles") closePopover();
 			};
 			const syncRotation = () => {
 				window.clearTimeout(rotationTimer);
 				const open = card.getAttribute("aria-hidden") === "false" || getComputedStyle(card).visibility === "visible";
-				if (!open) setExpanded(false);
+				if (!open) closePopover();
 				if (open && !githubLoaded) {
 					githubLoaded = true;
 					void loadGithubActivity().then((data) => {
@@ -182,7 +243,7 @@ const posts = (await getSortedPosts())
 						renderGithub();
 					});
 				}
-				if (!open || document.hidden || hovered || expanded || activity.querySelector(":focus-visible") || !postPane.hidden || motion.matches) return;
+				if (!open || document.hidden || hovered || popover.matches(":popover-open") || activity.querySelector(":focus-visible") || !postPane.hidden || motion.matches) return;
 				rotationTimer = window.setTimeout(() => {
 					if (getComputedStyle(card).visibility === "visible" && !document.hidden) setActivity(activity.dataset.profileActivity === "articles" ? "github" : "articles");
 					syncRotation();
@@ -193,22 +254,45 @@ const posts = (await getSortedPosts())
 				setActivity(activity.dataset.profileActivity === "articles" ? "github" : "articles");
 				syncRotation();
 			}, { signal: controller.signal });
-			yearButton.addEventListener("click", () => { setExpanded(!expanded); syncRotation(); }, { signal: controller.signal });
+			yearButton.addEventListener("click", () => { openPopover(true); yearSelect.focus(); }, { signal: controller.signal });
+			monthGrid.addEventListener("click", () => { openPopover(true); popover.focus(); }, { signal: controller.signal });
+			monthGrid.addEventListener("keydown", (event) => {
+				if (event.key !== "Enter" && event.key !== " ") return;
+				event.preventDefault(); openPopover(true); popover.focus();
+			}, { signal: controller.signal });
+			githubPane.addEventListener("pointerenter", (event) => {
+				if (event.pointerType === "mouse" || event.pointerType === "pen") openPopover();
+			}, { signal: controller.signal });
+			githubPane.addEventListener("pointerleave", schedulePopoverClose, { signal: controller.signal });
+			popover.addEventListener("pointerenter", () => window.clearTimeout(closeTimer), { signal: controller.signal });
+			popover.addEventListener("pointerleave", schedulePopoverClose, { signal: controller.signal });
+			popover.addEventListener("click", (event) => {
+				if (!(event.target as Element).closest("[data-profile-github-close]")) openPopover(true);
+			}, { signal: controller.signal });
+			popover.querySelector("[data-profile-github-close]")!.addEventListener("click", () => { closePopover(); yearButton.focus(); syncRotation(); }, { signal: controller.signal });
+			yearSelect.addEventListener("change", () => { void renderYear(); }, { signal: controller.signal });
+			document.addEventListener("keydown", (event) => {
+				if (event.key !== "Escape" || !popover.matches(":popover-open")) return;
+				event.preventDefault(); event.stopImmediatePropagation(); closePopover(); yearButton.focus(); syncRotation();
+			}, { signal: controller.signal, capture: true });
+			document.addEventListener("pointerdown", (event) => {
+				if (popover.matches(":popover-open") && !popover.contains(event.target as Node) && !githubPane.contains(event.target as Node)) { closePopover(); syncRotation(); }
+			}, { signal: controller.signal });
+			window.addEventListener("resize", positionPopover, { signal: controller.signal });
+			window.addEventListener("scroll", positionPopover, { signal: controller.signal, capture: true });
 			activity.addEventListener("pointerenter", (event) => {
 				if (event.pointerType !== "mouse" && event.pointerType !== "pen") return;
 				hovered = true;
-				if (activity.dataset.profileActivity === "github") setExpanded(true);
 				syncRotation();
 			}, { signal: controller.signal });
 			activity.addEventListener("pointerleave", () => {
 				hovered = false;
-				setExpanded(false);
 				syncRotation();
 			}, { signal: controller.signal });
 			activity.addEventListener("focusin", syncRotation, { signal: controller.signal });
 			activity.addEventListener("focusout", (event) => {
 				if (activity.contains(event.relatedTarget as Node | null)) return;
-				setExpanded(false);
+				schedulePopoverClose();
 				syncRotation();
 			}, { signal: controller.signal });
 			const observer = new MutationObserver(syncRotation);
@@ -287,7 +371,7 @@ const posts = (await getSortedPosts())
 			const timer = window.setInterval(update, 60_000);
 			update();
 			syncRotation();
-			this.cleanup = () => { controller.abort(); observer.disconnect(); window.clearInterval(timer); window.clearTimeout(rotationTimer); };
+			this.cleanup = () => { closePopover(); controller.abort(); observer.disconnect(); window.clearInterval(timer); window.clearTimeout(rotationTimer); };
 		}
 		disconnectedCallback() { this.cleanup?.(); }
 	}

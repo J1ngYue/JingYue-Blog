@@ -1,6 +1,7 @@
 import { getCollection } from "astro:content";
 import { gitActivityByDate } from "@/config/recordSync";
 import { siteConfig } from "@/config/siteConfig";
+import { getGithubYearWindow } from "./profile-github";
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 const GITHUB_PUBLIC_CONTRIBUTIONS_URL =
@@ -215,9 +216,10 @@ function getGithubToken(): string {
 async function getPublicGithubActivityCalendar(
 	username: string,
 	window: CalendarWindow,
+	year?: number,
 ): Promise<ActivityCalendar> {
 	const response = await fetch(
-		`${GITHUB_PUBLIC_CONTRIBUTIONS_URL}/${encodeURIComponent(username)}?y=last`,
+		`${GITHUB_PUBLIC_CONTRIBUTIONS_URL}/${encodeURIComponent(username)}?y=${year ?? "last"}`,
 		{ headers: { Accept: "application/json" } },
 	);
 	if (!response.ok) {
@@ -250,13 +252,17 @@ async function getPublicGithubActivityCalendar(
 
 export async function getGithubActivityCalendar(
 	username: string,
+	year?: number,
 ): Promise<ActivityCalendar> {
-	const window = getCalendarWindow();
+	const window =
+		year === undefined
+			? getCalendarWindow()
+			: getGithubYearWindow(year, toDateKey(new Date()));
 	const token = getGithubToken();
 
 	if (!token) {
 		try {
-			return await getPublicGithubActivityCalendar(username, window);
+			return await getPublicGithubActivityCalendar(username, window, year);
 		} catch (error) {
 			console.warn(
 				`[home] Failed to load public GitHub contributions for ${username}:`,
@@ -343,4 +349,43 @@ export async function getGithubActivityCalendar(
 		);
 		return buildCalendar(new Map(), window, false);
 	}
+}
+
+const githubYears = new Map<string, Promise<number[]>>();
+export function getGithubContributionYears(
+	username: string,
+): Promise<number[]> {
+	let request = githubYears.get(username);
+	if (!request) {
+		const currentYear = Number(toDateKey(new Date()).slice(0, 4));
+		request = fetch(
+			`https://api.github.com/users/${encodeURIComponent(username)}`,
+			{
+				headers: {
+					Accept: "application/vnd.github+json",
+					"User-Agent": "JingYue-Blog",
+				},
+				signal: AbortSignal.timeout(10_000),
+			},
+		)
+			.then(async (response) => {
+				if (!response.ok)
+					throw new Error(`GitHub user returned ${response.status}`);
+				const user = (await response.json()) as { created_at: string };
+				const firstYear = new Date(user.created_at).getUTCFullYear();
+				if (
+					!Number.isFinite(firstYear) ||
+					firstYear < 2008 ||
+					firstYear > currentYear
+				)
+					throw new Error("Invalid GitHub account date");
+				return Array.from(
+					{ length: currentYear - firstYear + 1 },
+					(_, index) => currentYear - index,
+				);
+			})
+			.catch(() => [currentYear]);
+		githubYears.set(username, request);
+	}
+	return request;
 }
