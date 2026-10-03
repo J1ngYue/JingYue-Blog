@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.133",
+		date: "2026-10-03",
+		time: "22:24",
+		type: "optimize",
+		title: "优化快捷工具面板布局",
+		summary:
+			"桌面端改为搜索栏与三张快捷卡片，手机端只保留公告和显示设置，移除与底栏重复的主题和搜索入口。",
+		changes: [
+			"统一图标底座、卡片间距和悬浮反馈，保留公告、搜索、明暗切换与外观设置功能。",
+			"手机端继续使用底栏搜索和主题按钮，工具面板保持紧凑并适配浅深色。",
+		],
+	},
+	{
 		version: "v6.14.132",
 		date: "2026-10-03",
 		time: "21:32",
