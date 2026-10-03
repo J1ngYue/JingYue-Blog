@@ -1,5 +1,17 @@
 # Third-Party Notices
 
+## Material Color Utilities
+
+The display settings use `@material/material-color-utilities` 0.4.0 from
+[material-foundation/material-color-utilities](https://github.com/material-foundation/material-color-utilities)
+for Material palette generation. The library is bundled without source changes.
+
+Copyright 2021 Google LLC
+
+Licensed under the Apache License, Version 2.0. The complete license and
+copyright notice are distributed at
+[public/licenses/material-color-utilities.txt](./public/licenses/material-color-utilities.txt).
+
 ## MmzMing/my-blog
 
 The homepage `HomeBlinds` scene component and the assets under
