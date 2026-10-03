@@ -21,6 +21,19 @@ export interface RecordApp {
 
 const manualChangelogEntries: ChangelogEntry[] = [
 	{
+		version: "v6.14.134",
+		date: "2026-10-03",
+		time: "22:54",
+		type: "optimize",
+		title: "重做日历与账单解锁界面",
+		summary:
+			"增加日历、钱包、密码锁与解锁图标，放大文字和输入区，拉开密码框与黑色解锁按钮的间距。",
+		changes: [
+			"支持密码显示和隐藏，统一桌面与手机布局，适配浅深色及键盘焦点。",
+			"保留原有私密服务验证、会话和数据管理逻辑。",
+		],
+	},
+	{
 		version: "v6.14.133",
 		date: "2026-10-03",
 		time: "22:24",

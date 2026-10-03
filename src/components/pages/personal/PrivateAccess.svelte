@@ -3,6 +3,7 @@ let unlockedInCurrentDocument = false;
 </script>
 
 <script lang="ts">
+import { CalendarDays, Eye, EyeOff, LockKeyhole, LockKeyholeOpen, Wallet } from "lucide-svelte";
 import { onMount } from "svelte";
 
 type EventRecord = {
@@ -30,6 +31,7 @@ let busy = $state(false);
 let error = $state("");
 let testMailStatus = $state("");
 let password = $state("");
+let showPassword = $state(false);
 let events = $state<EventRecord[]>([]);
 let bills = $state<BillRecord[]>([]);
 let editing = $state("");
@@ -322,11 +324,28 @@ async function remove(id: string) {
 	{#if loading}
 		<p class="status">正在检查私密空间…</p>
 	{:else if !authenticated}
-		<form class="lock-card" onsubmit={logIn}>
-			<h2>仅自己可见</h2>
-			<p>输入管理密码，解锁{mode === "events" ? "日历" : "账单"}。</p>
-			<label>管理密码<input type="password" autocomplete="current-password" bind:value={password} required /></label>
-			<button class="primary" type="submit" disabled={busy || !apiBase}>解锁空间</button>
+		<form class="lock-card" onsubmit={logIn} aria-labelledby={`private-${mode}-title`}>
+			<div class="lock-heading">
+				<span class="lock-heading-icon" aria-hidden="true">
+					{#if mode === "events"}<CalendarDays size={32} />{:else}<Wallet size={32} />{/if}
+				</span>
+				<div>
+					<h2 id={`private-${mode}-title`}>受保护的{mode === "events" ? "日历" : "账单"}</h2>
+					<p>此空间仅自己可见，请输入管理密码解锁内容。</p>
+				</div>
+			</div>
+			<div class="password-field">
+				<span class="password-icon" aria-hidden="true"><LockKeyhole size={24} /></span>
+				<label class="password-label" for={`private-${mode}-password`}>管理密码</label>
+				<input class="password-input" id={`private-${mode}-password`} type={showPassword ? "text" : "password"} placeholder="输入管理密码" autocomplete="current-password" bind:value={password} required />
+				<button class="password-toggle" type="button" aria-label={showPassword ? "隐藏密码" : "显示密码"} aria-pressed={showPassword} onclick={() => showPassword = !showPassword}>
+					{#if showPassword}<EyeOff size={24} aria-hidden="true" />{:else}<Eye size={24} aria-hidden="true" />{/if}
+				</button>
+			</div>
+			<button class="unlock-button" type="submit" disabled={busy || !apiBase}>
+				<LockKeyholeOpen size={25} aria-hidden="true" />
+				<span>{busy ? "正在验证…" : `解锁${mode === "events" ? "日历" : "账单"}`}</span>
+			</button>
 			{#if !apiBase}<p class="setup-note" role="status">私密服务尚未连接，完成 Worker 和数据库配置后才能解锁。密码不会保存在此页面；请使用新设置的管理密码。</p>{/if}
 		</form>
 	{:else}
@@ -369,9 +388,28 @@ async function remove(id: string) {
 <style>
 	.private-access{color:var(--deep-text,#222)}
 	.status{color:#777}
-	.lock-card{max-width:28rem;margin:2rem auto;padding:1.75rem;border:1.5px solid var(--deep-text,#29292d);border-radius:1rem;background:var(--card-bg,#fff);display:grid;gap:.8rem}
-	.lock-card h2,.manage-dialog h2{margin:0;font-size:1.35rem;font-weight:800}
-	.lock-card p{margin:0;color:#777;font-size:.85rem}
+	.lock-card{max-width:40rem;margin:2rem auto;padding:2.5rem;border:1.5px solid var(--deep-text,#29292d);border-radius:1.5rem;background:var(--card-bg,#fff)}
+	.lock-heading{display:flex;align-items:center;gap:1.25rem;margin-bottom:2rem}
+	.lock-heading>div{min-width:0}
+	.lock-heading-icon{display:grid;place-items:center;flex:none;width:4.5rem;height:4.5rem;border-radius:1.15rem;background:color-mix(in srgb,var(--deep-text,#222) 14%,var(--card-bg,#fff))}
+	.lock-card h2{margin:0 0 .4rem;font-size:1.75rem;line-height:1.35;font-weight:800}
+	.lock-card p{margin:0;color:color-mix(in srgb,var(--deep-text,#222) 75%,var(--card-bg,#fff));font-size:1.0625rem;line-height:1.7}
+	.password-field{display:flex;align-items:center;gap:.85rem;min-height:4rem;padding:.35rem .65rem .35rem 1.25rem;border:1px solid color-mix(in srgb,var(--deep-text,#222) 25%,var(--card-bg,#fff));border-radius:1rem;background:color-mix(in srgb,var(--deep-text,#222) 3%,var(--card-bg,#fff))}
+	.password-icon{display:flex;flex:none}
+	.password-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+	.password-input{width:100%;min-width:0;flex:1;border:0;background:transparent;color:inherit;font:inherit;font-size:1.125rem;line-height:1.5;padding:.5rem 0}
+	.password-input::placeholder{color:color-mix(in srgb,var(--deep-text,#222) 65%,var(--card-bg,#fff));opacity:1}
+	.password-toggle{display:grid;place-items:center;flex:none;width:3rem;height:3rem;border:0;border-radius:.7rem;background:transparent;color:inherit;transition:background .15s}
+	.password-toggle:hover{background:color-mix(in srgb,var(--deep-text,#222) 10%,transparent)}
+	.unlock-button{display:flex;align-items:center;justify-content:center;gap:.75rem;width:100%;min-height:4.25rem;margin-top:2.5rem;padding:.9rem 1rem;border:0;border-radius:1rem;background:#000;color:#fff;font-size:1.125rem;font-weight:750;transition:background .15s}
+	.unlock-button:hover:not(:disabled){background:#252525}
+	.unlock-button:disabled{opacity:.55;cursor:wait}
+	:global(html.dark) .unlock-button{background:#18181b;box-shadow:inset 0 0 0 1px rgb(255 255 255 / 25%)}
+	.lock-card .setup-note{margin-top:1.25rem;font-size:.9rem}
+	.password-field:focus-within{outline:2px solid var(--deep-text,#222);outline-offset:3px}
+	.password-input:focus-visible{outline:none}
+	.password-toggle:focus-visible,.unlock-button:focus-visible{outline:3px solid var(--deep-text,#222);outline-offset:3px}
+	.manage-dialog h2{margin:0;font-size:1.35rem;font-weight:800}
 	.access-actions{display:flex;align-items:center;justify-content:flex-start;gap:.55rem;margin:0 0 .85rem;font-size:.72rem;color:#777}
 	button{font:inherit;cursor:pointer}
 	.primary,.secondary,.close,.record-actions button{border:1.5px solid var(--deep-text,#29292d);border-radius:.6rem;background:var(--card-bg,#fff);color:var(--deep-text,#222);padding:.5rem .8rem;font-size:.78rem;font-weight:750}
@@ -383,8 +421,8 @@ async function remove(id: string) {
 	.dialog-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
 	.manage-dialog h3{font-size:1rem;margin:1.5rem 0 .7rem}
 	.entry-form{display:grid;gap:.75rem}
-	.entry-form label,.lock-card label{display:grid;gap:.35rem;font-size:.78rem;font-weight:700}
-	.entry-form input:not([type=checkbox]),.entry-form textarea,.entry-form select,.lock-card input{width:100%;min-height:2.5rem;box-sizing:border-box;border:1px solid #b8b8bd;border-radius:.55rem;background:var(--card-bg,#fff);color:var(--deep-text,#222);padding:.55rem .65rem;font:inherit}
+	.entry-form label{display:grid;gap:.35rem;font-size:.78rem;font-weight:700}
+	.entry-form input:not([type=checkbox]),.entry-form textarea,.entry-form select{width:100%;min-height:2.5rem;box-sizing:border-box;border:1px solid #b8b8bd;border-radius:.55rem;background:var(--card-bg,#fff);color:var(--deep-text,#222);padding:.55rem .65rem;font:inherit}
 	.entry-form textarea{resize:vertical}
 	.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
 	.checks,.form-actions{display:flex;gap:.8rem;flex-wrap:wrap;align-items:center}
@@ -406,6 +444,8 @@ async function remove(id: string) {
 	.month-list>div{display:flex;justify-content:space-between;padding:.4rem;border-bottom:1px solid #ddd;font-size:.76rem}
 	.error{color:#b42346;background:#fff0f3;border:1px solid #e8a2b2;border-radius:.5rem;padding:.65rem;margin-top:.75rem;font-size:.8rem}
 	button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #e75d8d;outline-offset:2px}
+	@media(max-width:550px){.lock-card{margin:1.25rem auto;padding:1.5rem;border-radius:1.25rem}.lock-heading{gap:.85rem;margin-bottom:1.5rem;align-items:flex-start}.lock-heading-icon{width:3.5rem;height:3.5rem;border-radius:.9rem}.lock-card h2{font-size:1.45rem}.lock-card p{font-size:1rem}.password-field{min-height:3.75rem;gap:.6rem;padding-left:1rem}.password-input{font-size:1rem}.unlock-button{margin-top:2rem;min-height:4rem}}
+	@media(max-width:360px){.lock-card{padding:1.1rem}.lock-heading{gap:.65rem}.lock-heading-icon{width:3rem;height:3rem}.lock-card h2{font-size:1.35rem}}
 	@media(max-width:550px){.form-row{grid-template-columns:1fr}.totals{grid-template-columns:repeat(2,1fr)}.record-list article{flex-wrap:wrap}.record-actions{margin-left:auto}.manage-dialog{padding:1rem}.access-actions span{display:none}}
-	@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+	@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.password-toggle,.unlock-button{transition:none}}
 </style>
